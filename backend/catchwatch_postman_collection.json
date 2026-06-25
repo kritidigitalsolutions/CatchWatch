@@ -1,0 +1,4294 @@
+{
+  "info": {
+    "name": "CatchWatch & Support",
+    "description": "CatchWatch Backend API Collection with bodies",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "Admin",
+      "item": [
+        {
+          "name": "Auth",
+          "item": [
+            {
+              "name": "POST - Auth Login",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json",
+                    "type": "text"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/api/admin/auth/login",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "admin",
+                    "auth",
+                    "login"
+                  ]
+                },
+                "description": "API endpoint in admin/auth.routes.js",
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"email\": \"admin@example.com\",\n  \"password\": \"123456\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "POST - Auth Logout",
+              "request": {
+                "method": "POST",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/api/admin/auth/logout",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "admin",
+                    "auth",
+                    "logout"
+                  ]
+                },
+                "description": "API endpoint in admin/auth.routes.js"
+              },
+              "response": []
+            },
+            {
+              "name": "GET - Auth Profile",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/api/admin/auth/profile",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "admin",
+                    "auth",
+                    "profile"
+                  ]
+                },
+                "description": "API endpoint in admin/auth.routes.js"
+              },
+              "response": []
+            },
+            {
+              "name": "GET - Auth Bunny-config",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/api/admin/auth/bunny-config",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "admin",
+                    "auth",
+                    "bunny-config"
+                  ]
+                },
+                "description": "API endpoint in admin/auth.routes.js"
+              },
+              "response": []
+            },
+            {
+              "name": "POST - Auth Bunny-upload",
+              "request": {
+                "method": "POST",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/api/admin/auth/bunny-upload",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "admin",
+                    "auth",
+                    "bunny-upload"
+                  ]
+                },
+                "description": "API endpoint in admin/auth.routes.js",
+                "body": {
+                  "mode": "formdata",
+                  "formdata": [
+                    {
+                      "key": "file",
+                      "type": "file",
+                      "description": "Upload file"
+                    }
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "POST - Auth Send-otp",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json",
+                    "type": "text"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/api/admin/auth/send-otp",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "admin",
+                    "auth",
+                    "send-otp"
+                  ]
+                },
+                "description": "API endpoint in admin/auth.routes.js",
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"email\": \"admin@example.com\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "POST - Auth Verify-otp",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json",
+                    "type": "text"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/api/admin/auth/verify-otp",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "admin",
+                    "auth",
+                    "verify-otp"
+                  ]
+                },
+                "description": "API endpoint in admin/auth.routes.js",
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"email\": \"admin@example.com\",\n  \"otp\": \"123456\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "POST - Auth Reset-password",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json",
+                    "type": "text"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/api/admin/auth/reset-password",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "admin",
+                    "auth",
+                    "reset-password"
+                  ]
+                },
+                "description": "API endpoint in admin/auth.routes.js",
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"email\": \"admin@example.com\",\n  \"otp\": \"123456\",\n  \"newPassword\": \"123456\",\n  \"confirmPassword\": \"123456\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "POST - Auth Change-password Send-otp",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json",
+                    "type": "text"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/api/admin/auth/change-password/send-otp",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "admin",
+                    "auth",
+                    "change-password",
+                    "send-otp"
+                  ]
+                },
+                "description": "API endpoint in admin/auth.routes.js",
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"oldPassword\": \"123456\",\n  \"newPassword\": \"123456\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "POST - Auth Change-password",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json",
+                    "type": "text"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/api/admin/auth/change-password",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "admin",
+                    "auth",
+                    "change-password"
+                  ]
+                },
+                "description": "API endpoint in admin/auth.routes.js",
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"oldPassword\": \"123456\",\n  \"otp\": \"123456\",\n  \"newPassword\": \"123456\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "POST - Auth Change-email Send-otp",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json",
+                    "type": "text"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/api/admin/auth/change-email/send-otp",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "admin",
+                    "auth",
+                    "change-email",
+                    "send-otp"
+                  ]
+                },
+                "description": "API endpoint in admin/auth.routes.js",
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"oldEmail\": \"admin@example.com\",\n  \"newEmail\": \"admin@example.com\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "POST - Auth Change-email",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json",
+                    "type": "text"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/api/admin/auth/change-email",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "admin",
+                    "auth",
+                    "change-email"
+                  ]
+                },
+                "description": "API endpoint in admin/auth.routes.js",
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"oldEmail\": \"admin@example.com\",\n  \"newEmail\": \"admin@example.com\",\n  \"otp\": \"123456\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "PATCH - Auth Profile",
+              "request": {
+                "method": "PATCH",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json",
+                    "type": "text"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/api/admin/auth/profile",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "admin",
+                    "auth",
+                    "profile"
+                  ]
+                },
+                "description": "API endpoint in admin/auth.routes.js",
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"name\": \"\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                }
+              },
+              "response": []
+            }
+          ]
+        },
+        {
+          "name": "User",
+          "item": [
+            {
+              "name": "GET - Users Profile",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/api/admin/users/profile",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "admin",
+                    "users",
+                    "profile"
+                  ]
+                },
+                "description": "API endpoint in admin/user.routes.js"
+              },
+              "response": []
+            },
+            {
+              "name": "POST - Users Complete-profile",
+              "request": {
+                "method": "POST",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/api/admin/users/complete-profile",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "admin",
+                    "users",
+                    "complete-profile"
+                  ]
+                },
+                "description": "API endpoint in admin/user.routes.js",
+                "body": {
+                  "mode": "formdata",
+                  "formdata": [
+                    {
+                      "key": "file",
+                      "type": "file",
+                      "description": "Upload file"
+                    },
+                    {
+                      "key": "name",
+                      "value": "",
+                      "type": "text"
+                    },
+                    {
+                      "key": "username",
+                      "value": "",
+                      "type": "text"
+                    },
+                    {
+                      "key": "genres",
+                      "value": "",
+                      "type": "text"
+                    },
+                    {
+                      "key": "bio",
+                      "value": "",
+                      "type": "text"
+                    },
+                    {
+                      "key": "phone",
+                      "value": "+919876543210",
+                      "type": "text"
+                    }
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "PATCH - Users Update-profile",
+              "request": {
+                "method": "PATCH",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/api/admin/users/update-profile",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "admin",
+                    "users",
+                    "update-profile"
+                  ]
+                },
+                "description": "API endpoint in admin/user.routes.js",
+                "body": {
+                  "mode": "formdata",
+                  "formdata": [
+                    {
+                      "key": "file",
+                      "type": "file",
+                      "description": "Upload file"
+                    },
+                    {
+                      "key": "name",
+                      "value": "",
+                      "type": "text"
+                    },
+                    {
+                      "key": "username",
+                      "value": "",
+                      "type": "text"
+                    },
+                    {
+                      "key": "phone",
+                      "value": "+919876543210",
+                      "type": "text"
+                    },
+                    {
+                      "key": "genres",
+                      "value": "",
+                      "type": "text"
+                    },
+                    {
+                      "key": "bio",
+                      "value": "",
+                      "type": "text"
+                    }
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "GET - Users",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/api/admin/users",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "admin",
+                    "users"
+                  ]
+                },
+                "description": "API endpoint in admin/user.routes.js"
+              },
+              "response": []
+            },
+            {
+              "name": "GET - Users Registration-stats",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/api/admin/users/registration-stats",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "admin",
+                    "users",
+                    "registration-stats"
+                  ]
+                },
+                "description": "API endpoint in admin/user.routes.js"
+              },
+              "response": []
+            },
+            {
+              "name": "GET - Users Growth",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/api/admin/users/growth",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "admin",
+                    "users",
+                    "growth"
+                  ]
+                },
+                "description": "API endpoint in admin/user.routes.js"
+              },
+              "response": []
+            },
+            {
+              "name": "GET - Users {id}",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/api/admin/users/:id",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "admin",
+                    "users",
+                    ":id"
+                  ]
+                },
+                "description": "API endpoint in admin/user.routes.js"
+              },
+              "response": []
+            },
+            {
+              "name": "PATCH - Users {id} Block",
+              "request": {
+                "method": "PATCH",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/api/admin/users/:id/block",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "admin",
+                    "users",
+                    ":id",
+                    "block"
+                  ]
+                },
+                "description": "API endpoint in admin/user.routes.js"
+              },
+              "response": []
+            },
+            {
+              "name": "DELETE - Users {id}",
+              "request": {
+                "method": "DELETE",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/api/admin/users/:id",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "admin",
+                    "users",
+                    ":id"
+                  ]
+                },
+                "description": "API endpoint in admin/user.routes.js"
+              },
+              "response": []
+            }
+          ]
+        },
+        {
+          "name": "Movie",
+          "item": [
+            {
+              "name": "POST - Movies Add",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json",
+                    "type": "text"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/api/admin/movies/add",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "admin",
+                    "movies",
+                    "add"
+                  ]
+                },
+                "description": "API endpoint in admin/movie.routes.js",
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"genre\": \"\",\n  \"category\": \"\",\n  \"cast\": \"\",\n  \"title\": \"\",\n  \"priority\": \"\",\n  \"poster\": \"\",\n  \"banner\": \"\",\n  \"trailerUrl\": \"\",\n  \"videoUrl\": \"\",\n  \"language\": \"\",\n  \"description\": \"\",\n  \"releaseYear\": \"\",\n  \"duration\": \"\",\n  \"isComingSoon\": \"\",\n  \"releaseDate\": \"\",\n  \"isPremium\": \"\",\n  \"rating\": \"\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "PATCH - Movies {id}",
+              "request": {
+                "method": "PATCH",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json",
+                    "type": "text"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/api/admin/movies/:id",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "admin",
+                    "movies",
+                    ":id"
+                  ]
+                },
+                "description": "API endpoint in admin/movie.routes.js",
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"genre\": \"\",\n  \"category\": \"\",\n  \"cast\": \"\",\n  \"title\": \"\",\n  \"description\": \"\",\n  \"releaseYear\": \"\",\n  \"duration\": \"\",\n  \"language\": \"\",\n  \"releaseDate\": \"\",\n  \"rating\": \"\",\n  \"isComingSoon\": \"\",\n  \"isPremium\": \"\",\n  \"posterUrl\": \"\",\n  \"poster\": \"\",\n  \"bannerUrl\": \"\",\n  \"banner\": \"\",\n  \"trailerUrl\": \"\",\n  \"videoUrl\": \"\",\n  \"priority\": \"\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "GET - Movies",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/api/admin/movies",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "admin",
+                    "movies"
+                  ]
+                },
+                "description": "API endpoint in admin/movie.routes.js"
+              },
+              "response": []
+            },
+            {
+              "name": "GET - Movies Search",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/api/admin/movies/search",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "admin",
+                    "movies",
+                    "search"
+                  ]
+                },
+                "description": "API endpoint in admin/movie.routes.js"
+              },
+              "response": []
+            },
+            {
+              "name": "GET - Movies {id}",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/api/admin/movies/:id",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "admin",
+                    "movies",
+                    ":id"
+                  ]
+                },
+                "description": "API endpoint in admin/movie.routes.js"
+              },
+              "response": []
+            },
+            {
+              "name": "DELETE - Movies {id}",
+              "request": {
+                "method": "DELETE",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/api/admin/movies/:id",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "admin",
+                    "movies",
+                    ":id"
+                  ]
+                },
+                "description": "API endpoint in admin/movie.routes.js"
+              },
+              "response": []
+            }
+          ]
+        },
+        {
+          "name": "Series",
+          "item": [
+            {
+              "name": "POST - Series Add",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json",
+                    "type": "text"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/api/admin/series/add",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "admin",
+                    "series",
+                    "add"
+                  ]
+                },
+                "description": "API endpoint in admin/series.routes.js",
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"genre\": \"\",\n  \"category\": \"\",\n  \"cast\": \"\",\n  \"title\": \"\",\n  \"priority\": \"\",\n  \"description\": \"\",\n  \"releaseYear\": \"\",\n  \"duration\": \"\",\n  \"language\": \"\",\n  \"poster\": \"\",\n  \"banner\": \"\",\n  \"trailerUrl\": \"\",\n  \"isComingSoon\": \"\",\n  \"releaseDate\": \"\",\n  \"isPremium\": \"\",\n  \"rating\": \"\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "PATCH - Series {id}",
+              "request": {
+                "method": "PATCH",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json",
+                    "type": "text"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/api/admin/series/:id",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "admin",
+                    "series",
+                    ":id"
+                  ]
+                },
+                "description": "API endpoint in admin/series.routes.js",
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"genre\": \"\",\n  \"category\": \"\",\n  \"cast\": \"\",\n  \"title\": \"\",\n  \"description\": \"\",\n  \"releaseYear\": \"\",\n  \"duration\": \"\",\n  \"language\": \"\",\n  \"releaseDate\": \"\",\n  \"rating\": \"\",\n  \"isComingSoon\": \"\",\n  \"isPremium\": \"\",\n  \"posterUrl\": \"\",\n  \"poster\": \"\",\n  \"bannerUrl\": \"\",\n  \"banner\": \"\",\n  \"trailerUrl\": \"\",\n  \"priority\": \"\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "GET - Series",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/api/admin/series",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "admin",
+                    "series"
+                  ]
+                },
+                "description": "API endpoint in admin/series.routes.js"
+              },
+              "response": []
+            },
+            {
+              "name": "GET - Series Search",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/api/admin/series/search",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "admin",
+                    "series",
+                    "search"
+                  ]
+                },
+                "description": "API endpoint in admin/series.routes.js"
+              },
+              "response": []
+            },
+            {
+              "name": "GET - Series {id}",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/api/admin/series/:id",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "admin",
+                    "series",
+                    ":id"
+                  ]
+                },
+                "description": "API endpoint in admin/series.routes.js"
+              },
+              "response": []
+            },
+            {
+              "name": "DELETE - Series {id}",
+              "request": {
+                "method": "DELETE",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/api/admin/series/:id",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "admin",
+                    "series",
+                    ":id"
+                  ]
+                },
+                "description": "API endpoint in admin/series.routes.js"
+              },
+              "response": []
+            }
+          ]
+        },
+        {
+          "name": "Episode",
+          "item": [
+            {
+              "name": "POST - Episodes Add",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json",
+                    "type": "text"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/api/admin/episodes/add",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "admin",
+                    "episodes",
+                    "add"
+                  ]
+                },
+                "description": "API endpoint in admin/episode.routes.js",
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"title\": \"\",\n  \"description\": \"\",\n  \"seriesId\": \"\",\n  \"seasonNumber\": \"\",\n  \"episodeNumber\": \"\",\n  \"duration\": \"\",\n  \"videoUrl\": \"\",\n  \"thumbnailUrl\": \"\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "PATCH - Episodes {id}",
+              "request": {
+                "method": "PATCH",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json",
+                    "type": "text"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/api/admin/episodes/:id",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "admin",
+                    "episodes",
+                    ":id"
+                  ]
+                },
+                "description": "API endpoint in admin/episode.routes.js",
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"title\": \"\",\n  \"description\": \"\",\n  \"seasonNumber\": \"\",\n  \"episodeNumber\": \"\",\n  \"duration\": \"\",\n  \"videoUrl\": \"\",\n  \"thumbnailUrl\": \"\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "GET - Episodes",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/api/admin/episodes",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "admin",
+                    "episodes"
+                  ]
+                },
+                "description": "API endpoint in admin/episode.routes.js"
+              },
+              "response": []
+            },
+            {
+              "name": "GET - Episodes Search",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/api/admin/episodes/search",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "admin",
+                    "episodes",
+                    "search"
+                  ]
+                },
+                "description": "API endpoint in admin/episode.routes.js"
+              },
+              "response": []
+            },
+            {
+              "name": "DELETE - Episodes Season {seriesId} {seasonNumber}",
+              "request": {
+                "method": "DELETE",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/api/admin/episodes/season/:seriesId/:seasonNumber",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "admin",
+                    "episodes",
+                    "season",
+                    ":seriesId",
+                    ":seasonNumber"
+                  ]
+                },
+                "description": "API endpoint in admin/episode.routes.js"
+              },
+              "response": []
+            },
+            {
+              "name": "DELETE - Episodes {id}",
+              "request": {
+                "method": "DELETE",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/api/admin/episodes/:id",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "admin",
+                    "episodes",
+                    ":id"
+                  ]
+                },
+                "description": "API endpoint in admin/episode.routes.js"
+              },
+              "response": []
+            }
+          ]
+        },
+        {
+          "name": "Content",
+          "item": [
+            {
+              "name": "GET - Content Stats",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/api/admin/content/stats",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "admin",
+                    "content",
+                    "stats"
+                  ]
+                },
+                "description": "API endpoint in admin/content.routes.js"
+              },
+              "response": []
+            },
+            {
+              "name": "GET - Content All",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/api/admin/content/all",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "admin",
+                    "content",
+                    "all"
+                  ]
+                },
+                "description": "API endpoint in admin/content.routes.js"
+              },
+              "response": []
+            }
+          ]
+        },
+        {
+          "name": "Shortdrama",
+          "item": [
+            {
+              "name": "POST - Shortdramas Add",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json",
+                    "type": "text"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/api/admin/shortdramas/add",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "admin",
+                    "shortdramas",
+                    "add"
+                  ]
+                },
+                "description": "API endpoint in admin/shortdrama.routes.js",
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"genre\": \"\",\n  \"category\": \"\",\n  \"cast\": \"\",\n  \"title\": \"\",\n  \"description\": \"\",\n  \"language\": \"\",\n  \"poster\": \"\",\n  \"banner\": \"\",\n  \"trailerUrl\": \"\",\n  \"isPremium\": \"\",\n  \"status\": \"ACTIVE\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "GET - Shortdramas",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/api/admin/shortdramas",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "admin",
+                    "shortdramas"
+                  ]
+                },
+                "description": "API endpoint in admin/shortdrama.routes.js"
+              },
+              "response": []
+            },
+            {
+              "name": "GET - Shortdramas Search",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/api/admin/shortdramas/search",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "admin",
+                    "shortdramas",
+                    "search"
+                  ]
+                },
+                "description": "API endpoint in admin/shortdrama.routes.js"
+              },
+              "response": []
+            },
+            {
+              "name": "GET - Shortdramas {id}",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/api/admin/shortdramas/:id",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "admin",
+                    "shortdramas",
+                    ":id"
+                  ]
+                },
+                "description": "API endpoint in admin/shortdrama.routes.js"
+              },
+              "response": []
+            },
+            {
+              "name": "PATCH - Shortdramas {id}",
+              "request": {
+                "method": "PATCH",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json",
+                    "type": "text"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/api/admin/shortdramas/:id",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "admin",
+                    "shortdramas",
+                    ":id"
+                  ]
+                },
+                "description": "API endpoint in admin/shortdrama.routes.js",
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"genre\": \"\",\n  \"category\": \"\",\n  \"cast\": \"\",\n  \"title\": \"\",\n  \"description\": \"\",\n  \"language\": \"\",\n  \"isPremium\": \"\",\n  \"status\": \"ACTIVE\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "DELETE - Shortdramas {id}",
+              "request": {
+                "method": "DELETE",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/api/admin/shortdramas/:id",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "admin",
+                    "shortdramas",
+                    ":id"
+                  ]
+                },
+                "description": "API endpoint in admin/shortdrama.routes.js"
+              },
+              "response": []
+            }
+          ]
+        },
+        {
+          "name": "DramaEpisode",
+          "item": [
+            {
+              "name": "POST - Drama-episodes {shortDramaId} Add",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json",
+                    "type": "text"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/api/admin/drama-episodes/:shortDramaId/add",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "admin",
+                    "drama-episodes",
+                    ":shortDramaId",
+                    "add"
+                  ]
+                },
+                "description": "API endpoint in admin/dramaEpisode.routes.js",
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"episodeNumber\": \"\",\n  \"title\": \"\",\n  \"description\": \"\",\n  \"duration\": \"\",\n  \"isLocked\": \"\",\n  \"isVertical\": \"\",\n  \"videoUrl\": \"\",\n  \"thumbnail\": \"\",\n  \"thumbnailUrl\": \"\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "GET - Drama-episodes {shortDramaId}",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/api/admin/drama-episodes/:shortDramaId",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "admin",
+                    "drama-episodes",
+                    ":shortDramaId"
+                  ]
+                },
+                "description": "API endpoint in admin/dramaEpisode.routes.js"
+              },
+              "response": []
+            },
+            {
+              "name": "GET - Drama-episodes Search",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/api/admin/drama-episodes/search",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "admin",
+                    "drama-episodes",
+                    "search"
+                  ]
+                },
+                "description": "API endpoint in admin/dramaEpisode.routes.js"
+              },
+              "response": []
+            },
+            {
+              "name": "PATCH - Drama-episodes {id}",
+              "request": {
+                "method": "PATCH",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json",
+                    "type": "text"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/api/admin/drama-episodes/:id",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "admin",
+                    "drama-episodes",
+                    ":id"
+                  ]
+                },
+                "description": "API endpoint in admin/dramaEpisode.routes.js",
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"episodeNumber\": \"\",\n  \"title\": \"\",\n  \"description\": \"\",\n  \"duration\": \"\",\n  \"isLocked\": \"\",\n  \"isVertical\": \"\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "DELETE - Drama-episodes {id}",
+              "request": {
+                "method": "DELETE",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/api/admin/drama-episodes/:id",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "admin",
+                    "drama-episodes",
+                    ":id"
+                  ]
+                },
+                "description": "API endpoint in admin/dramaEpisode.routes.js"
+              },
+              "response": []
+            }
+          ]
+        },
+        {
+          "name": "Legal",
+          "item": [
+            {
+              "name": "GET - Legal",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/api/admin/legal",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "admin",
+                    "legal"
+                  ]
+                },
+                "description": "API endpoint in admin/legal.routes.js"
+              },
+              "response": []
+            },
+            {
+              "name": "GET - Legal {type}",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/api/admin/legal/:type",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "admin",
+                    "legal",
+                    ":type"
+                  ]
+                },
+                "description": "API endpoint in admin/legal.routes.js"
+              },
+              "response": []
+            },
+            {
+              "name": "PUT - Legal {type}",
+              "request": {
+                "method": "PUT",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json",
+                    "type": "text"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/api/admin/legal/:type",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "admin",
+                    "legal",
+                    ":type"
+                  ]
+                },
+                "description": "API endpoint in admin/legal.routes.js",
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"type\": \"movies\",\n  \"title\": \"\",\n  \"content\": \"\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "PATCH - Legal {type} Toggle",
+              "request": {
+                "method": "PATCH",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/api/admin/legal/:type/toggle",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "admin",
+                    "legal",
+                    ":type",
+                    "toggle"
+                  ]
+                },
+                "description": "API endpoint in admin/legal.routes.js"
+              },
+              "response": []
+            }
+          ]
+        },
+        {
+          "name": "Help",
+          "item": [
+            {
+              "name": "POST - Help",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json",
+                    "type": "text"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/api/admin/help",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "admin",
+                    "help"
+                  ]
+                },
+                "description": "API endpoint in admin/help.routes.js",
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"category\": \"\",\n  \"question\": \"\",\n  \"answer\": \"\",\n  \"supportNumber\": \"\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "GET - Help",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/api/admin/help",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "admin",
+                    "help"
+                  ]
+                },
+                "description": "API endpoint in admin/help.routes.js"
+              },
+              "response": []
+            },
+            {
+              "name": "PUT - Help {id}",
+              "request": {
+                "method": "PUT",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/api/admin/help/:id",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "admin",
+                    "help",
+                    ":id"
+                  ]
+                },
+                "description": "API endpoint in admin/help.routes.js"
+              },
+              "response": []
+            },
+            {
+              "name": "DELETE - Help {id}",
+              "request": {
+                "method": "DELETE",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/api/admin/help/:id",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "admin",
+                    "help",
+                    ":id"
+                  ]
+                },
+                "description": "API endpoint in admin/help.routes.js"
+              },
+              "response": []
+            },
+            {
+              "name": "PATCH - Help {id} Toggle",
+              "request": {
+                "method": "PATCH",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/api/admin/help/:id/toggle",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "admin",
+                    "help",
+                    ":id",
+                    "toggle"
+                  ]
+                },
+                "description": "API endpoint in admin/help.routes.js"
+              },
+              "response": []
+            }
+          ]
+        },
+        {
+          "name": "Promo",
+          "item": [
+            {
+              "name": "POST - Promo",
+              "request": {
+                "method": "POST",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/api/admin/promo",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "admin",
+                    "promo"
+                  ]
+                },
+                "description": "API endpoint in admin/promo.routes.js"
+              },
+              "response": []
+            },
+            {
+              "name": "GET - Promo",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/api/admin/promo",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "admin",
+                    "promo"
+                  ]
+                },
+                "description": "API endpoint in admin/promo.routes.js"
+              },
+              "response": []
+            },
+            {
+              "name": "DELETE - Promo {id}",
+              "request": {
+                "method": "DELETE",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/api/admin/promo/:id",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "admin",
+                    "promo",
+                    ":id"
+                  ]
+                },
+                "description": "API endpoint in admin/promo.routes.js"
+              },
+              "response": []
+            },
+            {
+              "name": "PUT - Promo {id}",
+              "request": {
+                "method": "PUT",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/api/admin/promo/:id",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "admin",
+                    "promo",
+                    ":id"
+                  ]
+                },
+                "description": "API endpoint in admin/promo.routes.js"
+              },
+              "response": []
+            }
+          ]
+        },
+        {
+          "name": "Voucher",
+          "item": [
+            {
+              "name": "POST - Voucher",
+              "request": {
+                "method": "POST",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/api/admin/voucher",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "admin",
+                    "voucher"
+                  ]
+                },
+                "description": "API endpoint in admin/voucher.routes.js"
+              },
+              "response": []
+            },
+            {
+              "name": "GET - Voucher",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/api/admin/voucher",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "admin",
+                    "voucher"
+                  ]
+                },
+                "description": "API endpoint in admin/voucher.routes.js"
+              },
+              "response": []
+            },
+            {
+              "name": "PUT - Voucher {id}",
+              "request": {
+                "method": "PUT",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/api/admin/voucher/:id",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "admin",
+                    "voucher",
+                    ":id"
+                  ]
+                },
+                "description": "API endpoint in admin/voucher.routes.js"
+              },
+              "response": []
+            },
+            {
+              "name": "DELETE - Voucher {id}",
+              "request": {
+                "method": "DELETE",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/api/admin/voucher/:id",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "admin",
+                    "voucher",
+                    ":id"
+                  ]
+                },
+                "description": "API endpoint in admin/voucher.routes.js"
+              },
+              "response": []
+            }
+          ]
+        },
+        {
+          "name": "Subscription",
+          "item": [
+            {
+              "name": "GET - Subscription Revenue",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/api/admin/subscription/revenue",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "admin",
+                    "subscription",
+                    "revenue"
+                  ]
+                },
+                "description": "API endpoint in admin/subscription.routes.js"
+              },
+              "response": []
+            },
+            {
+              "name": "GET - Subscription Stats",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/api/admin/subscription/stats",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "admin",
+                    "subscription",
+                    "stats"
+                  ]
+                },
+                "description": "API endpoint in admin/subscription.routes.js"
+              },
+              "response": []
+            },
+            {
+              "name": "GET - Subscription Income-stats",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/api/admin/subscription/income-stats",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "admin",
+                    "subscription",
+                    "income-stats"
+                  ]
+                },
+                "description": "API endpoint in admin/subscription.routes.js"
+              },
+              "response": []
+            },
+            {
+              "name": "GET - Subscription All",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/api/admin/subscription/all",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "admin",
+                    "subscription",
+                    "all"
+                  ]
+                },
+                "description": "API endpoint in admin/subscription.routes.js"
+              },
+              "response": []
+            },
+            {
+              "name": "PATCH - Subscription {id} Extend",
+              "request": {
+                "method": "PATCH",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json",
+                    "type": "text"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/api/admin/subscription/:id/extend",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "admin",
+                    "subscription",
+                    ":id",
+                    "extend"
+                  ]
+                },
+                "description": "API endpoint in admin/subscription.routes.js",
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"days\": \"\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                }
+              },
+              "response": []
+            }
+          ]
+        },
+        {
+          "name": "Notification",
+          "item": [
+            {
+              "name": "POST - Notifications Send",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json",
+                    "type": "text"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/api/admin/notifications/send",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "admin",
+                    "notifications",
+                    "send"
+                  ]
+                },
+                "description": "API endpoint in admin/notification.routes.js",
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"title\": \"\",\n  \"message\": \"\",\n  \"type\": \"movies\",\n  \"sendTo\": \"\",\n  \"targetUser\": \"\",\n  \"actionUrl\": \"\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "GET - Notifications Unread-count",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/api/admin/notifications/unread-count",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "admin",
+                    "notifications",
+                    "unread-count"
+                  ]
+                },
+                "description": "API endpoint in admin/notification.routes.js"
+              },
+              "response": []
+            },
+            {
+              "name": "GET - Notifications",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/api/admin/notifications",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "admin",
+                    "notifications"
+                  ]
+                },
+                "description": "API endpoint in admin/notification.routes.js"
+              },
+              "response": []
+            },
+            {
+              "name": "PATCH - Notifications {id} Read",
+              "request": {
+                "method": "PATCH",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/api/admin/notifications/:id/read",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "admin",
+                    "notifications",
+                    ":id",
+                    "read"
+                  ]
+                },
+                "description": "API endpoint in admin/notification.routes.js"
+              },
+              "response": []
+            },
+            {
+              "name": "DELETE - Notifications {id}",
+              "request": {
+                "method": "DELETE",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/api/admin/notifications/:id",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "admin",
+                    "notifications",
+                    ":id"
+                  ]
+                },
+                "description": "API endpoint in admin/notification.routes.js"
+              },
+              "response": []
+            }
+          ]
+        },
+        {
+          "name": "Support",
+          "item": [
+            {
+              "name": "GET - Support",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/api/admin/support",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "admin",
+                    "support"
+                  ]
+                },
+                "description": "API endpoint in admin/support.routes.js"
+              },
+              "response": []
+            },
+            {
+              "name": "POST - Support",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json",
+                    "type": "text"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/api/admin/support",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "admin",
+                    "support"
+                  ]
+                },
+                "description": "API endpoint in admin/support.routes.js",
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"userName\": \"\",\n  \"userEmail\": \"admin@example.com\",\n  \"userPhone\": \"+919876543210\",\n  \"subject\": \"\",\n  \"category\": \"\",\n  \"priority\": \"\",\n  \"message\": \"\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "GET - Support {id}",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/api/admin/support/:id",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "admin",
+                    "support",
+                    ":id"
+                  ]
+                },
+                "description": "API endpoint in admin/support.routes.js"
+              },
+              "response": []
+            },
+            {
+              "name": "POST - Support Reply {id}",
+              "request": {
+                "method": "POST",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/api/admin/support/reply/:id",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "admin",
+                    "support",
+                    "reply",
+                    ":id"
+                  ]
+                },
+                "description": "API endpoint in admin/support.routes.js",
+                "body": {
+                  "mode": "formdata",
+                  "formdata": [
+                    {
+                      "key": "file",
+                      "type": "file",
+                      "description": "Upload file"
+                    },
+                    {
+                      "key": "message",
+                      "value": "",
+                      "type": "text"
+                    },
+                    {
+                      "key": "attachments",
+                      "value": "",
+                      "type": "text"
+                    }
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "PATCH - Support Status {id}",
+              "request": {
+                "method": "PATCH",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json",
+                    "type": "text"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/api/admin/support/status/:id",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "admin",
+                    "support",
+                    "status",
+                    ":id"
+                  ]
+                },
+                "description": "API endpoint in admin/support.routes.js",
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"status\": \"ACTIVE\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "GET - Support Conversation {id}",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/api/admin/support/conversation/:id",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "admin",
+                    "support",
+                    "conversation",
+                    ":id"
+                  ]
+                },
+                "description": "API endpoint in admin/support.routes.js"
+              },
+              "response": []
+            },
+            {
+              "name": "DELETE - Support {id}",
+              "request": {
+                "method": "DELETE",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/api/admin/support/:id",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "admin",
+                    "support",
+                    ":id"
+                  ]
+                },
+                "description": "API endpoint in admin/support.routes.js"
+              },
+              "response": []
+            }
+          ]
+        },
+        {
+          "name": "Plan",
+          "item": [
+            {
+              "name": "POST - Plan",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json",
+                    "type": "text"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/api/admin/plan",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "admin",
+                    "plan"
+                  ]
+                },
+                "description": "API endpoint in admin/plan.routes.js",
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"name\": \"\",\n  \"price\": \"\",\n  \"duration\": \"\",\n  \"features\": \"\",\n  \"isActive\": true\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "GET - Plan",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/api/admin/plan",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "admin",
+                    "plan"
+                  ]
+                },
+                "description": "API endpoint in admin/plan.routes.js"
+              },
+              "response": []
+            },
+            {
+              "name": "PATCH - Plan {id}",
+              "request": {
+                "method": "PATCH",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/api/admin/plan/:id",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "admin",
+                    "plan",
+                    ":id"
+                  ]
+                },
+                "description": "API endpoint in admin/plan.routes.js"
+              },
+              "response": []
+            },
+            {
+              "name": "DELETE - Plan {id}",
+              "request": {
+                "method": "DELETE",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/api/admin/plan/:id",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "admin",
+                    "plan",
+                    ":id"
+                  ]
+                },
+                "description": "API endpoint in admin/plan.routes.js"
+              },
+              "response": []
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "User",
+      "item": [
+        {
+          "name": "Auth",
+          "item": [
+            {
+              "name": "POST - Auth Send-otp",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json",
+                    "type": "text"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/api/auth/send-otp",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "auth",
+                    "send-otp"
+                  ]
+                },
+                "description": "API endpoint in user/auth.routes.js",
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"phone\": \"+919876543210\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "POST - Auth Verify-otp",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json",
+                    "type": "text"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/api/auth/verify-otp",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "auth",
+                    "verify-otp"
+                  ]
+                },
+                "description": "API endpoint in user/auth.routes.js",
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"phone\": \"+919876543210\",\n  \"otp\": \"123456\",\n  \"fcmToken\": \"\",\n  \"token\": \"\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "POST - Auth Google-login",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json",
+                    "type": "text"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/api/auth/google-login",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "auth",
+                    "google-login"
+                  ]
+                },
+                "description": "API endpoint in user/auth.routes.js",
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"idToken\": \"\",\n  \"token\": \"\",\n  \"fcmToken\": \"\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "POST - Auth Logout",
+              "request": {
+                "method": "POST",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/api/auth/logout",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "auth",
+                    "logout"
+                  ]
+                },
+                "description": "API endpoint in user/auth.routes.js"
+              },
+              "response": []
+            }
+          ]
+        },
+        {
+          "name": "User",
+          "item": [
+            {
+              "name": "GET - User",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/api/user",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "user"
+                  ]
+                },
+                "description": "API endpoint in user/user.routes.js"
+              },
+              "response": []
+            },
+            {
+              "name": "GET - Profile",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/api/user/profile",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "user",
+                    "profile"
+                  ]
+                },
+                "description": "API endpoint in user/user.routes.js"
+              },
+              "response": []
+            },
+            {
+              "name": "POST - Complete-profile",
+              "request": {
+                "method": "POST",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/api/user/complete-profile",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "user",
+                    "complete-profile"
+                  ]
+                },
+                "description": "API endpoint in user/user.routes.js",
+                "body": {
+                  "mode": "formdata",
+                  "formdata": [
+                    {
+                      "key": "file",
+                      "type": "file",
+                      "description": "Upload file"
+                    },
+                    {
+                      "key": "name",
+                      "value": "",
+                      "type": "text"
+                    },
+                    {
+                      "key": "username",
+                      "value": "",
+                      "type": "text"
+                    },
+                    {
+                      "key": "genres",
+                      "value": "",
+                      "type": "text"
+                    },
+                    {
+                      "key": "bio",
+                      "value": "",
+                      "type": "text"
+                    },
+                    {
+                      "key": "phone",
+                      "value": "+919876543210",
+                      "type": "text"
+                    }
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "PATCH - Update-profile",
+              "request": {
+                "method": "PATCH",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/api/user/update-profile",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "user",
+                    "update-profile"
+                  ]
+                },
+                "description": "API endpoint in user/user.routes.js",
+                "body": {
+                  "mode": "formdata",
+                  "formdata": [
+                    {
+                      "key": "file",
+                      "type": "file",
+                      "description": "Upload file"
+                    },
+                    {
+                      "key": "name",
+                      "value": "",
+                      "type": "text"
+                    },
+                    {
+                      "key": "username",
+                      "value": "",
+                      "type": "text"
+                    },
+                    {
+                      "key": "phone",
+                      "value": "+919876543210",
+                      "type": "text"
+                    },
+                    {
+                      "key": "genres",
+                      "value": "",
+                      "type": "text"
+                    },
+                    {
+                      "key": "bio",
+                      "value": "",
+                      "type": "text"
+                    }
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "PATCH - Fcm-token",
+              "request": {
+                "method": "PATCH",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json",
+                    "type": "text"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/api/user/fcm-token",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "user",
+                    "fcm-token"
+                  ]
+                },
+                "description": "API endpoint in user/user.routes.js",
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"fcmToken\": \"\",\n  \"token\": \"\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "GET - User Profile Stats",
+              "request": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{token}}",
+                    "type": "text"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/api/user/profile-stats/:userId",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "user",
+                    "profile-stats",
+                    ":userId"
+                  ],
+                  "variable": [
+                    {
+                      "key": "userId",
+                      "value": "USER_ID_HERE"
+                    }
+                  ]
+                },
+                "description": "Get profile statistics (total reels, total likes/dislikes, followers, and following count) for a user. Requires Bearer Token."
+              },
+              "response": []
+            }
+          ]
+        },
+        {
+          "name": "Movie",
+          "item": [
+            {
+              "name": "GET - Movies",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/api/movies",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "movies"
+                  ]
+                },
+                "description": "API endpoint in user/movie.routes.js"
+              },
+              "response": []
+            },
+            {
+              "name": "GET - Movies Slug {slug}",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/api/movies/slug/:slug",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "movies",
+                    "slug",
+                    ":slug"
+                  ]
+                },
+                "description": "API endpoint in user/movie.routes.js"
+              },
+              "response": []
+            },
+            {
+              "name": "GET - Movies Id {id}",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/api/movies/id/:id",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "movies",
+                    "id",
+                    ":id"
+                  ]
+                },
+                "description": "API endpoint in user/movie.routes.js"
+              },
+              "response": []
+            }
+          ]
+        },
+        {
+          "name": "Series",
+          "item": [
+            {
+              "name": "GET - Series",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/api/series",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "series"
+                  ]
+                },
+                "description": "API endpoint in user/series.routes.js"
+              },
+              "response": []
+            },
+            {
+              "name": "GET - Series Slug {slug}",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/api/series/slug/:slug",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "series",
+                    "slug",
+                    ":slug"
+                  ]
+                },
+                "description": "API endpoint in user/series.routes.js"
+              },
+              "response": []
+            },
+            {
+              "name": "GET - Series {id}",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/api/series/:id",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "series",
+                    ":id"
+                  ]
+                },
+                "description": "API endpoint in user/series.routes.js"
+              },
+              "response": []
+            },
+            {
+              "name": "GET - Series Episodes {seriesId}",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/api/series/episodes/:seriesId",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "series",
+                    "episodes",
+                    ":seriesId"
+                  ]
+                },
+                "description": "API endpoint in user/series.routes.js"
+              },
+              "response": []
+            }
+          ]
+        },
+        {
+          "name": "Content",
+          "item": [
+            {
+              "name": "GET - Content",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/api/content",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "content"
+                  ]
+                },
+                "description": "API endpoint in user/content.routes.js"
+              },
+              "response": []
+            },
+            {
+              "name": "GET - Content Search",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/api/content/search",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "content",
+                    "search"
+                  ]
+                },
+                "description": "API endpoint in user/content.routes.js"
+              },
+              "response": []
+            }
+          ]
+        },
+        {
+          "name": "Legal",
+          "item": [
+            {
+              "name": "GET - Legal",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/api/legal",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "legal"
+                  ]
+                },
+                "description": "API endpoint in user/legal.routes.js"
+              },
+              "response": []
+            },
+            {
+              "name": "GET - Legal {type}",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/api/legal/:type",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "legal",
+                    ":type"
+                  ]
+                },
+                "description": "API endpoint in user/legal.routes.js"
+              },
+              "response": []
+            }
+          ]
+        },
+        {
+          "name": "Help",
+          "item": [
+            {
+              "name": "GET - Help",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/api/help",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "help"
+                  ]
+                },
+                "description": "API endpoint in user/help.routes.js"
+              },
+              "response": []
+            },
+            {
+              "name": "GET - Help {category}",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/api/help/:category",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "help",
+                    ":category"
+                  ]
+                },
+                "description": "API endpoint in user/help.routes.js"
+              },
+              "response": []
+            }
+          ]
+        },
+        {
+          "name": "Rating",
+          "item": [
+            {
+              "name": "POST - Rating Rate",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json",
+                    "type": "text"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/api/rating/rate",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "rating",
+                    "rate"
+                  ]
+                },
+                "description": "API endpoint in user/rating.routes.js",
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"rating\": \"\",\n  \"review\": \"\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "GET - Rating All",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/api/rating/all",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "rating",
+                    "all"
+                  ]
+                },
+                "description": "API endpoint in user/rating.routes.js"
+              },
+              "response": []
+            }
+          ]
+        },
+        {
+          "name": "Plan",
+          "item": [
+            {
+              "name": "GET - Plan",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/api/plan",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "plan"
+                  ]
+                },
+                "description": "API endpoint in user/plan.routes.js"
+              },
+              "response": []
+            }
+          ]
+        },
+        {
+          "name": "Promo",
+          "item": [
+            {
+              "name": "POST - Promo Apply",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json",
+                    "type": "text"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/api/promo/apply",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "promo",
+                    "apply"
+                  ]
+                },
+                "description": "API endpoint in user/promo.routes.js",
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"code\": \"\",\n  \"planId\": \"\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                }
+              },
+              "response": []
+            }
+          ]
+        },
+        {
+          "name": "Voucher",
+          "item": [
+            {
+              "name": "POST - Voucher Redeem",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json",
+                    "type": "text"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/api/voucher/redeem",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "voucher",
+                    "redeem"
+                  ]
+                },
+                "description": "API endpoint in user/voucher.routes.js",
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"code\": \"\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                }
+              },
+              "response": []
+            }
+          ]
+        },
+        {
+          "name": "Subscription",
+          "item": [
+            {
+              "name": "POST - Subscription Create-plan",
+              "request": {
+                "method": "POST",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/api/subscription/create-plan",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "subscription",
+                    "create-plan"
+                  ]
+                },
+                "description": "API endpoint in user/subscription.routes.js"
+              },
+              "response": []
+            },
+            {
+              "name": "POST - Subscription Create-subscription",
+              "request": {
+                "method": "POST",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/api/subscription/create-subscription",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "subscription",
+                    "create-subscription"
+                  ]
+                },
+                "description": "API endpoint in user/subscription.routes.js"
+              },
+              "response": []
+            },
+            {
+              "name": "POST - Subscription Subscribe",
+              "request": {
+                "method": "POST",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/api/subscription/subscribe",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "subscription",
+                    "subscribe"
+                  ]
+                },
+                "description": "API endpoint in user/subscription.routes.js"
+              },
+              "response": []
+            },
+            {
+              "name": "GET - Subscription Status",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/api/subscription/status",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "subscription",
+                    "status"
+                  ]
+                },
+                "description": "API endpoint in user/subscription.routes.js"
+              },
+              "response": []
+            },
+            {
+              "name": "DELETE - Subscription Cancel",
+              "request": {
+                "method": "DELETE",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json",
+                    "type": "text"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/api/subscription/cancel",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "subscription",
+                    "cancel"
+                  ]
+                },
+                "description": "API endpoint in user/subscription.routes.js"
+              },
+              "response": []
+            }
+          ]
+        },
+        {
+          "name": "Watchlist",
+          "item": [
+            {
+              "name": "POST - Watchlist",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json",
+                    "type": "text"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/api/watchlist",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "watchlist"
+                  ]
+                },
+                "description": "API endpoint in user/watchlist.routes.js",
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"itemId\": \"\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "GET - Watchlist",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/api/watchlist",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "watchlist"
+                  ]
+                },
+                "description": "API endpoint in user/watchlist.routes.js"
+              },
+              "response": []
+            },
+            {
+              "name": "DELETE - Watchlist {id}",
+              "request": {
+                "method": "DELETE",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/api/watchlist/:id",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "watchlist",
+                    ":id"
+                  ]
+                },
+                "description": "API endpoint in user/watchlist.routes.js"
+              },
+              "response": []
+            }
+          ]
+        },
+        {
+          "name": "Notification",
+          "item": [
+            {
+              "name": "POST - Notifications Fcm-token",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json",
+                    "type": "text"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/api/notifications/fcm-token",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "notifications",
+                    "fcm-token"
+                  ]
+                },
+                "description": "API endpoint in user/notification.routes.js",
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"fcmToken\": \"\",\n  \"token\": \"\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "GET - Notifications",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/api/notifications",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "notifications"
+                  ]
+                },
+                "description": "API endpoint in user/notification.routes.js"
+              },
+              "response": []
+            },
+            {
+              "name": "GET - Notifications Unread-count",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/api/notifications/unread-count",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "notifications",
+                    "unread-count"
+                  ]
+                },
+                "description": "API endpoint in user/notification.routes.js"
+              },
+              "response": []
+            },
+            {
+              "name": "PATCH - Notifications Read-all",
+              "request": {
+                "method": "PATCH",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/api/notifications/read-all",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "notifications",
+                    "read-all"
+                  ]
+                },
+                "description": "API endpoint in user/notification.routes.js"
+              },
+              "response": []
+            },
+            {
+              "name": "PATCH - Notifications {id} Read",
+              "request": {
+                "method": "PATCH",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/api/notifications/:id/read",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "notifications",
+                    ":id",
+                    "read"
+                  ]
+                },
+                "description": "API endpoint in user/notification.routes.js"
+              },
+              "response": []
+            },
+            {
+              "name": "DELETE - Notifications {id}",
+              "request": {
+                "method": "DELETE",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/api/notifications/:id",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "notifications",
+                    ":id"
+                  ]
+                },
+                "description": "API endpoint in user/notification.routes.js"
+              },
+              "response": []
+            }
+          ]
+        },
+        {
+          "name": "Interaction",
+          "item": [
+            {
+              "name": "POST - Toggle Like (Generic)",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{token}}",
+                    "type": "text"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/api/interaction/toggle/like/:contentId",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "interaction",
+                    "toggle",
+                    "like",
+                    ":contentId"
+                  ],
+                  "variable": [
+                    {
+                      "key": "contentId",
+                      "value": "CONTENT_ID_HERE",
+                      "description": "The ID of the movie, series, or reel you want to like."
+                    }
+                  ]
+                },
+                "description": "Toggle a like on a content item. Auto-detects content type from database. Removes dislike if present. Requires Bearer Token."
+              },
+              "response": []
+            },
+            {
+              "name": "POST - Toggle Dislike (Generic)",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{token}}",
+                    "type": "text"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/api/interaction/toggle/dislike/:contentId",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "interaction",
+                    "toggle",
+                    "dislike",
+                    ":contentId"
+                  ],
+                  "variable": [
+                    {
+                      "key": "contentId",
+                      "value": "CONTENT_ID_HERE",
+                      "description": "The ID of the movie, series, or reel you want to dislike."
+                    }
+                  ]
+                },
+                "description": "Toggle a dislike on a content item. Auto-detects content type from database. Removes like if present. Requires Bearer Token."
+              },
+              "response": []
+            },
+            {
+              "name": "POST - Toggle Follow",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{token}}",
+                    "type": "text"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/api/interaction/toggle/follow/:userId",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "interaction",
+                    "toggle",
+                    "follow",
+                    ":userId"
+                  ],
+                  "variable": [
+                    {
+                      "key": "userId",
+                      "value": "USER_ID_HERE"
+                    }
+                  ]
+                },
+                "description": "Follow or unfollow a user. Requires Bearer Token."
+              },
+              "response": []
+            },
+            {
+              "name": "GET - Interaction Stats (Generic)",
+              "request": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{token}}",
+                    "type": "text",
+                    "description": "Optional Bearer Token to map requester's userInteraction state"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/api/interaction/stats/:contentId?type=like&page=1&limit=20",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "interaction",
+                    "stats",
+                    ":contentId"
+                  ],
+                  "query": [
+                    {
+                      "key": "type",
+                      "value": "like",
+                      "description": "like or dislike"
+                    },
+                    {
+                      "key": "page",
+                      "value": "1"
+                    },
+                    {
+                      "key": "limit",
+                      "value": "20"
+                    }
+                  ],
+                  "variable": [
+                    {
+                      "key": "contentId",
+                      "value": "CONTENT_ID_HERE",
+                      "description": "The ID of the movie, series, or reel."
+                    }
+                  ]
+                },
+                "description": "Get interaction stats (likes count, dislikes count, and paginated list of users). Auto-detects content type. Optional Auth header returns current user interaction."
+              },
+              "response": []
+            },
+            {
+              "name": "GET - Follow Details & Stats",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/api/interaction/follow/:userId?type=followers&page=1&limit=20",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "interaction",
+                    "follow",
+                    ":userId"
+                  ],
+                  "query": [
+                    {
+                      "key": "type",
+                      "value": "followers",
+                      "description": "followers or following"
+                    },
+                    {
+                      "key": "page",
+                      "value": "1"
+                    },
+                    {
+                      "key": "limit",
+                      "value": "20"
+                    }
+                  ],
+                  "variable": [
+                    {
+                      "key": "userId",
+                      "value": "USER_ID_HERE"
+                    }
+                  ]
+                },
+                "description": "Get follow counts and paginated followers or following lists."
+              },
+              "response": []
+            }
+          ]
+        },
+        {
+          "name": "Support",
+          "item": [
+            {
+              "name": "POST - Support",
+              "request": {
+                "method": "POST",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/api/support",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "support"
+                  ]
+                },
+                "description": "API endpoint in user/support.routes.js",
+                "body": {
+                  "mode": "formdata",
+                  "formdata": [
+                    {
+                      "key": "file",
+                      "type": "file",
+                      "description": "Upload file"
+                    },
+                    {
+                      "key": "subject",
+                      "value": "",
+                      "type": "text"
+                    },
+                    {
+                      "key": "message",
+                      "value": "",
+                      "type": "text"
+                    },
+                    {
+                      "key": "category",
+                      "value": "",
+                      "type": "text"
+                    },
+                    {
+                      "key": "attachments",
+                      "value": "",
+                      "type": "text"
+                    }
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "GET - Support",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/api/support",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "support"
+                  ]
+                },
+                "description": "API endpoint in user/support.routes.js"
+              },
+              "response": []
+            },
+            {
+              "name": "GET - Support {id}",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/api/support/:id",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "support",
+                    ":id"
+                  ]
+                },
+                "description": "API endpoint in user/support.routes.js"
+              },
+              "response": []
+            },
+            {
+              "name": "POST - Support Reply {id}",
+              "request": {
+                "method": "POST",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/api/support/reply/:id",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "support",
+                    "reply",
+                    ":id"
+                  ]
+                },
+                "description": "API endpoint in user/support.routes.js",
+                "body": {
+                  "mode": "formdata",
+                  "formdata": [
+                    {
+                      "key": "file",
+                      "type": "file",
+                      "description": "Upload file"
+                    },
+                    {
+                      "key": "message",
+                      "value": "",
+                      "type": "text"
+                    },
+                    {
+                      "key": "attachments",
+                      "value": "",
+                      "type": "text"
+                    }
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "GET - Support Conversation {id}",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/api/support/conversation/:id",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "support",
+                    "conversation",
+                    ":id"
+                  ]
+                },
+                "description": "API endpoint in user/support.routes.js"
+              },
+              "response": []
+            }
+          ]
+        },
+        {
+          "name": "Reel",
+          "item": [
+            {
+              "name": "POST - Reels Upload",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{token}}",
+                    "type": "text"
+                  }
+                ],
+                "body": {
+                  "mode": "formdata",
+                  "formdata": [
+                    {
+                      "key": "video",
+                      "type": "file",
+                      "src": []
+                    },
+                    {
+                      "key": "caption",
+                      "value": "My new awesome reel!",
+                      "type": "text"
+                    },
+                    {
+                      "key": "hashtags",
+                      "value": "drama,comedy",
+                      "type": "text"
+                    }
+                  ]
+                },
+                "url": {
+                  "raw": "{{baseUrl}}/api/reels/upload",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "reels",
+                    "upload"
+                  ]
+                },
+                "description": "Upload a new video reel. Expects Bearer Token. Uses multipart/form-data."
+              },
+              "response": []
+            },
+            {
+              "name": "GET - Reels Feed",
+              "request": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{token}}",
+                    "type": "text",
+                    "description": "Optional Bearer Token to map userInteraction state"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/api/reels/feed",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "reels",
+                    "feed"
+                  ]
+                },
+                "description": "Get active reels feed. Optional authentication header is accepted to check userInteraction."
+              },
+              "response": []
+            },
+            {
+              "name": "GET - Reels {id}",
+              "request": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{token}}",
+                    "type": "text",
+                    "description": "Optional Bearer Token to map userInteraction state"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/api/reels/:id",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "reels",
+                    ":id"
+                  ],
+                  "variable": [
+                    {
+                      "key": "id",
+                      "value": "REEL_ID_HERE"
+                    }
+                  ]
+                },
+                "description": "Get detailed stats and properties for a single reel."
+              },
+              "response": []
+            },
+            {
+              "name": "DELETE - Reels {id}",
+              "request": {
+                "method": "DELETE",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{token}}",
+                    "type": "text"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/api/reels/:id",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "reels",
+                    ":id"
+                  ],
+                  "variable": [
+                    {
+                      "key": "id",
+                      "value": "REEL_ID_HERE"
+                    }
+                  ]
+                },
+                "description": "Soft delete a reel. Must be the reel owner. Requires Bearer Token."
+              },
+              "response": []
+            },
+            {
+              "name": "POST - Reels Increment View",
+              "request": {
+                "method": "POST",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/api/reels/:id/view",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "reels",
+                    ":id",
+                    "view"
+                  ],
+                  "variable": [
+                    {
+                      "key": "id",
+                      "value": "REEL_ID_HERE"
+                    }
+                  ]
+                },
+                "description": "Increment viewsCount for a reel by 1."
+              },
+              "response": []
+            },
+            {
+              "name": "POST - Reels Increment Share",
+              "request": {
+                "method": "POST",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/api/reels/:id/share",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "reels",
+                    ":id",
+                    "share"
+                  ],
+                  "variable": [
+                    {
+                      "key": "id",
+                      "value": "REEL_ID_HERE"
+                    }
+                  ]
+                },
+                "description": "Increment sharesCount for a reel by 1."
+              },
+              "response": []
+            }
+          ]
+        },
+        {
+          "name": "Shortdrama",
+          "item": [
+            {
+              "name": "GET - Shortdramas",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/api/shortdramas",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "shortdramas"
+                  ]
+                },
+                "description": "API endpoint in user/shortdrama.routes.js"
+              },
+              "response": []
+            },
+            {
+              "name": "GET - Shortdramas Search",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/api/shortdramas/search",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "shortdramas",
+                    "search"
+                  ]
+                },
+                "description": "API endpoint in user/shortdrama.routes.js"
+              },
+              "response": []
+            },
+            {
+              "name": "GET - Shortdramas {id}",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/api/shortdramas/:id",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "shortdramas",
+                    ":id"
+                  ]
+                },
+                "description": "API endpoint in user/shortdrama.routes.js"
+              },
+              "response": []
+            }
+          ]
+        },
+        {
+          "name": "DramaEpisode",
+          "item": [
+            {
+              "name": "GET - Drama-episodes {shortDramaId}",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/api/drama-episodes/:shortDramaId",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "drama-episodes",
+                    ":shortDramaId"
+                  ]
+                },
+                "description": "API endpoint in user/dramaEpisode.routes.js"
+              },
+              "response": []
+            },
+            {
+              "name": "GET - Drama-episodes Search",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/api/drama-episodes/search",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "drama-episodes",
+                    "search"
+                  ]
+                },
+                "description": "API endpoint in user/dramaEpisode.routes.js"
+              },
+              "response": []
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:5000",
+      "type": "string"
+    }
+  ]
+}
