@@ -117,7 +117,9 @@ export default function Content() {
   const [showAddEpisodeForm, setShowAddEpisodeForm] = useState(null); // seasonNumber
   const [newEpisode, setNewEpisode] = useState({ title: "", episodeNumber: "", duration: "", description: "", seasonNumber: "" });
   const [newEpisodeVideo, setNewEpisodeVideo] = useState(null);
+  const [newEpisodeVideoUrl, setNewEpisodeVideoUrl] = useState("");
   const [newEpisodeThumbnail, setNewEpisodeThumbnail] = useState(null);
+  const [newEpisodeThumbnailUrl, setNewEpisodeThumbnailUrl] = useState("");
   const [showAddSeasonForm, setShowAddSeasonForm] = useState(false);
   const [newSeasonNumber, setNewSeasonNumber] = useState("");
   const [addingEpisode, setAddingEpisode] = useState(false);
@@ -176,10 +178,16 @@ export default function Content() {
   const fetchData = async (signal) => {
     setLoading(true);
     try {
-      const endpoint = contentType === "movies" ? "/admin/movies" : "/admin/series";
+      const endpoint = contentType === "movies" ? "/admin/movies" : 
+                       contentType === "series" ? "/admin/series" :
+                       contentType === "tvShows" ? "/admin/tv-shows" :
+                       "/admin/short-films";
       const res = await API.get(`${endpoint}?page=${currentPage}&limit=10`, { signal });
 
-      const key = contentType === "movies" ? "movies" : "series";
+      const key = contentType === "movies" ? "movies" : 
+                  contentType === "series" ? "series" :
+                  contentType === "tvShows" ? "tvShows" :
+                  "shortFilms";
       setData(res.data[key] || []);
       setTotalPages(res.data.pages || 1);
       setTotalItems(res.data.total || 0);
@@ -198,7 +206,8 @@ export default function Content() {
 
   const fetchEpisodes = async (seriesId) => {
     try {
-      const res = await API.get(`/admin/episodes?seriesId=${seriesId}`);
+      const epEndpoint = contentType === "tvShows" ? `/admin/tv-shows-episodes/${seriesId}` : `/admin/episodes?seriesId=${seriesId}`;
+      const res = await API.get(epEndpoint);
       const eps = res.data.episodes || [];
       setEpisodes(eps);
 
@@ -226,7 +235,10 @@ export default function Content() {
   const doSearch = async (q) => {
     setIsSearching(true);
     try {
-      const endpoint = contentType === "movies" ? `/admin/movies/search?q=${encodeURIComponent(q)}` : `/admin/series/search?q=${encodeURIComponent(q)}`;
+      const endpoint = contentType === "movies" ? `/admin/movies/search?q=${encodeURIComponent(q)}` : 
+                       contentType === "series" ? `/admin/series/search?q=${encodeURIComponent(q)}` :
+                       contentType === "tvShows" ? `/admin/tv-shows/search?q=${encodeURIComponent(q)}` :
+                       `/admin/short-films/search?q=${encodeURIComponent(q)}`;
       const res = await API.get(endpoint);
       setSearchResults(res.data.results || []);
     } catch (err) {
@@ -266,8 +278,9 @@ export default function Content() {
       : episodes;
 
     filteredEpisodes.forEach(ep => {
-      if (!grouped[ep.seasonNumber]) grouped[ep.seasonNumber] = [];
-      grouped[ep.seasonNumber].push(ep);
+      const sNum = ep.seasonNumber || 1;
+      if (!grouped[sNum]) grouped[sNum] = [];
+      grouped[sNum].push(ep);
     });
     return grouped;
   };
@@ -288,8 +301,8 @@ export default function Content() {
     }
     setAddingEpisode(true);
     try {
-      let videoUrl = "";
-      let thumbnailUrl = "";
+      let videoUrl = newEpisodeVideoUrl || "";
+      let thumbnailUrl = newEpisodeThumbnailUrl || "";
 
       if (newEpisodeVideo) {
         videoUrl = await uploadToBunny(newEpisodeVideo, "episodes", "videos");
@@ -308,7 +321,8 @@ export default function Content() {
       formData.append("videoUrl", videoUrl);
       formData.append("thumbnailUrl", thumbnailUrl);
 
-      await API.post("/admin/episodes/add", formData, { headers: { "Content-Type": "multipart/form-data" } });
+      const epAddRoute = contentType === "tvShows" ? `/admin/tv-shows-episodes/${selectedSeries._id}/add` : "/admin/episodes/add";
+      await API.post(epAddRoute, formData, { headers: { "Content-Type": "multipart/form-data" } });
 
       alert("Episode added successfully!");
       setShowAddEpisodeForm(null);
@@ -316,7 +330,10 @@ export default function Content() {
       setNewEpisode({ title: "", episodeNumber: "", duration: "", description: "", seasonNumber: "" });
       setNewSeasonNumber("");
       setNewEpisodeVideo(null);
+      setNewEpisodeVideoUrl("");
       setNewEpisodeThumbnail(null);
+      setNewEpisodeThumbnailUrl("");
+      setNewSeasonNumber("");
       fetchEpisodes(selectedSeries._id);
 
     } catch (err) {
@@ -330,6 +347,10 @@ export default function Content() {
     const confirmed = window.confirm(`Delete ALL episodes in Season ${seasonNumber}? This cannot be undone.`);
     if (!confirmed) return;
     try {
+      if (contentType === "tvShows") {
+        alert("Deleting entire seasons is not supported for TV Shows yet.");
+        return;
+      }
       await API.delete(`/admin/episodes/season/${selectedSeries._id}/${seasonNumber}`);
 
       alert(`Season ${seasonNumber} deleted`);
@@ -401,7 +422,10 @@ export default function Content() {
     setUploadPhase("saving");
 
     try {
-      const typeFolder = contentType === "movies" ? "movies" : "series";
+      const typeFolder = contentType === "movies" ? "movies" : 
+                         contentType === "series" ? "series" :
+                         contentType === "tvShows" ? "tvShows" :
+                         "shortFilms";
 
       // 1. Direct upload cast image files and update payload URLs
       const invalidCast = (editData.cast || []).find((c, idx) => {
@@ -453,10 +477,10 @@ export default function Content() {
   );
 }
 
-      // 5. Direct upload video (movies only)
+      // 5. Direct upload video (movies and short films only)
       let videoUrl = uploadData.videoUrl || "";
-      if (contentType === "movies" && uploadData.video) {
-        videoUrl = await uploadToBunny(uploadData.video, "movies", "videos", (percent) => {
+      if ((contentType === "movies" || contentType === "shortFilms") && uploadData.video) {
+        videoUrl = await uploadToBunny(uploadData.video, contentType === "movies" ? "movies" : "shortFilms", "videos", (percent) => {
           setUploadProgress(percent);
         });
       }
@@ -488,11 +512,14 @@ export default function Content() {
       formData.append("poster", posterUrl);
       formData.append("banner", bannerUrl);
       formData.append("trailerUrl", trailerUrl);
-      if (contentType === "movies") {
+      if (contentType === "movies" || contentType === "shortFilms") {
         formData.append("videoUrl", videoUrl);
       }
 
-      const route = contentType === "movies" ? "movies" : "series";
+      const route = contentType === "movies" ? "movies" : 
+                    contentType === "series" ? "series" :
+                    contentType === "tvShows" ? "tv-shows" :
+                    "short-films";
       await API.patch(`/admin/${route}/${selectedItem._id}`, formData, {
         headers: { "Content-Type": "multipart/form-data" },
       });
@@ -555,7 +582,8 @@ export default function Content() {
       formData.append("videoUrl", videoUrl);
       formData.append("thumbnailUrl", thumbnailUrl);
 
-      await API.patch(`/admin/episodes/${selectedEpisode._id}`, formData, {
+      const epUpdateRoute = contentType === "tvShows" ? `/admin/tv-shows-episodes/${selectedEpisode._id}` : `/admin/episodes/${selectedEpisode._id}`;
+      await API.patch(epUpdateRoute, formData, {
         headers: { "Content-Type": "multipart/form-data" },
       });
 
@@ -576,7 +604,9 @@ export default function Content() {
     if (!window.confirm(`Delete '${item.title || item.name}' permanently?`)) return;
     try {
       if (contentType === "movies") await API.delete(`/admin/movies/${item._id}`);
-      else await API.delete(`/admin/series/${item._id}`);
+      else if (contentType === "series") await API.delete(`/admin/series/${item._id}`);
+      else if (contentType === "tvShows") await API.delete(`/admin/tv-shows/${item._id}`);
+      else if (contentType === "shortFilms") await API.delete(`/admin/short-films/${item._id}`);
 
       alert("Deleted");
       fetchData();
@@ -590,7 +620,8 @@ export default function Content() {
   const handleEpisodeDelete = async (ep) => {
     if (!window.confirm(`Delete Ep ${ep.episodeNumber}: ${ep.title}?`)) return;
     try {
-      await API.delete(`/admin/episodes/${ep._id}`);
+      const epDeleteRoute = contentType === "tvShows" ? `/admin/tv-shows-episodes/${ep._id}` : `/admin/episodes/${ep._id}`;
+      await API.delete(epDeleteRoute);
 
       alert("Episode deleted");
       fetchEpisodes(selectedSeries._id);
@@ -682,6 +713,20 @@ export default function Content() {
             >
               <Tv size={18} /> Series
             </button>
+            <button
+              className={`btn ${contentType === "tvShows" ? "btn-primary" : "btn-ghost"}`}
+              onClick={() => { setContentType("tvShows"); setCurrentPage(1); }}
+              style={{ borderRadius: "8px", boxShadow: contentType === "tvShows" ? "var(--shadow-sm)" : "none" }}
+            >
+              <Tv size={18} /> TV Shows
+            </button>
+            <button
+              className={`btn ${contentType === "shortFilms" ? "btn-primary" : "btn-ghost"}`}
+              onClick={() => { setContentType("shortFilms"); setCurrentPage(1); }}
+              style={{ borderRadius: "8px", boxShadow: contentType === "shortFilms" ? "var(--shadow-sm)" : "none" }}
+            >
+              <Film size={18} /> Short Films
+            </button>
           </div>
 
           <div style={{ marginLeft: "auto", display: "flex", gap: 12, alignItems: "center" }}>
@@ -708,11 +753,11 @@ export default function Content() {
         )}
 
         {/* ========== MOVIES TABLE ========== */}
-        {contentType === "movies" && (
+        {(contentType === "movies" || contentType === "shortFilms") && (
           <div className="table-section">
             <div className="section-head" style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "16px" }}>
-              <h3 style={{ margin: 0 }}><Film size={20} /> Movies Library</h3>
-              <span style={{ fontSize: "0.85rem", color: "var(--text-muted)", fontWeight: 600 }}>{totalItems} Total Movies</span>
+              <h3 style={{ margin: 0 }}><Film size={20} /> {contentType === "movies" ? "Movies" : "Short Films"} Library</h3>
+              <span style={{ fontSize: "0.85rem", color: "var(--text-muted)", fontWeight: 600 }}>{totalItems} Total {contentType === "movies" ? "Movies" : "Short Films"}</span>
             </div>
             {loading ? <p>Loading…</p> : (
               <div className="tbl-wrap">
@@ -724,7 +769,7 @@ export default function Content() {
                   </thead>
                   <tbody>
                     {displayData.length === 0 ? (
-                      <tr><td colSpan={8}>No movies found</td></tr>
+                      <tr><td colSpan={8}>No content found</td></tr>
                     ) : displayData.map(movie => (
                       <tr key={movie._id}>
                         <td>
@@ -783,11 +828,11 @@ export default function Content() {
 
 
         {/* ========== SERIES TABLE ========== */}
-        {contentType === "series" && !selectedSeries && (
+        {(contentType === "series" || contentType === "tvShows") && !selectedSeries && (
           <div className="table-section">
             <div className="section-head" style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "16px" }}>
-              <h3 style={{ margin: 0 }}><Tv size={20} /> Series Library</h3>
-              <span style={{ fontSize: "0.85rem", color: "var(--text-muted)", fontWeight: 600 }}>{totalItems} Total Series</span>
+              <h3 style={{ margin: 0 }}><Tv size={20} /> {contentType === "series" ? "Series" : "TV Shows"} Library</h3>
+              <span style={{ fontSize: "0.85rem", color: "var(--text-muted)", fontWeight: 600 }}>{totalItems} Total {contentType === "series" ? "Series" : "TV Shows"}</span>
             </div>
             {loading ? <p>Loading…</p> : (
               <div className="tbl-wrap">
@@ -799,7 +844,7 @@ export default function Content() {
                   </thead>
                   <tbody>
                     {displayData.length === 0 ? (
-                      <tr><td colSpan={8}>No series found</td></tr>
+                      <tr><td colSpan={8}>No content found</td></tr>
                     ) : displayData.map(series => (
                       <tr key={series._id}>
                         <td>
@@ -941,20 +986,22 @@ export default function Content() {
                   <div className="form-row">
                     <label className="form-label">Episode Video (optional)</label>
                     <div className="file-input-wrapper">
-                      <input type="file" accept="video/*" id="new-ep-video-new" className="file-input" onChange={e => setNewEpisodeVideo(e.target.files[0])} />
+                      <input type="file" accept="video/*" id="new-ep-video-new" className="file-input" onChange={e => { setNewEpisodeVideo(e.target.files[0]); setNewEpisodeVideoUrl(""); }} />
                       <label htmlFor="new-ep-video-new" className="file-label">
                         {newEpisodeVideo ? `✓ ${newEpisodeVideo.name}` : "Choose Video"}
                       </label>
                     </div>
+                    <input className="form-input" style={{ marginTop: 8 }} placeholder="Or Paste URL" value={newEpisodeVideoUrl} onChange={e => { setNewEpisodeVideoUrl(e.target.value); if (e.target.value) setNewEpisodeVideo(null); }} />
                   </div>
                   <div className="form-row">
                     <label className="form-label">Episode Thumbnail (optional)</label>
                     <div className="file-input-wrapper">
-                      <input type="file" accept="image/*" id="new-ep-thumb-new" className="file-input" onChange={e => setNewEpisodeThumbnail(e.target.files[0])} />
+                      <input type="file" accept="image/*" id="new-ep-thumb-new" className="file-input" onChange={e => { setNewEpisodeThumbnail(e.target.files[0]); setNewEpisodeThumbnailUrl(""); }} />
                       <label htmlFor="new-ep-thumb-new" className="file-label">
                         {newEpisodeThumbnail ? `✓ ${newEpisodeThumbnail.name}` : "Choose Thumbnail"}
                       </label>
                     </div>
+                    <input className="form-input" style={{ marginTop: 8 }} placeholder="Or Paste URL" value={newEpisodeThumbnailUrl} onChange={e => { setNewEpisodeThumbnailUrl(e.target.value); if (e.target.value) setNewEpisodeThumbnail(null); }} />
                   </div>
 
                 </div>
@@ -966,7 +1013,7 @@ export default function Content() {
                   <button className="btn btn-primary" onClick={() => handleAddEpisode("new-season")} disabled={addingEpisode}>
                     {addingEpisode ? "Adding…" : <><Plus size={14} /> Add Season &amp; Episode</>}
                   </button>
-                  <button className="btn btn-ghost" onClick={() => { setShowAddSeasonForm(false); setShowAddEpisodeForm(null); setNewEpisode({ title: "", episodeNumber: "", duration: "", description: "", seasonNumber: "" }); setNewSeasonNumber(""); setNewEpisodeVideo(null); setNewEpisodeThumbnail(null); }}>
+                  <button className="btn btn-ghost" onClick={() => { setShowAddSeasonForm(false); setShowAddEpisodeForm(null); setNewEpisode({ title: "", episodeNumber: "", duration: "", description: "", seasonNumber: "" }); setNewSeasonNumber(""); setNewEpisodeVideo(null); setNewEpisodeVideoUrl(""); setNewEpisodeThumbnail(null); setNewEpisodeThumbnailUrl(""); }}>
                     Cancel
                   </button>
                 </div>
@@ -1040,16 +1087,18 @@ export default function Content() {
                       <div className="form-row">
                         <label className="form-label">Video (optional)</label>
                         <div className="file-input-wrapper">
-                          <input type="file" accept="video/*" id={`ep-video-s${seasonNum}`} className="file-input" onChange={e => setNewEpisodeVideo(e.target.files[0])} />
+                          <input type="file" accept="video/*" id={`ep-video-s${seasonNum}`} className="file-input" onChange={e => { setNewEpisodeVideo(e.target.files[0]); setNewEpisodeVideoUrl(""); }} />
                           <label htmlFor={`ep-video-s${seasonNum}`} className="file-label">{newEpisodeVideo ? `✓ ${newEpisodeVideo.name}` : "Choose Video"}</label>
                         </div>
+                        <input className="form-input" style={{ marginTop: 8 }} placeholder="Or Paste URL" value={newEpisodeVideoUrl} onChange={e => { setNewEpisodeVideoUrl(e.target.value); if (e.target.value) setNewEpisodeVideo(null); }} />
                       </div>
                       <div className="form-row">
                         <label className="form-label">Thumbnail (optional)</label>
                         <div className="file-input-wrapper">
-                          <input type="file" accept="image/*" id={`ep-thumb-s${seasonNum}`} className="file-input" onChange={e => setNewEpisodeThumbnail(e.target.files[0])} />
+                          <input type="file" accept="image/*" id={`ep-thumb-s${seasonNum}`} className="file-input" onChange={e => { setNewEpisodeThumbnail(e.target.files[0]); setNewEpisodeThumbnailUrl(""); }} />
                           <label htmlFor={`ep-thumb-s${seasonNum}`} className="file-label">{newEpisodeThumbnail ? `✓ ${newEpisodeThumbnail.name}` : "Choose Thumbnail"}</label>
                         </div>
+                        <input className="form-input" style={{ marginTop: 8 }} placeholder="Or Paste URL" value={newEpisodeThumbnailUrl} onChange={e => { setNewEpisodeThumbnailUrl(e.target.value); if (e.target.value) setNewEpisodeThumbnail(null); }} />
                       </div>
                     </div>
                     <div className="form-row">
@@ -1060,7 +1109,7 @@ export default function Content() {
                       <button className="btn btn-primary" onClick={() => handleAddEpisode(seasonNum)} disabled={addingEpisode}>
                         {addingEpisode ? "Adding…" : <><Plus size={14} /> Add Episode</>}
                       </button>
-                      <button className="btn btn-ghost" onClick={() => { setShowAddEpisodeForm(null); setNewEpisode({ title: "", episodeNumber: "", duration: "", description: "", seasonNumber: "" }); setNewEpisodeVideo(null); setNewEpisodeThumbnail(null); }}>
+                      <button className="btn btn-ghost" onClick={() => { setShowAddEpisodeForm(null); setNewEpisode({ title: "", episodeNumber: "", duration: "", description: "", seasonNumber: "" }); setNewEpisodeVideo(null); setNewEpisodeVideoUrl(""); setNewEpisodeThumbnail(null); setNewEpisodeThumbnailUrl(""); }}>
                         Cancel
                       </button>
                     </div>
@@ -1596,9 +1645,9 @@ export default function Content() {
                       </div>
                       <input className="form-input" style={{ marginTop: 8 }} placeholder="Or Paste URL" value={uploadData.trailerUrl} onChange={e => handleUploadChange("trailerUrl", e.target.value)} />
                     </div>
-                    {contentType === "movies" && (
+                    {(contentType === "movies" || contentType === "shortFilms") && (
                       <div className="form-row">
-                        <label className="form-label" style={{ opacity: isLocked(selectedItem) ? 0.5 : 1 }}>Full Movie Video</label>
+                        <label className="form-label" style={{ opacity: isLocked(selectedItem) ? 0.5 : 1 }}>Full {contentType === "movies" ? "Movie" : "Film"} Video</label>
                         <div className="file-input-wrapper">
                           <input type="file" accept="video/*" id="edit-video" className="file-input" disabled={isLocked(selectedItem)} onChange={e => handleUploadChange("video", e.target.files[0])} />
                           <label htmlFor="edit-video" className={`file-label ${isLocked(selectedItem) ? "file-label-locked" : ""}`}>

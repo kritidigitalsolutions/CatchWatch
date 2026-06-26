@@ -186,7 +186,7 @@ export default function SeasonSection({
           }}
         >
           <strong>
-            Season {season.seasonNumber}
+            {form?.type === "tvShow" ? "All Episodes" : `Season ${season.seasonNumber}`}
           </strong>
 
           <span className="season-count">
@@ -209,16 +209,16 @@ export default function SeasonSection({
             Add Episode
           </button>
 
-          <button
-            type="button"
-            className="btn btn-ghost del-season-btn"
-            onClick={() =>
-              removeSeason(seasonIndex)
-            }
-            aria-label={`Remove season ${season.seasonNumber}`}
-          >
-            <Trash2 size={16} />
-          </button>
+          {form?.type !== "tvShow" && (
+            <button
+              type="button"
+              className="btn btn-ghost del-season-btn"
+              onClick={() => removeSeason(seasonIndex)}
+              aria-label={`Remove season ${season.seasonNumber}`}
+            >
+              <Trash2 size={16} />
+            </button>
+          )}
         </div>
       </div>
 
@@ -285,7 +285,7 @@ export default function SeasonSection({
           >
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", borderBottom: "1px solid var(--border)", paddingBottom: "14px" }}>
               <h3 style={{ margin: 0, fontSize: "1.2rem", color: "var(--text)", fontWeight: "600" }}>
-                {editingEpisodeIndex !== null ? "Edit Episode" : "Add Episode to Season " + season.seasonNumber}
+                {editingEpisodeIndex !== null ? "Edit Episode" : form?.type === "tvShow" ? "Add Episode" : "Add Episode to Season " + season.seasonNumber}
               </h3>
               <button
                 type="button"

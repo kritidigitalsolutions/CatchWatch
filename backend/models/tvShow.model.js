@@ -25,6 +25,15 @@ const tvShowSchema =
 
       releaseYear: Number,
 
+      releaseDate: String,
+
+      duration: String,
+
+      rating: {
+        type: Number,
+        default: 0,
+      },
+
       genre: [String],
 
       language: String,
@@ -34,6 +43,11 @@ const tvShowSchema =
       banner: String,
 
       trailerUrl: String,
+
+      isComingSoon: {
+        type: Boolean,
+        default: false,
+      },
 
       totalEpisodes: {
         type: Number,

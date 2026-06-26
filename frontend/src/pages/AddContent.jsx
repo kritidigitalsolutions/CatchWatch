@@ -322,6 +322,34 @@ const handleSubmit = async (e) => {
             <Tv size={18} />
             Web Series
           </button>
+
+          <button
+            type="button"
+            className={`toggle-btn ${form.type === "tvShow"
+              ? "active"
+              : ""
+              }`}
+            onClick={() =>
+              setType("tvShow")
+            }
+          >
+            <Tv size={18} />
+            TV Shows
+          </button>
+
+          <button
+            type="button"
+            className={`toggle-btn ${form.type === "shortFilm"
+              ? "active"
+              : ""
+              }`}
+            onClick={() =>
+              setType("shortFilm")
+            }
+          >
+            <Film size={18} />
+            Short Films
+          </button>
         </div>
       </div>
 
@@ -462,7 +490,12 @@ const handleSubmit = async (e) => {
                   }}
                 />
                 <span style={{ fontSize: "16px", fontWeight: "600", color: "#fff" }}>
-                  {uploadPhase === "main" && (form.type === "movie" ? "Uploading Movie Assets..." : "Uploading TV Series Details...")}
+                  {uploadPhase === "main" && (
+                    form.type === "movie" ? "Uploading Movie Assets..." : 
+                    form.type === "shortFilm" ? "Uploading Short Film Assets..." :
+                    form.type === "tvShow" ? "Uploading TV Show Details..." :
+                    "Uploading TV Series Details..."
+                  )}
                   {uploadPhase === "episodes" && `Uploading Episode ${currentEpisodeInfo.current} of ${currentEpisodeInfo.total}...`}
                   {uploadPhase === "complete" && "Finalizing and Publishing Content..."}
                 </span>

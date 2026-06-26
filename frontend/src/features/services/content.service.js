@@ -18,8 +18,10 @@ export const createContent = async ({
   onTrailerProgress,
   onEpisodeProgress,
 }) => {
-  const isMovie = form.type === "movie";
-  const typeFolder = isMovie ? "movies" : "series";
+  const isMovie = form.type === "movie" || form.type === "shortFilm";
+  const typeFolder = form.type === "movie" ? "movies" : 
+                     form.type === "series" ? "series" :
+                     form.type === "tvShow" ? "tvShows" : "shortFilms";
 
   // 1. Upload Cast Images directly to Bunny CDN
   const updatedCast = [...form.cast];
@@ -59,11 +61,11 @@ export const createContent = async ({
   });
 }
 
-  // 5. Upload Movie Main Video directly to Bunny CDN
+  // 5. Upload Movie/Short Film Main Video directly to Bunny CDN
   let videoUrl = form.videoUrl || "";
   if (isMovie && videoFile) {
     // Pipe the progress event to onVideoProgress (between 50% and 100%)
-    videoUrl = await uploadToBunny(videoFile, "movies", "videos", (percent) => {
+    videoUrl = await uploadToBunny(videoFile, typeFolder, "videos", (percent) => {
       const scaledPercent = 50 + Math.round(percent / 2);
       if (onVideoProgress) onVideoProgress(scaledPercent);
     });
@@ -72,7 +74,10 @@ export const createContent = async ({
   }
 
   // 6. Build Text-only Request Data
-  const endpoint = isMovie ? "/admin/movies/add" : "/admin/series/add";
+  const endpoint = form.type === "movie" ? "/admin/movies/add" :
+                   form.type === "series" ? "/admin/series/add" :
+                   form.type === "tvShow" ? "/admin/tv-shows/add" :
+                   "/admin/short-films/add";
   const formData = new FormData();
 
   formData.append("title", form.title);
@@ -128,9 +133,9 @@ console.log({
   console.log("MOVIE CREATED");
 console.log(response.data);
 
-  // 7. If it is Web Series, upload individual episodes directly to Bunny CDN and save
+  // 7. If it is Web Series or TV Show, upload individual episodes directly to Bunny CDN and save
   if (!isMovie && form.seasons.length > 0) {
-    const seriesId = response.data.series._id;
+    const seriesId = form.type === "series" ? response.data.series._id : response.data.tvShow._id;
 
     let totalEpisodes = 0;
     form.seasons.forEach((season) => {
@@ -191,7 +196,8 @@ console.log(response.data);
         epFormData.append("thumbnailUrl", epThumbnailUrl);
 
         // Submit metadata to backend
-        await API.post("/admin/episodes/add", epFormData, {
+        const epAddRoute = form.type === "series" ? "/admin/episodes/add" : `/admin/tv-shows-episodes/${seriesId}/add`;
+        await API.post(epAddRoute, epFormData, {
           headers: {
             "Content-Type": "multipart/form-data",
           },

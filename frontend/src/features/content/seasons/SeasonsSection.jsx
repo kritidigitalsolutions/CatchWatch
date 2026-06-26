@@ -1,3 +1,4 @@
+import { useEffect } from "react";
 import { Plus, Tv } from "lucide-react";
 import SeasonSection from "./SeasonSection";
 
@@ -21,8 +22,20 @@ export default function SeasonsSection({
   setEpisodeVideoFiles,
   setEpisodeThumbnailFiles,
 }) {
+  const isTvShow = form.type === "tvShow";
+
+  // For TV Shows: auto-create a single "season" container on first render so episodes can be added directly
+  useEffect(() => {
+    if (isTvShow && form.seasons.length === 0) {
+      setForm((f) => ({
+        ...f,
+        seasons: [{ seasonNumber: 1, episodes: [] }],
+      }));
+    }
+  }, [isTvShow]); // eslint-disable-line react-hooks/exhaustive-deps
+
   if (
-    form.type !== "series" ||
+    (form.type !== "series" && form.type !== "tvShow") ||
     form.isComingSoon
   ) {
     return null;
@@ -51,17 +64,19 @@ export default function SeasonsSection({
             <Tv size={18} />
           </span>
 
-          Seasons & Episodes
+          {isTvShow ? "Episodes" : "Seasons & Episodes"}
         </h3>
 
-        <button
-          type="button"
-          className="btn btn-primary"
-          onClick={addSeason}
-        >
-          <Plus size={16} />
-          Add Season
-        </button>
+        {!isTvShow && (
+          <button
+            type="button"
+            className="btn btn-primary"
+            onClick={addSeason}
+          >
+            <Plus size={16} />
+            Add Season
+          </button>
+        )}
       </div>
 
       {form.seasons.map(
@@ -107,7 +122,7 @@ export default function SeasonsSection({
         )
       )}
 
-      {form.seasons.length === 0 && (
+      {form.seasons.length === 0 && !isTvShow && (
         <div
           style={{
             textAlign: "center",

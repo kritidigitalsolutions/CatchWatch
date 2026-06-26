@@ -125,6 +125,12 @@ const addTvShow = async (
             ? Number(req.body.releaseYear)
             : null,
 
+        releaseDate: req.body.releaseDate || "",
+
+        duration: req.body.duration || "",
+
+        rating: req.body.rating ? Number(req.body.rating) : 0,
+
         language:
           req.body.language || "",
 
@@ -146,6 +152,9 @@ const addTvShow = async (
         isPremium:
           req.body.isPremium ===
           "true",
+
+        isComingSoon:
+          req.body.isComingSoon === "true",
 
         status:
           req.body.status ||

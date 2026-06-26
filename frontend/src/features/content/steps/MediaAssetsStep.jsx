@@ -66,7 +66,7 @@ export default function MediaAssetsStep({
           onFileChange={handleTrailerFileChange}
         />
 
-        {type === "movie" && !isComingSoon && (
+        {(type === "movie" || type === "shortFilm") && !isComingSoon && (
           <VideoUploader
             file={videoFile}
             value={form.videoUrl}
