@@ -22,22 +22,27 @@ if (process.env.NODE_ENV === "production" || process.env.VERCEL) {
 app.use(
   helmet({
     crossOriginResourcePolicy: { policy: "cross-origin" },
-  })
+  }),
 );
 
 const frontendUrls = process.env.FRONTEND_URL
-  ? process.env.FRONTEND_URL.split(",").map(url => url.trim().replace(/\/$/, ""))
+  ? process.env.FRONTEND_URL.split(",").map((url) =>
+      url.trim().replace(/\/$/, ""),
+    )
   : [];
 const adminUrls = process.env.ADMIN_URL
-  ? process.env.ADMIN_URL.split(",").map(url => url.trim().replace(/\/$/, ""))
+  ? process.env.ADMIN_URL.split(",").map((url) => url.trim().replace(/\/$/, ""))
   : [];
 
 const defaultAllowed = [
+  "https://catchandwatch.com",
+  "https://admin.catchandwatch.com",
   "http://localhost:5173",
-  "http://localhost:5174"
 ];
 
-const allowedOrigins = [...new Set([...frontendUrls, ...adminUrls, ...defaultAllowed])];
+const allowedOrigins = [
+  ...new Set([...frontendUrls, ...adminUrls, ...defaultAllowed]),
+];
 
 const corsOptions = {
   origin: (origin, callback) => {
@@ -46,16 +51,30 @@ const corsOptions = {
       return callback(null, true);
     }
 
+    // // Check exact matches or wildcard
+    // if (allowedOrigins.includes(origin) || allowedOrigins.includes("*")) {
+    //   return callback(null, true);
+    // }
+
+    // // Dynamic pattern matching for development / Vercel preview environments
+    // const isLocalhost = origin.startsWith("http://localhost:") || origin.startsWith("http://127.0.0.1:");
+    // const isMirchiDomain = origin.endsWith(".vercel.app") && (origin.includes("mirchi") || origin.includes("sigma"));
+
+    // if (isLocalhost || isMirchiDomain) {
+    //   return callback(null, true);
+    // }
+
     // Check exact matches or wildcard
     if (allowedOrigins.includes(origin) || allowedOrigins.includes("*")) {
       return callback(null, true);
     }
 
-    // Dynamic pattern matching for development / Vercel preview environments
-    const isLocalhost = origin.startsWith("http://localhost:") || origin.startsWith("http://127.0.0.1:");
-    const isMirchiDomain = origin.endsWith(".vercel.app") && (origin.includes("mirchi") || origin.includes("sigma"));
+    // Local development
+    const isLocalhost =
+      origin.startsWith("http://localhost:") ||
+      origin.startsWith("http://127.0.0.1:");
 
-    if (isLocalhost || isMirchiDomain) {
+    if (isLocalhost) {
       return callback(null, true);
     }
 
@@ -63,7 +82,12 @@ const corsOptions = {
   },
   credentials: true,
   methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
-  allowedHeaders: ["Content-Type", "Authorization", "X-Requested-With", "Accept"]
+  allowedHeaders: [
+    "Content-Type",
+    "Authorization",
+    "X-Requested-With",
+    "Accept",
+  ],
 };
 app.use(cors(corsOptions));
 app.use((req, res, next) => {
@@ -79,48 +103,28 @@ app.use(express.json());
 app.use(
   express.urlencoded({
     extended: true,
-  })
+  }),
 );
-
-
-
-
-
-
 
 // ========================================
 // HEALTH CHECK
 // ========================================
 app.get("/", (req, res) => {
-  res.send(
-    "CatchWatch Backend Running 🚀"
-  );
+  res.send("CatchWatch Backend Running 🚀");
 });
-
 
 // ========================================
 // ADMIN ROUTES
 // ========================================
-const adminAuthRoutes = require(
-  "./routes/admin/auth.routes"
-);
+const adminAuthRoutes = require("./routes/admin/auth.routes");
 
-const adminUserRoutes = require(
-  "./routes/admin/user.routes"
-);
+const adminUserRoutes = require("./routes/admin/user.routes");
 
-const movieRoutes = require(
-  "./routes/admin/movie.routes"
-);
+const movieRoutes = require("./routes/admin/movie.routes");
 
-const seriesRoutes = require(
-  "./routes/admin/series.routes"
-);
+const seriesRoutes = require("./routes/admin/series.routes");
 
-const episodeRoutes = require(
-  "./routes/admin/episode.routes"
-);
-
+const episodeRoutes = require("./routes/admin/episode.routes");
 
 const movieUserRoutes = require("./routes/user/movie.routes");
 const seriesUserRoutes = require("./routes/user/series.routes");
@@ -137,91 +141,40 @@ const tvShowsEpisodeUserRoutes = require("./routes/user/tvShowsEpisode.routes");
 
 const updateUpcomingStatus = require("./middlewares/updateUpcomingStatus.middleware");
 
-app.use(
-  "/api/admin/auth",
-  adminAuthRoutes
-);
+app.use("/api/admin/auth", adminAuthRoutes);
 
-app.use(
-  "/api/admin/users",
-  adminUserRoutes
-);
+app.use("/api/admin/users", adminUserRoutes);
 
-app.use(
-  "/api/admin/user",
-  adminUserRoutes
-);
+app.use("/api/admin/user", adminUserRoutes);
 
-app.use(
-  "/api/admin/movies",
-  updateUpcomingStatus,
-  movieRoutes
-);
+app.use("/api/admin/movies", updateUpcomingStatus, movieRoutes);
 
-app.use(
-  "/api/admin/series",
-  updateUpcomingStatus,
-  seriesRoutes
-);
+app.use("/api/admin/series", updateUpcomingStatus, seriesRoutes);
 
-app.use(
-  "/api/admin/episodes",
-  episodeRoutes
-);
+app.use("/api/admin/episodes", episodeRoutes);
 
-app.use(
-  "/api/admin/content",
-  updateUpcomingStatus,
-  contentAdminRoutes
-);
+app.use("/api/admin/content", updateUpcomingStatus, contentAdminRoutes);
 
+app.use("/api/admin/short-films", shortFilmAdminRoutes);
 
-app.use(
-  "/api/admin/short-films",
-  shortFilmAdminRoutes
-);
+app.use("/api/admin/tv-shows", tvShowAdminRoutes);
 
-app.use(
-  "/api/admin/tv-shows",
-  tvShowAdminRoutes
-);
+app.use("/api/admin/tv-shows-episodes", tvShowsEpisodeAdminRoutes);
 
-app.use(
-  "/api/admin/tv-shows-episodes",
-  tvShowsEpisodeAdminRoutes
-);
+app.use("/api/tv-shows", tvShowUserRoutes);
 
-app.use(
-  "/api/tv-shows",
-  tvShowUserRoutes
-);
-
-app.use(
-  "/api/tv-shows-episodes",
-  tvShowsEpisodeUserRoutes
-);
-
+app.use("/api/tv-shows-episodes", tvShowsEpisodeUserRoutes);
 
 // ========================================
 // USER ROUTES
 // ========================================
-const authRoutes = require(
-  "./routes/user/auth.routes"
-);
+const authRoutes = require("./routes/user/auth.routes");
 
-const userRoutes = require(
-  "./routes/user/user.routes"
-);
+const userRoutes = require("./routes/user/user.routes");
 
-app.use(
-  "/api/auth",
-  authRoutes
-);
+app.use("/api/auth", authRoutes);
 
-app.use(
-  "/api/user",
-  userRoutes
-);
+app.use("/api/user", userRoutes);
 
 app.use("/api/movies", updateUpcomingStatus, movieUserRoutes);
 
@@ -237,7 +190,6 @@ app.use("/api/admin/legal", adminLegal);
 //legal routes for user
 const userLegal = require("./routes/user/legal.routes");
 app.use("/api/legal", userLegal);
-
 
 //help routes
 const helpAdminRoutes = require("./routes/admin/help.routes");
@@ -297,38 +249,18 @@ const paymentRoutes = require("./routes/user/payment.routes");
 app.use("/api/payment", paymentRoutes);
 
 // SUPPORT ROUTES
-const userSupportRoutes = require(
-  "./routes/user/support.routes"
-);
+const userSupportRoutes = require("./routes/user/support.routes");
 
-const adminSupportRoutes = require(
-  "./routes/admin/support.routes"
-);
+const adminSupportRoutes = require("./routes/admin/support.routes");
 
-app.use(
-  "/api/support",
-  userSupportRoutes
-);
+app.use("/api/support", userSupportRoutes);
 
-app.use(
-  "/api/admin/support",
-  adminSupportRoutes
-);
+app.use("/api/admin/support", adminSupportRoutes);
 
-const reelRoutes = require(
-  "./routes/user/reel.routes"
-);
-const commentRoutes = require(
-  "./routes/user/comment.routes"
-);
-app.use(
-  "/api/reels",
-  reelRoutes
-);
-app.use(
-  "/api/comments",
-  commentRoutes
-);
+const reelRoutes = require("./routes/user/reel.routes");
+const commentRoutes = require("./routes/user/comment.routes");
+app.use("/api/reels", reelRoutes);
+app.use("/api/comments", commentRoutes);
 // ========================================
 // EXPORT
 // ========================================
