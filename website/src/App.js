@@ -1,0 +1,45 @@
+import React from 'react';
+import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import Layout from './components/Layout';
+import HomePage from './pages/HomePage';
+import ShortsPage from './pages/ShortsPage';
+import SelectVideoPage from './pages/SelectVideoPage';
+import SearchMoviesPage from './pages/SearchMoviesPage';
+import ProfileMenuPage from './pages/ProfileMenuPage';
+import EditProfilePage from './pages/EditProfilePage';
+import DownloadsPage from './pages/DownloadsPage';
+import ChoosePlanPage from './pages/ChoosePlanPage';
+import ContentExplorerPage from './pages/ContentExplorePage';
+import TopChartPage from './pages/TopChartPage';
+import MoviePage from './pages/MoviesPage';
+import TVShowsPage from './pages/TVShowPage';
+import './App.css';
+import VideoPlayerPage from './pages/VideoPlayerPage';
+
+
+const App = () => {
+  return (
+    <Router>
+      <Layout>
+        <Routes>
+          <Route path="/" element={<HomePage />} />
+          <Route path="/shorts" element={<ShortsPage />} />
+          <Route path="/upload" element={<SelectVideoPage />} />
+          <Route path="/search" element={<SearchMoviesPage />} />
+          <Route path="/profile" element={<ProfileMenuPage />} />
+          <Route path="/profile/edit" element={<EditProfilePage />} />
+          <Route path="/downloads" element={<DownloadsPage />} />
+          <Route path="/subscription" element={<ChoosePlanPage />} />
+          <Route path="/explore" element={<ContentExplorerPage />} />
+          <Route path="/charts" element={<TopChartPage />} />
+          <Route path='/movies' element={<MoviePage />} />
+          <Route path='/tvshows' element={<TVShowsPage />} />
+          {/* Register this dynamic slug parameter rule route within the global structure: */}
+          <Route path="/watch/:slug" element={<VideoPlayerPage />} />
+        </Routes>
+      </Layout>
+    </Router>
+  );
+};
+
+export default App;
