@@ -42,8 +42,8 @@ const TVShowsPage = () => {
             <button
               key={status}
               onClick={() => setActiveStatus(status)}
-              className={`px-4 py-2 rounded-lg transition tracking-wide ${
-                activeStatus === status ? 'bg-brand-orange text-orange-600 shadow-sm' : 'text-gray-500 hover:text-gray-700'
+              className={`px-4 py-2 rounded-lg transition font-[700] tracking-wide ${
+                activeStatus === status ? 'bg-gray-200 text-orange-600 shadow-sm' : 'text-gray-500 hover:text-gray-700'
               }`}
             >
               {status}
