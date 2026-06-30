@@ -15,6 +15,11 @@ import MoviePage from './pages/MoviesPage';
 import TVShowsPage from './pages/TVShowPage';
 import './App.css';
 import VideoPlayerPage from './pages/VideoPlayerPage';
+import TermsPage from './pages/TermPage';
+import RefundPolicyPage from './pages/RefundPolicyPage';
+import PrivacyPolicyPage from './pages/PrivacyPolicyPage';
+import HelpSupportPage from './pages/HelpSupportPage';
+import WishlistPage from './pages/WishlistPage';
 
 
 const App = () => {
@@ -35,7 +40,12 @@ const App = () => {
           <Route path='/movies' element={<MoviePage />} />
           <Route path='/tvshows' element={<TVShowsPage />} />
           {/* Register this dynamic slug parameter rule route within the global structure: */}
+          <Route path="/terms" element={<TermsPage />} />
+          <Route path="/refund-policy" element={<RefundPolicyPage />} />
+          <Route path="/privacy-policy" element={<PrivacyPolicyPage />} />
+          <Route path="/support" element={<HelpSupportPage />} />
           <Route path="/watch/:slug" element={<VideoPlayerPage />} />
+          <Route path="/wishlist" element={<WishlistPage />} />
         </Routes>
       </Layout>
     </Router>

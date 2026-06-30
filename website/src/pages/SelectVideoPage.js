@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { BsCloudUploadFill } from "react-icons/bs";
 
 const SelectVideoPage = () => {
   const [fileObject, setFileObject] = useState(null);
@@ -22,7 +23,7 @@ const SelectVideoPage = () => {
           <input type="file" accept="video/mp4,video/quicktime" className="hidden" onChange={handleFileCapture} />
           
           <div className="w-16 h-16 bg-brand-light-bg text-brand-orange rounded-full flex items-center justify-center text-3xl mb-4 shadow-sm">
-            ☁️
+            <BsCloudUploadFill />
           </div>
           
           <h2 className="text-lg font-bold tracking-tight text-gray-800">

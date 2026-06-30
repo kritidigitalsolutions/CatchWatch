@@ -1,13 +1,19 @@
 import React from 'react';
 import { NavLink } from 'react-router-dom';
+import { IoMdHome } from "react-icons/io";
+import { TfiVideoClapper } from "react-icons/tfi";
+import { IoSearchSharp } from "react-icons/io5";
+import { CgProfile } from "react-icons/cg";
+import { MdCamera } from "react-icons/md";
+
 
 const BottomNav = () => {
   const navItems = [
-    { name: 'Home', path: '/', icon: '🏠' },
-    { name: 'Short', path: '/shorts', icon: '🎬' },
-    { name: 'Add', path: '/upload', icon: '+', isAdd: true },
-    { name: 'Search', path: '/search', icon: '🔍' },
-    { name: 'Profile', path: '/profile', icon: '👤' }
+    { name: 'Home', path: '/', icon: <IoMdHome />  },
+    { name: 'Short', path: '/shorts', icon: <TfiVideoClapper /> },
+    { name: 'Add', path: '/upload', icon: <MdCamera />, isAdd: true },
+    { name: 'Search', path: '/search', icon: <IoSearchSharp /> },
+    { name: 'Profile', path: '/profile', icon: <CgProfile /> }
   ];
 
   return (

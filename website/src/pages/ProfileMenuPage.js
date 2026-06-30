@@ -1,21 +1,49 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { FaUserAlt } from "react-icons/fa";
+import { MdWorkspacePremium } from "react-icons/md";
+import { MdDownload } from "react-icons/md";
+import { FaBell } from "react-icons/fa";
+import { FaHeart } from "react-icons/fa6";
+import { MdPrivacyTip } from "react-icons/md";
+import { FaFileAlt } from "react-icons/fa";
+import { HiReceiptRefund } from "react-icons/hi";
+import { MdHelpCenter } from "react-icons/md";
+import { IoLogOut } from "react-icons/io5";
+import Loader from '../components/Loader';
+
 
 const ProfileMenuPage = () => {
   const navigate = useNavigate();
-
+    const [isLoading, setIsLoading] = useState(true);
+    
+  useEffect(() => {
+      // BACKEND API INTEGRATION PLACEHOLDER:
+      // Fetch user's wishlist from the database
+      // fetch('/api/v1/user/wishlist', { headers: { Authorization: `Bearer ${token}` } })
+      //   .then(res => res.json())
+      //   .then(data => { setWishlistItems(data); setIsLoading(false); })
+      //   .catch(err => { console.error(err); setIsLoading(false); });
+  
+      // Simulating API loading time
+      const timer = setTimeout(() => {
+        setIsLoading(false);
+      }, 800);
+      return () => clearTimeout(timer);
+    }, []);
   const matrixOptions = [
-    { label: 'Edit Profile', route: '/profile/edit', icon: '👤' },
-    { label: 'Subscription Plans', route: '/subscription', icon: '💳' },
-    { label: 'My Downloads', route: '/downloads', icon: '⬇️' },
-    { label: 'Notifications Stream', route: '#', icon: '🔔' },
-    { label: 'Personal Wish List', route: '#', icon: '❤️' },
-    { label: 'Privacy Regulations', route: '#', icon: '🛡️' },
-    { label: 'Terms & Conditions', route: '#', icon: '📄' },
-    { label: 'Refund Policy guidelines', route: '#', icon: '↩️' },
-    { label: 'Help & Support Desk', route: '#', icon: 'ℹ️' },
-    { label: 'Log Out Session', route: '/', icon: '🚪', isLogout: true }
+    { label: 'Edit Profile', route: '/profile/edit', icon: <FaUserAlt /> },
+    { label: 'Subscription Plans', route: '/subscription', icon: <MdWorkspacePremium /> },
+    { label: 'My Downloads', route: '/downloads', icon: <MdDownload /> },
+    { label: 'Notifications Stream', route: '#', icon: <FaBell /> },
+    { label: 'Personal Wish List', route: '/wishlist', icon: <FaHeart /> },
+    { label: 'Privacy Regulations', route: '/privacy-policy', icon: <MdPrivacyTip /> },
+    { label: 'Terms & Conditions', route: '/terms', icon: <FaFileAlt />    },
+    { label: 'Refund Policy guidelines', route: '/refund-policy', icon: <HiReceiptRefund /> },
+    { label: 'Help & Support Desk', route: '/support', icon: <MdHelpCenter /> },
+    { label: 'Log Out Session', route: '/', icon: <IoLogOut />, isLogout: true }
   ];
+  if (isLoading) return <Loader />;
 
   return (
     <div className="max-w-4xl mx-auto w-full grid grid-cols-1 md:grid-cols-3 gap-6 items-start">

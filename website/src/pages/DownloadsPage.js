@@ -1,5 +1,6 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
+import { MdDownloadForOffline } from "react-icons/md";
 
 const DownloadsPage = () => {
   const navigate = useNavigate();
@@ -14,14 +15,15 @@ const DownloadsPage = () => {
 
       {/* Meta Analytics Summary Bar Counter Panel */}
       <div className="bg-brand-light-bg/50 border-b border-gray-100 p-4 flex items-center gap-3 text-xs sm:text-sm font-bold text-gray-600">
-        <span>📊</span>
+        <span></span>
         <span>0 individual cache streams validated locally on device storage allocation structures</span>
       </div>
 
       {/* Centered Presentation Block Segment */}
       <div className="flex-1 flex flex-col justify-center items-center p-8 text-center bg-white">
         <div className="w-20 h-20 bg-brand-light-bg text-brand-orange rounded-full flex items-center justify-center text-3xl shadow-sm border border-brand-orange/10 mb-4 animate-bounce">
-          📥
+          <MdDownloadForOffline />
+
         </div>
         <h2 className="text-lg font-black tracking-tight text-gray-800">No Offline Files Found</h2>
         <p className="text-xs sm:text-sm text-gray-400 max-w-xs mt-1 leading-relaxed">

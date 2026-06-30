@@ -13,10 +13,13 @@ const Footer = () => {
         {/* Brand Information Area Block Component */}
         <div className="space-y-4 sm:col-span-2 md:col-span-1">
           <div className="flex items-center gap-2 cursor-pointer" onClick={() => navigate('/')}>
-            <div className="w-8 h-8 bg-brand-orange text-white rounded-lg flex items-center justify-center font-black text-xs">
+            {/* <div className="w-8 h-8 bg-brand-orange text-white rounded-lg flex items-center justify-center font-black text-xs">
               CW
-            </div>
-            <span className="text-lg font-extrabold text-white tracking-wide">CATCHWATCH</span>
+            </div> */}
+            {/* <span className="text-lg font-extrabold text-white tracking-wide">CATCH &<span className="text-brand-orange"> WATCH</span></span> */}
+            <div className="">
+            <img src="logo512.png" height={90} width={90} alt="logo" />
+          </div>
           </div>
           <p className="text-xs text-neutral-500 leading-relaxed max-w-sm">
             The premium video streaming marketplace architecture delivering ultra-high definition playback blocks, cinematic shorts feed sequences, and live media tracking frameworks.
@@ -67,11 +70,10 @@ const Footer = () => {
       {/* Underline Copyright Metadata Bottom Segment Bar */}
       <div className="w-full bg-neutral-950 border-t border-neutral-900 py-6 text-center text-[11px] text-neutral-600 tracking-wide px-4">
         <div className="max-w-7xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-4">
-          <span>&copy; {currentYear} CATCHWATCH Video Streaming Network Services Inc. All Rights Reserved.</span>
+          <span>&copy; {currentYear} CATCH&WATCH Video Streaming Network Services Inc. All Rights Reserved.</span>
           <div className="flex gap-4 text-neutral-500">
-            <span className="hover:text-gray-400 cursor-pointer">Security Portal</span>
             <span>•</span>
-            <span className="hover:text-gray-400 cursor-pointer">API Integration Pipeline Documentation</span>
+            <span className="hover:text-gray-400 cursor-pointer">Design & Develop by <a className='underline hover:text-brand-orange' href='https://www.kritidigital.com/'>Kriti digital Solution</a></span>
           </div>
         </div>
       </div>

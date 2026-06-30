@@ -1,53 +1,64 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
+import { MdDownloadForOffline } from "react-icons/md";
+import { movieApi } from '../api/movieApi'; // API import karein
+import Loader from '../components/Loader';
 
 const VideoPlayerPage = () => {
   const { slug } = useParams(); // URL slug parameter mapped to Mongoose unique schema field
   const navigate = useNavigate();
 
   // Component UI States
+  const [movieData, setMovieData] = useState(null);
+  const [isLoading, setIsLoading] = useState(true);
   const [isPlaying, setIsPlaying] = useState(false);
   const [isWishlisted, setIsWishlisted] = useState(false);
   const [isDescriptionExpanded, setIsDescriptionExpanded] = useState(false);
-  const [currentPlaybackTime, setCurrentPlaybackTime] = useState('00:03');
+  const [currentPlaybackTime] = useState('00:03');
   
   // Dynamic Loading & Error states for backend sync tracking
   // const [isLoading, setIsLoading] = useState(false);
-  const [movieData] = useState({
-    title: 'bab INT Low res',
-    description: 'This is a sample movie description that maps directly to the description parameter inside the Mongoose schema context node structure. Click read more to view all metadata properties allocated behind the specific stream asset layout profile.',
-    genre: ['Action', 'Thriller'],
-    releaseYear: 2022,
-    duration: '2h',
-    language: 'Hindi',
-    poster: 'https://images.unsplash.com/photo-1489599849927-2ee91cede3ba?q=80&w=600&auto=format&fit=crop',
-    banner: 'https://images.unsplash.com/photo-1536440136628-849c177e76a1?q=80&w=1200&auto=format&fit=crop',
-    videoUrl: 'https://www.w3schools.com/html/mov_bbb.mp4', // Fallback stream asset
-    rating: 8.5,
-    isPremium: false,
-    cast: [
-      { id: 'c1', name: 'Actor One', image: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?q=80&w=150&auto=format&fit=crop' },
-      { id: 'c2', name: 'Actor Two', image: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?q=80&w=150&auto=format&fit=crop' }
-    ],
-    likes: [],
-    dislikes: []
-  });
+  // const [movieData] = useState({
+  //   title: 'bab INT Low res',
+  //   description: 'This is a sample movie description that maps directly to the description parameter inside the Mongoose schema context node structure. Click read more to view all metadata properties allocated behind the specific stream asset layout profile.',
+  //   genre: ['Action', 'Thriller'],
+  //   releaseYear: 2022,
+  //   duration: '2h',
+  //   language: 'Hindi',
+  //   poster: 'https://images.unsplash.com/photo-1489599849927-2ee91cede3ba?q=80&w=600&auto=format&fit=crop',
+  //   banner: 'https://images.unsplash.com/photo-1536440136628-849c177e76a1?q=80&w=1200&auto=format&fit=crop',
+  //   videoUrl: 'https://www.w3schools.com/html/mov_bbb.mp4', // Fallback stream asset
+  //   rating: 8.5,
+  //   isPremium: false,
+  //   cast: [
+  //     { id: 'c1', name: 'Actor One', image: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?q=80&w=150&auto=format&fit=crop' },
+  //     { id: 'c2', name: 'Actor Two', image: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?q=80&w=150&auto=format&fit=crop' }
+  //   ],
+  //   likes: [],
+  //   dislikes: []
+  // });
 
   // BACKEND INTEGRATION PIPELINE EFFECT:
-  useEffect(() => {
+useEffect(() => {
+    const fetchSingleMovie = async () => {
+      setIsLoading(true);
+      try {
+        // API Call using slug
+        const data = await movieApi.getMovieBySlug(slug);
+        setMovieData(data);
+      } catch (error) {
+        console.error("API Error fetching movie:", error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
     if (slug) {
-      setCurrentPlaybackTime()
-      
-      // setIsLoading(true);
-      // Replace with your real API route lookup context string:
-      // fetch(`https://api.catchwatch.com/v1/movies/slug/${slug}`)
-      //   .then(res => res.json())
-      //   .then(data => { setMovieData(data); setIsLoading(false); })
-      //   .catch(err => { console.error(err); setIsLoading(false); });
-      console.log(`API Trigger: Fetching single movie schema payload using slug identification key: ${slug}`);
+      fetchSingleMovie();
     }
   }, [slug]);
-
+if (isLoading) return <Loader />;
+  if (!movieData) return <div className="text-center p-20 text-white">Movie not found!</div>;
   return (
     <div className="max-w-6xl mx-auto w-full lg:grid lg:grid-cols-3 lg:gap-8 items-start space-y-6 lg:space-y-0">
       
@@ -148,7 +159,7 @@ const VideoPlayerPage = () => {
             {/* Quick Interactive Button Group Blocks Panel Stack */}
             <div className="flex gap-3">
               <button className="flex-1 sm:flex-none flex flex-col items-center justify-center bg-gray-50 hover:bg-brand-light-bg/50 hover:text-brand-orange border border-gray-200/60 rounded-xl py-2 px-4 transition text-gray-500 font-bold text-xs gap-1">
-                <span className="text-base">📥</span>
+                <span className="text-base"><MdDownloadForOffline /></span>
                 <span>Download</span>
               </button>
               <button 

@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { FaCamera } from "react-icons/fa";
 
 const EditProfilePage = () => {
   const navigate = useNavigate();
@@ -37,7 +38,7 @@ const EditProfilePage = () => {
               D
             </div>
             <label className="absolute bottom-0 right-0 bg-brand-orange text-white w-8 h-8 rounded-full border-2 border-white flex items-center justify-center text-sm cursor-pointer shadow-md hover:scale-110 transform transition">
-              📷
+            <FaCamera />
               <input type="file" accept="image/*" className="hidden" />
             </label>
           </div>
