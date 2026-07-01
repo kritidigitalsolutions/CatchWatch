@@ -150,7 +150,7 @@ const Topbar = () => {
             {/* Bell Icon Trigger Button */}
             <button
               onClick={() => setIsNotifOpen(!isNotifOpen)}
-              className={`relative text-xl p-1 transition-colors ${
+              className={`relative text-lg p-1 transition-colors ${
                 isNotifOpen
                   ? "text-brand-orange"
                   : "text-gray-500 hover:text-gray-900"

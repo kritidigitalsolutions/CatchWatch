@@ -20,32 +20,36 @@ import RefundPolicyPage from './pages/RefundPolicyPage';
 import PrivacyPolicyPage from './pages/PrivacyPolicyPage';
 import HelpSupportPage from './pages/HelpSupportPage';
 import WishlistPage from './pages/WishlistPage';
-
+import LoginPage from './pages/LoginPage';
+import ProtectedRoute from './components/ProtectedRoute';
 
 const App = () => {
   return (
     <Router>
       <Layout>
         <Routes>
-          <Route path="/" element={<HomePage />} />
-          <Route path="/shorts" element={<ShortsPage />} />
-          <Route path="/upload" element={<SelectVideoPage />} />
-          <Route path="/search" element={<SearchMoviesPage />} />
-          <Route path="/profile" element={<ProfileMenuPage />} />
-          <Route path="/profile/edit" element={<EditProfilePage />} />
-          <Route path="/downloads" element={<DownloadsPage />} />
-          <Route path="/subscription" element={<ChoosePlanPage />} />
-          <Route path="/explore" element={<ContentExplorerPage />} />
-          <Route path="/charts" element={<TopChartPage />} />
-          <Route path='/movies' element={<MoviePage />} />
-          <Route path='/tvshows' element={<TVShowsPage />} />
-          {/* Register this dynamic slug parameter rule route within the global structure: */}
-          <Route path="/terms" element={<TermsPage />} />
-          <Route path="/refund-policy" element={<RefundPolicyPage />} />
-          <Route path="/privacy-policy" element={<PrivacyPolicyPage />} />
-          <Route path="/support" element={<HelpSupportPage />} />
-          <Route path="/watch/:slug" element={<VideoPlayerPage />} />
-          <Route path="/wishlist" element={<WishlistPage />} />
+          <Route path="/login" element={<LoginPage />} />
+          <Route element={<ProtectedRoute />}>
+            <Route path="/" element={<HomePage />} />
+            <Route path="/shorts" element={<ShortsPage />} />
+            <Route path="/upload" element={<SelectVideoPage />} />
+            <Route path="/search" element={<SearchMoviesPage />} />
+            <Route path="/profile" element={<ProfileMenuPage />} />
+            <Route path="/profile/edit" element={<EditProfilePage />} />
+            <Route path="/downloads" element={<DownloadsPage />} />
+            <Route path="/subscription" element={<ChoosePlanPage />} />
+            <Route path="/explore" element={<ContentExplorerPage />} />
+            <Route path="/charts" element={<TopChartPage />} />
+            <Route path='/movies' element={<MoviePage />} />
+            <Route path='/tvshows' element={<TVShowsPage />} />
+            {/* Register this dynamic slug parameter rule route within the global structure: */}
+            <Route path="/terms" element={<TermsPage />} />
+            <Route path="/refund-policy" element={<RefundPolicyPage />} />
+            <Route path="/privacy-policy" element={<PrivacyPolicyPage />} />
+            <Route path="/support" element={<HelpSupportPage />} />
+            <Route path="/watch/:slug" element={<VideoPlayerPage />} />
+            <Route path="/wishlist" element={<WishlistPage />} />
+          </Route>
         </Routes>
       </Layout>
     </Router>

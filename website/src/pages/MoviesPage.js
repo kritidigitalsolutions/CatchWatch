@@ -1,107 +1,120 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { FaPlay } from "react-icons/fa";
+import { getMovies } from "../api/movieApi";
 
 const MoviesPage = () => {
   const navigate = useNavigate();
 
-  // Filter States
+  // Filter & Sort States
   const [selectedGenre, setSelectedGenre] = useState("All");
   const [sortOrder, setSortOrder] = useState("trending");
-  
-  // FIX 1: setMoviesList ko destructure karein (bale hi API commented ho, future proof rahega)
-  const [moviesList] = useState([
-    {
-      _id: "mv1",
-      title: "The Past",
-      slug: "the-past-1719600000000",
-      description: "An evil return brings absolute darkness over the living space. Stream the highly anticipated standard horror masterpiece release exclusively on CatchWatch today.",
-      genre: ["Horror", "Thriller"],
-      releaseYear: 2018,
-      duration: "2h",
-      language: "Hindi",
-      poster: "https://images.unsplash.com/photo-1509281373149-e957c6296406?q=80&w=500&auto=format&fit=crop",
-      banner: "https://images.unsplash.com/photo-1536440136628-849c177e76a1?q=80&w=1200&auto=format&fit=crop",
-      isPremium: true,
-      rating: 9.0,
-    },
-    {
-      _id: "mv2",
-      title: "Rugna The Film",
-      slug: "rugna-the-film-1719600000001",
-      description: "An award-winning dramatic perspective showcasing complex reality timelines, human bonds, and system societal hierarchies.",
-      genre: ["Drama"],
-      releaseYear: 2022,
-      duration: "2h 10m",
-      language: "Hindi",
-      poster: "https://images.unsplash.com/photo-1536440136628-849c177e76a1?q=80&w=500&auto=format&fit=crop",
-      banner: "https://images.unsplash.com/photo-1489599849927-2ee91cede3ba?q=80&w=1200&auto=format&fit=crop",
-      isPremium: false,
-      rating: 8.5,
-    },
-    {
-      _id: "mv3",
-      title: "bab INT Low res",
-      slug: "bab-int-low-res-1719600000002",
-      description: "High octane action layout configurations mapping traditional underground fights, street racing modules, and fast pursuit tracks.",
-      genre: ["Action"],
-      releaseYear: 2022,
-      duration: "1h 58m",
-      language: "Hindi",
-      poster: "https://images.unsplash.com/photo-1517604931442-7e0c8ed2963c?q=80&w=500&auto=format&fit=crop",
-      banner: "https://images.unsplash.com/photo-1509198397868-475647b2a1e5?q=80&w=1200&auto=format&fit=crop",
-      isPremium: false,
-      rating: 4.2,
-    },
-    {
-      _id: "mv4",
-      title: "metadoor",
-      slug: "metadoor-1719600000003",
-      description: "A psychological thriller track detailing code sequences, corporate intelligence leaks, and memory trace anomalies.",
-      genre: ["Thriller"],
-      releaseYear: 2024,
-      duration: "2h 05m",
-      language: "English",
-      poster: "https://images.unsplash.com/photo-1489599849927-2ee91cede3ba?q=80&w=500&auto=format&fit=crop",
-      banner: "https://images.unsplash.com/photo-1574375927938-d5a98e8edd86?q=80&w=1200&auto=format&fit=crop",
-      isPremium: false,
-      rating: 6.8,
-    },
-    {
-      _id: "mv5",
-      title: "Dark Horizon",
-      slug: "dark-horizon-1719600000004",
-      description: "Interstellar mapping array explorations highlighting deep space vacuum wormholes and planetary gravitational physics anomalies.",
-      genre: ["Sci-Fi", "Action"],
-      releaseYear: 2025,
-      duration: "2h 35m",
-      language: "English",
-      poster: "https://images.unsplash.com/photo-1574375927938-d5a98e8edd86?q=80&w=500&auto=format&fit=crop",
-      banner: "https://images.unsplash.com/photo-1536440136628-849c177e76a1?q=80&w=1200&auto=format&fit=crop",
-      isPremium: true,
-      rating: 7.9,
-    },
-  ]);
 
-  // FIX 2: Optional Chaining laga di gayi hai. Ab moviesList undefined hoga to app crash nahi hogi.
-  const featuredMovie = moviesList?.[0];
+  // Dynamic API Fetch States
+  const [moviesList, setMoviesList] = useState([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState(null);
+
+  const fetchMoviesData = async () => {
+    setIsLoading(true);
+    setError(null);
+    try {
+      const response = await getMovies({ limit: 100 });
+      if (response && response.success) {
+        setMoviesList(response.movies || []);
+      } else {
+        setError("Failed to fetch movies from the server.");
+      }
+    } catch (err) {
+      console.error("Database query failed:", err);
+      setError("Unable to connect to CatchWatch API. Please ensure the backend server is running.");
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   useEffect(() => {
-    // BACKEND DATABASE INTEGRATION HOOK NODE:
-    // fetch(`/api/v1/movies?genre=${selectedGenre}&sort=${sortOrder}`)
-    //   .then(res => res.json())
-    //   .then(data => setMoviesList(data || [])) // API se data aaye toh array ensure karein
-    //   .catch(err => console.error("Database query failed:", err));
-    console.log(
-      "API Engine Trigger: Fetching data objects from collection matching properties:",
-      { selectedGenre, sortOrder }
-    );
-  }, [selectedGenre, sortOrder]);
+    fetchMoviesData();
+  }, []);
 
-  // FIX 3: Fallback empty array (|| []) taaki filter hamesha chale aur app toote nahi
+  // 1. FILTERING
   const filteredMovies = (moviesList || []).filter(
     (movie) => selectedGenre === "All" || movie?.genre?.includes(selectedGenre)
   );
+
+  // 2. SORTING
+  const sortedMovies = [...filteredMovies].sort((a, b) => {
+    if (sortOrder === "rating") {
+      return (b?.rating || 0) - (a?.rating || 0);
+    }
+    if (sortOrder === "newest") {
+      return (b?.releaseYear || 0) - (a?.releaseYear || 0);
+    }
+    // Default/Trending: priority (descending), then releaseYear (descending)
+    const priorityA = a?.priority || 0;
+    const priorityB = b?.priority || 0;
+    if (priorityB !== priorityA) {
+      return priorityB - priorityA;
+    }
+    return (b?.releaseYear || 0) - (a?.releaseYear || 0);
+  });
+
+  const featuredMovie = moviesList?.[0];
+
+  if (isLoading) {
+    return (
+      <div className="space-y-10 max-w-7xl mx-auto w-full px-1 animate-pulse">
+        {/* Cinematic Spotlight Banner Loading Skeleton */}
+        <div className="relative w-full rounded-3xl bg-neutral-900/10 aspect-[16/8] md:aspect-[21/8] overflow-hidden shadow-sm border border-neutral-200/50 flex items-center justify-center">
+          <div className="w-10 h-10 border-4 border-brand-orange border-t-transparent rounded-full animate-spin"></div>
+        </div>
+        
+        {/* Filter Panel Skeleton */}
+        <div className="bg-white border border-gray-200/80 rounded-2xl p-4 shadow-sm flex flex-col md:flex-row gap-4 justify-between md:items-center">
+          <div className="flex gap-4 p-2 overflow-x-auto w-full md:w-auto">
+            {[1, 2, 3, 4, 5, 6].map((i) => (
+              <div key={i} className="h-8 w-20 bg-gray-200 rounded-xl flex-shrink-0" />
+            ))}
+          </div>
+          <div className="h-10 w-48 bg-gray-200 rounded-xl self-start md:self-auto animate-pulse" />
+        </div>
+
+        {/* Dynamic Grid Skeleton */}
+        <div className="space-y-4">
+          <div className="h-6 w-48 bg-gray-200 rounded-md" />
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-5">
+            {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((i) => (
+              <div key={i} className="bg-white border border-gray-150 rounded-2xl p-2.5 space-y-3">
+                <div className="w-full aspect-[2/3] bg-gray-200 bg-gradient-to-br from-gray-200 to-gray-100 rounded-xl" />
+                <div className="h-4 bg-gray-200 rounded w-3/4" />
+                <div className="h-3 bg-gray-100 rounded w-1/2" />
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="max-w-7xl mx-auto w-full px-4 py-20 flex flex-col items-center justify-center space-y-6 text-center">
+        <div className="w-16 h-16 bg-red-100 text-red-500 rounded-full flex items-center justify-center text-3xl shadow-sm">
+          ⚠️
+        </div>
+        <div className="space-y-2">
+          <h2 className="text-2xl font-black text-gray-900">Connection Failed</h2>
+          <p className="text-sm text-gray-500 max-w-md">{error}</p>
+        </div>
+        <button
+          onClick={fetchMoviesData}
+          className="bg-brand-orange hover:bg-brand-orange/90 text-white font-black text-xs px-6 py-3 rounded-xl transition shadow-md transform active:scale-95 hover:shadow-orange-500/20"
+        >
+          Try Again
+        </button>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-10 max-w-7xl mx-auto w-full px-1">
@@ -192,7 +205,7 @@ const MoviesPage = () => {
         </h3>
 
         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-5">
-          {filteredMovies.map((movie) => (
+          {sortedMovies.map((movie) => (
             <div
               key={movie?._id}
               onClick={() => navigate(`/watch/${movie?.slug}`)}
@@ -228,12 +241,12 @@ const MoviesPage = () => {
               </div>
 
               <div className="mt-3 bg-brand-light-bg/50 border border-brand-orange/5 px-2 py-1 rounded-lg text-[10px] font-black text-brand-orange w-max flex items-center gap-1">
-                ⭐ {movie?.rating?.toFixed(1) || "N/A"}
+                ⭐ {movie?.rating?.toFixed(1) || "0.0"}
               </div>
             </div>
           ))}
 
-          {filteredMovies.length === 0 && (
+          {sortedMovies.length === 0 && (
             <div className="col-span-full bg-white border border-gray-100 rounded-2xl p-16 text-center text-sm font-semibold text-gray-400 shadow-sm">
               No movie productions matching the current context sequence values exist in the database.
             </div>
