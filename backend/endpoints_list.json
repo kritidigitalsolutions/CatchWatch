@@ -507,7 +507,7 @@
   {
     "file": "user/movie.routes.js",
     "method": "GET",
-    "endpoint": "/api/movies/slug/:slug"
+    "endpoint": "/api/movies/slug/:slug
   },
   {
     "file": "user/movie.routes.js",
