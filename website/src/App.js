@@ -22,6 +22,7 @@ import HelpSupportPage from './pages/HelpSupportPage';
 import WishlistPage from './pages/WishlistPage';
 import LoginPage from './pages/LoginPage';
 import ProtectedRoute from './components/ProtectedRoute';
+import RecommendedPage from './pages/RecommendedPage';
 
 const App = () => {
   return (
@@ -29,6 +30,10 @@ const App = () => {
       <Layout>
         <Routes>
           <Route path="/login" element={<LoginPage />} />
+            <Route path="/terms" element={<TermsPage />} />
+            <Route path="/refund-policy" element={<RefundPolicyPage />} />
+            <Route path="/privacy-policy" element={<PrivacyPolicyPage />} />
+            <Route path="/support" element={<HelpSupportPage />} />
           <Route element={<ProtectedRoute />}>
             <Route path="/" element={<HomePage />} />
             <Route path="/shorts" element={<ShortsPage />} />
@@ -39,14 +44,11 @@ const App = () => {
             <Route path="/downloads" element={<DownloadsPage />} />
             <Route path="/subscription" element={<ChoosePlanPage />} />
             <Route path="/explore" element={<ContentExplorerPage />} />
+            <Route path="/recommended" element={<RecommendedPage />} />
             <Route path="/charts" element={<TopChartPage />} />
             <Route path='/movies' element={<MoviePage />} />
             <Route path='/tvshows' element={<TVShowsPage />} />
             {/* Register this dynamic slug parameter rule route within the global structure: */}
-            <Route path="/terms" element={<TermsPage />} />
-            <Route path="/refund-policy" element={<RefundPolicyPage />} />
-            <Route path="/privacy-policy" element={<PrivacyPolicyPage />} />
-            <Route path="/support" element={<HelpSupportPage />} />
             <Route path="/watch/:slug" element={<VideoPlayerPage />} />
             <Route path="/wishlist" element={<WishlistPage />} />
           </Route>

@@ -12,10 +12,12 @@ import { MdHelpCenter } from "react-icons/md";
 import { IoLogOut } from "react-icons/io5";
 import Loader from '../components/Loader';
 
+// Agar aapke paas logout ki api hai toh usko yahan import kar lein
+// import { logout } from '../api/authApi';
 
 const ProfileMenuPage = () => {
   const navigate = useNavigate();
-    const [isLoading, setIsLoading] = useState(true);
+  const [isLoading, setIsLoading] = useState(true);
     
   useEffect(() => {
       // BACKEND API INTEGRATION PLACEHOLDER:
@@ -31,6 +33,29 @@ const ProfileMenuPage = () => {
       }, 800);
       return () => clearTimeout(timer);
     }, []);
+
+  // Logout Handler Function
+  const handleLogout = async () => {
+    try {
+      // Agar backend server par token invalidate/logout karna hai toh yahan API call karein
+      // await logout();
+
+      // Catch/Cache Data Remove karna (Local Storage ya Session Storage se)
+      localStorage.removeItem("authToken"); // Sirf token hatana ho toh
+      // localStorage.clear(); // Agar poora local storage data clear karna ho toh
+
+      // Success message (optional)
+      console.log("User logged out successfully, cache cleared.");
+      
+      // User ko login page par redirect karein
+      navigate("/login"); 
+
+    } catch (error) {
+      console.error("Logout Error:", error);
+      alert("Something went wrong while logging out.");
+    }
+  };
+
   const matrixOptions = [
     { label: 'Edit Profile', route: '/profile/edit', icon: <FaUserAlt /> },
     { label: 'Subscription Plans', route: '/subscription', icon: <MdWorkspacePremium /> },
@@ -41,8 +66,9 @@ const ProfileMenuPage = () => {
     { label: 'Terms & Conditions', route: '/terms', icon: <FaFileAlt />    },
     { label: 'Refund Policy guidelines', route: '/refund-policy', icon: <HiReceiptRefund /> },
     { label: 'Help & Support Desk', route: '/support', icon: <MdHelpCenter /> },
-    { label: 'Log Out Session', route: '/', icon: <IoLogOut />, isLogout: true }
+    { label: 'Log Out Session', route: '/login', icon: <IoLogOut />, isLogout: true }
   ];
+
   if (isLoading) return <Loader />;
 
   return (
@@ -67,7 +93,14 @@ const ProfileMenuPage = () => {
           {matrixOptions.map((item, index) => (
             <div
               key={index}
-              onClick={() => item.route !== '#' && navigate(item.route)}
+              onClick={() => {
+                // Check if it's the logout button
+                if (item.isLogout) {
+                  handleLogout();
+                } else if (item.route !== '#') {
+                  navigate(item.route);
+                }
+              }}
               className="flex items-center justify-between py-4 px-2 hover:bg-gray-50/50 rounded-xl cursor-pointer transition group"
             >
               <div className="flex items-center gap-4">

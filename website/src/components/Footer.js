@@ -58,10 +58,10 @@ const Footer = () => {
             Legal Compliance
           </h4>
           <ul className="space-y-2.5 text-xs font-medium">
-            <li><button className="hover:text-white transition">Terms & Conditions</button></li>
-            <li><button className="hover:text-white transition">Refund Policy Guidelines</button></li>
-            <li><button className="hover:text-white transition">Privacy Regulation Matrix</button></li>
-            <li><button className="hover:text-white transition">Help & Support Desk</button></li>
+            <li><button onClick={() => navigate('/terms')} className="hover:text-white transition">Terms & Conditions</button></li>
+            <li><button onClick={() => navigate('/refund-policy')} className="hover:text-white transition">Refund Policy Guidelines</button></li>
+            <li><button onClick={() => navigate('/privacy-policy')} className="hover:text-white transition">Privacy Regulation Matrix</button></li>
+            <li><button onClick={() => navigate('/support ')} className="hover:text-white transition">Help & Support Desk</button></li>
           </ul>
         </div>
 

@@ -12,42 +12,11 @@ const LoginPage = () => {
     const [isLoading, setIsLoading] = useState(false);
     const navigate = useNavigate();
     // Handle sending OTP
-    // const handleSendOtp = async (e) => {
-    //     e.preventDefault();
-    //     if (phoneNumber.length < 10) {
-    //         alert("Please enter a valid 10-digit phone number.");
-    //         return;
-    //     }
 
-    //     setIsLoading(true);
-
-    //     try {
-    //         const response = await auth({ phone: phoneNumber });
-
-    //         if (response && response.success) {
-    //             setStep(2);
-    //         } else {
-    //             alert(response.message || "Failed to send OTP. Please try again");
-    //         }
-
-    //     } catch (error) {
-    //         console.error("Error sending OTP:", error);
-    //         alert("Failed to send OTP. Please try again");
-    //         alert("Something went wromg whle sending OTP.");
-    //     } finally {
-    //         setIsLoading(false);
-    //     }
-    //     // // Simulate API call to send OTP
-    //     // console.log("Sending OTP to:", phoneNumber);
-    //     // setTimeout(() => {
-    //     //     setIsLoading(false);
-    //     //     setStep(2); // Move to OTP verification step
-    //     // }, 1500);
-    // };
 const handleSendOtp = async (e) => {
     e.preventDefault();
     if (phoneNumber.length < 10) {
-      alert("Please enter a valid 10-digit phone number.");
+    //   alert("Please enter a valid 10-digit phone number.");
       return;
     }
     
@@ -71,39 +40,7 @@ const handleSendOtp = async (e) => {
     }
   };
     // Handle OTP Verification
-    // const handleVerifyOtp = async (e) => {
-    //     e.preventDefault();
-    //     if (otp.length < 4) {
-    //         alert("Please enter a valid OTP.");
-    //         return;
-    //     }
 
-    //     setIsLoading(true);
-
-    //     try {
-    //         const response = await verifyOTP({ phone: phoneNumber, otp: otp });
-    //         if(response && response.token) {
-    //             localStorage.setItem("authToken", response.token);
-    //             alert("Verification successful! Welcome to the platform");
-    //             Navigate("/");
-    //         } else {
-    //             alert(response.message || "Failed to verify OTP. Please try again");
-    //         }
-    //     } catch (error) {
-    //         console.error("Error verifying OTP:", error);
-    //         alert("Failed to verify OTP. Please try again");
-    //     } finally {
-    //         setIsLoading(false);
-    //     }
-
-    //     // Simulate API call to verify OTP
-    //     console.log("Verifying OTP:", otp, "for number:", phoneNumber);
-    //     setTimeout(() => {
-    //         setIsLoading(false);
-    //         alert("Verification successful! Welcome to the platform.");
-    //         // Navigate to dashboard or home page here
-    //     }, 1500);
-    // };
 // useNavigate hook ko component ke top par define karna zaroori hai
   // const navigate = useNavigate(); (Isko component k andar add karein)
 
@@ -125,7 +62,7 @@ const handleSendOtp = async (e) => {
         // Token ko localStorage me save kar lein
         localStorage.setItem("authToken", response.token); 
         
-        alert("Verification successful!");
+        // alert("Verification successful!");
         // User ko uske dashboard ya home page par redirect karein
         navigate("/"); 
       } else {
