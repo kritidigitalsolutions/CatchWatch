@@ -15,14 +15,13 @@ import MoviePage from './pages/MoviesPage';
 import TVShowsPage from './pages/TVShowPage';
 import './App.css';
 import VideoPlayerPage from './pages/VideoPlayerPage';
-import TermsPage from './pages/TermPage';
-import RefundPolicyPage from './pages/RefundPolicyPage';
-import PrivacyPolicyPage from './pages/PrivacyPolicyPage';
 import HelpSupportPage from './pages/HelpSupportPage';
 import WishlistPage from './pages/WishlistPage';
 import LoginPage from './pages/LoginPage';
 import ProtectedRoute from './components/ProtectedRoute';
 import RecommendedPage from './pages/RecommendedPage';
+import TvShowEpisodesPage from './pages/TvShowEpisodesPage'; // Apna path check kar lein
+import LegalPage from './pages/LegalPage';
 
 const App = () => {
   return (
@@ -30,10 +29,7 @@ const App = () => {
       <Layout>
         <Routes>
           <Route path="/login" element={<LoginPage />} />
-            <Route path="/terms" element={<TermsPage />} />
-            <Route path="/refund-policy" element={<RefundPolicyPage />} />
-            <Route path="/privacy-policy" element={<PrivacyPolicyPage />} />
-            <Route path="/support" element={<HelpSupportPage />} />
+          <Route path="/legal/:type" element={<LegalPage />} />
           <Route element={<ProtectedRoute />}>
             <Route path="/" element={<HomePage />} />
             <Route path="/shorts" element={<ShortsPage />} />
@@ -47,10 +43,21 @@ const App = () => {
             <Route path="/recommended" element={<RecommendedPage />} />
             <Route path="/charts" element={<TopChartPage />} />
             <Route path='/movies' element={<MoviePage />} />
-            <Route path='/tvshows' element={<TVShowsPage />} />
-            {/* Register this dynamic slug parameter rule route within the global structure: */}
-            <Route path="/watch/:slug" element={<VideoPlayerPage />} />
             <Route path="/wishlist" element={<WishlistPage />} />
+            <Route path="/support" element={<HelpSupportPage />} />
+            {/* Register this dynamic slug parameter rule route within the global structure: */}
+            
+            {/* <Route path='/tvshows' element={<TVShowsPage />} />
+            <Route path="/watch/:slug" element={<VideoPlayerPage />} />
+            <Route path="/tv-shows-episodes/:id" element={<VideoPlayerPage />} />
+            <Route path="/tv-shows-episodes/:id" element={<TvShowEpisodesPage />} />   */}
+
+            <Route path="/tvshows" element={<TVShowsPage />} />
+            <Route path="/watch/:slug" element={<VideoPlayerPage />} /> 
+            <Route path="/watch-episode/:id" element={<VideoPlayerPage />} /> 
+            
+            {/* YAHAN NAYA ROUTE ADD KAREIN */}
+            <Route path="/tv-shows-episodes/:id" element={<TvShowEpisodesPage />} />          {/* <Route path="/tv-shows-episodes/:id" element={<VideoPlayerPage />} />  */}
           </Route>
         </Routes>
       </Layout>
