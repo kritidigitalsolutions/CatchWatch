@@ -22,6 +22,8 @@ import ProtectedRoute from './components/ProtectedRoute';
 import RecommendedPage from './pages/RecommendedPage';
 import TvShowEpisodesPage from './pages/TvShowEpisodesPage'; // Apna path check kar lein
 import LegalPage from './pages/LegalPage';
+import NotificationsPage from './pages/NotificationsPage';
+
 
 const App = () => {
   return (
@@ -45,19 +47,12 @@ const App = () => {
             <Route path='/movies' element={<MoviePage />} />
             <Route path="/wishlist" element={<WishlistPage />} />
             <Route path="/support" element={<HelpSupportPage />} />
-            {/* Register this dynamic slug parameter rule route within the global structure: */}
-            
-            {/* <Route path='/tvshows' element={<TVShowsPage />} />
-            <Route path="/watch/:slug" element={<VideoPlayerPage />} />
-            <Route path="/tv-shows-episodes/:id" element={<VideoPlayerPage />} />
-            <Route path="/tv-shows-episodes/:id" element={<TvShowEpisodesPage />} />   */}
-
             <Route path="/tvshows" element={<TVShowsPage />} />
             <Route path="/watch/:slug" element={<VideoPlayerPage />} /> 
             <Route path="/watch-episode/:id" element={<VideoPlayerPage />} /> 
-            
+            <Route path="/notifications" element={<NotificationsPage />} />
             {/* YAHAN NAYA ROUTE ADD KAREIN */}
-            <Route path="/tv-shows-episodes/:id" element={<TvShowEpisodesPage />} />          {/* <Route path="/tv-shows-episodes/:id" element={<VideoPlayerPage />} />  */}
+            <Route path="/tv-shows-episodes/:id" element={<TvShowEpisodesPage />} />   
           </Route>
         </Routes>
       </Layout>
