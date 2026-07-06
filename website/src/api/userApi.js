@@ -4,6 +4,11 @@ import axiosInstance from "./axiosConfig";
 export const getUserProfile = async () => {
   try {
     const response = await axiosInstance.get("/user/profile");
+    if (response && response.user) {
+      localStorage.setItem("userIsPremium", response.user.isPremium ? "true" : "false");
+    } else if (response && response.data && response.data.user) {
+      localStorage.setItem("userIsPremium", response.data.user.isPremium ? "true" : "false");
+    }
     return response.data;
   } catch (error) {
     console.error("Error fetching user profile:", error);

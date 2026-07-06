@@ -27,10 +27,10 @@ export const getSubscriptionStatus = async () => {
   return response.data;
 };
 
-export const cancelSubscription = async () => {
-  const response = await axiosInstance.delete("/subscription/cancel");
-  return response.data;
-};
+// export const cancelSubscription = async (data) => {
+//   const response = await axiosInstance.delete("/subscription/cancel", { data });
+//   return response.data;
+// };
 
 // Vouchers & Promos
 export const applyPromo = async (data) => {
@@ -40,5 +40,16 @@ export const applyPromo = async (data) => {
 
 export const redeemVoucher = async (data) => {
   const response = await axiosInstance.post("/voucher/redeem", data);
+  return response.data;
+};
+
+// Payment APIs
+export const createPaymentOrder = async (data) => {
+  const response = await axiosInstance.post("/payment/create-order", data);
+  return response.data;
+};
+
+export const verifyPayment = async (data) => {
+  const response = await axiosInstance.post("/payment/verify", data);
   return response.data;
 };

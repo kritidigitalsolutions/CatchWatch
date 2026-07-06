@@ -22,6 +22,33 @@ const generateUserToken = (user) => {
 };
 
 
+const Subscription = require("../models/subscription.model");
+const { expireSubscriptionIfNeeded } = require("../utils/subscription.helper");
+
+const decorateUserWithSubscription = async (userObj) => {
+  if (!userObj) return null;
+  const user = userObj.toObject ? userObj.toObject() : userObj;
+  try {
+    let activeSub = await Subscription.findOne({
+      user: user._id || user.id,
+      status: "active",
+    }).populate("plan");
+    
+    activeSub = await expireSubscriptionIfNeeded(activeSub);
+    
+    user.isPremium = !!(activeSub && activeSub.status === "active");
+    user.planId = activeSub ? activeSub.plan?._id : null;
+    user.subscription = activeSub || null;
+  } catch (error) {
+    console.error("Error decorating user with subscription:", error);
+    user.isPremium = false;
+    user.planId = null;
+    user.subscription = null;
+  }
+  return user;
+};
+
+
 // ========================================
 // GET PROFILE
 // ========================================
@@ -41,9 +68,11 @@ exports.getProfile = async (
       });
     }
 
+    const decoratedUser = await decorateUserWithSubscription(user);
+
     res.status(200).json({
       success: true,
-      user,
+      user: decoratedUser,
     });
 
   } catch (error) {
@@ -353,11 +382,13 @@ exports.updateProfile = async (
 
     await user.save();
 
+    const decoratedUser = await decorateUserWithSubscription(user);
+
     res.status(200).json({
       success: true,
       message:
         "Profile updated successfully",
-      user,
+      user: decoratedUser,
     });
 
   } catch (error) {

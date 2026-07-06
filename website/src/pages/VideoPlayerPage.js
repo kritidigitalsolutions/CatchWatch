@@ -9,6 +9,7 @@ import {
 // Yahan getAllEpisodesByTvShowId ki jagah getEpisodeById import karein
 import { getMovieBySlug } from '../api/movieApi';
 import { getEpisodeById } from '../api/episodesApi'; // SAHI API IMPORT
+import { getUserProfile } from '../api/userApi';
 import Loader from '../components/Loader';
 
 const VideoPlayerPage = () => {
@@ -58,6 +59,27 @@ const VideoPlayerPage = () => {
         }
 
         if (data) {
+          // Check Premium Access Block
+          if (data.isPremium) {
+            let isUserPremium = localStorage.getItem("userIsPremium") === "true";
+            
+            // If cache says false, double check from backend profile
+            if (!isUserPremium) {
+              try {
+                const profileRes = await getUserProfile();
+                const user = profileRes?.user || profileRes?.data || profileRes;
+                isUserPremium = !!(user?.isPremium || user?.planId);
+              } catch (profileErr) {
+                console.error("Error verifying premium status on page load:", profileErr);
+              }
+            }
+
+            if (!isUserPremium) {
+              alert("Premium membership subscription required to play this title.");
+              navigate('/subscription');
+              return;
+            }
+          }
           setMediaData(data);
         } else {
           setError("Media details could not be retrieved.");
@@ -71,7 +93,7 @@ const VideoPlayerPage = () => {
     };
 
     if (slug || id) fetchMediaContent();
-  }, [slug, id]);
+  }, [slug, id, navigate]);
 
   // --- ERROR FIX: SAFE PLAY/PAUSE FUNCTION ---
   const togglePlay = () => {

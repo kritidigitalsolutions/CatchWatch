@@ -291,7 +291,7 @@ exports.checkSubscription = async (
       subscription.status !==
         "active"
     ) {
-      return res.status(403).json({
+      return res.status(200).json({
         success: false,
         message:
           "No active subscription",

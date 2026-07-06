@@ -63,6 +63,7 @@ const ProfileMenuPage = () => {
   const matrixOptions = [
     { label: 'Edit Profile', route: '/profile/edit', icon: <FaUserAlt /> },
     { label: 'Subscription Plans', route: '/subscription', icon: <MdWorkspacePremium /> },
+    { label: 'My Videos', route: '/my-videos', icon: <MdDownload /> },
     { label: 'My Downloads', route: '/downloads', icon: <MdDownload /> },
     { label: 'Notifications Stream', route: '/notifications', icon: <FaBell /> },
     { label: 'Personal Wish List', route: '/wishlist', icon: <FaHeart /> },

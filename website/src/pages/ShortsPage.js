@@ -1,26 +1,29 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { FaSearch, FaRegHeart, FaItunesNote, FaPlay } from "react-icons/fa";
 import { GiSaveArrow } from "react-icons/gi";
 import { FaShareNodes } from "react-icons/fa6";
 import { LuMessageCircleMore } from "react-icons/lu";
 import Loader from '../components/Loader';
 
-// Apni API import karein (path verify kar lein)
-import { getShortFilms } from '../api/shortApi'; 
+// API import for global reels
+import { getReelsFeed } from '../api/reelsApi'; 
 
 // Individual Video Component
 const ShortVideo = ({ video, isActive }) => {
   const videoRef = useRef(null);
   const [isPlaying, setIsPlaying] = useState(false);
 
-  // Jab video active view me aayega, tabhi play hoga
+  // Autoplay logic when video comes into view
   useEffect(() => {
     if (videoRef.current) {
       if (isActive) {
-        videoRef.current.play().then(() => setIsPlaying(true)).catch((e) => console.log("Autoplay prevented", e));
+        videoRef.current.play()
+          .then(() => setIsPlaying(true))
+          .catch((e) => console.log("Autoplay prevented by browser", e));
       } else {
         videoRef.current.pause();
-        videoRef.current.currentTime = 0; // Rewind for next time
+        videoRef.current.currentTime = 0; // Rewind for next time it scrolls into view
         setIsPlaying(false);
       }
     }
@@ -43,7 +46,8 @@ const ShortVideo = ({ video, isActive }) => {
       {/* Video Element */}
       <video
         ref={videoRef}
-        src={video.videoUrl}
+        // Fallback checks for different possible backend keys for the video URL
+        src={video.videoUrl || video.url || video.video}
         className="w-full h-full object-cover cursor-pointer"
         loop
         playsInline
@@ -65,13 +69,17 @@ const ShortVideo = ({ video, isActive }) => {
           <div className="w-12 h-12 bg-black/40 backdrop-blur-md border border-white/10 rounded-full flex items-center justify-center text-xl group-hover:bg-white/20 transition">
             <FaRegHeart />
           </div>
-          <span className="text-xs font-bold mt-1 shadow-sm">{video.likes?.length || 0}</span>
+          <span className="text-xs font-bold mt-1 shadow-sm">
+            {video.likes?.length || video.likeCount || 0}
+          </span>
         </button>
         <button className="flex flex-col items-center group">
           <div className="w-12 h-12 bg-black/40 backdrop-blur-md border border-white/10 rounded-full flex items-center justify-center text-xl group-hover:bg-white/20 transition">
             <LuMessageCircleMore />
           </div>
-          <span className="text-xs font-bold mt-1 shadow-sm">0</span>
+          <span className="text-xs font-bold mt-1 shadow-sm">
+            {video.comments?.length || video.commentCount || 0}
+          </span>
         </button>
         <button className="flex flex-col items-center group">
           <div className="w-12 h-12 bg-black/40 backdrop-blur-md border border-white/10 rounded-full flex items-center justify-center text-xl group-hover:bg-white/20 transition">
@@ -90,20 +98,24 @@ const ShortVideo = ({ video, isActive }) => {
       {/* Bottom User Description Meta Interface */}
       <div className="absolute bottom-6 left-4 right-20 z-20 text-white bg-gradient-to-t from-black/80 via-black/40 to-transparent p-3 rounded-xl backdrop-blur-[2px] border border-white/5">
         <div className="flex items-center gap-3 mb-2">
-          {/* Channel / User Image */}
+          {/* Author/Channel Image */}
           <div className="w-9 h-9 rounded-full bg-brand-orange flex items-center justify-center font-bold text-sm border border-white/50 overflow-hidden">
-            {video.channelImage ? (
-              <img src={video.channelImage} alt="channel" className="w-full h-full object-cover" />
+            {video.authorImage || video.channelImage || video.author?.profileImage ? (
+              <img 
+                src={video.authorImage || video.channelImage || video.author?.profileImage} 
+                alt="channel" 
+                className="w-full h-full object-cover" 
+              />
             ) : (
               "CW"
             )}
           </div>
           <span className="font-bold tracking-wide text-sm sm:text-base line-clamp-1">
-            {video.title || "Unknown Short"}
+            {video.author?.name || video.authorName || video.title || "@user"}
           </span>
         </div>
         <p className="text-xs sm:text-sm text-gray-200 font-medium mb-2 line-clamp-2">
-          {video.description || "Enjoy this short film exclusively on CatchWatch."}
+          {video.description || video.caption || "Enjoy this reel exclusively on CatchWatch."}
         </p>
         <div className="flex items-center gap-2 text-xs text-gray-300">
           <span><FaItunesNote /></span>
@@ -119,29 +131,46 @@ const ShortVideo = ({ video, isActive }) => {
 
 // Main Page Component
 const ShortsPage = () => {
-  const [shorts, setShorts] = useState([]);
+  const navigate = useNavigate();
+  const [reels, setReels] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
   const [activeIndex, setActiveIndex] = useState(0);
 
   useEffect(() => {
-    const fetchShorts = async () => {
+    const fetchGlobalReels = async () => {
       setIsLoading(true);
       try {
-        const response = await getShortFilms({ limit: 50 });
-        // Adjust this according to your actual API response structure (e.g., response.data or response.shortFilms)
-        const data = response?.shortFilms || response?.data || response || [];
-        setShorts(data);
+        // Fetching global reels feed (No specific user filters)
+        const response = await getReelsFeed({ limit: 50 });
+        
+        // Extract array depending on how your backend formats the response
+        const data = response?.reels || response?.data || response || [];
+        setReels(Array.isArray(data) ? data : []);
       } catch (err) {
-        console.error("API Error fetching shorts:", err);
-        setError("Failed to load Shorts at the moment.");
+        console.error("API Error fetching reels:", err);
+        setError("Failed to load Reels at the moment.");
       } finally {
         setIsLoading(false);
       }
     };
 
-    fetchShorts();
+    fetchGlobalReels();
   }, []);
+
+  // Premium status check effect
+  useEffect(() => {
+    if (reels.length === 0) return;
+    const currentReel = reels[activeIndex];
+    
+    if (currentReel && currentReel.isPremium) {
+      const isUserPremium = localStorage.getItem("userIsPremium") === "true";
+      if (!isUserPremium) {
+        alert("This reel is premium content. Redirecting to subscription plans...");
+        navigate('/subscription');
+      }
+    }
+  }, [activeIndex, reels, navigate]);
 
   // Handle Scroll logic to detect which video is currently in view
   const handleScroll = (e) => {
@@ -157,11 +186,11 @@ const ShortsPage = () => {
 
   if (isLoading) return <Loader />;
 
-  if (error || shorts.length === 0) {
+  if (error || reels.length === 0) {
     return (
       <div className="max-w-md mx-auto w-full bg-black rounded-2xl overflow-hidden relative shadow-2xl aspect-[9/16] my-2 md:my-6 flex flex-col items-center justify-center text-white">
         <h2 className="text-xl font-bold">Oops!</h2>
-        <p className="text-sm text-gray-400 mt-2">{error || "No shorts available right now."}</p>
+        <p className="text-sm text-gray-400 mt-2">{error || "No reels available right now."}</p>
       </div>
     );
   }
@@ -169,9 +198,9 @@ const ShortsPage = () => {
   return (
     <div className="max-w-md mx-auto w-full bg-black rounded-2xl overflow-hidden relative shadow-2xl aspect-[9/16] my-2 md:my-6">
       
-      {/* Absolute Transparent Frame Header (Stays on top of all videos) */}
+      {/* Absolute Transparent Frame Header */}
       <div className="absolute top-0 left-0 right-0 p-4 flex justify-between items-center bg-gradient-to-b from-black/80 to-transparent z-50 text-white pointer-events-none">
-        <h1 className="text-xl font-black tracking-wide drop-shadow-md">Shorts</h1>
+        <h1 className="text-xl font-black tracking-wide drop-shadow-md">Reels</h1>
         <div className="flex gap-4 text-xl pointer-events-auto">
           <button className="hover:text-brand-orange transition"><FaSearch /></button>
           <button className="hover:text-brand-orange transition">⋮</button>
@@ -183,9 +212,9 @@ const ShortsPage = () => {
         className="w-full h-full overflow-y-scroll snap-y snap-mandatory hide-scrollbar"
         onScroll={handleScroll}
       >
-        {shorts.map((video, index) => (
+        {reels.map((video, index) => (
           <ShortVideo 
-            key={video._id || index} 
+            key={video._id || video.id || index} 
             video={video} 
             isActive={index === activeIndex} 
           />
