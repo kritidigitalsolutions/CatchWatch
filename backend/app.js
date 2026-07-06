@@ -39,7 +39,8 @@ const defaultAllowed = [
   "https://admin.catchandwatch.com",
   "http://localhost:5173",
   "https://catchandwatch.vercel.app",
-  'http://localhost:3000', // Aapke React app ka URL
+  "https://catchandwatch.vercel.app/login",
+  "http://localhost:3000", // Aapke React app ka URL
 ];
 
 const allowedOrigins = [
@@ -91,14 +92,8 @@ const corsOptions = {
     "Accept",
   ],
 };
-app.use((req, res, next) => {
-  res.setHeader("Access-Control-Allow-Private-Network", "true");
-  next();
-});
-
 app.use(cors(corsOptions));
 app.use((req, res, next) => {
-  res.setHeader("Access-Control-Allow-Private-Network", "true");
   if (req.method === "OPTIONS") {
     return res.sendStatus(204);
   }
