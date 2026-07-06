@@ -12,7 +12,7 @@
       "headers": [
         {
           "key": "Access-Control-Allow-Origin",
-          "value": "https://catchandwatch.vercel.app/login"
+          "value": "https://catchandwatch.vercel.app"
         },
         {
           "key": "Access-Control-Allow-Origin",

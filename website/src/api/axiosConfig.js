@@ -15,8 +15,9 @@
 import axios from 'axios';
 
 // Apna backend base URL set karein
+const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000';
 const axiosInstance = axios.create({
-  baseURL: 'http://localhost:5000/api', // End me /api zaroor lagayein agar routes me /api/ hai
+  baseURL: `${API_URL}/api`, 
 });
 
 // Request Interceptor: Har API call se pehle ye token attach karega
