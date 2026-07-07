@@ -113,7 +113,13 @@ const TvShowEpisodesPage = () => {
                             {/* Episode Thumbnail */}
                             <div className="w-full sm:w-48 md:w-56 aspect-video bg-neutral-900 rounded-xl overflow-hidden relative flex-shrink-0 shadow-inner">
                                 <img
-                                    src={ep.thumbnail || ep.poster || FALLBACK_THUMBNAIL}
+                                    src={
+                                      ep.thumbnail && ep.thumbnail.trim() !== ""
+                                        ? ep.thumbnail
+                                        : ep.poster && ep.poster.trim() !== ""
+                                          ? ep.poster
+                                          : FALLBACK_THUMBNAIL
+                                    }
                                     alt={ep.title}
                                     className="w-full h-full object-cover opacity-90 group-hover:opacity-100 group-hover:scale-105 transition-all duration-500"
                                 />

@@ -103,7 +103,7 @@ const TopChartsPage = () => {
                 {/* Aspect Ratio Box Graphic (Poster Image) */}
                 <div className="w-12 sm:w-16 aspect-[2/3] bg-neutral-900 rounded-lg flex-shrink-0 flex items-center justify-center overflow-hidden shadow-inner group-hover:scale-105 transform transition">
                   <img 
-                    src={item.poster || FALLBACK_POSTER} 
+                    src={item.poster && item.poster.trim() !== "" ? item.poster : FALLBACK_POSTER} 
                     alt={item.title} 
                     className="w-full h-full object-cover opacity-90 group-hover:opacity-100"
                   />

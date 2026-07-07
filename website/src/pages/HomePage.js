@@ -15,7 +15,7 @@ const HomePage = () => {
 
   // Fallback images
   const FALLBACK_POSTER = "https://images.unsplash.com/photo-1536440136628-849c177e76a1?q=80&w=400&auto=format&fit=crop";
-  const FALLBACK_BANNER = "https://images.unsplash.com/photo-1509198397868-475647b2a1e5?q=80&w=1200&auto=format&fit=crop";
+  // const FALLBACK_BANNER = "https://images.unsplash.com/photo-1509198397868-475647b2a1e5?q=80&w=1200&auto=format&fit=crop";
 
   // API Integration Effect
   // API Integration Effect
@@ -72,7 +72,8 @@ const HomePage = () => {
         title: movie.title,
         tag: movie.isPremium ? "Premium Release" : "Featured Stream",
         subText: `${movie.genre?.join(" • ") || "Cinema"} • ${movie.releaseYear || "New"}`,
-        image: movie.banner || movie.poster || FALLBACK_BANNER,
+        // image: movie.banner || movie.poster || FALLBACK_BANNER,
+        image: movie.banner || movie.poster,
         slug: movie.slug
       }));
 
@@ -161,7 +162,7 @@ const HomePage = () => {
                     )}
                     <div className="w-full aspect-[2/3] bg-neutral-900 relative overflow-hidden">
                       <img
-                        src={movie.poster || FALLBACK_POSTER}
+                        src={(movie.poster && movie.poster.trim() !== "") ? movie.poster : FALLBACK_POSTER}
                         alt={movie.title}
                         className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500 opacity-85"
                       />
@@ -211,7 +212,8 @@ const HomePage = () => {
                     </span>
                     <div className="relative z-10 bg-neutral-900 rounded-2xl overflow-hidden shadow-md aspect-[2/3] border border-white/10">
                       <img
-                        src={movie.poster || FALLBACK_POSTER}
+                        src={(movie.poster && movie.poster.trim() !== "") ? movie.poster : FALLBACK_POSTER}
+                        // src={movie.poster || FALLBACK_POSTER}
                         alt={movie.title}
                         className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
                       />
@@ -254,7 +256,7 @@ const HomePage = () => {
                       )}
                       <div className="w-full aspect-[2/3] bg-neutral-900 rounded-xl overflow-hidden relative shadow-inner">
                         <img
-                          src={movie.poster || FALLBACK_POSTER}
+                          src={(movie.poster && movie.poster.trim() !== "") ? movie.poster : FALLBACK_POSTER}
                           alt={movie.title}
                           className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500 opacity-90"
                         />

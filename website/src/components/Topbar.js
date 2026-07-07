@@ -6,11 +6,11 @@ import { FaRegUserCircle } from "react-icons/fa";
 import { MdCamera } from "react-icons/md";
 
 // Ensure your api imports are correct based on your file structure
-import { 
-  getNotifications, 
-  getUnreadCount, 
+import {
+  getNotifications,
+  getUnreadCount,
   markAllAsRead as markAllAsReadApi,
-  markAsRead as markSingleAsReadApi 
+  markAsRead as markSingleAsReadApi
 } from '../api/notificationApi';
 
 const Topbar = () => {
@@ -19,7 +19,8 @@ const Topbar = () => {
 
   // Notification Dropdown States
   const [isNotifOpen, setIsNotifOpen] = useState(false);
-  const notifRef = useRef(null);
+  const desktopNotifRef = useRef(null);
+  const mobileNotifRef = useRef(null);
   const [notifications, setNotifications] = useState([]);
   const [unreadCount, setUnreadCount] = useState(0);
 
@@ -38,7 +39,7 @@ const Topbar = () => {
     };
 
     fetchCount();
-    const interval = setInterval(fetchCount, 60000); 
+    const interval = setInterval(fetchCount, 60000);
     return () => clearInterval(interval);
   }, []);
 
@@ -63,7 +64,9 @@ const Topbar = () => {
   // Close dropdown when clicking outside
   useEffect(() => {
     const handleClickOutside = (event) => {
-      if (notifRef.current && !notifRef.current.contains(event.target)) {
+      const clickedDesktop = desktopNotifRef.current && desktopNotifRef.current.contains(event.target);
+      const clickedMobile = mobileNotifRef.current && mobileNotifRef.current.contains(event.target);
+      if (!clickedDesktop && !clickedMobile) {
         setIsNotifOpen(false);
       }
     };
@@ -93,7 +96,7 @@ const Topbar = () => {
     if (!isReadStatus) {
       try {
         await markSingleAsReadApi(id);
-        setNotifications(prev => prev.map(n => 
+        setNotifications(prev => prev.map(n =>
           (n._id === id || n.id === id) ? { ...n, isRead: true, read: true } : n
         ));
         setUnreadCount(prev => Math.max(0, prev - 1));
@@ -101,7 +104,7 @@ const Topbar = () => {
         console.error("Failed to mark single notification as read:", error);
       }
     }
-    
+
     // Close dropdown and navigate to notifications page
     setIsNotifOpen(false);
     navigate("/notifications");
@@ -135,7 +138,7 @@ const Topbar = () => {
         {/* Brand Logo */}
         <div onClick={() => navigate("/")} className="flex items-center gap-2 cursor-pointer group">
           <div>
-            <img src="logo512.png" height={90} width={90} alt="logo" />
+            <img src="/logo192.png" height={90} width={90} alt="logo" />
           </div>
         </div>
 
@@ -156,14 +159,17 @@ const Topbar = () => {
 
         {/* Desktop Action Trigger Panels */}
         <div className="hidden md:flex items-center gap-4">
-          <NavLink
-            to="/upload"
-            className={({ isActive }) =>
-              `text-xl font-bold tracking-wide uppercase transition-colors ${isActive ? "text-brand-orange" : "text-gray-500 hover:text-gray-900"}`
+          <div className="">
+            <NavLink
+              to="/upload"
+              className={({ isActive }) =>
+                `flex flex-row bg-orange-100 px-3 py-1 rounded-2xl items-center gap-1 tracking-wide  transition-colors ${isActive ? "text-brand-orange" : "text-gray-500 hover:text-gray-900"}`
             }
-          >
-            <MdCamera />
-          </NavLink>
+            >
+              <span>Upload reels</span>
+              <MdCamera />
+            </NavLink>
+          </div>
 
           <NavLink
             to="/search"
@@ -175,7 +181,7 @@ const Topbar = () => {
           </NavLink>
 
           {/* DESKTOP NOTIFICATION DROPDOWN */}
-          <div className="relative" ref={notifRef}>
+          <div className="relative" ref={desktopNotifRef}>
             <button
               onClick={toggleNotificationDropdown}
               className={`relative text-lg p-1 transition-colors ${isNotifOpen ? "text-brand-orange" : "text-gray-500 hover:text-gray-900"}`}
@@ -190,7 +196,7 @@ const Topbar = () => {
 
             {isNotifOpen && (
               <div className="absolute right-0 mt-3 w-80 bg-white border border-gray-100 rounded-2xl shadow-xl z-50 overflow-hidden animate-fade-in-down origin-top-right">
-                
+
                 {/* Header */}
                 <div className="px-4 py-3 border-b border-gray-100 flex justify-between items-center bg-gray-50">
                   <h3 className="text-sm font-extrabold text-gray-800">
@@ -240,7 +246,7 @@ const Topbar = () => {
                 <div className="p-3 bg-gray-50 border-t border-gray-100 text-center sticky bottom-0">
                   <button
                     onClick={() => {
-                      setIsNotifOpen(false); 
+                      setIsNotifOpen(false);
                       navigate("/notifications");
                     }}
                     className="text-xs font-bold text-brand-orange hover:text-orange-600 hover:underline w-full transition"
@@ -248,19 +254,20 @@ const Topbar = () => {
                     View All Notifications
                   </button>
                 </div>
-                
+
               </div>
             )}
           </div>
 
-          <NavLink
-            to="/profile"
-            className={({ isActive }) =>
-              `text-lg font-bold tracking-wide uppercase transition-colors ${isActive ? "text-brand-orange" : "text-gray-500 hover:text-gray-900"}`
-            }
-          >
-            <FaRegUserCircle />
-          </NavLink>
+          
+            <NavLink
+              to="/profile"
+              className={({ isActive }) =>
+                `text-lg font-bold tracking-wide uppercase transition-colors ${isActive ? "text-brand-orange" : "text-gray-500 hover:text-gray-900"}`
+              }
+            >
+              <FaRegUserCircle />
+            </NavLink>
         </div>
 
         {/* MOBILE VIEW CONTROLS */}
@@ -275,7 +282,7 @@ const Topbar = () => {
           </NavLink>
 
           {/* MOBILE NOTIFICATION DROPDOWN */}
-          <div className="relative" ref={notifRef}>
+          <div className="relative" ref={mobileNotifRef}>
             <button
               onClick={toggleNotificationDropdown}
               className={`relative text-xl p-1 transition-colors ${isNotifOpen ? "text-brand-orange" : "text-gray-500 hover:text-gray-900"}`}
@@ -290,7 +297,7 @@ const Topbar = () => {
 
             {isNotifOpen && (
               <div className="absolute right-0 mt-3 w-80 bg-white border border-gray-100 rounded-2xl shadow-xl z-50 overflow-hidden animate-fade-in-down origin-top-right">
-                
+
                 <div className="px-4 py-3 border-b border-gray-100 flex justify-between items-center bg-gray-50">
                   <h3 className="text-sm font-extrabold text-gray-800">Notifications</h3>
                   {unreadCount > 0 && (
@@ -299,14 +306,14 @@ const Topbar = () => {
                     </button>
                   )}
                 </div>
-                
+
                 <div className="max-h-72 overflow-y-auto">
                   {notifications.length > 0 ? (
                     notifications.map((notif) => {
                       const isReadStatus = notif.isRead || notif.read;
                       return (
-                        <div 
-                          key={notif._id || notif.id} 
+                        <div
+                          key={notif._id || notif.id}
                           onClick={() => handleNotificationClick(notif)}
                           className={`p-4 border-b border-gray-50 cursor-pointer transition flex gap-3 ${!isReadStatus ? "bg-brand-orange/5 hover:bg-brand-orange/10" : "hover:bg-gray-50"}`}
                         >
@@ -328,8 +335,8 @@ const Topbar = () => {
                 <div className="p-3 bg-gray-50 border-t border-gray-100 text-center sticky bottom-0">
                   <button
                     onClick={() => {
-                      setIsNotifOpen(false); 
-                      navigate("/notifications"); 
+                      setIsNotifOpen(false);
+                      navigate("/notifications");
                     }}
                     className="text-xs font-bold text-brand-orange hover:text-orange-600 hover:underline w-full transition"
                   >

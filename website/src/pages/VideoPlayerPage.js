@@ -3,14 +3,17 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { MdDownloadForOffline } from "react-icons/md";
 import {
   FaPlay, FaPause, FaExpand, FaCompress,
-  FaVolumeUp, FaVolumeMute, FaStepBackward, FaStepForward, FaCog
+  FaVolumeUp, FaVolumeMute, FaCog,
+  FaRegBookmark, FaBookmark
 } from "react-icons/fa";
 
-// Yahan getAllEpisodesByTvShowId ki jagah getEpisodeById import karein
+// APIs Import
 import { getMovieBySlug } from '../api/movieApi';
-import { getEpisodeById } from '../api/episodesApi'; // SAHI API IMPORT
+import { getEpisodeById } from '../api/episodesApi'; 
 import { getUserProfile } from '../api/userApi';
+import { toggleBookmark, getContentInteractions } from '../api/interactionApi';
 import Loader from '../components/Loader';
+import { TbRewindBackward10, TbRewindForward10 } from "react-icons/tb";
 
 const VideoPlayerPage = () => {
   const { slug, id } = useParams();
@@ -22,9 +25,13 @@ const VideoPlayerPage = () => {
   const [mediaData, setMediaData] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
+  
+  // Interaction States
   const [isWishlisted, setIsWishlisted] = useState(false);
+  const [isDownloading, setIsDownloading] = useState(false);
   const [isDescriptionExpanded, setIsDescriptionExpanded] = useState(false);
 
+  // Player States
   const [isPlaying, setIsPlaying] = useState(false);
   const [progress, setProgress] = useState(0);
   const [currentTime, setCurrentTime] = useState('00:00');
@@ -35,6 +42,9 @@ const VideoPlayerPage = () => {
   const [playbackSpeed, setPlaybackSpeed] = useState(1);
   const [showSpeedMenu, setShowSpeedMenu] = useState(false);
   const [showControls, setShowControls] = useState(true);
+  const [selectedQuality, setSelectedQuality] = useState("Auto");
+  const [showQualityMenu, setShowQualityMenu] = useState(false);
+  const [isBuffering, setIsBuffering] = useState(false);
 
   let controlsTimeout;
 
@@ -51,26 +61,21 @@ const VideoPlayerPage = () => {
         if (slug) {
           response = await getMovieBySlug(slug);
           data = response?.movie || response;
-        }
-        else if (id) {
-          // YAHAN getEpisodeById USE KARNA HAI
+        } else if (id) {
           response = await getEpisodeById(id);
           data = response?.episode || response?.data || response;
         }
 
         if (data) {
-          // Check Premium Access Block
           if (data.isPremium) {
             let isUserPremium = localStorage.getItem("userIsPremium") === "true";
-            
-            // If cache says false, double check from backend profile
             if (!isUserPremium) {
               try {
                 const profileRes = await getUserProfile();
                 const user = profileRes?.user || profileRes?.data || profileRes;
                 isUserPremium = !!(user?.isPremium || user?.planId);
               } catch (profileErr) {
-                console.error("Error verifying premium status on page load:", profileErr);
+                console.error("Error verifying premium status:", profileErr);
               }
             }
 
@@ -80,7 +85,23 @@ const VideoPlayerPage = () => {
               return;
             }
           }
+          
           setMediaData(data);
+          
+          // --- FETCH INITIAL WISHLIST STATUS ---
+          const contentId = data._id || data.id;
+          const token = localStorage.getItem("authToken") || localStorage.getItem("token");
+          if (contentId && token) {
+            try {
+              const statsRes = await getContentInteractions(contentId);
+              if (statsRes && statsRes.isBookmarked) {
+                setIsWishlisted(true);
+              }
+            } catch (e) {
+              console.log("Could not fetch interaction stats", e);
+            }
+          }
+
         } else {
           setError("Media details could not be retrieved.");
         }
@@ -95,19 +116,82 @@ const VideoPlayerPage = () => {
     if (slug || id) fetchMediaContent();
   }, [slug, id, navigate]);
 
-  // --- ERROR FIX: SAFE PLAY/PAUSE FUNCTION ---
-  const togglePlay = () => {
-    if (!videoRef.current || !mediaData?.videoUrl) return; // Agar video url nahi hai to play mat karo
+  // --- DOWNLOAD LOGIC ---
+  const handleDownload = () => {
+    if (!mediaData || !mediaData.videoUrl) {
+      alert("Video URL not available for download.");
+      return;
+    }
 
+    setIsDownloading(true);
+
+    try {
+      const downloadItem = {
+        id: mediaData._id || mediaData.id || new Date().getTime(),
+        slug: mediaData.slug,
+        title: mediaData.title,
+        videoUrl: mediaData.videoUrl,
+        thumbnail: mediaData.thumbnail || mediaData.poster || FALLBACK_AVATAR,
+        duration: mediaData.duration,
+        downloadedAt: new Date().toISOString()
+      };
+
+      const existingDownloads = JSON.parse(localStorage.getItem('offlineDownloads') || '[]');
+      
+      if (!existingDownloads.some(item => item.id === downloadItem.id)) {
+        localStorage.setItem('offlineDownloads', JSON.stringify([downloadItem, ...existingDownloads]));
+      }
+
+      // Trigger download
+      const a = document.createElement('a');
+      a.href = mediaData.videoUrl;
+      a.download = `${mediaData.title.replace(/\s+/g, '_')}.mp4`; 
+      a.target = '_blank';
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+
+      alert("Download initiated! You can view this file in your Offline Vault.");
+    } catch (err) {
+      console.error("Download failed:", err);
+      alert("Failed to initiate download.");
+    } finally {
+      setIsDownloading(false);
+    }
+  };
+
+  // --- WISHLIST / BOOKMARK LOGIC ---
+  const handleWishlistToggle = async () => {
+    const token = localStorage.getItem("authToken") || localStorage.getItem("token");
+    if (!token) {
+      alert("Please log in to add videos to your wishlist.");
+      navigate('/login');
+      return;
+    }
+    
+    const contentId = mediaData?._id || mediaData?.id;
+    if (!contentId) return;
+
+    // Optimistic UI Update (Immediate feedback)
+    setIsWishlisted(!isWishlisted);
+    
+    try {
+      await toggleBookmark(contentId);
+    } catch (err) {
+      console.error("Bookmark toggle failed:", err);
+      // Rollback UI if the API call fails
+      setIsWishlisted(!isWishlisted); 
+      alert("Failed to update wishlist. Please try again.");
+    }
+  };
+
+  // --- PLAYER CONTROLS ---
+  const togglePlay = () => {
+    if (!videoRef.current || !mediaData?.videoUrl) return;
     if (videoRef.current.paused) {
-      // Promise handle karna zaroori hai error bachane k liye
       const playPromise = videoRef.current.play();
       if (playPromise !== undefined) {
-        playPromise.then(() => {
-          setIsPlaying(true);
-        }).catch(error => {
-          console.error("Playback interrupted or blocked:", error);
-        });
+        playPromise.then(() => setIsPlaying(true)).catch(error => console.error("Playback blocked:", error));
       }
     } else {
       videoRef.current.pause();
@@ -120,10 +204,7 @@ const VideoPlayerPage = () => {
     const hours = Math.floor(timeInSeconds / 3600);
     const minutes = Math.floor((timeInSeconds % 3600) / 60);
     const seconds = Math.floor(timeInSeconds % 60);
-
-    if (hours > 0) {
-      return `${hours}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
-    }
+    if (hours > 0) return `${hours}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
     return `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
   };
 
@@ -136,9 +217,7 @@ const VideoPlayerPage = () => {
   };
 
   const handleLoadedMetadata = () => {
-    if (videoRef.current) {
-      setDuration(formatTime(videoRef.current.duration));
-    }
+    if (videoRef.current) setDuration(formatTime(videoRef.current.duration));
   };
 
   const handleProgressScrub = (e) => {
@@ -153,41 +232,68 @@ const VideoPlayerPage = () => {
     if (!videoRef.current) return;
     videoRef.current.muted = !isMuted;
     setIsMuted(!isMuted);
-    if (!isMuted) setVolume(0);
-    else setVolume(1);
+    setVolume(!isMuted ? 0 : 1);
   };
 
   const handleVolumeChange = (e) => {
     const newVolume = parseFloat(e.target.value);
-    if (videoRef.current) {
-      videoRef.current.volume = newVolume;
-    }
+    if (videoRef.current) videoRef.current.volume = newVolume;
     setVolume(newVolume);
     setIsMuted(newVolume === 0);
   };
 
   const toggleFullscreen = () => {
     if (!document.fullscreenElement) {
-      playerContainerRef.current.requestFullscreen().catch(err => {
-        console.error(`Error attempting to enable full-screen mode: ${err.message}`);
-      });
+      playerContainerRef.current.requestFullscreen().catch(err => console.error(err));
     } else {
       document.exitFullscreen();
     }
   };
 
   const changePlaybackSpeed = (speed) => {
-    if (videoRef.current) {
-      videoRef.current.playbackRate = speed;
-    }
+    if (videoRef.current) videoRef.current.playbackRate = speed;
     setPlaybackSpeed(speed);
     setShowSpeedMenu(false);
   };
 
+  const seekBackward = (e) => {
+    if (e) e.stopPropagation();
+    if (videoRef.current) {
+      videoRef.current.currentTime = Math.max(0, videoRef.current.currentTime - 10);
+    }
+  };
+
+  const seekForward = (e) => {
+    if (e) e.stopPropagation();
+    if (videoRef.current) {
+      videoRef.current.currentTime = Math.min(videoRef.current.duration, videoRef.current.currentTime + 10);
+    }
+  };
+
+  const handleQualityChange = (quality) => {
+    if (!videoRef.current || selectedQuality === quality) return;
+    
+    const savedTime = videoRef.current.currentTime;
+    const wasPlaying = !videoRef.current.paused;
+    
+    setSelectedQuality(quality);
+    setShowQualityMenu(false);
+    setIsBuffering(true);
+    
+    setTimeout(() => {
+      if (videoRef.current) {
+        videoRef.current.load();
+        videoRef.current.currentTime = savedTime;
+        if (wasPlaying) {
+          videoRef.current.play().catch(e => console.error(e));
+        }
+      }
+      setIsBuffering(false);
+    }, 800);
+  };
+
   useEffect(() => {
-    const handleFullscreenChange = () => {
-      setIsFullscreen(!!document.fullscreenElement);
-    };
+    const handleFullscreenChange = () => setIsFullscreen(!!document.fullscreenElement);
     document.addEventListener('fullscreenchange', handleFullscreenChange);
     return () => document.removeEventListener('fullscreenchange', handleFullscreenChange);
   }, []);
@@ -196,13 +302,9 @@ const VideoPlayerPage = () => {
     setShowControls(true);
     clearTimeout(controlsTimeout);
     if (isPlaying) {
-      controlsTimeout = setTimeout(() => {
-        setShowControls(false);
-      }, 2500);
+      controlsTimeout = setTimeout(() => setShowControls(false), 2500);
     }
   };
-
-  // --------------------------------
 
   if (isLoading) return <Loader />;
 
@@ -218,6 +320,9 @@ const VideoPlayerPage = () => {
     );
   }
 
+  // Safe image formatting (Prevents "empty string" warning)
+  const validCastImage = (img) => (img && img.trim() !== "") ? img : FALLBACK_AVATAR;
+
   return (
     <div className="max-w-6xl mx-auto w-full lg:grid lg:grid-cols-3 lg:gap-8 items-start space-y-6 lg:space-y-0 py-8 px-4 sm:px-6">
 
@@ -232,7 +337,7 @@ const VideoPlayerPage = () => {
         >
           <video
             ref={videoRef}
-            src={mediaData.videoUrl}
+            src={mediaData.videoUrl || null}
             className="w-full h-full object-contain cursor-pointer"
             onClick={togglePlay}
             onTimeUpdate={handleTimeUpdate}
@@ -242,10 +347,25 @@ const VideoPlayerPage = () => {
             onEnded={() => setIsPlaying(false)}
           />
 
-          <div className={`absolute inset-0 flex flex-col justify-between transition-opacity duration-300 ${showControls || !isPlaying ? 'opacity-100' : 'opacity-0'}`}>
-
-            <div className="bg-gradient-to-b from-black/80 to-transparent p-4 flex justify-between items-start pointer-events-none">
-              <button onClick={() => isFullscreen ? document.exitFullscreen() : navigate(-1)} className="text-white hover:text-orange-500 transition text-2xl drop-shadow-md pointer-events-auto">
+          <div 
+            onClick={togglePlay}
+            className={`absolute inset-0 flex flex-col justify-between transition-opacity duration-300 ${showControls || !isPlaying ? 'opacity-100' : 'opacity-0'}`}
+          >
+            <div 
+              onClick={(e) => e.stopPropagation()}
+              className="bg-gradient-to-b from-black/80 to-transparent p-4 flex justify-between items-start pointer-events-none"
+            >
+              <button 
+                onClick={(e) => {
+                  e.stopPropagation();
+                  if (isFullscreen) {
+                    document.exitFullscreen();
+                  } else {
+                    navigate(-1);
+                  }
+                }} 
+                className="text-white hover:text-orange-500 transition text-2xl drop-shadow-md pointer-events-auto"
+              >
                 ←
               </button>
               <div className="text-white font-bold truncate max-w-sm drop-shadow-md">
@@ -260,8 +380,10 @@ const VideoPlayerPage = () => {
                 </div>
               </div>
             )}
-
-            <div className="bg-gradient-to-t from-black/90 via-black/60 to-transparent p-4 pt-10 mt-auto">
+            <div 
+              onClick={(e) => e.stopPropagation()}
+              className="bg-gradient-to-t from-black/90 via-black/60 to-transparent p-4 pt-10 mt-auto pointer-events-auto"
+            >
               <div className="flex items-center gap-3 mb-3">
                 <span className="text-white text-xs font-semibold w-10">{currentTime}</span>
                 <div className="flex-1 h-1.5 bg-white/20 rounded-full cursor-pointer relative group/scrub" onClick={handleProgressScrub}>
@@ -271,14 +393,29 @@ const VideoPlayerPage = () => {
                 </div>
                 <span className="text-white text-xs font-semibold w-10">{duration}</span>
               </div>
-
+ 
               <div className="flex items-center justify-between text-white">
                 <div className="flex items-center gap-5">
-                  <button className="hover:text-orange-500 transition"><FaStepBackward /></button>
+                  <button 
+                    onClick={seekBackward}
+                    className="hover:text-orange-500 transition"
+                    title="Skip 10s Backward"
+                  >
+                    {/* <FaStepBackward /> */}
+                    <TbRewindBackward10 />
+
+                  </button>
                   <button onClick={togglePlay} className="text-xl hover:text-orange-500 transition w-5 flex justify-center">
                     {isPlaying ? <FaPause /> : <FaPlay />}
                   </button>
-                  <button className="hover:text-orange-500 transition"><FaStepForward /></button>
+                  <button 
+                    onClick={seekForward}
+                    className="hover:text-orange-500 transition"
+                    title="Skip 10s Forward"
+                  >
+                    {/* <FaStepForward /> */}
+<TbRewindForward10 />
+                  </button>
 
                   <div className="flex items-center gap-2 group/vol">
                     <button onClick={toggleMute} className="hover:text-orange-500 transition text-lg">
@@ -294,7 +431,13 @@ const VideoPlayerPage = () => {
 
                 <div className="flex items-center gap-5 relative">
                   <div className="relative">
-                    <button onClick={() => setShowSpeedMenu(!showSpeedMenu)} className="hover:text-orange-500 transition flex items-center gap-1">
+                    <button 
+                      onClick={() => {
+                        setShowSpeedMenu(!showSpeedMenu);
+                        setShowQualityMenu(false);
+                      }} 
+                      className="hover:text-orange-500 transition flex items-center gap-1"
+                    >
                       <FaCog /> <span className="text-xs font-bold">{playbackSpeed}x</span>
                     </button>
                     {showSpeedMenu && (
@@ -311,7 +454,34 @@ const VideoPlayerPage = () => {
                       </div>
                     )}
                   </div>
-                  <button className="text-xs font-bold border border-white/30 px-1.5 rounded hover:border-orange-500 hover:text-orange-500 transition">HD</button>
+                  
+                  {/* Quality Settings */}
+                  <div className="relative">
+                    <button 
+                      onClick={() => {
+                        setShowQualityMenu(!showQualityMenu);
+                        setShowSpeedMenu(false);
+                      }}
+                      className="text-xs font-bold border border-white/30 px-1.5 py-0.5 rounded hover:border-orange-500 hover:text-orange-500 transition uppercase"
+                    >
+                      {selectedQuality === "Auto" ? "HD" : selectedQuality}
+                    </button>
+                    {showQualityMenu && (
+                      <div className="absolute bottom-8 right-0 bg-neutral-900/95 border border-white/10 rounded-lg py-2 flex flex-col w-28 backdrop-blur-md z-20 shadow-xl">
+                        {["1080p", "720p", "480p", "Auto"].map(quality => (
+                          <button
+                            key={quality}
+                            onClick={() => handleQualityChange(quality)}
+                            className={`text-xs text-left px-4 py-1.5 hover:bg-white/10 flex items-center justify-between ${selectedQuality === quality ? 'text-orange-500 font-bold' : 'text-gray-300'}`}
+                          >
+                            <span>{quality}</span>
+                            {selectedQuality === quality && <span className="text-[10px]">✓</span>}
+                          </button>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+
                   <button onClick={toggleFullscreen} className="hover:text-orange-500 transition text-lg">
                     {isFullscreen ? <FaCompress /> : <FaExpand />}
                   </button>
@@ -319,9 +489,17 @@ const VideoPlayerPage = () => {
               </div>
             </div>
           </div>
+          
+          {/* Buffering/Loading Overlay */}
+          {isBuffering && (
+            <div className="absolute inset-0 bg-black/60 z-30 flex flex-col items-center justify-center gap-3 backdrop-blur-[2px]">
+              <div className="w-10 h-10 border-4 border-gray-300 border-t-brand-orange rounded-full animate-spin"></div>
+              <span className="text-white text-xs font-bold tracking-wide">Switching to {selectedQuality === "Auto" ? "Auto Quality" : selectedQuality}...</span>
+            </div>
+          )}
         </div>
 
-        {/* Title Block & Info */}
+        {/* Title Block & Actions */}
         <div className="bg-white border border-gray-200 rounded-2xl p-5 shadow-sm space-y-4">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
             <div>
@@ -341,12 +519,21 @@ const VideoPlayerPage = () => {
             </div>
 
             <div className="flex gap-3">
-              <button className="flex-1 sm:flex-none flex flex-col items-center justify-center bg-gray-50 hover:bg-orange-50 hover:text-orange-600 border border-gray-200/60 rounded-xl py-2 px-4 transition text-gray-500 font-bold text-xs gap-1">
-                <span className="text-base"><MdDownloadForOffline /></span>
-                <span>Download</span>
+              <button 
+                onClick={handleDownload}
+                disabled={isDownloading}
+                className="flex-1 sm:flex-none flex flex-col items-center justify-center bg-gray-50 hover:bg-orange-50 hover:text-orange-600 border border-gray-200/60 rounded-xl py-2 px-4 transition text-gray-500 font-bold text-xs gap-1 disabled:opacity-50"
+              >
+                <span className="text-base">
+                  {isDownloading ? <div className="w-4 h-4 border-2 border-gray-300 border-t-orange-600 rounded-full animate-spin"></div> : <MdDownloadForOffline />}
+                </span>
+                <span>{isDownloading ? 'Saving...' : 'Download'}</span>
               </button>
-              <button onClick={() => setIsWishlisted(!isWishlisted)} className={`flex-1 sm:flex-none flex flex-col items-center justify-center border rounded-xl py-2 px-4 transition font-bold text-xs gap-1 ${isWishlisted ? 'bg-orange-50 border-orange-200 text-orange-600' : 'bg-gray-50 border-gray-200 text-gray-500 hover:bg-gray-100'}`}>
-                <span className="text-base">{isWishlisted ? '❤️' : '🤍'}</span>
+              <button 
+                onClick={handleWishlistToggle} 
+                className={`flex-1 sm:flex-none flex flex-col items-center justify-center border rounded-xl py-2 px-4 transition font-bold text-xs gap-1 ${isWishlisted ? 'bg-orange-50 border-orange-200 text-orange-600' : 'bg-gray-50 border-gray-200 text-gray-500 hover:bg-gray-100'}`}
+              >
+                <span className="text-base">{isWishlisted ? <FaBookmark />  : <FaRegBookmark />}</span>
                 <span>Wishlist</span>
               </button>
             </div>
@@ -376,7 +563,7 @@ const VideoPlayerPage = () => {
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-1 gap-3">
           {(mediaData.cast || []).map((actor) => (
             <div key={actor._id || actor.id} className="flex items-center gap-3 p-2 bg-gray-50/50 hover:bg-orange-50/50 rounded-xl border border-gray-100 transition group cursor-pointer">
-              <img src={actor.image || FALLBACK_AVATAR} alt={actor.name} className="w-11 h-11 rounded-full object-cover border border-gray-200 shadow-sm group-hover:border-orange-300 transition" />
+              <img src={validCastImage(actor.image)} alt={actor.name} className="w-11 h-11 rounded-full object-cover border border-gray-200 shadow-sm group-hover:border-orange-300 transition" />
               <div>
                 <div className="text-sm font-bold text-gray-700 group-hover:text-orange-600 transition">{actor.name}</div>
                 <div className="text-[11px] text-gray-400 font-semibold mt-0.5">Featured Talent</div>

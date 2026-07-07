@@ -123,7 +123,7 @@ const TVShowsPage = () => {
               {/* Aspect Display Container Thumbnail */}
               <div className="w-20 h-28 bg-neutral-900 rounded-xl flex-shrink-0 flex items-center justify-center text-gray-400 font-black text-[10px] shadow-inner group-hover:scale-105 transform transition overflow-hidden relative">
                 <img 
-                  src={show.poster || FALLBACK_POSTER} 
+                  src={show.poster && show.poster.trim() !== "" ? show.poster : FALLBACK_POSTER} 
                   alt={show.title} 
                   className="w-full h-full object-cover opacity-90 group-hover:opacity-100"
                 />

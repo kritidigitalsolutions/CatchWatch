@@ -24,6 +24,7 @@ import TvShowEpisodesPage from './pages/TvShowEpisodesPage'; // Apna path check 
 import LegalPage from './pages/LegalPage';
 import NotificationsPage from './pages/NotificationsPage';
 import MyVideosPage from './pages/MyVideosPage';
+import SingleReelPage from './pages/SingleReelPage';
 
 const App = () => {
   return (
@@ -53,7 +54,8 @@ const App = () => {
             <Route path="/notifications" element={<NotificationsPage />} />
             {/* YAHAN NAYA ROUTE ADD KAREIN */}
             <Route path="/tv-shows-episodes/:id" element={<TvShowEpisodesPage />} /> 
-            <Route path="/my-videos" element={<MyVideosPage />} />  
+            <Route path="/my-videos" element={<MyVideosPage />} />
+            <Route path="/reels/:id" element={<SingleReelPage />} />
           </Route>
         </Routes>
       </Layout>

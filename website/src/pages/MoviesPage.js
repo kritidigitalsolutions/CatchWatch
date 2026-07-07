@@ -7,6 +7,7 @@ const MoviesPage = () => {
   const navigate = useNavigate();
 
   // Filter & Sort States
+  const FALLBACK_POSTER = "https://images.unsplash.com/photo-1594909122845-11baa439b7bf?q=80&w=500&auto=format&fit=crop";
   const [selectedGenre, setSelectedGenre] = useState("All");
   const [sortOrder, setSortOrder] = useState("trending");
 
@@ -220,7 +221,7 @@ const MoviesPage = () => {
 
                 <div className="w-full aspect-[2/3] bg-neutral-900 rounded-xl overflow-hidden relative shadow-inner">
                   <img
-                    src={movie?.poster}
+                    src={movie?.poster && movie.poster.trim() !== "" ? movie.poster : FALLBACK_POSTER}
                     alt={movie?.title}
                     className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500 opacity-90"
                     loading="lazy"

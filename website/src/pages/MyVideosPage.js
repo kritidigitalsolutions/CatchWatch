@@ -3,8 +3,8 @@ import { useNavigate } from 'react-router-dom';
 import { FaArrowLeft, FaTrashAlt, FaPlay, FaVideo } from 'react-icons/fa';
 import Loader from '../components/Loader';
 
-// APIs import
-import { getReelsFeed, deleteReel } from '../api/reelsApi';
+// APIs import karein (Apne actual file path ke hisaab se adjust karein)
+import { getMyReels, deleteReel } from '../api/reelsApi';
 
 const MyVideosPage = () => {
   const navigate = useNavigate();
@@ -15,7 +15,7 @@ const MyVideosPage = () => {
   const [error, setError] = useState(null);
 
   // Fallback Thumbnail if a reel doesn't have one
-  const FALLBACK_THUMBNAIL = "https://images.unsplash.com/photo-1611162617474-5b21e879e113?q=80&w=400&auto=format&fit=crop";
+  const FALLBACK_THUMBNAIL = "https://img.freepik.com/premium-photo/glowing-orange-neon-play-button-icon-dark-background_989822-6247.jpg";
 
   // Fetch Only User's Videos on Mount
   useEffect(() => {
@@ -33,10 +33,8 @@ const MyVideosPage = () => {
       setError(null);
       
       try {
-        // 2. Fetching with 'type: my_uploads' or 'userOnly: true'
-        // Ye parameter backend ko batata hai ki sirf is user ki video chahiye.
-        // NOTE: Aapke backend API route (e.g. /reels/my-videos) ko is requirement ko handle karna hoga.
-        const response = await getReelsFeed({ userOnly: true, filter: 'mine' });
+        // 2. Call the specific API for My Reels
+        const response = await getMyReels();
         
         // Handle variations in backend response structures
         const fetchedData = response?.reels || response?.data || response?.results || response || [];

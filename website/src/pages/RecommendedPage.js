@@ -97,7 +97,7 @@ const RecommendedPage = () => {
               {/* Poster Image */}
               <div className="w-full aspect-[2/3] bg-neutral-900 rounded-xl overflow-hidden relative shadow-inner">
                 <img
-                  src={movie.poster || FALLBACK_POSTER}
+                  src={movie.poster && movie.poster.trim() !== "" ? movie.poster : FALLBACK_POSTER}
                   alt={movie.title}
                   className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500 opacity-90"
                   loading="lazy"
