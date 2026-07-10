@@ -125,6 +125,7 @@ const VideoPlayerPage = () => {
   const [videoSrc, setVideoSrc] = useState(null);
   const [showQualityMenu, setShowQualityMenu] = useState(false);
   const [isBuffering, setIsBuffering] = useState(false);
+  const [isDragging, setIsDragging] = useState(false);
 
   let controlsTimeout;
 
@@ -332,20 +333,58 @@ const VideoPlayerPage = () => {
     }
   };
 
-  const handleProgressScrub = (e) => {
-    const progressBar = e.currentTarget;
-    const clickPosition = e.nativeEvent.offsetX;
-    const totalWidth = progressBar.clientWidth;
+  const handleScrub = (clientX, progressBar) => {
+    const rect = progressBar.getBoundingClientRect();
+    const clickPosition = clientX - rect.left;
+    const totalWidth = rect.width;
     if (videoRef.current) {
       const durationVal = videoRef.current.duration;
       if (isFinite(durationVal) && durationVal > 0) {
-        const newTime = (clickPosition / totalWidth) * durationVal;
+        let pct = clickPosition / totalWidth;
+        pct = Math.max(0, Math.min(1, pct));
+        const newTime = pct * durationVal;
         if (isFinite(newTime)) {
           videoRef.current.currentTime = newTime;
+          setProgress(pct * 100);
+          setCurrentTime(formatTime(newTime));
         }
       }
     }
   };
+
+  const handleMouseDown = (e) => {
+    setIsDragging(true);
+    handleScrub(e.clientX, e.currentTarget);
+  };
+
+  const handleGlobalMouseMove = (e) => {
+    if (!isDragging) return;
+    const progressBar = document.getElementById("progress-bar-slider");
+    if (progressBar) {
+      handleScrub(e.clientX, progressBar);
+    }
+  };
+
+  const handleGlobalMouseUp = () => {
+    if (isDragging) {
+      setIsDragging(false);
+    }
+  };
+
+  useEffect(() => {
+    if (isDragging) {
+      window.addEventListener("mousemove", handleGlobalMouseMove);
+      window.addEventListener("mouseup", handleGlobalMouseUp);
+    } else {
+      window.removeEventListener("mousemove", handleGlobalMouseMove);
+      window.removeEventListener("mouseup", handleGlobalMouseUp);
+    }
+    return () => {
+      window.removeEventListener("mousemove", handleGlobalMouseMove);
+      window.removeEventListener("mouseup", handleGlobalMouseUp);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isDragging]);
 
   const toggleMute = () => {
     if (!videoRef.current) return;
@@ -654,8 +693,7 @@ const VideoPlayerPage = () => {
           <video
             ref={videoRef}
             src={hlsRef.current ? undefined : (videoSrc || undefined)}
-            className="w-full h-full object-contain cursor-pointer"
-            onClick={togglePlay}
+            className="w-full h-full object-contain"
             onTimeUpdate={handleTimeUpdate}
             onLoadedMetadata={handleLoadedMetadata}
             onPlay={() => setIsPlaying(true)}
@@ -668,7 +706,6 @@ const VideoPlayerPage = () => {
           />
 
           <div 
-            onClick={togglePlay}
             className={`absolute inset-0 flex flex-col justify-between transition-opacity duration-300 ${showControls || !isPlaying ? 'opacity-100' : 'opacity-0'}`}
           >
             <div 
@@ -693,22 +730,56 @@ const VideoPlayerPage = () => {
               </div>
             </div>
 
-            {!isPlaying && (
-              <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-                <div className="w-20 h-20 bg-orange-600/90 text-white rounded-full flex items-center justify-center text-3xl shadow-xl shadow-orange-900/50 pl-1 backdrop-blur-sm">
-                  <FaPlay />
-                </div>
-              </div>
-            )}
+            {/* Central Controls Cluster */}
+            <div className="absolute inset-0 flex items-center justify-center gap-8 pointer-events-none">
+              <button 
+                onClick={(e) => {
+                  e.stopPropagation();
+                  seekBackward();
+                }}
+                className="w-14 h-14 bg-black/60 hover:bg-orange-600/95 text-white rounded-full flex items-center justify-center text-2xl shadow-xl transition-all hover:scale-110 pointer-events-auto backdrop-blur-sm"
+                title="Rewind 10s"
+              >
+                <TbRewindBackward10 />
+              </button>
+
+              <button 
+                onClick={(e) => {
+                  e.stopPropagation();
+                  togglePlay();
+                }}
+                className="w-20 h-20 bg-orange-600/90 hover:bg-orange-600 text-white rounded-full flex items-center justify-center text-3xl shadow-xl shadow-orange-900/50 transition-all hover:scale-110 pointer-events-auto backdrop-blur-sm"
+                title={isPlaying ? "Pause" : "Play"}
+                style={{ paddingLeft: isPlaying ? "0px" : "4px" }}
+              >
+                {isPlaying ? <FaPause /> : <FaPlay />}
+              </button>
+
+              <button 
+                onClick={(e) => {
+                  e.stopPropagation();
+                  seekForward();
+                }}
+                className="w-14 h-14 bg-black/60 hover:bg-orange-600/95 text-white rounded-full flex items-center justify-center text-2xl shadow-xl transition-all hover:scale-110 pointer-events-auto backdrop-blur-sm"
+                title="Forward 10s"
+              >
+                <TbRewindForward10 />
+              </button>
+            </div>
+
             <div 
               onClick={(e) => e.stopPropagation()}
               className="bg-gradient-to-t from-black/90 via-black/60 to-transparent p-4 pt-10 mt-auto pointer-events-auto"
             >
               <div className="flex items-center gap-3 mb-3">
                 <span className="text-white text-xs font-semibold w-10">{currentTime}</span>
-                <div className="flex-1 h-1.5 bg-white/20 rounded-full cursor-pointer relative group/scrub" onClick={handleProgressScrub}>
+                <div 
+                  id="progress-bar-slider"
+                  className="flex-1 h-1.5 bg-white/20 rounded-full cursor-pointer relative group/scrub" 
+                  onMouseDown={handleMouseDown}
+                >
                   <div className="absolute top-0 left-0 h-full bg-orange-600 rounded-full relative" style={{ width: `${progress}%` }}>
-                    <div className="absolute right-[-6px] top-[-4px] w-3.5 h-3.5 bg-white rounded-full shadow scale-0 group-hover/scrub:scale-100 transition-transform" />
+                    <div className="absolute right-[-6px] top-[-4px] w-3.5 h-3.5 bg-white rounded-full shadow scale-100 group-hover/scrub:scale-110 transition-transform" />
                   </div>
                 </div>
                 <span className="text-white text-xs font-semibold w-10">{duration}</span>
