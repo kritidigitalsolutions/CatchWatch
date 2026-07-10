@@ -70,5 +70,4 @@ router.get(
   isAuth,
   getProfileStats
 );
-
 module.exports = router;

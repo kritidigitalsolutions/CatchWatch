@@ -4,7 +4,7 @@ const {
   deleteMedia,
   deleteMediaFiles,
 } = require("../../utils/mediaUrl");
-
+const { notifyNewContent } = require("../../utils/contentNotification");
 // ========================================
 // HELPERS
 // ========================================
@@ -102,53 +102,68 @@ const addShortFilm = async (req, res) => {
           : 1;
     }
 
+    // Parse Multilingual Audio and Subtitle Tracks
+    const audioMetadata = parseJSON(req.body.audioMetadata, []);
+    const uploadedAudioFiles = req.files?.audioTracks || [];
+    const audioTracks = [];
+    for (const meta of audioMetadata) {
+      const matchingFile = uploadedAudioFiles.find(f => f.originalname === meta.originalname);
+      if (matchingFile) {
+        const fileUrl = getMediaUrl(matchingFile);
+        audioTracks.push({
+          language: meta.language,
+          fileUrl,
+          isDefault: meta.isDefault === true || meta.isDefault === "true"
+        });
+      }
+    }
+
+    const subtitleMetadata = parseJSON(req.body.subtitleMetadata, []);
+    const uploadedSubtitleFiles = req.files?.subtitles || [];
+    const subtitles = [];
+    for (const meta of subtitleMetadata) {
+      const matchingFile = uploadedSubtitleFiles.find(f => f.originalname === meta.originalname);
+      if (matchingFile) {
+        const fileUrl = getMediaUrl(matchingFile);
+        subtitles.push({
+          language: meta.language,
+          label: meta.label || "Subtitle",
+          fileUrl,
+          isDefault: meta.isDefault === true || meta.isDefault === "true"
+        });
+      }
+    }
+
     const shortFilm = await ShortFilm.create({
       title: req.body.title,
       description: req.body.description || "",
-
       genre,
       category,
-
-      releaseYear:
-        req.body.releaseYear || null,
-
-      duration:
-        req.body.duration || "",
-
-      language:
-        req.body.language || "",
-
-      poster: getMediaUrl(
-        poster,
-        req.body.poster
-      ),
-
-      banner: getMediaUrl(
-        banner,
-        req.body.banner
-      ),
-
-      trailerUrl: getMediaUrl(
-        trailer,
-        req.body.trailerUrl
-      ),
-
-      videoUrl: getMediaUrl(
-        video,
-        req.body.videoUrl
-      ),
-
-      isPremium:
-        req.body.isPremium === "true",
-
-      rating:
-        req.body.rating || 0,
-
-      cast:
-        sanitizeCast(cast),
-
+      releaseYear: req.body.releaseYear || null,
+      duration: req.body.duration || "",
+      language: req.body.language || "",
+      poster: getMediaUrl(poster, req.body.poster),
+      banner: getMediaUrl(banner, req.body.banner),
+      trailerUrl: getMediaUrl(trailer, req.body.trailerUrl),
+      videoUrl: getMediaUrl(video, req.body.videoUrl),
+      audioTracks,
+      subtitles,
+      isPremium: req.body.isPremium === "true",
+      rating: req.body.rating || 0,
+      cast: sanitizeCast(cast),
       priority,
     });
+    try {
+  await notifyNewContent({
+    title: "🎞️ New Short Film Added",
+    message: `${shortFilm.title} is now available.`,
+    type: "NEW_SHORT_FILM",
+    actionUrl: `/short-films/${shortFilm._id}`,
+    createdBy: req.user.id,
+  });
+} catch (err) {
+  console.error("Short Film notification failed:", err.message);
+}
 
     return res.status(201).json({
       success: true,
@@ -489,6 +504,63 @@ const updateShortFilm = async (
 
     shortFilm.cast =
       sanitizeCast(cast);
+
+    // Multilingual Tracks Support
+    const audioMetadata = parseJSON(req.body.audioMetadata, []);
+    const uploadedAudioFiles = req.files?.audioTracks || [];
+
+    if (req.body.audioMetadata !== undefined) {
+      const audioTracks = [];
+      for (const meta of audioMetadata) {
+        if (meta.fileUrl) {
+          audioTracks.push({
+            language: meta.language,
+            fileUrl: meta.fileUrl,
+            isDefault: meta.isDefault === true || meta.isDefault === "true"
+          });
+        } else {
+          const matchingFile = uploadedAudioFiles.find(f => f.originalname === meta.originalname);
+          if (matchingFile) {
+            const fileUrl = getMediaUrl(matchingFile);
+            audioTracks.push({
+              language: meta.language,
+              fileUrl,
+              isDefault: meta.isDefault === true || meta.isDefault === "true"
+            });
+          }
+        }
+      }
+      shortFilm.audioTracks = audioTracks;
+    }
+
+    const subtitleMetadata = parseJSON(req.body.subtitleMetadata, []);
+    const uploadedSubtitleFiles = req.files?.subtitles || [];
+
+    if (req.body.subtitleMetadata !== undefined) {
+      const subtitles = [];
+      for (const meta of subtitleMetadata) {
+        if (meta.fileUrl) {
+          subtitles.push({
+            language: meta.language,
+            label: meta.label || "Subtitle",
+            fileUrl: meta.fileUrl,
+            isDefault: meta.isDefault === true || meta.isDefault === "true"
+          });
+        } else {
+          const matchingFile = uploadedSubtitleFiles.find(f => f.originalname === meta.originalname);
+          if (matchingFile) {
+            const fileUrl = getMediaUrl(matchingFile);
+            subtitles.push({
+              language: meta.language,
+              label: meta.label || "Subtitle",
+              fileUrl,
+              isDefault: meta.isDefault === true || meta.isDefault === "true"
+            });
+          }
+        }
+      }
+      shortFilm.subtitles = subtitles;
+    }
 
     // Priority Update
 

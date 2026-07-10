@@ -1,0 +1,161 @@
+JWT Token Audit - User vs Admin
+Date checked: 2026-07-06
+Project: CatchWatch backend
+
+Requested expected behavior
+---------------------------
+1. User JWT token should never expire until:
+   - Reason 1: user logout
+   - Reason 2: user uninstalls the app
+2. Admin JWT token should be treated separately from user JWT token.
+3. Admin JWT token should expire after a certain time.
+
+Final verdict
+-------------
+The backend is NOT exactly working according to the requested user-token behavior.
+
+Admin token behavior is mostly correct for the requirement because admin login creates a separate ADMIN-role JWT that expires after 8 hours.
+
+User token behavior is not correct for the requirement because user JWTs currently have an expiry. They expire based on JWT_EXPIRE from backend/.env, currently 30d. If JWT_EXPIRE is missing, the fallback is 7d.
+
+Important distinction
+---------------------
+The backend currently separates user and admin authorization by the "role" inside the JWT:
+- User middleware accepts only role === "USER".
+- Admin middleware accepts only role === "ADMIN".
+
+However, both user and admin JWTs use the same JWT_SECRET. They are separated by role checks, not by separate secrets or separate token systems.
+
+User JWT findings
+-----------------
+1. User OTP login token expires.
+   File: backend/controllers/auth.controller.js
+   Function: generateUserToken
+   Behavior:
+   - jwt.sign(...) includes expiresIn: process.env.JWT_EXPIRE || "7d"
+   - Since backend/.env has JWT_EXPIRE=30d, user JWTs currently expire after 30 days.
+
+2. User Google login token expires.
+   File: backend/controllers/auth.controller.js
+   Function: googleLogin
+   Behavior:
+   - It calls generateUserToken(user), so it also uses JWT_EXPIRE=30d.
+
+3. User complete-profile token expires.
+   File: backend/controllers/user.controller.js
+   Function: generateUserToken
+   Behavior:
+   - jwt.sign(...) includes expiresIn: process.env.JWT_EXPIRE || "7d"
+   - With the current .env, this is 30 days.
+
+4. User complete-profile cookie has a separate 7-day maxAge.
+   File: backend/controllers/user.controller.js
+   Function: completeProfile
+   Behavior:
+   - res.cookie("token", appToken, { maxAge: 7 * 24 * 60 * 60 * 1000 })
+   - This cookie expires after 7 days, even though the JWT itself may be valid for 30 days.
+   - Most API routes use Bearer token from Authorization header, so this cookie may not matter for mobile clients, but it is still inconsistent.
+
+5. User auth middleware rejects expired JWTs.
+   File: backend/middlewares/auth.middleware.js
+   Behavior:
+   - jwt.verify(token, process.env.JWT_SECRET) is used.
+   - If the JWT is expired, jwt.verify throws TokenExpiredError and the request is rejected.
+
+6. User logout does not invalidate Bearer JWT server-side.
+   File: backend/routes/user/auth.routes.js
+   Route: POST /api/auth/logout
+   Behavior:
+   - It only clears the "token" cookie.
+   - It does not blacklist the JWT.
+   - It does not increment a tokenVersion/sessionVersion.
+   - It does not remove or invalidate an Authorization Bearer token already stored by the app.
+   Result:
+   - If a mobile client keeps the Bearer token after logout, that token can still work until its expiry.
+
+7. User uninstall is not connected to JWT invalidation.
+   Current behavior:
+   - The backend stores fcmToken on the User model.
+   - Invalid FCM tokens can be removed when push notifications fail with messaging/registration-token-not-registered.
+   - This cleanup happens in backend/utils/contentNotification.js.
+   Result:
+   - App uninstall may eventually remove an invalid FCM token, but it does not invalidate the user's JWT.
+   - There is no server-side mechanism that detects uninstall and revokes the user JWT.
+
+Admin JWT findings
+------------------
+1. Admin login token expires after 8 hours.
+   File: backend/controllers/admin_auth/admin.auth.controller.js
+   Function: loginAdmin
+   Behavior:
+   - jwt.sign(..., { expiresIn: "8h" })
+   - Cookie maxAge is also 8 hours.
+   Verdict:
+   - This matches the requirement that admin token should expire after a certain time.
+
+2. Admin middleware rejects expired JWTs.
+   File: backend/middlewares/admin.middleware.js
+   Behavior:
+   - jwt.verify(token, process.env.JWT_SECRET) is used.
+   - Expired admin tokens are rejected.
+
+3. Admin logout route appears in generated docs/lists, but no real route was found.
+   Files searched:
+   - backend/routes/admin/auth.routes.js
+   - backend/app.js
+   - backend/endpoints_list.json
+   - backend/catchwatch_postman_collection.json
+   Finding:
+   - endpoints_list.json and Postman collection mention /api/admin/auth/logout.
+   - backend/routes/admin/auth.routes.js does not define router.post("/logout", ...).
+   Result:
+   - Admin token expiry works, but admin logout endpoint appears missing in actual backend routes.
+
+FCM / uninstall findings
+------------------------
+1. FCM token is stored on user login and FCM-token update routes.
+   Files:
+   - backend/controllers/auth.controller.js
+   - backend/controllers/user.controller.js
+   - backend/models/user.model.js
+
+2. Duplicate FCM tokens are removed from other users.
+   Behavior:
+   - When saving a new FCM token, backend clears the same token from other users.
+
+3. Invalid FCM tokens are cleaned during content notification sends.
+   File: backend/utils/contentNotification.js
+   Behavior:
+   - If Firebase returns messaging/registration-token-not-registered, the backend unsets fcmToken for that user.
+
+4. This FCM cleanup is not JWT logout.
+   Result:
+   - Removing fcmToken only stops push notifications.
+   - It does not revoke or expire the JWT.
+
+Exact answer to your question
+-----------------------------
+No, the backend is not exactly working as:
+"user JWT token never expires until logout or app uninstall."
+
+Current actual behavior:
+- User JWT expires after JWT_EXPIRE from backend/.env.
+- Current JWT_EXPIRE is 30d.
+- Logout only clears a cookie and does not revoke Bearer JWTs.
+- App uninstall only affects FCM token validity eventually; it does not revoke JWTs.
+- Admin JWT expires after 8 hours, which is separate from user access by role and matches your admin expiry requirement.
+
+What would be needed to make user JWT match your rule
+----------------------------------------------------
+To make user JWTs valid until logout/uninstall, the backend would need a server-side session/revocation system. Recommended approach:
+
+1. For user JWTs, remove expiresIn or use a very long expiry.
+2. Add a tokenVersion or sessionVersion field to User.
+3. Include tokenVersion/sessionVersion inside the user JWT payload.
+4. In auth.middleware.js, after jwt.verify, fetch the user from DB and compare tokenVersion/sessionVersion.
+5. On logout, increment tokenVersion/sessionVersion or delete the active session record.
+6. On uninstall/invalid FCM token detection, clear fcmToken and also revoke/increment the user's tokenVersion/sessionVersion if you truly want uninstall to invalidate login.
+7. Keep admin JWT separate with expiresIn: "8h".
+
+Note:
+App uninstall cannot be detected instantly and reliably by the backend. Usually the backend only discovers uninstall later when Firebase push notification delivery fails with an invalid/unregistered FCM token response.

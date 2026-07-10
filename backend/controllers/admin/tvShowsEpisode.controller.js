@@ -7,7 +7,15 @@ const TvShow = require(
 );
 
 const { getMediaUrl, deleteMedia } = require("../../utils/mediaUrl");
+const { notifyNewContent } = require("../../utils/contentNotification");
 
+const parseJSON = (value, defaultValue = []) => {
+  try {
+    return value ? JSON.parse(value) : defaultValue;
+  } catch {
+    return defaultValue;
+  }
+};
 
 // ========================================
 // UPDATE TOTAL EPISODES
@@ -62,6 +70,54 @@ const addTvShowsEpisode =
       const thumbnail =
         req.files?.thumbnail?.[0];
 
+      const audioMetadata = parseJSON(req.body.audioMetadata, []);
+      const uploadedAudioFiles = req.files?.audioTracks || [];
+      const audioTracks = [];
+      for (const meta of audioMetadata) {
+        if (meta.fileUrl) {
+          audioTracks.push({
+            language: meta.language,
+            fileUrl: meta.fileUrl,
+            isDefault: meta.isDefault === true || meta.isDefault === "true"
+          });
+        } else {
+          const matchingFile = uploadedAudioFiles.find(f => f.originalname === meta.originalname);
+          if (matchingFile) {
+            const fileUrl = getMediaUrl(matchingFile);
+            audioTracks.push({
+              language: meta.language,
+              fileUrl,
+              isDefault: meta.isDefault === true || meta.isDefault === "true"
+            });
+          }
+        }
+      }
+
+      const subtitleMetadata = parseJSON(req.body.subtitleMetadata, []);
+      const uploadedSubtitleFiles = req.files?.subtitles || [];
+      const subtitles = [];
+      for (const meta of subtitleMetadata) {
+        if (meta.fileUrl) {
+          subtitles.push({
+            language: meta.language,
+            label: meta.label || "Subtitle",
+            fileUrl: meta.fileUrl,
+            isDefault: meta.isDefault === true || meta.isDefault === "true"
+          });
+        } else {
+          const matchingFile = uploadedSubtitleFiles.find(f => f.originalname === meta.originalname);
+          if (matchingFile) {
+            const fileUrl = getMediaUrl(matchingFile);
+            subtitles.push({
+              language: meta.language,
+              label: meta.label || "Subtitle",
+              fileUrl,
+              isDefault: meta.isDefault === true || meta.isDefault === "true"
+            });
+          }
+        }
+      }
+
       const episode =
         await TvShowsEpisode.create({
 
@@ -98,7 +154,25 @@ const addTvShowsEpisode =
             thumbnail,
             req.body.thumbnail || req.body.thumbnailUrl || ""
           ),
+
+          audioTracks,
+
+          subtitles,
         });
+
+        try {
+  const tvShow = await TvShow.findById(tvShowId);
+
+  await notifyNewContent({
+    title: "🎬 New TV Show Episode",
+    message: `${tvShow.title} - Episode ${episode.episodeNumber} is now available.`,
+    type: "NEW_TV_SHOW_EPISODE",
+    actionUrl: `/tv-shows/${tvShow._id}`,
+    createdBy: req.user.id,
+  });
+} catch (err) {
+  console.error("TV Show Episode notification failed:", err.message);
+}
 
       await updateTvShowStats(
         tvShowId
@@ -271,6 +345,63 @@ const updateTvShowsEpisode =
 
         episode.thumbnail =
           getMediaUrl(req.files.thumbnail[0]);
+      }
+
+      // Multilingual Tracks Support
+      const audioMetadata = parseJSON(req.body.audioMetadata, []);
+      const uploadedAudioFiles = req.files?.audioTracks || [];
+
+      if (req.body.audioMetadata !== undefined) {
+        const audioTracks = [];
+        for (const meta of audioMetadata) {
+          if (meta.fileUrl) {
+            audioTracks.push({
+              language: meta.language,
+              fileUrl: meta.fileUrl,
+              isDefault: meta.isDefault === true || meta.isDefault === "true"
+            });
+          } else {
+            const matchingFile = uploadedAudioFiles.find(f => f.originalname === meta.originalname);
+            if (matchingFile) {
+              const fileUrl = getMediaUrl(matchingFile);
+              audioTracks.push({
+                language: meta.language,
+                fileUrl,
+                isDefault: meta.isDefault === true || meta.isDefault === "true"
+              });
+            }
+          }
+        }
+        episode.audioTracks = audioTracks;
+      }
+
+      const subtitleMetadata = parseJSON(req.body.subtitleMetadata, []);
+      const uploadedSubtitleFiles = req.files?.subtitles || [];
+
+      if (req.body.subtitleMetadata !== undefined) {
+        const subtitles = [];
+        for (const meta of subtitleMetadata) {
+          if (meta.fileUrl) {
+            subtitles.push({
+              language: meta.language,
+              label: meta.label || "Subtitle",
+              fileUrl: meta.fileUrl,
+              isDefault: meta.isDefault === true || meta.isDefault === "true"
+            });
+          } else {
+            const matchingFile = uploadedSubtitleFiles.find(f => f.originalname === meta.originalname);
+            if (matchingFile) {
+              const fileUrl = getMediaUrl(matchingFile);
+              subtitles.push({
+                language: meta.language,
+                label: meta.label || "Subtitle",
+                fileUrl,
+                isDefault: meta.isDefault === true || meta.isDefault === "true"
+              });
+            }
+          }
+        }
+        episode.subtitles = subtitles;
       }
 
       await episode.save();

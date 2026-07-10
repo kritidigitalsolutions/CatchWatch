@@ -22,6 +22,11 @@ export default function SeasonSection({
   setEpisodeThumbnailFiles,
   form,
   setForm,
+
+  episodeAudioFiles,
+  setEpisodeAudioFiles,
+  episodeSubtitleFiles,
+  setEpisodeSubtitleFiles,
 }) {
   // Prevent Enter key from submitting form when typing inside input fields
   const handleKeyDown = (e) => {
@@ -41,6 +46,70 @@ export default function SeasonSection({
   const [epThumbFile, setEpThumbFile] = useState(null);
   const [epThumbUrl, setEpThumbUrl] = useState("");
 
+  const SUPPORTED_LANGUAGES = [
+    "English", "Hindi", "Tamil", "Telugu", "Kannada", "Malayalam", "Bengali", "Spanish", "French", "German"
+  ];
+
+  // Episode level track staging states
+  const [modalAudioTracks, setModalAudioTracks] = useState([]);
+  const [modalSubtitles, setModalSubtitles] = useState([]);
+
+  const [audioLang, setAudioLang] = useState("Hindi");
+  const [audioFile, setAudioFile] = useState(null);
+  const [audioIsDefault, setAudioIsDefault] = useState(false);
+
+  const [subLang, setSubLang] = useState("English");
+  const [subLabel, setSubLabel] = useState("English CC");
+  const [subFile, setSubFile] = useState(null);
+  const [subIsDefault, setSubIsDefault] = useState(false);
+
+  const addAudioTrackToModal = () => {
+    if (!audioFile) {
+      alert("Please select an audio file.");
+      return;
+    }
+    const lang = audioLang.trim();
+    if (!lang) {
+      alert("Please specify a language name.");
+      return;
+    }
+    if (modalAudioTracks.some((t) => t.language.toLowerCase() === lang.toLowerCase())) {
+      alert(`Audio track for ${lang} is already added.`);
+      return;
+    }
+    setModalAudioTracks([
+      ...modalAudioTracks,
+      { language: lang, file: audioFile, isDefault: audioIsDefault }
+    ]);
+    setAudioFile(null);
+    setAudioIsDefault(false);
+    setAudioLang("Hindi");
+  };
+
+  const addSubtitleToModal = () => {
+    if (!subFile) {
+      alert("Please select a subtitle file (.vtt).");
+      return;
+    }
+    const lang = subLang.trim();
+    if (!lang) {
+      alert("Please specify a language name.");
+      return;
+    }
+    if (modalSubtitles.some((s) => s.language.toLowerCase() === lang.toLowerCase())) {
+      alert(`Subtitles for ${lang} are already added.`);
+      return;
+    }
+    setModalSubtitles([
+      ...modalSubtitles,
+      { language: lang, label: subLabel || `${lang} Subtitle`, file: subFile, isDefault: subIsDefault }
+    ]);
+    setSubFile(null);
+    setSubLabel("English CC");
+    setSubIsDefault(false);
+    setSubLang("English");
+  };
+
   const openAddModal = () => {
     setEditingEpisodeIndex(null);
     setEpTitle("");
@@ -49,6 +118,18 @@ export default function SeasonSection({
     setEpVideoUrl("");
     setEpThumbFile(null);
     setEpThumbUrl("");
+    
+    // Reset track states
+    setModalAudioTracks([]);
+    setModalSubtitles([]);
+    setAudioFile(null);
+    setAudioIsDefault(false);
+    setAudioLang("Hindi");
+    setSubFile(null);
+    setSubLabel("English CC");
+    setSubIsDefault(false);
+    setSubLang("English");
+
     setIsModalOpen(true);
   };
 
@@ -67,6 +148,17 @@ export default function SeasonSection({
 
     setEpThumbFile(localThumb || null);
     setEpThumbUrl(localThumb ? "" : (ep.thumbnailUrl || ""));
+
+    // Load track states
+    setModalAudioTracks(episodeAudioFiles[key] || ep.audioTracks || []);
+    setModalSubtitles(episodeSubtitleFiles[key] || ep.subtitles || []);
+    setAudioFile(null);
+    setAudioIsDefault(false);
+    setAudioLang("Hindi");
+    setSubFile(null);
+    setSubLabel("English CC");
+    setSubIsDefault(false);
+    setSubLang("English");
 
     setIsModalOpen(true);
   };
@@ -127,6 +219,10 @@ export default function SeasonSection({
         return next;
       });
 
+      // Save tracks to parent maps
+      setEpisodeAudioFiles((prev) => ({ ...prev, [key]: modalAudioTracks }));
+      setEpisodeSubtitleFiles((prev) => ({ ...prev, [key]: modalSubtitles }));
+
     } else {
       // Add new
       const newIndex = season.episodes.length;
@@ -159,6 +255,10 @@ export default function SeasonSection({
       if (epThumbFile) {
         setEpisodeThumbnailFiles((prev) => ({ ...prev, [key]: epThumbFile }));
       }
+
+      // Save tracks to parent maps
+      setEpisodeAudioFiles((prev) => ({ ...prev, [key]: modalAudioTracks }));
+      setEpisodeSubtitleFiles((prev) => ({ ...prev, [key]: modalSubtitles }));
     }
 
     closeModal();
@@ -391,6 +491,120 @@ export default function SeasonSection({
                   }}
                   placeholder="Paste thumbnail image URL"
                 />
+              </div>
+
+              <hr style={{ border: "none", borderTop: "1px solid var(--border)", margin: "4px 0" }} />
+
+              {/* Multilingual Tracks Section inside the Add Episode Modal */}
+              <div style={{ display: "flex", flexDirection: "column", gap: "16px", background: "rgba(255, 255, 255, 0.02)", padding: "16px", borderRadius: "8px", border: "1px solid var(--border)" }}>
+                
+                {/* Audio Tracks */}
+                <div>
+                  <h4 style={{ fontSize: "13px", fontWeight: "600", color: "#FF7A1A", marginBottom: "8px" }}>Secondary Audio Tracks</h4>
+                  <div style={{ display: "flex", flexWrap: "wrap", gap: "8px", alignItems: "flex-end", background: "rgba(0,0,0,0.2)", padding: "10px", borderRadius: "6px", marginBottom: "8px" }}>
+                    <div style={{ minWidth: "110px" }}>
+                      <label style={{ display: "block", fontSize: "10px", color: "#9ca3af", marginBottom: "2px" }}>Language</label>
+                      <input
+                        type="text"
+                        list="modal-audio-languages"
+                        value={audioLang}
+                        onChange={(e) => setAudioLang(e.target.value)}
+                        placeholder="Type/select"
+                        style={{ width: "100%", padding: "5px", borderRadius: "4px", background: "var(--bg-input, #111827)", border: "1px solid var(--border)", color: "#fff", fontSize: "11px" }}
+                      />
+                      <datalist id="modal-audio-languages">
+                        {SUPPORTED_LANGUAGES.map((lang) => (
+                          <option key={lang} value={lang} />
+                        ))}
+                      </datalist>
+                    </div>
+                    <div>
+                      <label style={{ display: "block", fontSize: "10px", color: "#9ca3af", marginBottom: "2px" }}>Audio File</label>
+                      <input type="file" onChange={(e) => setAudioFile(e.target.files?.[0])} accept="audio/*" style={{ color: "#fff", fontSize: "11px" }} />
+                    </div>
+                    <div style={{ display: "flex", alignItems: "center", gap: "4px", height: "26px" }}>
+                      <input type="checkbox" id="modalAudioDefault" checked={audioIsDefault} onChange={(e) => setAudioIsDefault(e.target.checked)} />
+                      <label htmlFor="modalAudioDefault" style={{ fontSize: "11px", color: "#9ca3af", cursor: "pointer" }}>Default</label>
+                    </div>
+                    <button type="button" onClick={addAudioTrackToModal} style={{ padding: "5px 10px", background: "#FF7A1A", border: "none", color: "#fff", borderRadius: "4px", cursor: "pointer", fontSize: "11px", fontWeight: "600" }}>
+                      Add
+                    </button>
+                  </div>
+
+                  {modalAudioTracks.length > 0 && (
+                    <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
+                      {modalAudioTracks.map((track, i) => (
+                        <div key={i} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "6px 10px", background: "rgba(0,0,0,0.15)", borderRadius: "4px" }}>
+                          <div style={{ display: "flex", gap: "10px", alignItems: "center" }}>
+                            <span style={{ fontWeight: "600", fontSize: "11px", color: "#fff" }}>{track.language}</span>
+                            <span style={{ color: "#9ca3af", fontSize: "10px" }}>{track.fileUrl ? "Existing Track" : `New: ${track.file?.name}`}</span>
+                            {track.isDefault && <span style={{ padding: "0px 4px", background: "#10b981", borderRadius: "8px", fontSize: "9px", fontWeight: "bold" }}>Default</span>}
+                          </div>
+                          <button type="button" onClick={() => setModalAudioTracks(modalAudioTracks.filter((_, idx) => idx !== i))} style={{ background: "transparent", border: "none", color: "#ef4444", cursor: "pointer" }}>
+                            <Trash2 size={12} />
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+
+                {/* Subtitles */}
+                <div style={{ marginTop: "8px" }}>
+                  <h4 style={{ fontSize: "13px", fontWeight: "600", color: "#FF7A1A", marginBottom: "8px" }}>Subtitles (.vtt files)</h4>
+                  <div style={{ display: "flex", flexWrap: "wrap", gap: "8px", alignItems: "flex-end", background: "rgba(0,0,0,0.2)", padding: "10px", borderRadius: "6px", marginBottom: "8px" }}>
+                    <div style={{ minWidth: "110px" }}>
+                      <label style={{ display: "block", fontSize: "10px", color: "#9ca3af", marginBottom: "2px" }}>Language</label>
+                      <input
+                        type="text"
+                        list="modal-sub-languages"
+                        value={subLang}
+                        onChange={(e) => setSubLang(e.target.value)}
+                        placeholder="Type/select"
+                        style={{ width: "100%", padding: "5px", borderRadius: "4px", background: "var(--bg-input, #111827)", border: "1px solid var(--border)", color: "#fff", fontSize: "11px" }}
+                      />
+                      <datalist id="modal-sub-languages">
+                        {SUPPORTED_LANGUAGES.map((lang) => (
+                          <option key={lang} value={lang} />
+                        ))}
+                      </datalist>
+                    </div>
+                    <div>
+                      <label style={{ display: "block", fontSize: "10px", color: "#9ca3af", marginBottom: "2px" }}>Label</label>
+                      <input type="text" value={subLabel} onChange={(e) => setSubLabel(e.target.value)} style={{ padding: "5px", borderRadius: "4px", background: "var(--bg-input, #111827)", border: "1px solid var(--border)", color: "#fff", fontSize: "11px", width: "80px" }} />
+                    </div>
+                    <div>
+                      <label style={{ display: "block", fontSize: "10px", color: "#9ca3af", marginBottom: "2px" }}>Subtitle File</label>
+                      <input type="file" onChange={(e) => setSubFile(e.target.files?.[0])} accept=".vtt" style={{ color: "#fff", fontSize: "11px" }} />
+                    </div>
+                    <div style={{ display: "flex", alignItems: "center", gap: "4px", height: "26px" }}>
+                      <input type="checkbox" id="modalSubDefault" checked={subIsDefault} onChange={(e) => setSubIsDefault(e.target.checked)} />
+                      <label htmlFor="modalSubDefault" style={{ fontSize: "11px", color: "#9ca3af", cursor: "pointer" }}>Default</label>
+                    </div>
+                    <button type="button" onClick={addSubtitleToModal} style={{ padding: "5px 10px", background: "#FF7A1A", border: "none", color: "#fff", borderRadius: "4px", cursor: "pointer", fontSize: "11px", fontWeight: "600" }}>
+                      Add
+                    </button>
+                  </div>
+
+                  {modalSubtitles.length > 0 && (
+                    <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
+                      {modalSubtitles.map((track, i) => (
+                        <div key={i} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "6px 10px", background: "rgba(0,0,0,0.15)", borderRadius: "4px" }}>
+                          <div style={{ display: "flex", gap: "10px", alignItems: "center" }}>
+                            <span style={{ fontWeight: "600", fontSize: "11px", color: "#fff" }}>{track.language}</span>
+                            <span style={{ color: "#38bdf8", fontSize: "10px" }}>Label: "{track.label}"</span>
+                            <span style={{ color: "#9ca3af", fontSize: "10px" }}>{track.fileUrl ? "Existing Track" : `New: ${track.file?.name}`}</span>
+                            {track.isDefault && <span style={{ padding: "0px 4px", background: "#10b981", borderRadius: "8px", fontSize: "9px", fontWeight: "bold" }}>Default</span>}
+                          </div>
+                          <button type="button" onClick={() => setModalSubtitles(modalSubtitles.filter((_, idx) => idx !== i))} style={{ background: "transparent", border: "none", color: "#ef4444", cursor: "pointer" }}>
+                            <Trash2 size={12} />
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+
               </div>
             </div>
 

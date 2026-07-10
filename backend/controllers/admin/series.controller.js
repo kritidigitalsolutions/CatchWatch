@@ -1,7 +1,7 @@
 const Series = require("../../models/series.model");
 const Episode = require("../../models/episode.model");
 const { getMediaUrl, deleteMedia, deleteMediaFiles } = require("../../utils/mediaUrl");
-
+const { notifyNewContent } = require("../../utils/contentNotification");
 // ========================================
 // HELPERS
 // ========================================
@@ -112,6 +112,13 @@ const addSeries = async (req, res) => {
       category,
       priority,
     });
+    await notifyNewContent({
+    title: "📺 New Series Added",
+    message: `${series.title} is now available to watch.`,
+    type: "NEW_SERIES",
+    actionUrl: `/series/${series._id}`,
+    createdBy: req.user.id
+});
 
     return res.status(201).json({
       success: true,

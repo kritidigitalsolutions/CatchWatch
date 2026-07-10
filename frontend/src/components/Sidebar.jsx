@@ -1,7 +1,7 @@
 import "./Sidebar.css";
 import { NavLink } from "react-router-dom";
 // import { BarChart3, Users, Plus, Film, FileText, HelpCircle, CreditCard, Settings, LogOut } from "lucide-react";
-import { X, BarChart3, Users, Plus, Film, FileText, HelpCircle, CreditCard, Settings, LogOut, Star, Bell, MessageSquare, Clapperboard } from "lucide-react";
+import { X, BarChart3, Users, Plus, Film, FileText, HelpCircle, CreditCard, Settings, LogOut, Star, Bell, MessageSquare, Clapperboard, Play } from "lucide-react";
 
 const NAV = [
   { id: "dashboard", label: "Dashboard", icon: BarChart3, color: "#FF7A1A" },
@@ -18,6 +18,7 @@ const NAV = [
   { id: "support", label: "Support", icon: MessageSquare, color: "#06b6d4" },
   { id: "legal", label: "Legal", icon: FileText, color: "#8b5cf6" },
   { id: "help", label: "Help Center", icon: HelpCircle, color: "#06b6d4" },
+  { id: "test-content", label: "Sandbox Test", icon: Play, color: "#FF7A1A" },
   { id: "settings", label: "Settings", icon: Settings, color: "#64748b" },
 ];
 export default function Sidebar({ theme, showSidebar, toggleSidebar, closeSidebar }) {

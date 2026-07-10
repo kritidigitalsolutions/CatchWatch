@@ -32,9 +32,25 @@ const episodeSchema = new mongoose.Schema(
     },
 
     videoUrl: {
-      type: String,
-      required: true
+      type: String
     },
+
+    audioTracks: [
+      {
+        language: { type: String, trim: true },
+        fileUrl: { type: String, trim: true },
+        isDefault: { type: Boolean, default: false }
+      }
+    ],
+
+    subtitles: [
+      {
+        language: { type: String, trim: true },
+        label: { type: String, trim: true },
+        fileUrl: { type: String, trim: true },
+        isDefault: { type: Boolean, default: false }
+      }
+    ],
 
     thumbnail: {
       type: String,

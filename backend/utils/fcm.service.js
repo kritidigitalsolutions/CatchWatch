@@ -50,7 +50,12 @@ const sendPushNotification = async ({ token, title, body, data }) => {
     return { success: true, messageId: response };
   } catch (error) {
     console.error("FCM Send Error:", error);
-    return { success: false, error: error.message };
+    // return { success: false, error: error.message };
+    return {
+  success: false,
+  code: error.code,
+  message: error.message,
+};
   }
 };
 

@@ -93,6 +93,15 @@ const fileFilter = (req, file, cb) => {
     "video/mkv",
     "video/webm",
     "video/quicktime",
+    "audio/mpeg",
+    "audio/mp3",
+    "audio/aac",
+    "audio/x-aac",
+    "audio/ogg",
+    "audio/wav",
+    "text/vtt",
+    "text/plain",
+    "application/octet-stream"
   ];
 
   if (req.originalUrl && req.originalUrl.includes("/support")) {

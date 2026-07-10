@@ -16,6 +16,8 @@ import {
   Tv,
   Rocket,
   ChevronRight,
+  Trash,
+  Check,
 } from "lucide-react";
 
 export default function AddContent() {
@@ -46,6 +48,87 @@ export default function AddContent() {
   const [uploadProgress, setUploadProgress] = useState(0);
   const [uploadPhase, setUploadPhase] = useState(""); // "main", "episodes", "complete"
   const [currentEpisodeInfo, setCurrentEpisodeInfo] = useState({ current: 0, total: 0 });
+
+  // Multilingual Ingestion States
+  const [audioTracks, setAudioTracks] = useState([]); // [{ language, file, isDefault }]
+  const [selectedAudioLang, setSelectedAudioLang] = useState("Hindi");
+  const [audioFile, setAudioFile] = useState(null);
+  const [audioIsDefault, setAudioIsDefault] = useState(false);
+
+  const [subtitles, setSubtitles] = useState([]); // [{ language, label, file, isDefault }]
+  const [selectedSubLang, setSelectedSubLang] = useState("English");
+  const [subLabel, setSubLabel] = useState("English CC");
+  const [subFile, setSubFile] = useState(null);
+  const [subIsDefault, setSubIsDefault] = useState(false);
+
+  // Mapped episode track files (keyed by "seasonIndex_episodeIndex")
+  const [episodeAudioFiles, setEpisodeAudioFiles] = useState({}); // { "0_1": [{ language, file, isDefault }] }
+  const [episodeSubtitleFiles, setEpisodeSubtitleFiles] = useState({}); // { "0_1": [{ language, label, file, isDefault }] }
+
+  const audioInputRef = useRef(null);
+  const subInputRef = useRef(null);
+
+  const SUPPORTED_LANGUAGES = [
+    "English", "Hindi", "Tamil", "Telugu", "Kannada", "Malayalam", "Bengali", "Spanish", "French", "German"
+  ];
+
+  const addAudioTrack = () => {
+    if (!audioFile) {
+      alert("Please select an audio file.");
+      return;
+    }
+    const finalLanguage = selectedAudioLang.trim();
+    if (!finalLanguage) {
+      alert("Please specify a language name.");
+      return;
+    }
+    if (audioTracks.some((t) => t.language.toLowerCase() === finalLanguage.toLowerCase())) {
+      alert(`Audio track for ${finalLanguage} is already added.`);
+      return;
+    }
+    setAudioTracks([
+      ...audioTracks,
+      {
+        language: finalLanguage,
+        file: audioFile,
+        isDefault: audioIsDefault
+      }
+    ]);
+    setAudioFile(null);
+    setAudioIsDefault(false);
+    setSelectedAudioLang("Hindi");
+    if (audioInputRef.current) audioInputRef.current.value = "";
+  };
+
+  const addSubtitleTrack = () => {
+    if (!subFile) {
+      alert("Please select a subtitle file (.vtt).");
+      return;
+    }
+    const finalLanguage = selectedSubLang.trim();
+    if (!finalLanguage) {
+      alert("Please specify a language name.");
+      return;
+    }
+    if (subtitles.some((s) => s.language.toLowerCase() === finalLanguage.toLowerCase())) {
+      alert(`Subtitles for ${finalLanguage} are already added.`);
+      return;
+    }
+    setSubtitles([
+      ...subtitles,
+      {
+        language: finalLanguage,
+        label: subLabel || `${finalLanguage} Subtitle`,
+        file: subFile,
+        isDefault: subIsDefault
+      }
+    ]);
+    setSubFile(null);
+    setSubLabel("English CC");
+    setSubIsDefault(false);
+    setSelectedSubLang("English");
+    if (subInputRef.current) subInputRef.current.value = "";
+  };
 
 
 
@@ -211,11 +294,14 @@ const handleSubmit = async (e) => {
   setUploadPhase("main");
 
   try {
-    await createContent({
-      form,
-      videoFile, posterFile, bannerFile, trailerFile,
-      castFiles,
-      episodeVideoFiles, episodeThumbnailFiles,
+      await createContent({
+        form,
+        videoFile, posterFile, bannerFile, trailerFile,
+        castFiles,
+        episodeVideoFiles, episodeThumbnailFiles,
+        episodeAudioFiles, episodeSubtitleFiles,
+        audioTracks,
+        subtitles,
 
       onTrailerProgress: (percent) => {
         setUploadProgress(percent);
@@ -246,9 +332,15 @@ const handleSubmit = async (e) => {
     setPosterFile(null);
     setBannerFile(null);
     setTrailerFile(null);
-    setEpisodeVideoFiles({});
-    setEpisodeThumbnailFiles({});
-    setCastFiles({});
+      setEpisodeVideoFiles({});
+      setEpisodeThumbnailFiles({});
+      setEpisodeAudioFiles({});
+      setEpisodeSubtitleFiles({});
+      setCastFiles({});
+      setAudioTracks([]);
+      setSubtitles([]);
+      if (audioInputRef.current) audioInputRef.current.value = "";
+      if (subInputRef.current) subInputRef.current.value = "";
     setUploadProgress(0);
     setUploadPhase("");
     setCurrentEpisodeInfo({ current: 0, total: 0 });
@@ -410,6 +502,117 @@ const handleSubmit = async (e) => {
           }
         />
 
+        {(form.type === "movie" || form.type === "shortFilm") && (
+          <>
+            {/* Secondary Audio Tracks Ingestion */}
+            <div style={{ background: "#111827", padding: "24px", borderRadius: "12px", border: "1px solid #1f2937", color: "#fff", display: "flex", flexDirection: "column", gap: "20px" }}>
+              <h2 style={{ fontSize: "16px", fontWeight: "600", color: "#FF7A1A" }}>Secondary Audio Tracks</h2>
+              <div style={{ display: "flex", flexWrap: "wrap", gap: "15px", alignItems: "flex-end", background: "#1f2937", padding: "15px", borderRadius: "8px" }}>
+                <div style={{ minWidth: "150px" }}>
+                  <label style={{ display: "block", fontSize: "12px", color: "#9ca3af", marginBottom: "4px" }}>Language</label>
+                  <input
+                    type="text"
+                    list="audio-languages"
+                    value={selectedAudioLang}
+                    onChange={(e) => setSelectedAudioLang(e.target.value)}
+                    placeholder="Type or select"
+                    style={{ width: "100%", padding: "8px", borderRadius: "4px", background: "#111827", border: "1px solid #374151", color: "#fff" }}
+                  />
+                  <datalist id="audio-languages">
+                    {SUPPORTED_LANGUAGES.map((lang) => (
+                      <option key={lang} value={lang} />
+                    ))}
+                  </datalist>
+                </div>
+                <div>
+                  <label style={{ display: "block", fontSize: "12px", color: "#9ca3af", marginBottom: "4px" }}>Audio File</label>
+                  <input type="file" ref={audioInputRef} onChange={(e) => setAudioFile(e.target.files?.[0])} accept="audio/*" style={{ color: "#fff" }} />
+                </div>
+                <div style={{ display: "flex", alignItems: "center", gap: "6px", height: "36px" }}>
+                  <input type="checkbox" id="audioDefault" checked={audioIsDefault} onChange={(e) => setAudioIsDefault(e.target.checked)} />
+                  <label htmlFor="audioDefault" style={{ fontSize: "13px", color: "#9ca3af", cursor: "pointer" }}>Is Default</label>
+                </div>
+                <button type="button" onClick={addAudioTrack} style={{ padding: "8px 16px", background: "#FF7A1A", border: "none", color: "#fff", borderRadius: "4px", cursor: "pointer", fontWeight: "600" }}>
+                  Add Track
+                </button>
+              </div>
+
+              {audioTracks.length > 0 && (
+                <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
+                  {audioTracks.map((track, i) => (
+                    <div key={i} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "10px 15px", background: "#1f2937", borderRadius: "6px" }}>
+                      <div style={{ display: "flex", gap: "20px", alignItems: "center" }}>
+                        <span style={{ fontWeight: "600", color: "#fff" }}>{track.language}</span>
+                        <span style={{ color: "#9ca3af", fontSize: "13px" }}>{track.file.name}</span>
+                        {track.isDefault && <span style={{ padding: "2px 8px", background: "#10b981", borderRadius: "12px", fontSize: "11px", fontWeight: "bold" }}>Default</span>}
+                      </div>
+                      <button type="button" onClick={() => setAudioTracks(audioTracks.filter((_, idx) => idx !== i))} style={{ background: "transparent", border: "none", color: "#ef4444", cursor: "pointer" }}>
+                        <Trash size={16} />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            {/* Subtitles Ingestion */}
+            <div style={{ background: "#111827", padding: "24px", borderRadius: "12px", border: "1px solid #1f2937", color: "#fff", display: "flex", flexDirection: "column", gap: "20px" }}>
+              <h2 style={{ fontSize: "16px", fontWeight: "600", color: "#FF7A1A" }}>Subtitles (.vtt files)</h2>
+              <div style={{ display: "flex", flexWrap: "wrap", gap: "15px", alignItems: "flex-end", background: "#1f2937", padding: "15px", borderRadius: "8px" }}>
+                <div style={{ minWidth: "150px" }}>
+                  <label style={{ display: "block", fontSize: "12px", color: "#9ca3af", marginBottom: "4px" }}>Language</label>
+                  <input
+                    type="text"
+                    list="subtitle-languages"
+                    value={selectedSubLang}
+                    onChange={(e) => setSelectedSubLang(e.target.value)}
+                    placeholder="Type or select"
+                    style={{ width: "100%", padding: "8px", borderRadius: "4px", background: "#111827", border: "1px solid #374151", color: "#fff" }}
+                  />
+                  <datalist id="subtitle-languages">
+                    {SUPPORTED_LANGUAGES.map((lang) => (
+                      <option key={lang} value={lang} />
+                    ))}
+                  </datalist>
+                </div>
+                <div>
+                  <label style={{ display: "block", fontSize: "12px", color: "#9ca3af", marginBottom: "4px" }}>Label (e.g. English [CC])</label>
+                  <input type="text" value={subLabel} onChange={(e) => setSubLabel(e.target.value)} style={{ padding: "8px", borderRadius: "4px", background: "#111827", border: "1px solid #374151", color: "#fff" }} />
+                </div>
+                <div>
+                  <label style={{ display: "block", fontSize: "12px", color: "#9ca3af", marginBottom: "4px" }}>Subtitle File</label>
+                  <input type="file" ref={subInputRef} onChange={(e) => setSubFile(e.target.files?.[0])} accept=".vtt" style={{ color: "#fff" }} />
+                </div>
+                <div style={{ display: "flex", alignItems: "center", gap: "6px", height: "36px" }}>
+                  <input type="checkbox" id="subDefault" checked={subIsDefault} onChange={(e) => setSubIsDefault(e.target.checked)} />
+                  <label htmlFor="subDefault" style={{ fontSize: "13px", color: "#9ca3af", cursor: "pointer" }}>Is Default</label>
+                </div>
+                <button type="button" onClick={addSubtitleTrack} style={{ padding: "8px 16px", background: "#FF7A1A", border: "none", color: "#fff", borderRadius: "4px", cursor: "pointer", fontWeight: "600" }}>
+                  Add Subtitle
+                </button>
+              </div>
+
+              {subtitles.length > 0 && (
+                <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
+                  {subtitles.map((track, i) => (
+                    <div key={i} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "10px 15px", background: "#1f2937", borderRadius: "6px" }}>
+                      <div style={{ display: "flex", gap: "20px", alignItems: "center" }}>
+                        <span style={{ fontWeight: "600", color: "#fff" }}>{track.language}</span>
+                        <span style={{ color: "#38bdf8", fontSize: "13px" }}>Label: "{track.label}"</span>
+                        <span style={{ color: "#9ca3af", fontSize: "13px" }}>{track.file.name}</span>
+                        {track.isDefault && <span style={{ padding: "2px 8px", background: "#10b981", borderRadius: "12px", fontSize: "11px", fontWeight: "bold" }}>Default</span>}
+                      </div>
+                      <button type="button" onClick={() => setSubtitles(subtitles.filter((_, idx) => idx !== i))} style={{ background: "transparent", border: "none", color: "#ef4444", cursor: "pointer" }}>
+                        <Trash size={16} />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </>
+        )}
+
         <CastSection
           cast={form.cast}
           castFiles={castFiles}
@@ -456,6 +659,11 @@ const handleSubmit = async (e) => {
           setEpisodeThumbnailFiles={
             setEpisodeThumbnailFiles
           }
+
+          episodeAudioFiles={episodeAudioFiles}
+          setEpisodeAudioFiles={setEpisodeAudioFiles}
+          episodeSubtitleFiles={episodeSubtitleFiles}
+          setEpisodeSubtitleFiles={setEpisodeSubtitleFiles}
         />
 
 

@@ -21,6 +21,11 @@ export default function SeasonsSection({
 
   setEpisodeVideoFiles,
   setEpisodeThumbnailFiles,
+
+  episodeAudioFiles,
+  setEpisodeAudioFiles,
+  episodeSubtitleFiles,
+  setEpisodeSubtitleFiles,
 }) {
   const isTvShow = form.type === "tvShow";
 
@@ -118,6 +123,11 @@ export default function SeasonsSection({
             setEpisodeThumbnailFiles={
               setEpisodeThumbnailFiles
             }
+
+            episodeAudioFiles={episodeAudioFiles}
+            setEpisodeAudioFiles={setEpisodeAudioFiles}
+            episodeSubtitleFiles={episodeSubtitleFiles}
+            setEpisodeSubtitleFiles={setEpisodeSubtitleFiles}
           />
         )
       )}

@@ -304,6 +304,9 @@ const userSupportRoutes = require(
 const adminSupportRoutes = require(
   "./routes/admin/support.routes"
 );
+const adminReelRoutes = require(
+  "./routes/admin/reel.routes"
+);
 
 app.use(
   "/api/support",
@@ -313,6 +316,11 @@ app.use(
 app.use(
   "/api/admin/support",
   adminSupportRoutes
+);
+
+app.use(
+  "/api/admin/reels",
+  adminReelRoutes
 );
 
 const reelRoutes = require(

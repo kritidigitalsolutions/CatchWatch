@@ -7,7 +7,7 @@ const TvShowsEpisode = require(
 );
 
 const { getMediaUrl, deleteMedia } = require("../../utils/mediaUrl");
-
+const { notifyNewContent } = require("../../utils/contentNotification");
 
 // ========================================
 // HELPERS
@@ -166,6 +166,17 @@ const addTvShow = async (
 
         priority,
       });
+      try {
+  await notifyNewContent({
+    title: "📺 New TV Show Added",
+    message: `${tvShow.title} is now available.`,
+    type: "NEW_TV_SHOW",
+    actionUrl: `/tv-shows/${tvShow._id}`,
+    createdBy: req.user.id,
+  });
+} catch (err) {
+  console.error("TV Show notification failed:", err.message);
+}
 
     return res.status(201).json({
       success: true,

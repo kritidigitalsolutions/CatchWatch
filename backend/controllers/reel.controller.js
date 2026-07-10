@@ -10,7 +10,10 @@ exports.uploadReel = async (req, res) => {
   try {
     const { caption, hashtags } = req.body;
 
-    if (!req.file) {
+    const videoFile = req.files?.video?.[0];
+    const thumbnailFile = req.files?.thumbnail?.[0];
+
+    if (!videoFile) {
       return res.status(400).json({
         success: false,
         message: "Video file is required",
@@ -34,7 +37,8 @@ exports.uploadReel = async (req, res) => {
 
     const reel = await Reel.create({
       user: req.user.id,
-      videoUrl: req.file.path.replace(/\\/g, "/"),
+      videoUrl: videoFile.path.replace(/\\/g, "/"),
+      thumbnail: thumbnailFile ? thumbnailFile.path.replace(/\\/g, "/") : "",
       caption,
       hashtags: hashtagsArray,
     });

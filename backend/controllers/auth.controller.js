@@ -115,8 +115,8 @@ const generateUserToken = (user) => {
       expiresIn:
         process.env.JWT_EXPIRE || "7d",
 
-      issuer: "roccoplay",
-      audience: "roccoplay-app",
+      issuer: "catchwatch",
+      audience: "catchwatch-app",
     }
   );
 };

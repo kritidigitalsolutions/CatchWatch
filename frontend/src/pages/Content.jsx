@@ -126,7 +126,201 @@ export default function Content() {
 
 
   const videoRef = useRef(null);
+  const audioRef = useRef(null);
   const searchTimeout = useRef(null);
+
+  // Multilingual preview states
+  const [isSecondaryAudio, setIsSecondaryAudio] = useState(false);
+  const [activeAudioUrl, setActiveAudioUrl] = useState("");
+  const [activeAudioLang, setActiveAudioLang] = useState("Default");
+  const [activeSubUrl, setActiveSubUrl] = useState("");
+  const [activeSubLang, setActiveSubLang] = useState("Off");
+
+  // Temp inputs for editing tracks
+  const [editAudioLang, setEditAudioLang] = useState("Hindi");
+  const [editAudioFile, setEditAudioFile] = useState(null);
+  const [editAudioIsDefault, setEditAudioIsDefault] = useState(false);
+
+  const [editSubLang, setEditSubLang] = useState("English");
+  const [editSubLabel, setEditSubLabel] = useState("English CC");
+  const [editSubFile, setEditSubFile] = useState(null);
+  const [editSubIsDefault, setEditSubIsDefault] = useState(false);
+
+  const editAudioInputRef = useRef(null);
+  const editSubInputRef = useRef(null);
+
+  const SUPPORTED_LANGUAGES = [
+    "English", "Hindi", "Tamil", "Telugu", "Kannada", "Malayalam", "Bengali", "Spanish", "French", "German"
+  ];
+
+  const addEditAudioTrack = () => {
+    if (!editAudioFile) {
+      alert("Please select an audio file.");
+      return;
+    }
+    const finalLanguage = editAudioLang.trim();
+    if (!finalLanguage) {
+      alert("Please specify a language name.");
+      return;
+    }
+    const tracks = editData.audioTracks || [];
+    if (tracks.some((t) => t.language.toLowerCase() === finalLanguage.toLowerCase())) {
+      alert(`Audio track for ${finalLanguage} is already added.`);
+      return;
+    }
+    setEditData(prev => ({
+      ...prev,
+      audioTracks: [...(prev.audioTracks || []), { language: finalLanguage, file: editAudioFile, isDefault: editAudioIsDefault }]
+    }));
+    setEditAudioFile(null);
+    setEditAudioIsDefault(false);
+    setEditAudioLang("Hindi");
+    if (editAudioInputRef.current) editAudioInputRef.current.value = "";
+  };
+
+  const addEditSubtitleTrack = () => {
+    if (!editSubFile) {
+      alert("Please select a subtitle file (.vtt).");
+      return;
+    }
+    const finalLanguage = editSubLang.trim();
+    if (!finalLanguage) {
+      alert("Please specify a language name.");
+      return;
+    }
+    const subs = editData.subtitles || [];
+    if (subs.some((s) => s.language.toLowerCase() === finalLanguage.toLowerCase())) {
+      alert(`Subtitles for ${finalLanguage} are already added.`);
+      return;
+    }
+    setEditData(prev => ({
+      ...prev,
+      subtitles: [...(prev.subtitles || []), { language: finalLanguage, label: editSubLabel || `${finalLanguage} Subtitle`, file: editSubFile, isDefault: editSubIsDefault }]
+    }));
+    setEditSubFile(null);
+    setEditSubLabel("English CC");
+    setEditSubIsDefault(false);
+    setEditSubLang("English");
+    if (editSubInputRef.current) editSubInputRef.current.value = "";
+  };
+
+  // Temporary states for adding track files during episode creation
+  const [newEpAudioTracks, setNewEpAudioTracks] = useState([]);
+  const [newEpSubtitles, setNewEpSubtitles] = useState([]);
+
+  const addNewEpAudioTrack = () => {
+    if (!editAudioFile) {
+      alert("Please select an audio file.");
+      return;
+    }
+    const finalLanguage = editAudioLang.trim();
+    if (!finalLanguage) {
+      alert("Please specify a language name.");
+      return;
+    }
+    if (newEpAudioTracks.some((t) => t.language.toLowerCase() === finalLanguage.toLowerCase())) {
+      alert(`Audio track for ${finalLanguage} is already added.`);
+      return;
+    }
+    setNewEpAudioTracks([
+      ...newEpAudioTracks,
+      { language: finalLanguage, file: editAudioFile, isDefault: editAudioIsDefault }
+    ]);
+    setEditAudioFile(null);
+    setEditAudioIsDefault(false);
+    setEditAudioLang("Hindi");
+    if (editAudioInputRef.current) editAudioInputRef.current.value = "";
+  };
+
+  const addNewEpSubtitleTrack = () => {
+    if (!editSubFile) {
+      alert("Please select a subtitle file (.vtt).");
+      return;
+    }
+    const finalLanguage = editSubLang.trim();
+    if (!finalLanguage) {
+      alert("Please specify a language name.");
+      return;
+    }
+    if (newEpSubtitles.some((s) => s.language.toLowerCase() === finalLanguage.toLowerCase())) {
+      alert(`Subtitles for ${finalLanguage} are already added.`);
+      return;
+    }
+    setNewEpSubtitles([
+      ...newEpSubtitles,
+      { language: finalLanguage, label: editSubLabel || `${finalLanguage} Subtitle`, file: editSubFile, isDefault: editSubIsDefault }
+    ]);
+    setEditSubFile(null);
+    setEditSubLabel("English CC");
+    setEditSubIsDefault(false);
+    setEditSubLang("English");
+    if (editSubInputRef.current) editSubInputRef.current.value = "";
+  };
+
+  // Reset player when selected item, episode, or modal mode changes
+  useEffect(() => {
+    setIsSecondaryAudio(false);
+    setActiveAudioUrl("");
+    setActiveAudioLang("Default");
+    setActiveSubUrl("");
+    setActiveSubLang("Off");
+  }, [selectedItem, selectedEpisode, modalMode]);
+
+  // Player Sync useEffect
+  useEffect(() => {
+    const video = videoRef.current;
+    const audio = audioRef.current;
+    if (!video) return;
+
+    const handlePlay = () => {
+      if (isSecondaryAudio && audio) {
+        audio.play().catch((e) => console.log("Audio play deferred:", e));
+      }
+    };
+
+    const handlePause = () => {
+      if (audio) {
+        audio.pause();
+      }
+    };
+
+    const handleSeeking = () => {
+      if (isSecondaryAudio && audio) {
+        audio.currentTime = video.currentTime;
+      }
+    };
+
+    const handleRateChange = () => {
+      if (isSecondaryAudio && audio) {
+        audio.playbackRate = video.playbackRate;
+      }
+    };
+
+    let syncInterval;
+    if (isSecondaryAudio) {
+      syncInterval = setInterval(() => {
+        if (video && audio && !video.paused) {
+          const drift = Math.abs(audio.currentTime - video.currentTime);
+          if (drift > 0.15) {
+            audio.currentTime = video.currentTime;
+          }
+        }
+      }, 250);
+    }
+
+    video.addEventListener("play", handlePlay);
+    video.addEventListener("pause", handlePause);
+    video.addEventListener("seeking", handleSeeking);
+    video.addEventListener("ratechange", handleRateChange);
+
+    return () => {
+      video.removeEventListener("play", handlePlay);
+      video.removeEventListener("pause", handlePause);
+      video.removeEventListener("seeking", handleSeeking);
+      video.removeEventListener("ratechange", handleRateChange);
+      if (syncInterval) clearInterval(syncInterval);
+    };
+  }, [isSecondaryAudio, activeAudioUrl, selectedItem]);
 
   const getFullUrl = (url) => {
     if (!url) return "";
@@ -178,16 +372,16 @@ export default function Content() {
   const fetchData = async (signal) => {
     setLoading(true);
     try {
-      const endpoint = contentType === "movies" ? "/admin/movies" : 
-                       contentType === "series" ? "/admin/series" :
-                       contentType === "tvShows" ? "/admin/tv-shows" :
-                       "/admin/short-films";
+      const endpoint = contentType === "movies" ? "/admin/movies" :
+        contentType === "series" ? "/admin/series" :
+          contentType === "tvShows" ? "/admin/tv-shows" :
+            "/admin/short-films";
       const res = await API.get(`${endpoint}?page=${currentPage}&limit=10`, { signal });
 
-      const key = contentType === "movies" ? "movies" : 
-                  contentType === "series" ? "series" :
-                  contentType === "tvShows" ? "tvShows" :
-                  "shortFilms";
+      const key = contentType === "movies" ? "movies" :
+        contentType === "series" ? "series" :
+          contentType === "tvShows" ? "tvShows" :
+            "shortFilms";
       setData(res.data[key] || []);
       setTotalPages(res.data.pages || 1);
       setTotalItems(res.data.total || 0);
@@ -235,10 +429,10 @@ export default function Content() {
   const doSearch = async (q) => {
     setIsSearching(true);
     try {
-      const endpoint = contentType === "movies" ? `/admin/movies/search?q=${encodeURIComponent(q)}` : 
-                       contentType === "series" ? `/admin/series/search?q=${encodeURIComponent(q)}` :
-                       contentType === "tvShows" ? `/admin/tv-shows/search?q=${encodeURIComponent(q)}` :
-                       `/admin/short-films/search?q=${encodeURIComponent(q)}`;
+      const endpoint = contentType === "movies" ? `/admin/movies/search?q=${encodeURIComponent(q)}` :
+        contentType === "series" ? `/admin/series/search?q=${encodeURIComponent(q)}` :
+          contentType === "tvShows" ? `/admin/tv-shows/search?q=${encodeURIComponent(q)}` :
+            `/admin/short-films/search?q=${encodeURIComponent(q)}`;
       const res = await API.get(endpoint);
       setSearchResults(res.data.results || []);
     } catch (err) {
@@ -321,6 +515,29 @@ export default function Content() {
       formData.append("videoUrl", videoUrl);
       formData.append("thumbnailUrl", thumbnailUrl);
 
+      const audioMetadata = [];
+      for (const track of newEpAudioTracks) {
+        const fileUrl = await uploadToBunny(track.file, "episodes", "videos");
+        audioMetadata.push({
+          language: track.language,
+          fileUrl,
+          isDefault: track.isDefault
+        });
+      }
+      formData.append("audioMetadata", JSON.stringify(audioMetadata));
+
+      const subtitleMetadata = [];
+      for (const track of newEpSubtitles) {
+        const fileUrl = await uploadToBunny(track.file, "episodes", "posters");
+        subtitleMetadata.push({
+          language: track.language,
+          label: track.label,
+          fileUrl,
+          isDefault: track.isDefault
+        });
+      }
+      formData.append("subtitleMetadata", JSON.stringify(subtitleMetadata));
+
       const epAddRoute = contentType === "tvShows" ? `/admin/tv-shows-episodes/${selectedSeries._id}/add` : "/admin/episodes/add";
       await API.post(epAddRoute, formData, { headers: { "Content-Type": "multipart/form-data" } });
 
@@ -334,6 +551,8 @@ export default function Content() {
       setNewEpisodeThumbnail(null);
       setNewEpisodeThumbnailUrl("");
       setNewSeasonNumber("");
+      setNewEpAudioTracks([]);
+      setNewEpSubtitles([]);
       fetchEpisodes(selectedSeries._id);
 
     } catch (err) {
@@ -422,10 +641,10 @@ export default function Content() {
     setUploadPhase("saving");
 
     try {
-      const typeFolder = contentType === "movies" ? "movies" : 
-                         contentType === "series" ? "series" :
-                         contentType === "tvShows" ? "tvShows" :
-                         "shortFilms";
+      const typeFolder = contentType === "movies" ? "movies" :
+        contentType === "series" ? "series" :
+          contentType === "tvShows" ? "tvShows" :
+            "shortFilms";
 
       // 1. Direct upload cast image files and update payload URLs
       const invalidCast = (editData.cast || []).find((c, idx) => {
@@ -469,13 +688,13 @@ export default function Content() {
       // 4. Direct upload trailer
       let trailerUrl = uploadData.trailerUrl || "";
       if (uploadData.trailer) {
-  trailerUrl = await uploadToBunny(
-    uploadData.trailer,
-    typeFolder,
-    "trailers",
-    (percent) => setUploadProgress(percent)   // ✅ add this
-  );
-}
+        trailerUrl = await uploadToBunny(
+          uploadData.trailer,
+          typeFolder,
+          "trailers",
+          (percent) => setUploadProgress(percent)   // ✅ add this
+        );
+      }
 
       // 5. Direct upload video (movies and short films only)
       let videoUrl = uploadData.videoUrl || "";
@@ -513,13 +732,51 @@ export default function Content() {
       formData.append("banner", bannerUrl);
       formData.append("trailerUrl", trailerUrl);
       if (contentType === "movies" || contentType === "shortFilms") {
-        formData.append("videoUrl", videoUrl);
+        const audioMetadata = [];
+        (editData.audioTracks || []).forEach((track) => {
+          if (track.fileUrl) {
+            audioMetadata.push({
+              language: track.language,
+              isDefault: track.isDefault,
+              fileUrl: track.fileUrl
+            });
+          } else if (track.file) {
+            audioMetadata.push({
+              language: track.language,
+              isDefault: track.isDefault,
+              originalname: track.file.name
+            });
+            formData.append("audioTracks", track.file);
+          }
+        });
+        formData.append("audioMetadata", JSON.stringify(audioMetadata));
+
+        const subtitleMetadata = [];
+        (editData.subtitles || []).forEach((track) => {
+          if (track.fileUrl) {
+            subtitleMetadata.push({
+              language: track.language,
+              label: track.label,
+              isDefault: track.isDefault,
+              fileUrl: track.fileUrl
+            });
+          } else if (track.file) {
+            subtitleMetadata.push({
+              language: track.language,
+              label: track.label,
+              isDefault: track.isDefault,
+              originalname: track.file.name
+            });
+            formData.append("subtitles", track.file);
+          }
+        });
+        formData.append("subtitleMetadata", JSON.stringify(subtitleMetadata));
       }
 
-      const route = contentType === "movies" ? "movies" : 
-                    contentType === "series" ? "series" :
-                    contentType === "tvShows" ? "tv-shows" :
-                    "short-films";
+      const route = contentType === "movies" ? "movies" :
+        contentType === "series" ? "series" :
+          contentType === "tvShows" ? "tv-shows" :
+            "short-films";
       await API.patch(`/admin/${route}/${selectedItem._id}`, formData, {
         headers: { "Content-Type": "multipart/form-data" },
       });
@@ -581,6 +838,46 @@ export default function Content() {
 
       formData.append("videoUrl", videoUrl);
       formData.append("thumbnailUrl", thumbnailUrl);
+
+      const audioMetadata = [];
+      (editData.audioTracks || []).forEach((track) => {
+        if (track.fileUrl) {
+          audioMetadata.push({
+            language: track.language,
+            isDefault: track.isDefault,
+            fileUrl: track.fileUrl
+          });
+        } else if (track.file) {
+          audioMetadata.push({
+            language: track.language,
+            isDefault: track.isDefault,
+            originalname: track.file.name
+          });
+          formData.append("audioTracks", track.file);
+        }
+      });
+      formData.append("audioMetadata", JSON.stringify(audioMetadata));
+
+      const subtitleMetadata = [];
+      (editData.subtitles || []).forEach((track) => {
+        if (track.fileUrl) {
+          subtitleMetadata.push({
+            language: track.language,
+            label: track.label,
+            isDefault: track.isDefault,
+            fileUrl: track.fileUrl
+          });
+        } else if (track.file) {
+          subtitleMetadata.push({
+            language: track.language,
+            label: track.label,
+            isDefault: track.isDefault,
+            originalname: track.file.name
+          });
+          formData.append("subtitles", track.file);
+        }
+      });
+      formData.append("subtitleMetadata", JSON.stringify(subtitleMetadata));
 
       const epUpdateRoute = contentType === "tvShows" ? `/admin/tv-shows-episodes/${selectedEpisode._id}` : `/admin/episodes/${selectedEpisode._id}`;
       await API.patch(epUpdateRoute, formData, {
@@ -1009,11 +1306,126 @@ export default function Content() {
                   <label className="form-label">Description</label>
                   <textarea className="form-input" rows="2" value={newEpisode.description} onChange={e => setNewEpisode(p => ({ ...p, description: e.target.value }))} placeholder="Brief description…" />
                 </div>
+
+                {/* Multilingual Tracks Section for Adding Season & Episode */}
+                <div style={{ display: "flex", flexDirection: "column", gap: "20px", background: "var(--bg-card, #1f2937)", padding: "20px", borderRadius: "8px", border: "1px solid var(--border, #374151)", width: "100%", gridColumn: "span 2", marginTop: "15px", marginBottom: "15px" }}>
+
+                  {/* Audio Tracks */}
+                  <div>
+                    <h4 style={{ fontSize: "14px", fontWeight: "600", color: "#FF7A1A", marginBottom: "12px" }}>Secondary Audio Tracks</h4>
+                    <div style={{ display: "flex", flexWrap: "wrap", gap: "10px", alignItems: "flex-end", background: "var(--bg-input, #111827)", padding: "12px", borderRadius: "6px", marginBottom: "12px" }}>
+                      <div style={{ minWidth: "120px" }}>
+                        <label style={{ display: "block", fontSize: "11px", color: "#9ca3af", marginBottom: "4px" }}>Language</label>
+                        <input
+                          type="text"
+                          list="new-season-audio-languages"
+                          value={editAudioLang}
+                          onChange={(e) => setEditAudioLang(e.target.value)}
+                          placeholder="Type or select"
+                          style={{ width: "100%", padding: "6px", borderRadius: "4px", background: "#1f2937", border: "1px solid #374151", color: "#fff", fontSize: "12px" }}
+                        />
+                        <datalist id="new-season-audio-languages">
+                          {SUPPORTED_LANGUAGES.map((lang) => (
+                            <option key={lang} value={lang} />
+                          ))}
+                        </datalist>
+                      </div>
+                      <div>
+                        <label style={{ display: "block", fontSize: "11px", color: "#9ca3af", marginBottom: "4px" }}>Audio File</label>
+                        <input type="file" ref={editAudioInputRef} onChange={(e) => setEditAudioFile(e.target.files?.[0])} accept="audio/*" style={{ color: "#fff", fontSize: "12px" }} />
+                      </div>
+                      <div style={{ display: "flex", alignItems: "center", gap: "4px", height: "30px" }}>
+                        <input type="checkbox" id="newSeasonAudioDefault" checked={editAudioIsDefault} onChange={(e) => setEditAudioIsDefault(e.target.checked)} />
+                        <label htmlFor="newSeasonAudioDefault" style={{ fontSize: "12px", color: "#9ca3af", cursor: "pointer" }}>Default</label>
+                      </div>
+                      <button type="button" onClick={addNewEpAudioTrack} style={{ padding: "6px 12px", background: "#FF7A1A", border: "none", color: "#fff", borderRadius: "4px", cursor: "pointer", fontSize: "12px", fontWeight: "600" }}>
+                        Add Track
+                      </button>
+                    </div>
+
+                    {/* List of currently configured Audio Tracks */}
+                    {newEpAudioTracks.length > 0 && (
+                      <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
+                        {newEpAudioTracks.map((track, i) => (
+                          <div key={i} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "8px 12px", background: "var(--bg-input, #111827)", borderRadius: "6px" }}>
+                            <div style={{ display: "flex", gap: "15px", alignItems: "center" }}>
+                              <span style={{ fontWeight: "600", fontSize: "13px", color: "#fff" }}>{track.language}</span>
+                              <span style={{ color: "#9ca3af", fontSize: "12px" }}>New Upload: {track.file?.name}</span>
+                              {track.isDefault && <span style={{ padding: "1px 6px", background: "#10b981", borderRadius: "10px", fontSize: "10px", fontWeight: "bold" }}>Default</span>}
+                            </div>
+                            <button type="button" onClick={() => setNewEpAudioTracks(newEpAudioTracks.filter((_, idx) => idx !== i))} style={{ background: "transparent", border: "none", color: "#ef4444", cursor: "pointer" }}>
+                              <Trash2 size={14} />
+                            </button>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Subtitles */}
+                  <div style={{ marginTop: "10px" }}>
+                    <h4 style={{ fontSize: "14px", fontWeight: "600", color: "#FF7A1A", marginBottom: "12px" }}>Subtitles (.vtt files)</h4>
+                    <div style={{ display: "flex", flexWrap: "wrap", gap: "10px", alignItems: "flex-end", background: "var(--bg-input, #111827)", padding: "12px", borderRadius: "6px", marginBottom: "12px" }}>
+                      <div style={{ minWidth: "120px" }}>
+                        <label style={{ display: "block", fontSize: "11px", color: "#9ca3af", marginBottom: "4px" }}>Language</label>
+                        <input
+                          type="text"
+                          list="new-season-subtitle-languages"
+                          value={editSubLang}
+                          onChange={(e) => setEditSubLang(e.target.value)}
+                          placeholder="Type or select"
+                          style={{ width: "100%", padding: "6px", borderRadius: "4px", background: "#1f2937", border: "1px solid #374151", color: "#fff", fontSize: "12px" }}
+                        />
+                        <datalist id="new-season-subtitle-languages">
+                          {SUPPORTED_LANGUAGES.map((lang) => (
+                            <option key={lang} value={lang} />
+                          ))}
+                        </datalist>
+                      </div>
+                      <div>
+                        <label style={{ display: "block", fontSize: "11px", color: "#9ca3af", marginBottom: "4px" }}>Label (e.g. English [CC])</label>
+                        <input type="text" value={editSubLabel} onChange={(e) => setEditSubLabel(e.target.value)} style={{ padding: "6px", borderRadius: "4px", background: "#1f2937", border: "1px solid #374151", color: "#fff", fontSize: "12px" }} />
+                      </div>
+                      <div>
+                        <label style={{ display: "block", fontSize: "11px", color: "#9ca3af", marginBottom: "4px" }}>Subtitle File</label>
+                        <input type="file" ref={editSubInputRef} onChange={(e) => setEditSubFile(e.target.files?.[0])} accept=".vtt" style={{ color: "#fff", fontSize: "12px" }} />
+                      </div>
+                      <div style={{ display: "flex", alignItems: "center", gap: "4px", height: "30px" }}>
+                        <input type="checkbox" id="newSeasonSubDefault" checked={editSubIsDefault} onChange={(e) => setEditSubIsDefault(e.target.checked)} />
+                        <label htmlFor="newSeasonSubDefault" style={{ fontSize: "12px", color: "#9ca3af", cursor: "pointer" }}>Default</label>
+                      </div>
+                      <button type="button" onClick={addNewEpSubtitleTrack} style={{ padding: "6px 12px", background: "#FF7A1A", border: "none", color: "#fff", borderRadius: "4px", cursor: "pointer", fontSize: "12px", fontWeight: "600" }}>
+                        Add Subtitle
+                      </button>
+                    </div>
+
+                    {/* List of currently configured Subtitle Tracks */}
+                    {newEpSubtitles.length > 0 && (
+                      <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
+                        {newEpSubtitles.map((track, i) => (
+                          <div key={i} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "8px 12px", background: "var(--bg-input, #111827)", borderRadius: "6px" }}>
+                            <div style={{ display: "flex", gap: "15px", alignItems: "center" }}>
+                              <span style={{ fontWeight: "600", fontSize: "13px", color: "#fff" }}>{track.language}</span>
+                              <span style={{ color: "#38bdf8", fontSize: "12px" }}>Label: "{track.label}"</span>
+                              <span style={{ color: "#9ca3af", fontSize: "12px" }}>New Upload: {track.file?.name}</span>
+                              {track.isDefault && <span style={{ padding: "1px 6px", background: "#10b981", borderRadius: "10px", fontSize: "10px", fontWeight: "bold" }}>Default</span>}
+                            </div>
+                            <button type="button" onClick={() => setNewEpSubtitles(newEpSubtitles.filter((_, idx) => idx !== i))} style={{ background: "transparent", border: "none", color: "#ef4444", cursor: "pointer" }}>
+                              <Trash2 size={14} />
+                            </button>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+
+                </div>
+
                 <div style={{ display: "flex", gap: 10, marginTop: 8 }}>
                   <button className="btn btn-primary" onClick={() => handleAddEpisode("new-season")} disabled={addingEpisode}>
                     {addingEpisode ? "Adding…" : <><Plus size={14} /> Add Season &amp; Episode</>}
                   </button>
-                  <button className="btn btn-ghost" onClick={() => { setShowAddSeasonForm(false); setShowAddEpisodeForm(null); setNewEpisode({ title: "", episodeNumber: "", duration: "", description: "", seasonNumber: "" }); setNewSeasonNumber(""); setNewEpisodeVideo(null); setNewEpisodeVideoUrl(""); setNewEpisodeThumbnail(null); setNewEpisodeThumbnailUrl(""); }}>
+                  <button className="btn btn-ghost" onClick={() => { setShowAddSeasonForm(false); setShowAddEpisodeForm(null); setNewEpisode({ title: "", episodeNumber: "", duration: "", description: "", seasonNumber: "" }); setNewSeasonNumber(""); setNewEpisodeVideo(null); setNewEpisodeVideoUrl(""); setNewEpisodeThumbnail(null); setNewEpisodeThumbnailUrl(""); setNewEpAudioTracks([]); setNewEpSubtitles([]); }}>
                     Cancel
                   </button>
                 </div>
@@ -1105,11 +1517,126 @@ export default function Content() {
                       <label className="form-label">Description</label>
                       <textarea className="form-input" rows="2" value={newEpisode.description} onChange={e => setNewEpisode(p => ({ ...p, description: e.target.value }))} />
                     </div>
+
+                    {/* Multilingual Tracks Section for Adding Inline Episode */}
+                    <div style={{ display: "flex", flexDirection: "column", gap: "20px", background: "var(--bg-card, #1f2937)", padding: "20px", borderRadius: "8px", border: "1px solid var(--border, #374151)", width: "100%", gridColumn: "span 2", marginTop: "15px", marginBottom: "15px" }}>
+
+                      {/* Audio Tracks */}
+                      <div>
+                        <h4 style={{ fontSize: "14px", fontWeight: "600", color: "#FF7A1A", marginBottom: "12px" }}>Secondary Audio Tracks</h4>
+                        <div style={{ display: "flex", flexWrap: "wrap", gap: "10px", alignItems: "flex-end", background: "var(--bg-input, #111827)", padding: "12px", borderRadius: "6px", marginBottom: "12px" }}>
+                          <div style={{ minWidth: "120px" }}>
+                            <label style={{ display: "block", fontSize: "11px", color: "#9ca3af", marginBottom: "4px" }}>Language</label>
+                            <input
+                              type="text"
+                              list={`new-ep-audio-languages-s${seasonNum}`}
+                              value={editAudioLang}
+                              onChange={(e) => setEditAudioLang(e.target.value)}
+                              placeholder="Type or select"
+                              style={{ width: "100%", padding: "6px", borderRadius: "4px", background: "#1f2937", border: "1px solid #374151", color: "#fff", fontSize: "12px" }}
+                            />
+                            <datalist id={`new-ep-audio-languages-s${seasonNum}`}>
+                              {SUPPORTED_LANGUAGES.map((lang) => (
+                                <option key={lang} value={lang} />
+                              ))}
+                            </datalist>
+                          </div>
+                          <div>
+                            <label style={{ display: "block", fontSize: "11px", color: "#9ca3af", marginBottom: "4px" }}>Audio File</label>
+                            <input type="file" ref={editAudioInputRef} onChange={(e) => setEditAudioFile(e.target.files?.[0])} accept="audio/*" style={{ color: "#fff", fontSize: "12px" }} />
+                          </div>
+                          <div style={{ display: "flex", alignItems: "center", gap: "4px", height: "30px" }}>
+                            <input type="checkbox" id={`newEpAudioDefault-s${seasonNum}`} checked={editAudioIsDefault} onChange={(e) => setEditAudioIsDefault(e.target.checked)} />
+                            <label htmlFor={`newEpAudioDefault-s${seasonNum}`} style={{ fontSize: "12px", color: "#9ca3af", cursor: "pointer" }}>Default</label>
+                          </div>
+                          <button type="button" onClick={addNewEpAudioTrack} style={{ padding: "6px 12px", background: "#FF7A1A", border: "none", color: "#fff", borderRadius: "4px", cursor: "pointer", fontSize: "12px", fontWeight: "600" }}>
+                            Add Track
+                          </button>
+                        </div>
+
+                        {/* List of currently configured Audio Tracks */}
+                        {newEpAudioTracks.length > 0 && (
+                          <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
+                            {newEpAudioTracks.map((track, i) => (
+                              <div key={i} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "8px 12px", background: "var(--bg-input, #111827)", borderRadius: "6px" }}>
+                                <div style={{ display: "flex", gap: "15px", alignItems: "center" }}>
+                                  <span style={{ fontWeight: "600", fontSize: "13px", color: "#fff" }}>{track.language}</span>
+                                  <span style={{ color: "#9ca3af", fontSize: "12px" }}>New Upload: {track.file?.name}</span>
+                                  {track.isDefault && <span style={{ padding: "1px 6px", background: "#10b981", borderRadius: "10px", fontSize: "10px", fontWeight: "bold" }}>Default</span>}
+                                </div>
+                                <button type="button" onClick={() => setNewEpAudioTracks(newEpAudioTracks.filter((_, idx) => idx !== i))} style={{ background: "transparent", border: "none", color: "#ef4444", cursor: "pointer" }}>
+                                  <Trash2 size={14} />
+                                </button>
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Subtitles */}
+                      <div style={{ marginTop: "10px" }}>
+                        <h4 style={{ fontSize: "14px", fontWeight: "600", color: "#FF7A1A", marginBottom: "12px" }}>Subtitles (.vtt files)</h4>
+                        <div style={{ display: "flex", flexWrap: "wrap", gap: "10px", alignItems: "flex-end", background: "var(--bg-input, #111827)", padding: "12px", borderRadius: "6px", marginBottom: "12px" }}>
+                          <div style={{ minWidth: "120px" }}>
+                            <label style={{ display: "block", fontSize: "11px", color: "#9ca3af", marginBottom: "4px" }}>Language</label>
+                            <input
+                              type="text"
+                              list={`new-ep-subtitle-languages-s${seasonNum}`}
+                              value={editSubLang}
+                              onChange={(e) => setEditSubLang(e.target.value)}
+                              placeholder="Type or select"
+                              style={{ width: "100%", padding: "6px", borderRadius: "4px", background: "#1f2937", border: "1px solid #374151", color: "#fff", fontSize: "12px" }}
+                            />
+                            <datalist id={`new-ep-subtitle-languages-s${seasonNum}`}>
+                              {SUPPORTED_LANGUAGES.map((lang) => (
+                                <option key={lang} value={lang} />
+                              ))}
+                            </datalist>
+                          </div>
+                          <div>
+                            <label style={{ display: "block", fontSize: "11px", color: "#9ca3af", marginBottom: "4px" }}>Label (e.g. English [CC])</label>
+                            <input type="text" value={editSubLabel} onChange={(e) => setEditSubLabel(e.target.value)} style={{ padding: "6px", borderRadius: "4px", background: "#1f2937", border: "1px solid #374151", color: "#fff", fontSize: "12px" }} />
+                          </div>
+                          <div>
+                            <label style={{ display: "block", fontSize: "11px", color: "#9ca3af", marginBottom: "4px" }}>Subtitle File</label>
+                            <input type="file" ref={editSubInputRef} onChange={(e) => setEditSubFile(e.target.files?.[0])} accept=".vtt" style={{ color: "#fff", fontSize: "12px" }} />
+                          </div>
+                          <div style={{ display: "flex", alignItems: "center", gap: "4px", height: "30px" }}>
+                            <input type="checkbox" id={`newEpSubDefault-s${seasonNum}`} checked={editSubIsDefault} onChange={(e) => setEditSubIsDefault(e.target.checked)} />
+                            <label htmlFor={`newEpSubDefault-s${seasonNum}`} style={{ fontSize: "12px", color: "#9ca3af", cursor: "pointer" }}>Default</label>
+                          </div>
+                          <button type="button" onClick={addNewEpSubtitleTrack} style={{ padding: "6px 12px", background: "#FF7A1A", border: "none", color: "#fff", borderRadius: "4px", cursor: "pointer", fontSize: "12px", fontWeight: "600" }}>
+                            Add Subtitle
+                          </button>
+                        </div>
+
+                        {/* List of currently configured Subtitle Tracks */}
+                        {newEpSubtitles.length > 0 && (
+                          <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
+                            {newEpSubtitles.map((track, i) => (
+                              <div key={i} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "8px 12px", background: "var(--bg-input, #111827)", borderRadius: "6px" }}>
+                                <div style={{ display: "flex", gap: "15px", alignItems: "center" }}>
+                                  <span style={{ fontWeight: "600", fontSize: "13px", color: "#fff" }}>{track.language}</span>
+                                  <span style={{ color: "#38bdf8", fontSize: "12px" }}>Label: "{track.label}"</span>
+                                  <span style={{ color: "#9ca3af", fontSize: "12px" }}>New Upload: {track.file?.name}</span>
+                                  {track.isDefault && <span style={{ padding: "1px 6px", background: "#10b981", borderRadius: "10px", fontSize: "10px", fontWeight: "bold" }}>Default</span>}
+                                </div>
+                                <button type="button" onClick={() => setNewEpSubtitles(newEpSubtitles.filter((_, idx) => idx !== i))} style={{ background: "transparent", border: "none", color: "#ef4444", cursor: "pointer" }}>
+                                  <Trash2 size={14} />
+                                </button>
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+
+                    </div>
+
                     <div style={{ display: "flex", gap: 10, marginTop: 8 }}>
                       <button className="btn btn-primary" onClick={() => handleAddEpisode(seasonNum)} disabled={addingEpisode}>
                         {addingEpisode ? "Adding…" : <><Plus size={14} /> Add Episode</>}
                       </button>
-                      <button className="btn btn-ghost" onClick={() => { setShowAddEpisodeForm(null); setNewEpisode({ title: "", episodeNumber: "", duration: "", description: "", seasonNumber: "" }); setNewEpisodeVideo(null); setNewEpisodeVideoUrl(""); setNewEpisodeThumbnail(null); setNewEpisodeThumbnailUrl(""); }}>
+                      <button className="btn btn-ghost" onClick={() => { setShowAddEpisodeForm(null); setNewEpisode({ title: "", episodeNumber: "", duration: "", description: "", seasonNumber: "" }); setNewEpisodeVideo(null); setNewEpisodeVideoUrl(""); setNewEpisodeThumbnail(null); setNewEpisodeThumbnailUrl(""); setNewEpAudioTracks([]); setNewEpSubtitles([]); }}>
                         Cancel
                       </button>
                     </div>
@@ -1218,12 +1745,109 @@ export default function Content() {
                         ></iframe>
                       ) : (
                         <>
-                          <video ref={videoRef} controls className="view-video-player" src={getFullUrl(selectedEpisode.videoUrl)}>
+                          <video
+                            ref={videoRef}
+                            controls
+                            className="view-video-player"
+                            src={getFullUrl(selectedEpisode.videoUrl)}
+                            crossOrigin="anonymous"
+                          >
+                            {activeSubUrl && (
+                              <track
+                                kind="subtitles"
+                                src={getFullUrl(activeSubUrl)}
+                                srcLang={activeSubLang.toLowerCase().slice(0, 2)}
+                                label={activeSubLang}
+                                default
+                              />
+                            )}
                             Your browser does not support the video tag.
                           </video>
-                          <button className="btn btn-primary pip-btn" onClick={() => videoRef.current?.requestPictureInPicture?.()}>
+                          {isSecondaryAudio && activeAudioUrl && (
+                            <audio
+                              ref={audioRef}
+                              src={getFullUrl(activeAudioUrl)}
+                              style={{ display: "none" }}
+                              crossOrigin="anonymous"
+                            />
+                          )}
+                          <button className="btn btn-primary pip-btn" onClick={() => videoRef.current?.requestPictureInPicture?.()} style={{ marginTop: "10px" }}>
                             <Tv size={18} style={{ marginRight: 6 }} /> PiP
                           </button>
+
+                          {/* Multilingual Tracks selectors */}
+                          {!getYouTubeId(selectedEpisode.videoUrl) && (
+                            <div style={{ display: "flex", gap: "20px", padding: "12px 15px", background: "var(--bg-card, #1f2937)", borderRadius: "8px", marginTop: "10px" }}>
+                              <div>
+                                <label style={{ display: "block", fontSize: "11px", color: "var(--text-muted, #9ca3af)", marginBottom: "4px" }}>Audio Track</label>
+                                <select
+                                  value={activeAudioLang}
+                                  onChange={(e) => {
+                                    const val = e.target.value;
+                                    const video = videoRef.current;
+                                    if (val === "Default") {
+                                      setIsSecondaryAudio(false);
+                                      setActiveAudioUrl("");
+                                      setActiveAudioLang("Default");
+                                      if (video) video.muted = false;
+                                    } else {
+                                      const track = selectedEpisode.audioTracks?.find((t) => t.language === val);
+                                      if (track) {
+                                        setIsSecondaryAudio(true);
+                                        setActiveAudioUrl(track.fileUrl);
+                                        setActiveAudioLang(track.language);
+                                        if (video) video.muted = true;
+                                        setTimeout(() => {
+                                          if (audioRef.current && video) {
+                                            audioRef.current.currentTime = video.currentTime;
+                                            if (!video.paused) {
+                                              audioRef.current.play().catch((e) => console.log(e));
+                                            }
+                                          }
+                                        }, 100);
+                                      }
+                                    }
+                                  }}
+                                  style={{ padding: "6px 10px", borderRadius: "4px", background: "var(--bg-input, #111827)", border: "1px solid var(--border, #374151)", color: "#fff", fontSize: "13px" }}
+                                >
+                                  <option value="Default">Default (Video Audio)</option>
+                                  {(selectedEpisode.audioTracks || []).map((track, i) => (
+                                    <option key={i} value={track.language}>
+                                      {track.language} {track.isDefault ? "(Default)" : ""}
+                                    </option>
+                                  ))}
+                                </select>
+                              </div>
+
+                              <div>
+                                <label style={{ display: "block", fontSize: "11px", color: "var(--text-muted, #9ca3af)", marginBottom: "4px" }}>Subtitles</label>
+                                <select
+                                  value={activeSubLang}
+                                  onChange={(e) => {
+                                    const val = e.target.value;
+                                    if (val === "Off") {
+                                      setActiveSubUrl("");
+                                      setActiveSubLang("Off");
+                                    } else {
+                                      const track = selectedEpisode.subtitles?.find((s) => s.language === val);
+                                      if (track) {
+                                        setActiveSubUrl(track.fileUrl);
+                                        setActiveSubLang(track.language);
+                                      }
+                                    }
+                                  }}
+                                  style={{ padding: "6px 10px", borderRadius: "4px", background: "var(--bg-input, #111827)", border: "1px solid var(--border, #374151)", color: "#fff", fontSize: "13px" }}
+                                >
+                                  <option value="Off">Off</option>
+                                  {(selectedEpisode.subtitles || []).map((track, i) => (
+                                    <option key={i} value={track.language}>
+                                      {track.label || track.language}
+                                    </option>
+                                  ))}
+                                </select>
+                              </div>
+                            </div>
+                          )}
                         </>
                       )}
                     </div>
@@ -1318,17 +1942,118 @@ export default function Content() {
                       </div>
                     )}
                   </div>
-
-                  {/* Full Movie */}
-                  {contentType === "movies" && (
+                  {/* Full Movie / Short Film */}
+                  {(contentType === "movies" || contentType === "shortFilms") && (
                     <div className="vp-section">
                       <div className="vp-section-label"><Film size={14} /> Full Movie</div>
                       {!isLocked(selectedItem) && (selectedItem.videoUrl || selectedItem.video) ? (
-                        <div className="vp-video-wrap">
-                          {getYouTubeId(selectedItem.videoUrl || selectedItem.video) ? (
-                            <iframe src={`https://www.youtube.com/embed/${getYouTubeId(selectedItem.videoUrl || selectedItem.video)}`} title="Full Movie" frameBorder="0" allowFullScreen></iframe>
-                          ) : (
-                            <video ref={videoRef} controls src={getFullUrl(selectedItem.videoUrl || selectedItem.video)}></video>
+                        <div className="vp-video-wrap" style={{ display: "flex", flexDirection: "column", gap: "15px" }}>
+                          <div style={{ position: "relative", width: "100%", height: "0", paddingBottom: "56.25%", background: "#000", borderRadius: "8px", overflow: "hidden" }}>
+                            {getYouTubeId(selectedItem.videoUrl || selectedItem.video) ? (
+                              <iframe src={`https://www.youtube.com/embed/${getYouTubeId(selectedItem.videoUrl || selectedItem.video)}`} title="Full Movie" frameBorder="0" allowFullScreen style={{ position: "absolute", top: 0, left: 0, width: "100%", height: "100%" }}></iframe>
+                            ) : (
+                              <>
+                                <video
+                                  ref={videoRef}
+                                  controls
+                                  src={getFullUrl(selectedItem.videoUrl || selectedItem.video)}
+                                  crossOrigin="anonymous"
+                                  style={{ position: "absolute", top: 0, left: 0, width: "100%", height: "100%" }}
+                                >
+                                  {activeSubUrl && (
+                                    <track
+                                      kind="subtitles"
+                                      src={getFullUrl(activeSubUrl)}
+                                      srcLang={activeSubLang.toLowerCase().slice(0, 2)}
+                                      label={activeSubLang}
+                                      default
+                                    />
+                                  )}
+                                </video>
+                                {isSecondaryAudio && activeAudioUrl && (
+                                  <audio
+                                    ref={audioRef}
+                                    src={getFullUrl(activeAudioUrl)}
+                                    style={{ display: "none" }}
+                                    crossOrigin="anonymous"
+                                  />
+                                )}
+                              </>
+                            )}
+                          </div>
+
+                          {/* Multilingual Tracks selectors */}
+                          {!getYouTubeId(selectedItem.videoUrl || selectedItem.video) && (
+                            <div style={{ display: "flex", gap: "20px", padding: "12px 15px", background: "var(--bg-card, #1f2937)", borderRadius: "8px" }}>
+                              <div>
+                                <label style={{ display: "block", fontSize: "11px", color: "var(--text-muted, #9ca3af)", marginBottom: "4px" }}>Audio Track</label>
+                                <select
+                                  value={activeAudioLang}
+                                  onChange={(e) => {
+                                    const val = e.target.value;
+                                    const video = videoRef.current;
+                                    if (val === "Default") {
+                                      setIsSecondaryAudio(false);
+                                      setActiveAudioUrl("");
+                                      setActiveAudioLang("Default");
+                                      if (video) video.muted = false;
+                                    } else {
+                                      const track = selectedItem.audioTracks?.find((t) => t.language === val);
+                                      if (track) {
+                                        setIsSecondaryAudio(true);
+                                        setActiveAudioUrl(track.fileUrl);
+                                        setActiveAudioLang(track.language);
+                                        if (video) video.muted = true;
+                                        setTimeout(() => {
+                                          if (audioRef.current && video) {
+                                            audioRef.current.currentTime = video.currentTime;
+                                            if (!video.paused) {
+                                              audioRef.current.play().catch((e) => console.log(e));
+                                            }
+                                          }
+                                        }, 100);
+                                      }
+                                    }
+                                  }}
+                                  style={{ padding: "6px 10px", borderRadius: "4px", background: "var(--bg-input, #111827)", border: "1px solid var(--border, #374151)", color: "#fff", fontSize: "13px" }}
+                                >
+                                  <option value="Default">Default (Video Audio)</option>
+                                  {(selectedItem.audioTracks || []).map((track, i) => (
+                                    <option key={i} value={track.language}>
+                                      {track.language} {track.isDefault ? "(Default)" : ""}
+                                    </option>
+                                  ))}
+                                </select>
+                              </div>
+
+                              <div>
+                                <label style={{ display: "block", fontSize: "11px", color: "var(--text-muted, #9ca3af)", marginBottom: "4px" }}>Subtitles</label>
+                                <select
+                                  value={activeSubLang}
+                                  onChange={(e) => {
+                                    const val = e.target.value;
+                                    if (val === "Off") {
+                                      setActiveSubUrl("");
+                                      setActiveSubLang("Off");
+                                    } else {
+                                      const track = selectedItem.subtitles?.find((s) => s.language === val);
+                                      if (track) {
+                                        setActiveSubUrl(track.fileUrl);
+                                        setActiveSubLang(track.language);
+                                      }
+                                    }
+                                  }}
+                                  style={{ padding: "6px 10px", borderRadius: "4px", background: "var(--bg-input, #111827)", border: "1px solid var(--border, #374151)", color: "#fff", fontSize: "13px" }}
+                                >
+                                  <option value="Off">Off</option>
+                                  {(selectedItem.subtitles || []).map((track, i) => (
+                                    <option key={i} value={track.language}>
+                                      {track.label || track.language}
+                                    </option>
+                                  ))}
+                                </select>
+                              </div>
+                            </div>
                           )}
                         </div>
                       ) : (
@@ -1441,6 +2166,120 @@ export default function Content() {
                       <input className="form-input" style={{ marginTop: 8 }} placeholder="Or Paste URL" value={uploadData.videoUrl} onChange={e => handleUploadChange("videoUrl", e.target.value)} />
                     </div>
                   </div>
+
+                  {/* Multilingual Tracks Section for Episodes */}
+                  <div style={{ display: "flex", flexDirection: "column", gap: "20px", background: "var(--bg-card, #1f2937)", padding: "20px", borderRadius: "8px", border: "1px solid var(--border, #374151)", marginTop: "10px" }}>
+
+                    {/* Audio Tracks */}
+                    <div>
+                      <h4 style={{ fontSize: "14px", fontWeight: "600", color: "#FF7A1A", marginBottom: "12px" }}>Secondary Audio Tracks</h4>
+                      <div style={{ display: "flex", flexWrap: "wrap", gap: "10px", alignItems: "flex-end", background: "var(--bg-input, #111827)", padding: "12px", borderRadius: "6px", marginBottom: "12px" }}>
+                        <div style={{ minWidth: "120px" }}>
+                          <label style={{ display: "block", fontSize: "11px", color: "#9ca3af", marginBottom: "4px" }}>Language</label>
+                          <input
+                            type="text"
+                            list="edit-episode-audio-languages"
+                            value={editAudioLang}
+                            onChange={(e) => setEditAudioLang(e.target.value)}
+                            placeholder="Type or select"
+                            style={{ width: "100%", padding: "6px", borderRadius: "4px", background: "#1f2937", border: "1px solid #374151", color: "#fff", fontSize: "12px" }}
+                          />
+                          <datalist id="edit-episode-audio-languages">
+                            {SUPPORTED_LANGUAGES.map((lang) => (
+                              <option key={lang} value={lang} />
+                            ))}
+                          </datalist>
+                        </div>
+                        <div>
+                          <label style={{ display: "block", fontSize: "11px", color: "#9ca3af", marginBottom: "4px" }}>Audio File</label>
+                          <input type="file" onChange={(e) => setEditAudioFile(e.target.files?.[0])} accept="audio/*" style={{ color: "#fff", fontSize: "12px" }} />
+                        </div>
+                        <div style={{ display: "flex", alignItems: "center", gap: "4px", height: "30px" }}>
+                          <input type="checkbox" id="editEpAudioDefault" checked={editAudioIsDefault} onChange={(e) => setEditAudioIsDefault(e.target.checked)} />
+                          <label htmlFor="editEpAudioDefault" style={{ fontSize: "12px", color: "#9ca3af", cursor: "pointer" }}>Default</label>
+                        </div>
+                        <button type="button" onClick={addEditAudioTrack} style={{ padding: "6px 12px", background: "#FF7A1A", border: "none", color: "#fff", borderRadius: "4px", cursor: "pointer", fontSize: "12px", fontWeight: "600" }}>
+                          Add Track
+                        </button>
+                      </div>
+
+                      {/* List of currently configured Audio Tracks */}
+                      {((editData.audioTracks || []).length > 0) && (
+                        <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
+                          {(editData.audioTracks || []).map((track, i) => (
+                            <div key={i} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "8px 12px", background: "var(--bg-input, #111827)", borderRadius: "6px" }}>
+                              <div style={{ display: "flex", gap: "15px", alignItems: "center" }}>
+                                <span style={{ fontWeight: "600", fontSize: "13px", color: "#fff" }}>{track.language}</span>
+                                <span style={{ color: "#9ca3af", fontSize: "12px" }}>{track.fileUrl ? "Existing Track (Bunny CDN)" : `New Upload: ${track.file?.name}`}</span>
+                                {track.isDefault && <span style={{ padding: "1px 6px", background: "#10b981", borderRadius: "10px", fontSize: "10px", fontWeight: "bold" }}>Default</span>}
+                              </div>
+                              <button type="button" onClick={() => setEditData(prev => ({ ...prev, audioTracks: prev.audioTracks.filter((_, idx) => idx !== i) }))} style={{ background: "transparent", border: "none", color: "#ef4444", cursor: "pointer" }}>
+                                <Trash2 size={14} />
+                              </button>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Subtitles */}
+                    <div style={{ marginTop: "10px" }}>
+                      <h4 style={{ fontSize: "14px", fontWeight: "600", color: "#FF7A1A", marginBottom: "12px" }}>Subtitles (.vtt files)</h4>
+                      <div style={{ display: "flex", flexWrap: "wrap", gap: "10px", alignItems: "flex-end", background: "var(--bg-input, #111827)", padding: "12px", borderRadius: "6px", marginBottom: "12px" }}>
+                        <div style={{ minWidth: "120px" }}>
+                          <label style={{ display: "block", fontSize: "11px", color: "#9ca3af", marginBottom: "4px" }}>Language</label>
+                          <input
+                            type="text"
+                            list="edit-episode-subtitle-languages"
+                            value={editSubLang}
+                            onChange={(e) => setEditSubLang(e.target.value)}
+                            placeholder="Type or select"
+                            style={{ width: "100%", padding: "6px", borderRadius: "4px", background: "#1f2937", border: "1px solid #374151", color: "#fff", fontSize: "12px" }}
+                          />
+                          <datalist id="edit-episode-subtitle-languages">
+                            {SUPPORTED_LANGUAGES.map((lang) => (
+                              <option key={lang} value={lang} />
+                            ))}
+                          </datalist>
+                        </div>
+                        <div>
+                          <label style={{ display: "block", fontSize: "11px", color: "#9ca3af", marginBottom: "4px" }}>Label (e.g. English [CC])</label>
+                          <input type="text" value={editSubLabel} onChange={(e) => setEditSubLabel(e.target.value)} style={{ padding: "6px", borderRadius: "4px", background: "#1f2937", border: "1px solid #374151", color: "#fff", fontSize: "12px" }} />
+                        </div>
+                        <div>
+                          <label style={{ display: "block", fontSize: "11px", color: "#9ca3af", marginBottom: "4px" }}>Subtitle File</label>
+                          <input type="file" onChange={(e) => setEditSubFile(e.target.files?.[0])} accept=".vtt" style={{ color: "#fff", fontSize: "12px" }} />
+                        </div>
+                        <div style={{ display: "flex", alignItems: "center", gap: "4px", height: "30px" }}>
+                          <input type="checkbox" id="editEpSubDefault" checked={editSubIsDefault} onChange={(e) => setEditSubIsDefault(e.target.checked)} />
+                          <label htmlFor="editEpSubDefault" style={{ fontSize: "12px", color: "#9ca3af", cursor: "pointer" }}>Default</label>
+                        </div>
+                        <button type="button" onClick={addEditSubtitleTrack} style={{ padding: "6px 12px", background: "#FF7A1A", border: "none", color: "#fff", borderRadius: "4px", cursor: "pointer", fontSize: "12px", fontWeight: "600" }}>
+                          Add Subtitle
+                        </button>
+                      </div>
+
+                      {/* List of currently configured Subtitle Tracks */}
+                      {((editData.subtitles || []).length > 0) && (
+                        <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
+                          {(editData.subtitles || []).map((track, i) => (
+                            <div key={i} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "8px 12px", background: "var(--bg-input, #111827)", borderRadius: "6px" }}>
+                              <div style={{ display: "flex", gap: "15px", alignItems: "center" }}>
+                                <span style={{ fontWeight: "600", fontSize: "13px", color: "#fff" }}>{track.language}</span>
+                                <span style={{ color: "#38bdf8", fontSize: "12px" }}>Label: "{track.label}"</span>
+                                <span style={{ color: "#9ca3af", fontSize: "12px" }}>{track.fileUrl ? "Existing Track (Bunny CDN)" : `New Upload: ${track.file?.name}`}</span>
+                                {track.isDefault && <span style={{ padding: "1px 6px", background: "#10b981", borderRadius: "10px", fontSize: "10px", fontWeight: "bold" }}>Default</span>}
+                              </div>
+                              <button type="button" onClick={() => setEditData(prev => ({ ...prev, subtitles: prev.subtitles.filter((_, idx) => idx !== i) }))} style={{ background: "transparent", border: "none", color: "#ef4444", cursor: "pointer" }}>
+                                <Trash2 size={14} />
+                              </button>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+
+                  </div>
                 </div>
               )}
 
@@ -1543,6 +2382,122 @@ export default function Content() {
                     <label className="form-label">Description</label>
                     <textarea className="form-input" rows="3" value={editData.description || ""} onChange={e => setEditData(s => ({ ...s, description: e.target.value }))} />
                   </div>
+
+                  {/* Multilingual Tracks Section (Movies / Short Films Only) */}
+                  {(contentType === "movies" || contentType === "shortFilms") && (
+                    <div style={{ display: "flex", flexDirection: "column", gap: "20px", background: "var(--bg-card, #1f2937)", padding: "20px", borderRadius: "8px", border: "1px solid var(--border, #374151)", marginTop: "10px" }}>
+
+                      {/* Audio Tracks */}
+                      <div>
+                        <h4 style={{ fontSize: "14px", fontWeight: "600", color: "#FF7A1A", marginBottom: "12px" }}>Secondary Audio Tracks</h4>
+                        <div style={{ display: "flex", flexWrap: "wrap", gap: "10px", alignItems: "flex-end", background: "var(--bg-input, #111827)", padding: "12px", borderRadius: "6px", marginBottom: "12px" }}>
+                          <div style={{ minWidth: "120px" }}>
+                            <label style={{ display: "block", fontSize: "11px", color: "#9ca3af", marginBottom: "4px" }}>Language</label>
+                            <input
+                              type="text"
+                              list="edit-audio-languages"
+                              value={editAudioLang}
+                              onChange={(e) => setEditAudioLang(e.target.value)}
+                              placeholder="Type or select"
+                              style={{ width: "100%", padding: "6px", borderRadius: "4px", background: "#1f2937", border: "1px solid #374151", color: "#fff", fontSize: "12px" }}
+                            />
+                            <datalist id="edit-audio-languages">
+                              {SUPPORTED_LANGUAGES.map((lang) => (
+                                <option key={lang} value={lang} />
+                              ))}
+                            </datalist>
+                          </div>
+                          <div>
+                            <label style={{ display: "block", fontSize: "11px", color: "#9ca3af", marginBottom: "4px" }}>Audio File</label>
+                            <input type="file" ref={editAudioInputRef} onChange={(e) => setEditAudioFile(e.target.files?.[0])} accept="audio/*" style={{ color: "#fff", fontSize: "12px" }} />
+                          </div>
+                          <div style={{ display: "flex", alignItems: "center", gap: "4px", height: "30px" }}>
+                            <input type="checkbox" id="editAudioDefault" checked={editAudioIsDefault} onChange={(e) => setEditAudioIsDefault(e.target.checked)} />
+                            <label htmlFor="editAudioDefault" style={{ fontSize: "12px", color: "#9ca3af", cursor: "pointer" }}>Default</label>
+                          </div>
+                          <button type="button" onClick={addEditAudioTrack} style={{ padding: "6px 12px", background: "#FF7A1A", border: "none", color: "#fff", borderRadius: "4px", cursor: "pointer", fontSize: "12px", fontWeight: "600" }}>
+                            Add Track
+                          </button>
+                        </div>
+
+                        {/* List of currently configured Audio Tracks */}
+                        {((editData.audioTracks || []).length > 0) && (
+                          <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
+                            {(editData.audioTracks || []).map((track, i) => (
+                              <div key={i} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "8px 12px", background: "var(--bg-input, #111827)", borderRadius: "6px" }}>
+                                <div style={{ display: "flex", gap: "15px", alignItems: "center" }}>
+                                  <span style={{ fontWeight: "600", fontSize: "13px", color: "#fff" }}>{track.language}</span>
+                                  <span style={{ color: "#9ca3af", fontSize: "12px" }}>{track.fileUrl ? "Existing Track (Bunny CDN)" : `New Upload: ${track.file?.name}`}</span>
+                                  {track.isDefault && <span style={{ padding: "1px 6px", background: "#10b981", borderRadius: "10px", fontSize: "10px", fontWeight: "bold" }}>Default</span>}
+                                </div>
+                                <button type="button" onClick={() => setEditData(prev => ({ ...prev, audioTracks: prev.audioTracks.filter((_, idx) => idx !== i) }))} style={{ background: "transparent", border: "none", color: "#ef4444", cursor: "pointer" }}>
+                                  <Trash2 size={14} />
+                                </button>
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Subtitles */}
+                      <div style={{ marginTop: "10px" }}>
+                        <h4 style={{ fontSize: "14px", fontWeight: "600", color: "#FF7A1A", marginBottom: "12px" }}>Subtitles (.vtt files)</h4>
+                        <div style={{ display: "flex", flexWrap: "wrap", gap: "10px", alignItems: "flex-end", background: "var(--bg-input, #111827)", padding: "12px", borderRadius: "6px", marginBottom: "12px" }}>
+                          <div style={{ minWidth: "120px" }}>
+                            <label style={{ display: "block", fontSize: "11px", color: "#9ca3af", marginBottom: "4px" }}>Language</label>
+                            <input
+                              type="text"
+                              list="edit-subtitle-languages"
+                              value={editSubLang}
+                              onChange={(e) => setEditSubLang(e.target.value)}
+                              placeholder="Type or select"
+                              style={{ width: "100%", padding: "6px", borderRadius: "4px", background: "#1f2937", border: "1px solid #374151", color: "#fff", fontSize: "12px" }}
+                            />
+                            <datalist id="edit-subtitle-languages">
+                              {SUPPORTED_LANGUAGES.map((lang) => (
+                                <option key={lang} value={lang} />
+                              ))}
+                            </datalist>
+                          </div>
+                          <div>
+                            <label style={{ display: "block", fontSize: "11px", color: "#9ca3af", marginBottom: "4px" }}>Label (e.g. English [CC])</label>
+                            <input type="text" value={editSubLabel} onChange={(e) => setEditSubLabel(e.target.value)} style={{ padding: "6px", borderRadius: "4px", background: "#1f2937", border: "1px solid #374151", color: "#fff", fontSize: "12px" }} />
+                          </div>
+                          <div>
+                            <label style={{ display: "block", fontSize: "11px", color: "#9ca3af", marginBottom: "4px" }}>Subtitle File</label>
+                            <input type="file" ref={editSubInputRef} onChange={(e) => setEditSubFile(e.target.files?.[0])} accept=".vtt" style={{ color: "#fff", fontSize: "12px" }} />
+                          </div>
+                          <div style={{ display: "flex", alignItems: "center", gap: "4px", height: "30px" }}>
+                            <input type="checkbox" id="editSubDefault" checked={editSubIsDefault} onChange={(e) => setEditSubIsDefault(e.target.checked)} />
+                            <label htmlFor="editSubDefault" style={{ fontSize: "12px", color: "#9ca3af", cursor: "pointer" }}>Default</label>
+                          </div>
+                          <button type="button" onClick={addEditSubtitleTrack} style={{ padding: "6px 12px", background: "#FF7A1A", border: "none", color: "#fff", borderRadius: "4px", cursor: "pointer", fontSize: "12px", fontWeight: "600" }}>
+                            Add Subtitle
+                          </button>
+                        </div>
+
+                        {/* List of currently configured Subtitle Tracks */}
+                        {((editData.subtitles || []).length > 0) && (
+                          <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
+                            {(editData.subtitles || []).map((track, i) => (
+                              <div key={i} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "8px 12px", background: "var(--bg-input, #111827)", borderRadius: "6px" }}>
+                                <div style={{ display: "flex", gap: "15px", alignItems: "center" }}>
+                                  <span style={{ fontWeight: "600", fontSize: "13px", color: "#fff" }}>{track.language}</span>
+                                  <span style={{ color: "#38bdf8", fontSize: "12px" }}>Label: "{track.label}"</span>
+                                  <span style={{ color: "#9ca3af", fontSize: "12px" }}>{track.fileUrl ? "Existing Track (Bunny CDN)" : `New Upload: ${track.file?.name}`}</span>
+                                  {track.isDefault && <span style={{ padding: "1px 6px", background: "#10b981", borderRadius: "10px", fontSize: "10px", fontWeight: "bold" }}>Default</span>}
+                                </div>
+                                <button type="button" onClick={() => setEditData(prev => ({ ...prev, subtitles: prev.subtitles.filter((_, idx) => idx !== i) }))} style={{ background: "transparent", border: "none", color: "#ef4444", cursor: "pointer" }}>
+                                  <Trash2 size={14} />
+                                </button>
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+
+                    </div>
+                  )}
 
                   {/* Cast Section */}
                   <div className="cast-section">

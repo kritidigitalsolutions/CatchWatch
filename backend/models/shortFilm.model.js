@@ -10,6 +10,52 @@ const castSchema = new mongoose.Schema(
   }
 );
 
+const audioTrackSchema = new mongoose.Schema(
+  {
+    language: {
+      type: String,
+      required: true,
+      trim: true,
+    },
+    fileUrl: {
+      type: String,
+      required: true,
+    },
+    isDefault: {
+      type: Boolean,
+      default: false,
+    },
+  },
+  {
+    _id: false,
+  }
+);
+
+const subtitleSchema = new mongoose.Schema(
+  {
+    language: {
+      type: String,
+      required: true,
+      trim: true,
+    },
+    label: {
+      type: String,
+      trim: true,
+    },
+    fileUrl: {
+      type: String,
+      required: true,
+    },
+    isDefault: {
+      type: Boolean,
+      default: false,
+    },
+  },
+  {
+    _id: false,
+  }
+);
+
 const shortFilmSchema = new mongoose.Schema(
   {
     title: {
@@ -59,6 +105,10 @@ const shortFilmSchema = new mongoose.Schema(
       type: String,
       required: true,
     },
+
+    audioTracks: [audioTrackSchema],
+
+    subtitles: [subtitleSchema],
 
     isPremium: {
       type: Boolean,

@@ -40,6 +40,14 @@ const shortFilmUpload =
       name: "trailer",
       maxCount: 1,
     },
+    {
+      name: "audioTracks",
+      maxCount: 10,
+    },
+    {
+      name: "subtitles",
+      maxCount: 10,
+    },
 
     {
       name: "castImage_0",

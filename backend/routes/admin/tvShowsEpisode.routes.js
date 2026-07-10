@@ -36,6 +36,14 @@ const episodeUpload =
       name: "thumbnail",
       maxCount: 1,
     },
+    {
+      name: "audioTracks",
+      maxCount: 10,
+    },
+    {
+      name: "subtitles",
+      maxCount: 10,
+    },
   ]);
 
 

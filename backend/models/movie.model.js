@@ -45,6 +45,40 @@ const movieSchema = new mongoose.Schema(
 
     language: String,
 
+    audioTracks: [
+      {
+        language: { type: String, trim: true },
+        fileUrl: { type: String, trim: true },
+        isDefault: { type: Boolean, default: false }
+      }
+    ],
+
+    subtitles: [
+      {
+        language: { type: String, trim: true },
+        label: { type: String, trim: true },
+        fileUrl: { type: String, trim: true },
+        isDefault: { type: Boolean, default: false }
+      }
+    ],
+
+    audioTracks: [
+      {
+        language: { type: String, trim: true },
+        fileUrl: { type: String, trim: true },
+        isDefault: { type: Boolean, default: false }
+      }
+    ],
+
+    subtitles: [
+      {
+        language: { type: String, trim: true },
+        label: { type: String, trim: true },
+        fileUrl: { type: String, trim: true },
+        isDefault: { type: Boolean, default: false }
+      }
+    ],
+
     poster: String,
 
     banner: String,
@@ -134,10 +168,15 @@ movieSchema.index({
   createdAt: -1
 });
 
-movieSchema.index({
-  title: "text",
-  description: "text"
-});
+movieSchema.index(
+  {
+    title: "text",
+    description: "text"
+  },
+  {
+    language_override: "dummy"
+  }
+);
 
 module.exports = mongoose.model(
   "Movie",

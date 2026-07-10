@@ -13,6 +13,11 @@ export const createContent = async ({
 
   episodeVideoFiles,
   episodeThumbnailFiles,
+  episodeAudioFiles = {},
+  episodeSubtitleFiles = {},
+
+  audioTracks = [],
+  subtitles = [],
 
   onVideoProgress,
   onTrailerProgress,
@@ -109,6 +114,34 @@ export const createContent = async ({
   formData.append("trailerUrl", trailerUrl);
   if (isMovie) {
     formData.append("videoUrl", videoUrl);
+
+    // Multilingual Tracks Support
+    const audioMetadata = [];
+    if (audioTracks && audioTracks.length > 0) {
+      audioTracks.forEach((track) => {
+        audioMetadata.push({
+          language: track.language,
+          isDefault: track.isDefault,
+          originalname: track.file.name
+        });
+        formData.append("audioTracks", track.file);
+      });
+    }
+    formData.append("audioMetadata", JSON.stringify(audioMetadata));
+
+    const subtitleMetadata = [];
+    if (subtitles && subtitles.length > 0) {
+      subtitles.forEach((track) => {
+        subtitleMetadata.push({
+          language: track.language,
+          label: track.label,
+          isDefault: track.isDefault,
+          originalname: track.file.name
+        });
+        formData.append("subtitles", track.file);
+      });
+    }
+    formData.append("subtitleMetadata", JSON.stringify(subtitleMetadata));
   }
 
   // Send the Cast details containing their direct Bunny URLs
@@ -194,6 +227,33 @@ console.log(response.data);
         epFormData.append("duration", ep.duration || "");
         epFormData.append("videoUrl", epVideoUrl);
         epFormData.append("thumbnailUrl", epThumbnailUrl);
+
+        // Upload and stage secondary audio tracks
+        const audioMetadata = [];
+        const epAudios = episodeAudioFiles[episodeKey] || [];
+        for (const track of epAudios) {
+          const fileUrl = await uploadToBunny(track.file, "episodes", "videos");
+          audioMetadata.push({
+            language: track.language,
+            isDefault: track.isDefault,
+            fileUrl
+          });
+        }
+        epFormData.append("audioMetadata", JSON.stringify(audioMetadata));
+
+        // Upload and stage subtitles
+        const subtitleMetadata = [];
+        const epSubs = episodeSubtitleFiles[episodeKey] || [];
+        for (const track of epSubs) {
+          const fileUrl = await uploadToBunny(track.file, "episodes", "posters");
+          subtitleMetadata.push({
+            language: track.language,
+            label: track.label,
+            isDefault: track.isDefault,
+            fileUrl
+          });
+        }
+        epFormData.append("subtitleMetadata", JSON.stringify(subtitleMetadata));
 
         // Submit metadata to backend
         const epAddRoute = form.type === "series" ? "/admin/episodes/add" : `/admin/tv-shows-episodes/${seriesId}/add`;

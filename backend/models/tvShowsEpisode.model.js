@@ -23,6 +23,23 @@ const tvShowsEpisodeSchema =
 
       videoUrl: String,
 
+      audioTracks: [
+        {
+          language: String,
+          fileUrl: String,
+          isDefault: { type: Boolean, default: false }
+        }
+      ],
+
+      subtitles: [
+        {
+          language: String,
+          label: String,
+          fileUrl: String,
+          isDefault: { type: Boolean, default: false }
+        }
+      ],
+
       thumbnail: String,
 
       duration: String,

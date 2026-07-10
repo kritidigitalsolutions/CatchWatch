@@ -19,35 +19,43 @@ const isAuth = async (
         message: "Unauthorized",
       });
     }
+console.log("========== AUTH REQUEST ==========");
+console.log("Authorization Header:", req.headers.authorization);
+console.log("Token:", token);
 
-    const decoded = jwt.verify(
-      token,
-      process.env.JWT_SECRET
-    );
+const decodedToken = jwt.decode(token);
+console.log("Decoded:", decodedToken);
 
-    if (decoded.role !== "USER") {
+console.log("JWT_SECRET:", process.env.JWT_SECRET);
+console.log("==================================");
+
+const verified = jwt.verify(
+  token,
+  process.env.JWT_SECRET
+);
+console.log("Verified Payload:", verified);
+    if (verified.role !== "USER") {
       return res.status(403).json({
         success: false,
         message: "User access only",
       });
     }
 
-    req.user = decoded;
+    req.user = verified;
 
     next();
 
   } catch (error) {
-    console.error(
-      "Auth Middleware Error:",
-      error.message
-    );
+  console.error("========== JWT ERROR ==========");
+  console.error(error);
+  console.error("===============================");
 
-    return res.status(401).json({
-      success: false,
-      message:
-        "Invalid or expired token",
-    });
-  }
+  return res.status(401).json({
+    success: false,
+    error: error.name,
+    message: error.message,
+});
+}
 };
 
 module.exports = { isAuth };

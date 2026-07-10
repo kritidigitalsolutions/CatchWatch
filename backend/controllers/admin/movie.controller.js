@@ -1,6 +1,6 @@
 const Movie = require("../../models/movie.model");
 const { getMediaUrl, deleteMedia, deleteMediaFiles } = require("../../utils/mediaUrl");
-
+const { notifyNewContent } = require("../../utils/contentNotification");
 // ========================================
 // HELPERS
 // ========================================
@@ -117,6 +117,47 @@ console.log({
   category,
   language: req.body.language,
 });
+    const audioTracks = [];
+    const audioMetadata = parseJSON(req.body.audioMetadata, []);
+    const uploadedAudioFiles = req.files?.audioTracks || [];
+
+    for (const meta of audioMetadata) {
+      const matchingFile = uploadedAudioFiles.find(f => f.originalname === meta.originalname);
+      if (matchingFile) {
+        const fileUrl = getMediaUrl(matchingFile);
+        audioTracks.push({
+          language: meta.language,
+          fileUrl,
+          isDefault: meta.isDefault === true || meta.isDefault === "true"
+        });
+      }
+    }
+
+    if (audioTracks.length === 0 && (video || req.body.videoUrl)) {
+      audioTracks.push({
+        language: req.body.language || "English",
+        fileUrl: getMediaUrl(video, req.body.videoUrl),
+        isDefault: true
+      });
+    }
+
+    const subtitles = [];
+    const subtitleMetadata = parseJSON(req.body.subtitleMetadata, []);
+    const uploadedSubtitleFiles = req.files?.subtitles || [];
+
+    for (const meta of subtitleMetadata) {
+      const matchingFile = uploadedSubtitleFiles.find(f => f.originalname === meta.originalname);
+      if (matchingFile) {
+        const fileUrl = getMediaUrl(matchingFile);
+        subtitles.push({
+          language: meta.language,
+          label: meta.label || "Subtitle",
+          fileUrl,
+          isDefault: meta.isDefault === true || meta.isDefault === "true"
+        });
+      }
+    }
+
     const movie = await Movie.create({
 
       title: req.body.title,
@@ -139,6 +180,8 @@ console.log({
 
       videoUrl: getMediaUrl(video, req.body.videoUrl),
 
+      audioTracks,
+      subtitles,
 
       isComingSoon:
         req.body.isComingSoon === "true",
@@ -156,6 +199,13 @@ console.log({
       category,
 
       priority,
+    });
+    await notifyNewContent({
+      title: "🎬 New Movie Added",
+      message: `${movie.title} is now available to watch.`,
+      type: "NEW_MOVIE",
+      actionUrl: `/movies/${movie._id}`,
+      createdBy: req.user.id
     });
 
     return res.status(201).json({
@@ -416,6 +466,65 @@ const updateMovie = async (req, res) => {
       movie.videoUrl = getMediaUrl(req.files.video[0]);
     } else if (req.body.videoUrl !== undefined) {
       movie.videoUrl = req.body.videoUrl;
+    }
+
+    // ========================================
+    // CONTENT & TRACKS UPDATE
+    // ========================================
+    const audioMetadata = parseJSON(req.body.audioMetadata, []);
+    const uploadedAudioFiles = req.files?.audioTracks || [];
+
+    if (req.body.audioMetadata !== undefined) {
+      const audioTracks = [];
+      for (const meta of audioMetadata) {
+        if (meta.fileUrl) {
+          audioTracks.push({
+            language: meta.language,
+            fileUrl: meta.fileUrl,
+            isDefault: meta.isDefault === true || meta.isDefault === "true"
+          });
+        } else {
+          const matchingFile = uploadedAudioFiles.find(f => f.originalname === meta.originalname);
+          if (matchingFile) {
+            const fileUrl = getMediaUrl(matchingFile);
+            audioTracks.push({
+              language: meta.language,
+              fileUrl,
+              isDefault: meta.isDefault === true || meta.isDefault === "true"
+            });
+          }
+        }
+      }
+      movie.audioTracks = audioTracks;
+    }
+
+    const subtitleMetadata = parseJSON(req.body.subtitleMetadata, []);
+    const uploadedSubtitleFiles = req.files?.subtitles || [];
+
+    if (req.body.subtitleMetadata !== undefined) {
+      const subtitles = [];
+      for (const meta of subtitleMetadata) {
+        if (meta.fileUrl) {
+          subtitles.push({
+            language: meta.language,
+            label: meta.label || "Subtitle",
+            fileUrl: meta.fileUrl,
+            isDefault: meta.isDefault === true || meta.isDefault === "true"
+          });
+        } else {
+          const matchingFile = uploadedSubtitleFiles.find(f => f.originalname === meta.originalname);
+          if (matchingFile) {
+            const fileUrl = getMediaUrl(matchingFile);
+            subtitles.push({
+              language: meta.language,
+              label: meta.label || "Subtitle",
+              fileUrl,
+              isDefault: meta.isDefault === true || meta.isDefault === "true"
+            });
+          }
+        }
+      }
+      movie.subtitles = subtitles;
     }
 
 

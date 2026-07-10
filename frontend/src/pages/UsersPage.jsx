@@ -1,6 +1,6 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import API, { API_BASE_URL } from "../api/axios";
-import { Users, RefreshCw, User, CheckCircle, AlertCircle, Search, Loader, Eye, Trash2, X } from "lucide-react";
+import { Users, RefreshCw, User, CheckCircle, AlertCircle, Search, Loader, Eye, Trash2, X, Clapperboard, Play, Pause, Share2 } from "lucide-react";
 import "./Dashboard.css";
 
 export default function UsersPage() {
@@ -8,6 +8,10 @@ export default function UsersPage() {
   const [search, setSearch] = useState("");
   const [selected, setSelected] = useState(null);
   const [loading, setLoading] = useState(false);
+  const [shortsUser, setShortsUser] = useState(null);
+  const [userReels, setUserReels] = useState([]);
+  const [loadingReels, setLoadingReels] = useState(false);
+  const [previewReel, setPreviewReel] = useState(null);
 
   const getImageUrl = (path) => {
     if (!path) return null;
@@ -36,13 +40,31 @@ export default function UsersPage() {
     } catch { alert("Failed to delete"); }
   };
 
-  // const handleToggleBlock = async (id) => {
-  //   try {
-  //     const res = await API.patch(`/admin/users/${id}/block`);
-  //     setUsers(p => p.map(u => u._id === id ? res.data.user : u));
-  //     if (selected?._id === id) setSelected(res.data.user);
-  //   } catch { alert("Failed to update status"); }
-  // };
+  const handleOpenShorts = async (user) => {
+    setShortsUser(user);
+    setLoadingReels(true);
+    setUserReels([]);
+    setPreviewReel(null);
+    try {
+      const res = await API.get(`/reels/user/${user._id}`);
+      setUserReels(res.data.reels || []);
+    } catch (err) {
+      console.error("Failed to fetch user reels:", err);
+      setUserReels([]);
+    }
+    setLoadingReels(false);
+  };
+
+  const handleDeleteReel = async (id) => {
+    if (!window.confirm("Delete this reel/short permanently?")) return;
+    try {
+      await API.delete(`/admin/reels/${id}`);
+      setUserReels((prev) => prev.filter((r) => r._id !== id));
+      if (previewReel?._id === id) setPreviewReel(null);
+    } catch (err) {
+      alert("Failed to delete reel");
+    }
+  };
 
   const filtered = users.filter(u =>
     (u.name?.toLowerCase() || "").includes(search.toLowerCase()) ||
@@ -133,8 +155,9 @@ export default function UsersPage() {
                     </td>
                     <td>
                       <div className="tbl-actions">
-                        <button className="icon-btn view" onClick={() => setSelected(u)} title="View"><Eye size={16} /></button>
-                        <button className="icon-btn del" onClick={() => handleDelete(u._id)} title="Delete"><Trash2 size={16} /></button>
+                        <button className="icon-btn view" onClick={() => setSelected(u)} title="View Profile"><Eye size={16} /></button>
+                        <button className="icon-btn view" onClick={() => handleOpenShorts(u)} title="View Shorts" style={{ color: "#a78bfa" }}><Clapperboard size={16} /></button>
+                        <button className="icon-btn del" onClick={() => handleDelete(u._id)} title="Delete User"><Trash2 size={16} /></button>
                       </div>
                     </td>
                   </tr>
@@ -221,6 +244,126 @@ export default function UsersPage() {
             <div className="modal-foot">
               <button className="btn btn-ghost" style={{ width: "100%" }} onClick={() => setSelected(null)}>Close Window</button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* Shorts Modal */}
+      {shortsUser && (
+        <div className="modal-overlay" onClick={() => setShortsUser(null)}>
+          <div className="modal-box shorts-modal-box" onClick={e => e.stopPropagation()}>
+            <div className="modal-head">
+              <h3><Clapperboard size={20} style={{ display: "inline-block", marginRight: 8, verticalAlign: "middle" }} /> {shortsUser.name || "User"}'s Shorts</h3>
+              <button className="modal-close" onClick={() => setShortsUser(null)}><X size={24} /></button>
+            </div>
+            
+            <div className="modal-body">
+              {loadingReels ? (
+                <div className="empty-state"><p><Loader size={20} style={{ display: "inline-block", marginRight: 8, animation: "spin 1.5s linear infinite" }} /> Loading shorts...</p></div>
+              ) : userReels.length === 0 ? (
+                <div className="empty-state"><p>No shorts uploaded by this user 😕</p></div>
+              ) : (
+                <div className="tbl-wrap">
+                  <table className="tbl">
+                    <thead>
+                      <tr>
+                        <th>#</th>
+                        <th>Preview</th>
+                        <th>Caption</th>
+                        <th>Views</th>
+                        <th>Shares</th>
+                        <th>Actions</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {userReels.map((reel, index) => {
+                        const posterUrl = reel.thumbnail ? getImageUrl(reel.thumbnail) : getImageUrl(reel.videoUrl);
+                        return (
+                          <tr key={reel._id}>
+                            <td style={{ color: "var(--text-muted)", fontWeight: 600 }}>{index + 1}</td>
+                            <td>
+                              <div 
+                                className="short-video-wrapper" 
+                                onClick={() => setPreviewReel(reel)} 
+                                style={{ width: "80px", height: "110px", borderRadius: "8px", position: "relative" }}
+                              >
+                                <img
+                                  src={posterUrl}
+                                  alt="Preview"
+                                  style={{ width: "100%", height: "100%", objectFit: "cover", borderRadius: "8px" }}
+                                />
+                                <div className="short-video-play-btn" style={{ opacity: 1 }}>
+                                  <Play size={16} style={{ marginLeft: 2 }} />
+                                </div>
+                              </div>
+                            </td>
+                            <td style={{ maxWidth: "250px", wordBreak: "break-word" }}>
+                              <p style={{ margin: 0, fontWeight: 500 }}>{reel.caption || "No caption"}</p>
+                              {reel.hashtags && reel.hashtags.length > 0 && (
+                                <div style={{ display: "flex", flexWrap: "wrap", gap: "4px", marginTop: "4px" }}>
+                                  {reel.hashtags.map((tag, idx) => (
+                                    <span key={idx} style={{ fontSize: "0.75rem", color: "var(--primary)" }}>#{tag}</span>
+                                  ))}
+                                </div>
+                              )}
+                            </td>
+                            <td style={{ color: "var(--text-soft)" }}>{reel.viewsCount || 0}</td>
+                            <td style={{ color: "var(--text-soft)" }}>{reel.sharesCount || 0}</td>
+                            <td>
+                              <div className="tbl-actions">
+                                <button 
+                                  className="icon-btn view" 
+                                  onClick={() => setPreviewReel(reel)} 
+                                  title="Play Preview"
+                                  style={{ color: previewReel?._id === reel._id ? "var(--primary)" : "#10b981" }}
+                                >
+                                  <Play size={16} />
+                                </button>
+                                <button 
+                                  className="icon-btn del" 
+                                  onClick={() => handleDeleteReel(reel._id)} 
+                                  title="Delete Reel"
+                                >
+                                  <Trash2 size={16} />
+                                </button>
+                              </div>
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+            </div>
+
+            <div className="modal-foot">
+              <button className="btn btn-ghost" style={{ width: "100%" }} onClick={() => { setShortsUser(null); setPreviewReel(null); }}>Close Window</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Floating Video Preview Player (Non-Blocking) */}
+      {previewReel && (
+        <div className="floating-preview-player">
+          <div className="floating-player-header">
+            <span className="floating-player-title">Preview: {previewReel.caption || "Short Reel"}</span>
+            <button className="floating-player-close" onClick={() => setPreviewReel(null)}>
+              <X size={16} />
+            </button>
+          </div>
+          <div className="floating-player-body">
+            <video
+              key={previewReel._id}
+              src={getImageUrl(previewReel.videoUrl)}
+              poster={getImageUrl(previewReel.thumbnail)}
+              controls
+              autoPlay
+              loop
+              playsInline
+              className="floating-player-video"
+            />
           </div>
         </div>
       )}
