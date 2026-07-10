@@ -62,6 +62,10 @@ const addTvShowsEpisode =
       const thumbnail =
         req.files?.thumbnail?.[0];
 
+      const resolvedVideoUrl = getMediaUrl(video, req.body.videoUrl || "");
+      const { parseBunnyStreamUrl } = require("../../utils/mediaUrl");
+      const streamInfo = parseBunnyStreamUrl(resolvedVideoUrl) || {};
+
       const episode =
         await TvShowsEpisode.create({
 
@@ -89,15 +93,21 @@ const addTvShowsEpisode =
             req.body.isVertical !==
             "false",
 
-          videoUrl: getMediaUrl(
-            video,
-            req.body.videoUrl || ""
-          ),
+          videoUrl: resolvedVideoUrl,
 
           thumbnail: getMediaUrl(
             thumbnail,
             req.body.thumbnail || req.body.thumbnailUrl || ""
           ),
+
+          videoSource: streamInfo.videoSource || "bunny_storage",
+          storageType: streamInfo.storageType || "bunny_storage",
+          videoId: streamInfo.videoId || "",
+          streamUrl: streamInfo.streamUrl || "",
+          playlistUrl: streamInfo.playlistUrl || "",
+          playbackUrl: streamInfo.playbackUrl || "",
+          thumbnailUrl: streamInfo.thumbnailUrl || "",
+          encodingStatus: streamInfo.encodingStatus || ""
         });
 
       await updateTvShowStats(
@@ -250,13 +260,34 @@ const updateTvShowsEpisode =
 
       // VIDEO
       if (req.files?.video?.[0]) {
+        deleteMedia(episode.videoUrl);
+        episode.videoUrl = getMediaUrl(req.files.video[0]);
+      } else if (req.body.videoUrl !== undefined) {
+        episode.videoUrl = req.body.videoUrl;
+      }
 
-        deleteMedia(
-          episode.videoUrl
-        );
-
-        episode.videoUrl =
-          getMediaUrl(req.files.video[0]);
+      if (episode.videoUrl !== undefined) {
+        const { parseBunnyStreamUrl } = require("../../utils/mediaUrl");
+        const streamInfo = parseBunnyStreamUrl(episode.videoUrl);
+        if (streamInfo) {
+          episode.videoSource = streamInfo.videoSource;
+          episode.storageType = streamInfo.storageType;
+          episode.videoId = streamInfo.videoId;
+          episode.playlistUrl = streamInfo.playlistUrl;
+          episode.playbackUrl = streamInfo.playbackUrl;
+          episode.streamUrl = streamInfo.streamUrl;
+          episode.thumbnailUrl = streamInfo.thumbnailUrl;
+          episode.encodingStatus = streamInfo.encodingStatus;
+        } else {
+          episode.videoSource = "bunny_storage";
+          episode.storageType = "bunny_storage";
+          episode.videoId = "";
+          episode.playlistUrl = "";
+          episode.playbackUrl = "";
+          episode.streamUrl = "";
+          episode.thumbnailUrl = "";
+          episode.encodingStatus = "";
+        }
       }
 
 

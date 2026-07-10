@@ -65,6 +65,49 @@ export default function Drama() {
     setSearchResults(null);
   }, [currentPage]);
 
+  // Polling for Bunny Stream encoding status
+  useEffect(() => {
+    let timer;
+    const item = selectedEpisode || editData;
+    if (item && item.videoId && item.encodingStatus === "processing" && (modalMode === "ep-edit" || modalMode === "ep-view")) {
+      const pollStatus = async () => {
+        try {
+          const res = await API.get(`/admin/auth/bunny-stream/status/${item.videoId}`);
+          if (res.data.success) {
+            console.log("Polled status:", res.data);
+            if (res.data.status === "ready" || res.data.status === "failed") {
+              if (selectedEpisode) {
+                setSelectedEpisode(prev => ({ 
+                  ...prev, 
+                  encodingStatus: res.data.status, 
+                  duration: res.data.duration ? String(Math.round(res.data.duration / 60)) : prev.duration,
+                  thumbnail: res.data.thumbnailUrl || prev.thumbnail
+                }));
+              }
+              if (editData) {
+                setEditData(prev => ({ 
+                  ...prev, 
+                  encodingStatus: res.data.status, 
+                  duration: res.data.duration ? String(Math.round(res.data.duration / 60)) : prev.duration,
+                  thumbnail: res.data.thumbnailUrl || prev.thumbnail
+                }));
+              }
+              // Also update the episode in episodes list
+              setEpisodes(prev => prev.map(ep => ep.videoId === item.videoId ? { ...ep, encodingStatus: res.data.status, duration: res.data.duration ? String(Math.round(res.data.duration / 60)) : ep.duration, thumbnail: res.data.thumbnailUrl } : ep));
+              clearInterval(timer);
+            }
+          }
+        } catch (err) {
+          console.error("Error polling bunny stream status:", err.message);
+        }
+      };
+      
+      pollStatus();
+      timer = setInterval(pollStatus, 20000);
+    }
+    return () => clearInterval(timer);
+  }, [editData, selectedEpisode, modalMode]);
+
   const fetchData = async () => {
     setLoading(true);
     try {
@@ -820,6 +863,20 @@ export default function Drama() {
                     </label>
                   </div>
                 </div>
+                {editData && editData.storageType === "bunny_stream" && (
+                  <div className="bunny-stream-status-box" style={{ marginTop: 12, padding: "12px", background: "rgba(255,255,255,0.05)", borderRadius: "8px", border: "1px solid rgba(255,255,255,0.1)", fontSize: "0.85rem" }}>
+                    <div style={{ fontWeight: 600, color: "#fff", marginBottom: 6 }}>Bunny Stream Details</div>
+                    <div><strong>Video ID:</strong> {editData.videoId || "N/A"}</div>
+                    <div><strong>Duration:</strong> {editData.duration ? `${editData.duration} mins` : "Pending"}</div>
+                    <div><strong>Encoding Status:</strong> <span style={{ textTransform: "capitalize", color: editData.encodingStatus === "ready" ? "var(--primary)" : "#ffcc00", fontWeight: "bold" }}>{editData.encodingStatus || "processing"}</span></div>
+                    {editData.encodingStatus === "processing" && (
+                      <div style={{ display: "flex", alignItems: "center", gap: 8, marginTop: 6 }}>
+                        <div className="spinner" style={{ width: 12, height: 12, border: "2px solid rgba(255,255,255,0.2)", borderTopColor: "#fff", borderRadius: "50%", animation: "spin 1s linear infinite" }}></div>
+                        <span style={{ color: "var(--text-muted)", fontSize: "0.8rem" }}>Polling transcoding progress...</span>
+                      </div>
+                    )}
+                  </div>
+                )}
                 <div style={{ display: "flex", gap: 10 }}>
                   <button className="btn btn-primary" onClick={handleSaveEpisode} disabled={loading}>{loading ? "Saving…" : "Save Episode"}</button>
                   <button className="btn btn-ghost" onClick={closeModal}>Cancel</button>

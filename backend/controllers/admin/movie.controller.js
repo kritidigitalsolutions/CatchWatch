@@ -117,45 +117,37 @@ console.log({
   category,
   language: req.body.language,
 });
+    const resolvedVideoUrl = getMediaUrl(video, req.body.videoUrl);
+    const resolvedTrailerUrl = getMediaUrl(trailer, req.body.trailerUrl);
+    const { parseBunnyStreamUrl } = require("../../utils/mediaUrl");
+    const streamInfo = parseBunnyStreamUrl(resolvedVideoUrl) || {};
+
     const movie = await Movie.create({
-
       title: req.body.title,
-
       description: req.body.description || "",
-
       genre,
-
       releaseYear: req.body.releaseYear || null,
-
       duration: req.body.duration || "",
-
       language: req.body.language || "",
-
       poster: getMediaUrl(poster, req.body.poster),
-
       banner: getMediaUrl(banner, req.body.banner),
-
-      trailerUrl: getMediaUrl(trailer, req.body.trailerUrl),
-
-      videoUrl: getMediaUrl(video, req.body.videoUrl),
-
-
-      isComingSoon:
-        req.body.isComingSoon === "true",
-
-      releaseDate:
-        req.body.releaseDate || null,
-
-      isPremium:
-        req.body.isPremium === "true",
-
+      trailerUrl: resolvedTrailerUrl,
+      videoUrl: resolvedVideoUrl,
+      isComingSoon: req.body.isComingSoon === "true",
+      releaseDate: req.body.releaseDate || null,
+      isPremium: req.body.isPremium === "true",
       rating: req.body.rating || 0,
-
       cast: sanitizeCast(cast),
-
       category,
-
       priority,
+      videoSource: streamInfo.videoSource || "bunny_storage",
+      storageType: streamInfo.storageType || "bunny_storage",
+      videoId: streamInfo.videoId || "",
+      streamUrl: streamInfo.streamUrl || "",
+      playlistUrl: streamInfo.playlistUrl || "",
+      playbackUrl: streamInfo.playbackUrl || "",
+      thumbnailUrl: streamInfo.thumbnailUrl || "",
+      encodingStatus: streamInfo.encodingStatus || ""
     });
 
     return res.status(201).json({
@@ -416,6 +408,28 @@ const updateMovie = async (req, res) => {
       movie.videoUrl = getMediaUrl(req.files.video[0]);
     } else if (req.body.videoUrl !== undefined) {
       movie.videoUrl = req.body.videoUrl;
+    }
+
+    const { parseBunnyStreamUrl } = require("../../utils/mediaUrl");
+    const streamInfo = parseBunnyStreamUrl(movie.videoUrl);
+    if (streamInfo) {
+      movie.videoSource = streamInfo.videoSource;
+      movie.storageType = streamInfo.storageType;
+      movie.videoId = streamInfo.videoId;
+      movie.playlistUrl = streamInfo.playlistUrl;
+      movie.playbackUrl = streamInfo.playbackUrl;
+      movie.streamUrl = streamInfo.streamUrl;
+      movie.thumbnailUrl = streamInfo.thumbnailUrl;
+      movie.encodingStatus = streamInfo.encodingStatus;
+    } else if (movie.videoUrl !== undefined) {
+      movie.videoSource = "bunny_storage";
+      movie.storageType = "bunny_storage";
+      movie.videoId = "";
+      movie.playlistUrl = "";
+      movie.playbackUrl = "";
+      movie.streamUrl = "";
+      movie.thumbnailUrl = "";
+      movie.encodingStatus = "";
     }
 
 

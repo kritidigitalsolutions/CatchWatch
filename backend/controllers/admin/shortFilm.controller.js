@@ -102,52 +102,35 @@ const addShortFilm = async (req, res) => {
           : 1;
     }
 
+    const resolvedVideoUrl = getMediaUrl(video, req.body.videoUrl);
+    const resolvedTrailerUrl = getMediaUrl(trailer, req.body.trailerUrl);
+    const { parseBunnyStreamUrl } = require("../../utils/mediaUrl");
+    const streamInfo = parseBunnyStreamUrl(resolvedVideoUrl) || {};
+
     const shortFilm = await ShortFilm.create({
       title: req.body.title,
       description: req.body.description || "",
-
       genre,
       category,
-
-      releaseYear:
-        req.body.releaseYear || null,
-
-      duration:
-        req.body.duration || "",
-
-      language:
-        req.body.language || "",
-
-      poster: getMediaUrl(
-        poster,
-        req.body.poster
-      ),
-
-      banner: getMediaUrl(
-        banner,
-        req.body.banner
-      ),
-
-      trailerUrl: getMediaUrl(
-        trailer,
-        req.body.trailerUrl
-      ),
-
-      videoUrl: getMediaUrl(
-        video,
-        req.body.videoUrl
-      ),
-
-      isPremium:
-        req.body.isPremium === "true",
-
-      rating:
-        req.body.rating || 0,
-
-      cast:
-        sanitizeCast(cast),
-
+      releaseYear: req.body.releaseYear || null,
+      duration: req.body.duration || "",
+      language: req.body.language || "",
+      poster: getMediaUrl(poster, req.body.poster),
+      banner: getMediaUrl(banner, req.body.banner),
+      trailerUrl: resolvedTrailerUrl,
+      videoUrl: resolvedVideoUrl,
+      isPremium: req.body.isPremium === "true",
+      rating: req.body.rating || 0,
+      cast: sanitizeCast(cast),
       priority,
+      videoSource: streamInfo.videoSource || "bunny_storage",
+      storageType: streamInfo.storageType || "bunny_storage",
+      videoId: streamInfo.videoId || "",
+      streamUrl: streamInfo.streamUrl || "",
+      playlistUrl: streamInfo.playlistUrl || "",
+      playbackUrl: streamInfo.playbackUrl || "",
+      thumbnailUrl: streamInfo.thumbnailUrl || "",
+      encodingStatus: streamInfo.encodingStatus || ""
     });
 
     return res.status(201).json({
@@ -438,20 +421,32 @@ const updateShortFilm = async (
     // VIDEO
 
     if (req.files?.video?.[0]) {
-      await deleteMedia(
-        shortFilm.videoUrl
-      );
+      await deleteMedia(shortFilm.videoUrl);
+      shortFilm.videoUrl = getMediaUrl(req.files.video[0]);
+    } else if (req.body.videoUrl !== undefined) {
+      shortFilm.videoUrl = req.body.videoUrl;
+    }
 
-      shortFilm.videoUrl =
-        getMediaUrl(
-          req.files.video[0]
-        );
-    } else if (
-      req.body.videoUrl !==
-      undefined
-    ) {
-      shortFilm.videoUrl =
-        req.body.videoUrl;
+    const { parseBunnyStreamUrl } = require("../../utils/mediaUrl");
+    const streamInfo = parseBunnyStreamUrl(shortFilm.videoUrl);
+    if (streamInfo) {
+      shortFilm.videoSource = streamInfo.videoSource;
+      shortFilm.storageType = streamInfo.storageType;
+      shortFilm.videoId = streamInfo.videoId;
+      shortFilm.playlistUrl = streamInfo.playlistUrl;
+      shortFilm.playbackUrl = shortFilm.playlistUrl;
+      shortFilm.streamUrl = streamInfo.streamUrl;
+      shortFilm.thumbnailUrl = streamInfo.thumbnailUrl;
+      shortFilm.encodingStatus = streamInfo.encodingStatus;
+    } else if (shortFilm.videoUrl !== undefined) {
+      shortFilm.videoSource = "bunny_storage";
+      shortFilm.storageType = "bunny_storage";
+      shortFilm.videoId = "";
+      shortFilm.playlistUrl = "";
+      shortFilm.playbackUrl = "";
+      shortFilm.streamUrl = "";
+      shortFilm.thumbnailUrl = "";
+      shortFilm.encodingStatus = "";
     }
 
     const castFiles =

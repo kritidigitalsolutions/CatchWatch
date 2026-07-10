@@ -77,17 +77,37 @@ const bunnyStorage = {
       }
 
       const filename = `${Date.now()}-${Math.round(Math.random() * 1e9)}${safeExtension(file)}`;
-      const result = await uploadStreamToBunny({
-        stream: file.stream,
-        remotePath: `${target.type}/${target.subfolder}/${filename}`,
-        contentType: file.mimetype,
-      });
+      
+      const isVideo = req.body.subfolder === "videos" || req.body.subfolder === "trailers" || (file.mimetype && file.mimetype.startsWith("video/"));
+      let result;
+
+      if (isVideo) {
+        try {
+          console.log("auth.routes.js: Target Bunny Stream");
+          const { uploadVideo } = require("../../cdn/bunnyCDN");
+          const title = `${req.body.title || 'Video'}-${Date.now()}`;
+          result = await uploadVideo({ stream: file.stream, title });
+        } catch (err) {
+          console.error("CRITICAL: auth.routes.js Bunny Stream upload failed. Falling back to Bunny Storage.", err.message);
+          result = await uploadStreamToBunny({
+            stream: file.stream,
+            remotePath: `${target.type}/${target.subfolder}/${filename}`,
+            contentType: file.mimetype,
+          });
+        }
+      } else {
+        result = await uploadStreamToBunny({
+          stream: file.stream,
+          remotePath: `${target.type}/${target.subfolder}/${filename}`,
+          contentType: file.mimetype,
+        });
+      }
 
       cb(null, {
         filename,
-        path: result.url,
-        cdnUrl: result.url,
-        remotePath: result.path,
+        path: result.playlistUrl || result.url,
+        cdnUrl: result.playlistUrl || result.url,
+        remotePath: result.videoId || result.path,
       });
     } catch (err) {
       cb(err);
@@ -177,6 +197,93 @@ router.post(
       return res.status(500).json({
         success: false,
         message: err.message,
+      });
+    }
+  }
+);
+
+router.get(
+  "/bunny-stream/status/:videoId",
+  isAdmin,
+  async (req, res) => {
+    try {
+      const { videoId } = req.params;
+      const { getVideoStatus } = require("../../cdn/bunnyCDN");
+      
+      const bunnyData = await getVideoStatus(videoId);
+      
+      // Map Bunny Stream status code
+      // 0 = Queued, 1 = Processing, 2 = Encoding, 3 = Finished, 4 = Failed, 5 = Preserving, 6 = Playable
+      let encodingStatus = "processing";
+      if (bunnyData.status === 3 || bunnyData.status === 6) {
+        encodingStatus = "ready";
+      } else if (bunnyData.status === 4) {
+        encodingStatus = "failed";
+      }
+      
+      // Update DB Document
+      const Movie = require("../../models/movie.model");
+      const Episode = require("../../models/episode.model");
+      const TvShowsEpisode = require("../../models/tvShowsEpisode.model");
+      const ShortFilm = require("../../models/shortFilm.model");
+      const Reel = require("../../models/reel.model");
+
+      let doc = await Movie.findOne({ videoId });
+      let modelType = "Movie";
+
+      if (!doc) {
+        doc = await Episode.findOne({ videoId });
+        modelType = "Episode";
+      }
+      if (!doc) {
+        doc = await TvShowsEpisode.findOne({ videoId });
+        modelType = "TvShowsEpisode";
+      }
+      if (!doc) {
+        doc = await ShortFilm.findOne({ videoId });
+        modelType = "ShortFilm";
+      }
+      if (!doc) {
+        doc = await Reel.findOne({ videoId });
+        modelType = "Reel";
+      }
+
+      let pullZone = String(process.env.BUNNY_STREAM_PULL_ZONE || "").trim().replace(/\/+$/, "");
+      if (pullZone && !pullZone.includes(".")) {
+        pullZone = `${pullZone}.b-cdn.net`;
+      }
+      const thumbnailUrl = `https://${pullZone}/${videoId}/${bunnyData.thumbnailFileName || 'thumbnail.jpg'}`;
+
+      if (doc) {
+        doc.encodingStatus = encodingStatus;
+        if (encodingStatus === "ready") {
+          // Store duration in minutes
+          if (bunnyData.length) {
+            const minutes = Math.round(bunnyData.length / 60);
+            doc.duration = minutes > 0 ? String(minutes) : "1";
+          }
+          doc.thumbnailUrl = thumbnailUrl;
+          // For Episode / TvShowsEpisode which use thumbnail field, fill it if empty
+          if (doc.thumbnail === "" || !doc.thumbnail) {
+            doc.thumbnail = thumbnailUrl;
+          }
+        }
+        await doc.save();
+      }
+
+      return res.json({
+        success: true,
+        status: encodingStatus,
+        progress: bunnyData.encodeProgress || 0,
+        duration: bunnyData.length || 0,
+        availableResolutions: (bunnyData.availableResolutions || "").split(",").filter(Boolean),
+        thumbnailUrl
+      });
+    } catch (err) {
+      console.error("Bunny Stream status API error:", err.message);
+      return res.status(500).json({
+        success: false,
+        message: err.message
       });
     }
   }

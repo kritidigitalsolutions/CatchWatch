@@ -146,6 +146,18 @@ export const uploadToBunny = async (
 ) => {
   if (!file) return "";
 
+  const isVideo = subfolder === "videos" || subfolder === "trailers" || subfolder === "teasers" || subfolder === "clips";
+
+  if (isVideo) {
+    console.log("ROUTING VIDEO UPLOAD THROUGH BACKEND FOR SECURITY/STREAMING:", subfolder);
+    return uploadThroughBackend(
+      file,
+      type,
+      subfolder,
+      onProgress
+    );
+  }
+
   console.log(
     "USING DIRECT BUNNY UPLOAD FOR:",
     subfolder

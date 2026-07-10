@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
+import Hls from 'hls.js';
 import { MdDownloadForOffline } from "react-icons/md";
 import {
   FaPlay, FaPause, FaExpand, FaCompress,
@@ -15,16 +16,93 @@ import { toggleBookmark, getContentInteractions } from '../api/interactionApi';
 import Loader from '../components/Loader';
 import { TbRewindBackward10, TbRewindForward10 } from "react-icons/tb";
 
+// Helper to resolve video URLs (resolves relative paths to backend base URL in dev)
+const resolveVideoUrl = (url) => {
+  if (!url) return null;
+  if (url.startsWith("http://") || url.startsWith("https://")) {
+    return url;
+  }
+  const apiBase = process.env.REACT_APP_API_URL || "http://localhost:5000";
+  const cleanUrl = url.startsWith("/") ? url : `/${url}`;
+  return `${apiBase}${cleanUrl}`;
+};
+
+const getVideoSrcForQuality = (url, quality) => {
+  if (!url) return null;
+  
+  // Detect if this is a Bunny Stream URL (contains playlist.m3u8)
+  const isBunnyStream = url.toLowerCase().includes("playlist.m3u8");
+  
+  if (isBunnyStream) {
+    const base = url.substring(0, url.toLowerCase().lastIndexOf('/'));
+    
+    // If Hls.js or native HLS is supported, play HLS directly!
+    const videoEl = document.createElement('video');
+    const canPlayHLS = videoEl.canPlayType('application/x-mpegURL') || 
+                       videoEl.canPlayType('application/vnd.apple.mpegurl');
+    if (canPlayHLS || Hls.isSupported()) {
+      return url;
+    }
+
+    if (!quality || quality === "Auto") {
+      // Otherwise, fallback to a default quality for Auto on non-HLS browsers
+      return `${base}/play_720p.mp4`;
+    }
+    
+    // Manual quality (e.g. 1080p, 720p, etc.)
+    return `${base}/play_${quality}.mp4`;
+  }
+  
+  // Standard Bunny Storage static file fallback logic
+  if (!quality || quality === "Auto") return url;
+  
+  const lastDotIndex = url.lastIndexOf('.');
+  if (lastDotIndex === -1) return url;
+  
+  const base = url.substring(0, lastDotIndex);
+  const ext = url.substring(lastDotIndex);
+  
+  return `${base}-${quality}${ext}`;
+};
+
+// Supported resolutions in preferred descending order
+const QUALITY_ORDER = ["1080p", "720p", "480p", "360p", "240p", "Auto"];
+
+// Estimate user connection speed in Mbps using the Network Information API
+const estimateInternetSpeed = () => {
+  if (navigator.connection && typeof navigator.connection.downlink === 'number') {
+    return navigator.connection.downlink;
+  }
+  return 3.0; // Default fallback to 3 Mbps
+};
+
+// Map internet speed to target quality
+const getQualityForSpeed = (speedMbps) => {
+  if (speedMbps >= 6.0) return "1080p";
+  if (speedMbps >= 3.0) return "720p";
+  if (speedMbps >= 1.5) return "480p";
+  if (speedMbps >= 0.8) return "360p";
+  return "240p";
+};
+
 const VideoPlayerPage = () => {
   const { slug, id } = useParams();
   const navigate = useNavigate();
 
   const videoRef = useRef(null);
   const playerContainerRef = useRef(null);
+  const pendingSeekRef = useRef(null);
+  const wasPlayingRef = useRef(false);
+  const fallbackQueueRef = useRef([]);
+  const lastSwitchTimeRef = useRef(0);
+  const hlsRef = useRef(null);
+
+
 
   const [mediaData, setMediaData] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [videoLoadError, setVideoLoadError] = useState(false);
   
   // Interaction States
   const [isWishlisted, setIsWishlisted] = useState(false);
@@ -43,6 +121,8 @@ const VideoPlayerPage = () => {
   const [showSpeedMenu, setShowSpeedMenu] = useState(false);
   const [showControls, setShowControls] = useState(true);
   const [selectedQuality, setSelectedQuality] = useState("Auto");
+  const [activeQuality, setActiveQuality] = useState("Auto");
+  const [videoSrc, setVideoSrc] = useState(null);
   const [showQualityMenu, setShowQualityMenu] = useState(false);
   const [isBuffering, setIsBuffering] = useState(false);
 
@@ -115,6 +195,14 @@ const VideoPlayerPage = () => {
 
     if (slug || id) fetchMediaContent();
   }, [slug, id, navigate]);
+
+  // Initialize video source once mediaData is loaded
+  useEffect(() => {
+    if (mediaData?.videoUrl) {
+      changeQuality("Auto", false);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [mediaData]);
 
   // --- DOWNLOAD LOGIC ---
   const handleDownload = () => {
@@ -200,7 +288,7 @@ const VideoPlayerPage = () => {
   };
 
   const formatTime = (timeInSeconds) => {
-    if (isNaN(timeInSeconds)) return '00:00';
+    if (isNaN(timeInSeconds) || !isFinite(timeInSeconds)) return '00:00';
     const hours = Math.floor(timeInSeconds / 3600);
     const minutes = Math.floor((timeInSeconds % 3600) / 60);
     const seconds = Math.floor(timeInSeconds % 60);
@@ -212,20 +300,51 @@ const VideoPlayerPage = () => {
     if (!videoRef.current) return;
     const current = videoRef.current.currentTime;
     const total = videoRef.current.duration;
-    setProgress((current / total) * 100);
-    setCurrentTime(formatTime(current));
+    if (isFinite(current) && isFinite(total) && total > 0) {
+      setProgress((current / total) * 100);
+      setCurrentTime(formatTime(current));
+    }
   };
 
   const handleLoadedMetadata = () => {
-    if (videoRef.current) setDuration(formatTime(videoRef.current.duration));
+    if (videoRef.current) {
+      setVideoLoadError(false); // Reset error status on successful metadata load
+      const durationVal = videoRef.current.duration;
+      if (isFinite(durationVal)) {
+        setDuration(formatTime(durationVal));
+      }
+      
+      // Safe time restoration after quality switch
+      if (pendingSeekRef.current !== null && isFinite(pendingSeekRef.current) && pendingSeekRef.current > 0) {
+        videoRef.current.currentTime = pendingSeekRef.current;
+        pendingSeekRef.current = null;
+      }
+
+      // Resume playback if it was playing before quality change
+      if (wasPlayingRef.current) {
+        videoRef.current.play()
+          .then(() => setIsPlaying(true))
+          .catch(e => console.error("Auto-play after quality change failed:", e));
+        wasPlayingRef.current = false;
+      }
+
+      setIsBuffering(false);
+    }
   };
 
   const handleProgressScrub = (e) => {
     const progressBar = e.currentTarget;
     const clickPosition = e.nativeEvent.offsetX;
     const totalWidth = progressBar.clientWidth;
-    const newTime = (clickPosition / totalWidth) * videoRef.current.duration;
-    videoRef.current.currentTime = newTime;
+    if (videoRef.current) {
+      const durationVal = videoRef.current.duration;
+      if (isFinite(durationVal) && durationVal > 0) {
+        const newTime = (clickPosition / totalWidth) * durationVal;
+        if (isFinite(newTime)) {
+          videoRef.current.currentTime = newTime;
+        }
+      }
+    }
   };
 
   const toggleMute = () => {
@@ -259,37 +378,234 @@ const VideoPlayerPage = () => {
   const seekBackward = (e) => {
     if (e) e.stopPropagation();
     if (videoRef.current) {
-      videoRef.current.currentTime = Math.max(0, videoRef.current.currentTime - 10);
+      const current = videoRef.current.currentTime;
+      if (isFinite(current)) {
+        videoRef.current.currentTime = Math.max(0, current - 10);
+      }
     }
   };
 
   const seekForward = (e) => {
     if (e) e.stopPropagation();
     if (videoRef.current) {
-      videoRef.current.currentTime = Math.min(videoRef.current.duration, videoRef.current.currentTime + 10);
+      const current = videoRef.current.currentTime;
+      const total = videoRef.current.duration;
+      if (isFinite(current) && isFinite(total)) {
+        videoRef.current.currentTime = Math.min(total, current + 10);
+      }
     }
   };
 
-  const handleQualityChange = (quality) => {
-    if (!videoRef.current || selectedQuality === quality) return;
-    
-    const savedTime = videoRef.current.currentTime;
-    const wasPlaying = !videoRef.current.paused;
-    
-    setSelectedQuality(quality);
-    setShowQualityMenu(false);
+  const changeQuality = (quality, preserveTime = true) => {
+    if (!mediaData?.videoUrl) return;
+
+    const savedTime = videoRef.current ? videoRef.current.currentTime : 0;
+    const wasPlaying = videoRef.current ? !videoRef.current.paused : false;
+
+    pendingSeekRef.current = preserveTime && isFinite(savedTime) && savedTime > 0 ? savedTime : null;
+    wasPlayingRef.current = wasPlaying;
+    setVideoLoadError(false);
     setIsBuffering(true);
-    
-    setTimeout(() => {
-      if (videoRef.current) {
-        videoRef.current.load();
-        videoRef.current.currentTime = savedTime;
-        if (wasPlaying) {
-          videoRef.current.play().catch(e => console.error(e));
+
+    let targetQuality = quality;
+    if (quality === "Auto") {
+      const isBunnyStream = mediaData.videoUrl.toLowerCase().includes("playlist.m3u8");
+      const videoEl = document.createElement('video');
+      const canPlayHLS = videoEl.canPlayType('application/x-mpegURL') || 
+                         videoEl.canPlayType('application/vnd.apple.mpegurl');
+      
+      if (isBunnyStream && (Hls.isSupported() || canPlayHLS)) {
+        targetQuality = "Auto";
+      } else {
+        const speed = estimateInternetSpeed();
+        targetQuality = getQualityForSpeed(speed);
+        console.log(`Auto mode: estimated speed ${speed} Mbps, selecting target quality ${targetQuality}`);
+      }
+    }
+
+    setSelectedQuality(quality);
+    setActiveQuality(targetQuality);
+
+    if (targetQuality !== "Auto") {
+      const targetIndex = QUALITY_ORDER.indexOf(targetQuality);
+      let queue = [];
+      if (targetIndex !== -1) {
+        queue = QUALITY_ORDER.slice(targetIndex + 1);
+      }
+      if (!queue.includes("Auto")) {
+        queue.push("Auto");
+      }
+      fallbackQueueRef.current = queue;
+    } else {
+      fallbackQueueRef.current = [];
+    }
+
+    // Resolve and set video source
+    let newSrc = resolveVideoUrl(getVideoSrcForQuality(mediaData.videoUrl, targetQuality));
+    if (newSrc && newSrc.includes(".m3u8")) {
+      newSrc = `${newSrc}${newSrc.includes("?") ? "&" : "?"}quality=${quality}`;
+    }
+    setVideoSrc(newSrc);
+  };
+
+  const handleVideoError = () => {
+    if (videoRef.current && videoRef.current.error) {
+      const code = videoRef.current.error.code;
+      // Code 1 is aborted (MEDIA_ERR_ABORTED), normal when switching sources.
+      if (code > 1) {
+        console.warn(`Video playback error code ${code} for source ${videoSrc} (active quality: ${activeQuality})`);
+
+        if (fallbackQueueRef.current && fallbackQueueRef.current.length > 0) {
+          const nextQuality = fallbackQueueRef.current.shift();
+          console.log(`Falling back to next quality: ${nextQuality}`);
+          
+          setActiveQuality(nextQuality);
+          const nextSrc = resolveVideoUrl(getVideoSrcForQuality(mediaData.videoUrl, nextQuality));
+          setVideoSrc(nextSrc);
+          return;
+        }
+
+        setVideoLoadError(true);
+        setIsBuffering(false);
+      }
+    }
+  };
+
+  // HLS.js Player Lifecycle Management
+  useEffect(() => {
+    if (!videoRef.current || !videoSrc) return;
+
+    const isM3U8 = videoSrc.toLowerCase().includes("playlist.m3u8");
+
+    // Clean up previous HLS instance if any
+    if (hlsRef.current) {
+      hlsRef.current.destroy();
+      hlsRef.current = null;
+    }
+
+    if (isM3U8) {
+      const videoEl = videoRef.current;
+      const canPlayHLS = videoEl.canPlayType('application/x-mpegURL') || 
+                         videoEl.canPlayType('application/vnd.apple.mpegurl');
+
+      if (Hls.isSupported()) {
+        console.log("HLS.js supported. Initializing Hls instance...");
+        const hls = new Hls({
+          capLevelToPlayerSize: true,
+          maxBufferLength: 30,
+        });
+        hls.loadSource(videoSrc);
+        hls.attachMedia(videoEl);
+        hlsRef.current = hls;
+
+        hls.on(Hls.Events.MANIFEST_PARSED, (event, data) => {
+          console.log("HLS manifest parsed. Levels found:", data.levels.map(l => l.height));
+          
+          // Apply manual quality if not "Auto"
+          if (selectedQuality && selectedQuality !== "Auto") {
+            const targetHeight = parseInt(selectedQuality);
+            const targetIndex = data.levels.findIndex(l => l.height === targetHeight);
+            if (targetIndex !== -1) {
+              hls.currentLevel = targetIndex;
+            }
+          }
+          
+          // Seek to pending position if any
+          if (pendingSeekRef.current !== null && isFinite(pendingSeekRef.current) && pendingSeekRef.current > 0) {
+            videoEl.currentTime = pendingSeekRef.current;
+            pendingSeekRef.current = null;
+          }
+
+          // Auto-resume playback if was playing
+          if (wasPlayingRef.current) {
+            videoEl.play()
+              .then(() => setIsPlaying(true))
+              .catch(err => console.error("HLS.js auto-play failed:", err));
+            wasPlayingRef.current = false;
+          }
+          
+          setIsBuffering(false);
+        });
+
+        hls.on(Hls.Events.ERROR, (event, data) => {
+          if (data.fatal) {
+            switch (data.type) {
+              case Hls.ErrorTypes.NETWORK_ERROR:
+                console.warn("HLS fatal network error, trying to recover...", data);
+                hls.startLoad();
+                break;
+              case Hls.ErrorTypes.MEDIA_ERROR:
+                console.warn("HLS fatal media error, trying to recover...", data);
+                hls.recoverMediaError();
+                break;
+              default:
+                console.error("HLS unrecoverable fatal error:", data);
+                handleVideoError();
+                break;
+            }
+          }
+        });
+      } else if (canPlayHLS) {
+        console.log("Native HLS supported. Loading directly...");
+        videoEl.src = videoSrc;
+      } else {
+        console.warn("HLS.js and native HLS not supported. Playing standard MP4...");
+      }
+    }
+
+    return () => {
+      if (hlsRef.current) {
+        hlsRef.current.destroy();
+        hlsRef.current = null;
+      }
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [videoSrc]);
+
+  // Dynamic quality switching for Hls.js without reloading source
+  useEffect(() => {
+    if (hlsRef.current && hlsRef.current.levels) {
+      if (selectedQuality === "Auto") {
+        hlsRef.current.currentLevel = -1; // Auto select level in Hls.js
+      } else {
+        const targetHeight = parseInt(selectedQuality);
+        const targetIndex = hlsRef.current.levels.findIndex(l => l.height === targetHeight);
+        if (targetIndex !== -1) {
+          hlsRef.current.currentLevel = targetIndex;
         }
       }
-      setIsBuffering(false);
-    }, 800);
+    }
+  }, [selectedQuality]);
+
+  const handleWaiting = () => {
+    setIsBuffering(true);
+    
+    // Auto-downgrade quality if buffering occurs in Auto mode
+    if (selectedQuality === "Auto" && videoRef.current) {
+      const now = Date.now();
+      // Throttle changes to at most once per 10 seconds
+      if (now - lastSwitchTimeRef.current > 10000) {
+        const currentIndex = QUALITY_ORDER.indexOf(activeQuality);
+        // Can downgrade if we aren't at the lowest quality (240p is index 4)
+        if (currentIndex !== -1 && currentIndex < 4) {
+          const nextQuality = QUALITY_ORDER[currentIndex + 1];
+          console.warn(`Buffering detected in Auto mode. Downgrading quality from ${activeQuality} to ${nextQuality}`);
+          
+          lastSwitchTimeRef.current = now;
+          const savedTime = videoRef.current.currentTime;
+          pendingSeekRef.current = isFinite(savedTime) ? savedTime : null;
+          wasPlayingRef.current = true;
+          
+          setActiveQuality(nextQuality);
+          const nextSrc = resolveVideoUrl(getVideoSrcForQuality(mediaData.videoUrl, nextQuality));
+          setVideoSrc(nextSrc);
+        }
+      }
+    }
+  };
+
+  const handlePlaying = () => {
+    setIsBuffering(false);
   };
 
   useEffect(() => {
@@ -337,7 +653,7 @@ const VideoPlayerPage = () => {
         >
           <video
             ref={videoRef}
-            src={mediaData.videoUrl || null}
+            src={hlsRef.current ? undefined : (videoSrc || undefined)}
             className="w-full h-full object-contain cursor-pointer"
             onClick={togglePlay}
             onTimeUpdate={handleTimeUpdate}
@@ -345,6 +661,10 @@ const VideoPlayerPage = () => {
             onPlay={() => setIsPlaying(true)}
             onPause={() => setIsPlaying(false)}
             onEnded={() => setIsPlaying(false)}
+            onError={handleVideoError}
+            onLoadedData={() => setVideoLoadError(false)}
+            onWaiting={handleWaiting}
+            onPlaying={handlePlaying}
           />
 
           <div 
@@ -464,14 +784,17 @@ const VideoPlayerPage = () => {
                       }}
                       className="text-xs font-bold border border-white/30 px-1.5 py-0.5 rounded hover:border-orange-500 hover:text-orange-500 transition uppercase"
                     >
-                      {selectedQuality === "Auto" ? "HD" : selectedQuality}
+                      {selectedQuality === "Auto" ? `Auto (${activeQuality})` : selectedQuality}
                     </button>
                     {showQualityMenu && (
                       <div className="absolute bottom-8 right-0 bg-neutral-900/95 border border-white/10 rounded-lg py-2 flex flex-col w-28 backdrop-blur-md z-20 shadow-xl">
-                        {["1080p", "720p", "480p", "Auto"].map(quality => (
+                        {["Auto", "1080p", "720p", "480p", "360p", "240p"].map(quality => (
                           <button
                             key={quality}
-                            onClick={() => handleQualityChange(quality)}
+                            onClick={() => {
+                              changeQuality(quality);
+                              setShowQualityMenu(false);
+                            }}
                             className={`text-xs text-left px-4 py-1.5 hover:bg-white/10 flex items-center justify-between ${selectedQuality === quality ? 'text-orange-500 font-bold' : 'text-gray-300'}`}
                           >
                             <span>{quality}</span>
@@ -494,7 +817,23 @@ const VideoPlayerPage = () => {
           {isBuffering && (
             <div className="absolute inset-0 bg-black/60 z-30 flex flex-col items-center justify-center gap-3 backdrop-blur-[2px]">
               <div className="w-10 h-10 border-4 border-gray-300 border-t-brand-orange rounded-full animate-spin"></div>
-              <span className="text-white text-xs font-bold tracking-wide">Switching to {selectedQuality === "Auto" ? "Auto Quality" : selectedQuality}...</span>
+              <span className="text-white text-xs font-bold tracking-wide">Switching to {selectedQuality === "Auto" ? `Auto (${activeQuality})` : selectedQuality}...</span>
+            </div>
+          )}
+
+          {/* Playback Error Overlay */}
+          {videoLoadError && (
+            <div className="absolute inset-0 bg-neutral-950/95 z-30 flex flex-col items-center justify-center p-6 text-center gap-4">
+              <span className="text-orange-500 text-4xl">⚠️</span>
+              <h3 className="text-white text-base font-bold">Playback Error</h3>
+              <p className="text-gray-400 text-xs max-w-md">
+                The video stream could not be loaded. This might be due to an invalid URL, a missing file on the server, or an unsupported file format.
+              </p>
+              {mediaData.videoUrl && (
+                <div className="bg-white/5 border border-white/10 rounded-lg p-2 text-[10px] text-gray-300 font-mono select-text max-w-sm truncate">
+                  Source: {mediaData.videoUrl}
+                </div>
+              )}
             </div>
           )}
         </div>

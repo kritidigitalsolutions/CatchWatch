@@ -23,6 +23,10 @@ const addEpisode = async (req, res) => {
     const video = req.files?.video?.[0];
     const thumbnail = req.files?.thumbnail?.[0];
 
+    const resolvedVideoUrl = getMediaUrl(video, req.body.videoUrl || "");
+    const { parseBunnyStreamUrl } = require("../../utils/mediaUrl");
+    const streamInfo = parseBunnyStreamUrl(resolvedVideoUrl) || {};
+
     const episodeData = {
       title: req.body.title,
       description: req.body.description,
@@ -30,8 +34,16 @@ const addEpisode = async (req, res) => {
       seasonNumber: Number(req.body.seasonNumber),
       episodeNumber: Number(req.body.episodeNumber),
       duration: req.body.duration,
-      videoUrl: getMediaUrl(video, req.body.videoUrl || ""),
-      thumbnail: getMediaUrl(thumbnail, req.body.thumbnailUrl || "")
+      videoUrl: resolvedVideoUrl,
+      thumbnail: getMediaUrl(thumbnail, req.body.thumbnailUrl || ""),
+      videoSource: streamInfo.videoSource || "bunny_storage",
+      storageType: streamInfo.storageType || "bunny_storage",
+      videoId: streamInfo.videoId || "",
+      streamUrl: streamInfo.streamUrl || "",
+      playlistUrl: streamInfo.playlistUrl || "",
+      playbackUrl: streamInfo.playbackUrl || "",
+      thumbnailUrl: streamInfo.thumbnailUrl || "",
+      encodingStatus: streamInfo.encodingStatus || ""
     };
 
     const existingEpisode =
@@ -108,6 +120,30 @@ const updateEpisode = async (req, res) => {
       updateData.videoUrl = getMediaUrl(video);
     } else if (req.body.videoUrl) {
       updateData.videoUrl = req.body.videoUrl;
+    }
+
+    if (updateData.videoUrl !== undefined) {
+      const { parseBunnyStreamUrl } = require("../../utils/mediaUrl");
+      const streamInfo = parseBunnyStreamUrl(updateData.videoUrl);
+      if (streamInfo) {
+        updateData.videoSource = streamInfo.videoSource;
+        updateData.storageType = streamInfo.storageType;
+        updateData.videoId = streamInfo.videoId;
+        updateData.playlistUrl = streamInfo.playlistUrl;
+        updateData.playbackUrl = streamInfo.playbackUrl;
+        updateData.streamUrl = streamInfo.streamUrl;
+        updateData.thumbnailUrl = streamInfo.thumbnailUrl;
+        updateData.encodingStatus = streamInfo.encodingStatus;
+      } else {
+        updateData.videoSource = "bunny_storage";
+        updateData.storageType = "bunny_storage";
+        updateData.videoId = "";
+        updateData.playlistUrl = "";
+        updateData.playbackUrl = "";
+        updateData.streamUrl = "";
+        updateData.thumbnailUrl = "";
+        updateData.encodingStatus = "";
+      }
     }
 
     if (thumbnail) {

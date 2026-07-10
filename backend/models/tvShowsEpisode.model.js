@@ -23,6 +23,46 @@ const tvShowsEpisodeSchema =
 
       videoUrl: String,
 
+      videoSource: {
+        type: String,
+        default: "bunny_storage"
+      },
+
+      storageType: {
+        type: String,
+        default: "bunny_storage"
+      },
+
+      videoId: {
+        type: String,
+        default: ""
+      },
+
+      streamUrl: {
+        type: String,
+        default: ""
+      },
+
+      playlistUrl: {
+        type: String,
+        default: ""
+      },
+
+      playbackUrl: {
+        type: String,
+        default: ""
+      },
+
+      thumbnailUrl: {
+        type: String,
+        default: ""
+      },
+
+      encodingStatus: {
+        type: String,
+        default: ""
+      },
+
       thumbnail: String,
 
       duration: String,

@@ -1,7 +1,7 @@
 const express = require("express");
 const cors = require("cors");
 const helmet = require("helmet");
-// const path = require("path");
+const path = require("path");
 const connectDB = require("./config/db");
 const createDefaultAdmin = require("./utils/createDefaultAdmin");
 
@@ -108,6 +108,8 @@ app.use(
     extended: true,
   }),
 );
+
+app.use("/uploads", express.static(path.join(__dirname, "uploads")));
 
 // ========================================
 // HEALTH CHECK
