@@ -14,6 +14,8 @@ import TopChartPage from './pages/TopChartPage';
 import MoviePage from './pages/MoviesPage';
 import TVShowsPage from './pages/TVShowPage';
 import './App.css';
+import { ToastContainer } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
 import VideoPlayerPage from './pages/VideoPlayerPage';
 import HelpSupportPage from './pages/HelpSupportPage';
 import WishlistPage from './pages/WishlistPage';
@@ -59,6 +61,7 @@ const App = () => {
           </Route>
         </Routes>
       </Layout>
+      <ToastContainer position="top-right" autoClose={3000} theme="dark" />
     </Router>
   );
 };

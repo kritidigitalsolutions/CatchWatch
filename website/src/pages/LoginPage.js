@@ -1,6 +1,7 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { FaPhoneAlt, FaUnlockAlt, FaArrowLeft } from 'react-icons/fa';
 import { useNavigate } from 'react-router-dom'; // Redirection ke liye
+import { toast } from 'react-toastify';
 // Apni api file ka correct path yahan dalein
 import { auth, verifyOTP } from '../api/authApi';
 
@@ -10,13 +11,44 @@ const LoginPage = () => {
     const [phoneNumber, setPhoneNumber] = useState('');
     const [otp, setOtp] = useState('');
     const [isLoading, setIsLoading] = useState(false);
+    const [timer, setTimer] = useState(0);
     const navigate = useNavigate();
+
+    useEffect(() => {
+        let interval;
+        if (timer > 0) {
+            interval = setInterval(() => {
+                setTimer((prev) => prev - 1);
+            }, 1000);
+        }
+        return () => clearInterval(interval);
+    }, [timer]);
+
+    const handleResendOtp = async () => {
+        if (timer > 0 || isLoading) return;
+        setIsLoading(true);
+        setOtp('');
+        try {
+            const response = await auth({ phone: phoneNumber });
+            if (response && response.success) {
+                setTimer(60);
+                toast.success("OTP resent successfully!");
+            } else {
+                toast.error(response.message || "Failed to resend OTP. Please try again.");
+            }
+        } catch (error) {
+            console.error("OTP Resend Error:", error);
+            toast.error("Something went wrong while resending OTP.");
+        } finally {
+            setIsLoading(false);
+        }
+    };
     // Handle sending OTP
 
 const handleSendOtp = async (e) => {
     e.preventDefault();
     if (phoneNumber.length < 10) {
-    //   alert("Please enter a valid 10-digit phone number.");
+      toast.warning("Please enter a valid 10-digit phone number.");
       return;
     }
     
@@ -29,12 +61,14 @@ const handleSendOtp = async (e) => {
       // Agar API success true return karti hai, toh Step 2 par jayein
       if (response && response.success) { 
         setStep(2);
+        setTimer(60);
+        toast.success("OTP sent successfully!");
       } else {
-        alert(response.message || "Failed to send OTP. Please try again.");
+        toast.error(response.message || "Failed to send OTP. Please try again.");
       }
     } catch (error) {
       console.error("OTP Send Error:", error);
-      alert("Something went wrong while sending OTP.");
+      toast.error("Something went wrong while sending OTP.");
     } finally {
       setIsLoading(false);
     }
@@ -47,7 +81,7 @@ const handleSendOtp = async (e) => {
   const handleVerifyOtp = async (e) => {
     e.preventDefault();
     if (otp.length < 4) {
-      alert("Please enter a valid OTP.");
+      toast.warning("Please enter a valid OTP.");
       return;
     }
 
@@ -62,15 +96,15 @@ const handleSendOtp = async (e) => {
         // Token ko localStorage me save kar lein
         localStorage.setItem("authToken", response.token); 
         
-        // alert("Verification successful!");
+        toast.success("Login successful!");
         // User ko uske dashboard ya home page par redirect karein
         navigate("/"); 
       } else {
-        alert(response.message || "Invalid OTP entered.");
+        toast.error(response.message || "Invalid OTP entered.");
       }
     } catch (error) {
       console.error("OTP Verify Error:", error);
-      alert("OTP verification failed. Please check the code and try again.");
+      toast.error("OTP verification failed. Please check the code and try again.");
     } finally {
       setIsLoading(false);
     }
@@ -189,12 +223,14 @@ const handleSendOtp = async (e) => {
                                 )}
                             </button>
 
-                            <div className="text-center pt-2">
+                             <div className="text-center pt-2">
                                 <button
                                     type="button"
-                                    className="text-xs font-bold text-gray-400 hover:text-brand-orange transition-colors"
+                                    onClick={handleResendOtp}
+                                    disabled={timer > 0 || isLoading}
+                                    className="text-xs font-bold text-gray-400 hover:text-brand-orange disabled:text-gray-600 disabled:cursor-not-allowed transition-colors"
                                 >
-                                    Didn't receive the code? Resend
+                                    {timer > 0 ? `Resend OTP in ${timer}s` : "Didn't receive the code? Resend"}
                                 </button>
                             </div>
                         </form>
