@@ -23,26 +23,49 @@ const tvShowsEpisodeSchema =
 
       videoUrl: String,
 
-      audioTracks: [
-        {
-          language: String,
-          fileUrl: String,
-          isDefault: { type: Boolean, default: false }
-        }
-      ],
-
-      subtitles: [
-        {
-          language: String,
-          label: String,
-          fileUrl: String,
-          isDefault: { type: Boolean, default: false }
-        }
-      ],
-
       thumbnail: String,
 
       duration: String,
+
+      videoSource: {
+        type: String,
+        default: "bunny_storage",
+      },
+
+      storageType: {
+        type: String,
+        default: "bunny_storage",
+      },
+
+      videoId: {
+        type: String,
+        default: "",
+      },
+
+      streamUrl: {
+        type: String,
+        default: "",
+      },
+
+      playlistUrl: {
+        type: String,
+        default: "",
+      },
+
+      playbackUrl: {
+        type: String,
+        default: "",
+      },
+
+      thumbnailUrl: {
+        type: String,
+        default: "",
+      },
+
+      encodingStatus: {
+        type: String,
+        default: "",
+      },
 
       isLocked: {
         type: Boolean,

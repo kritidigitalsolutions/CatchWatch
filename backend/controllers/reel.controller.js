@@ -35,12 +35,24 @@ exports.uploadReel = async (req, res) => {
       }
     }
 
+    const resolvedVideoUrl = videoFile.path.replace(/\\/g, "/");
+    const { parseBunnyStreamUrl } = require("../utils/mediaUrl");
+    const streamInfo = parseBunnyStreamUrl(resolvedVideoUrl) || {};
+
     const reel = await Reel.create({
       user: req.user.id,
       videoUrl: videoFile.path.replace(/\\/g, "/"),
-      thumbnail: thumbnailFile ? thumbnailFile.path.replace(/\\/g, "/") : "",
       caption,
       hashtags: hashtagsArray,
+      videoSource: streamInfo.videoSource || "bunny_storage",
+      storageType: streamInfo.storageType || "bunny_storage",
+      videoId: streamInfo.videoId || "",
+      streamUrl: streamInfo.streamUrl || "",
+      playlistUrl: streamInfo.playlistUrl || "",
+      playbackUrl: streamInfo.playbackUrl || "",
+      thumbnailUrl: streamInfo.thumbnailUrl || "",
+      encodingStatus: streamInfo.encodingStatus || "",
+      thumbnail: thumbnailFile ? thumbnailFile.path.replace(/\\/g, "/") : ""
     });
 
     return res.status(201).json({

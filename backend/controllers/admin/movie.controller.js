@@ -1,6 +1,6 @@
 const Movie = require("../../models/movie.model");
 const { getMediaUrl, deleteMedia, deleteMediaFiles } = require("../../utils/mediaUrl");
-const { notifyNewContent } = require("../../utils/contentNotification");
+
 // ========================================
 // HELPERS
 // ========================================
@@ -117,95 +117,37 @@ console.log({
   category,
   language: req.body.language,
 });
-    const audioTracks = [];
-    const audioMetadata = parseJSON(req.body.audioMetadata, []);
-    const uploadedAudioFiles = req.files?.audioTracks || [];
-
-    for (const meta of audioMetadata) {
-      const matchingFile = uploadedAudioFiles.find(f => f.originalname === meta.originalname);
-      if (matchingFile) {
-        const fileUrl = getMediaUrl(matchingFile);
-        audioTracks.push({
-          language: meta.language,
-          fileUrl,
-          isDefault: meta.isDefault === true || meta.isDefault === "true"
-        });
-      }
-    }
-
-    if (audioTracks.length === 0 && (video || req.body.videoUrl)) {
-      audioTracks.push({
-        language: req.body.language || "English",
-        fileUrl: getMediaUrl(video, req.body.videoUrl),
-        isDefault: true
-      });
-    }
-
-    const subtitles = [];
-    const subtitleMetadata = parseJSON(req.body.subtitleMetadata, []);
-    const uploadedSubtitleFiles = req.files?.subtitles || [];
-
-    for (const meta of subtitleMetadata) {
-      const matchingFile = uploadedSubtitleFiles.find(f => f.originalname === meta.originalname);
-      if (matchingFile) {
-        const fileUrl = getMediaUrl(matchingFile);
-        subtitles.push({
-          language: meta.language,
-          label: meta.label || "Subtitle",
-          fileUrl,
-          isDefault: meta.isDefault === true || meta.isDefault === "true"
-        });
-      }
-    }
+    const resolvedVideoUrl = getMediaUrl(video, req.body.videoUrl);
+    const resolvedTrailerUrl = getMediaUrl(trailer, req.body.trailerUrl);
+    const { parseBunnyStreamUrl } = require("../../utils/mediaUrl");
+    const streamInfo = parseBunnyStreamUrl(resolvedVideoUrl) || {};
 
     const movie = await Movie.create({
-
       title: req.body.title,
-
       description: req.body.description || "",
-
       genre,
-
       releaseYear: req.body.releaseYear || null,
-
       duration: req.body.duration || "",
-
       language: req.body.language || "",
-
       poster: getMediaUrl(poster, req.body.poster),
-
       banner: getMediaUrl(banner, req.body.banner),
-
-      trailerUrl: getMediaUrl(trailer, req.body.trailerUrl),
-
-      videoUrl: getMediaUrl(video, req.body.videoUrl),
-
-      audioTracks,
-      subtitles,
-
-      isComingSoon:
-        req.body.isComingSoon === "true",
-
-      releaseDate:
-        req.body.releaseDate || null,
-
-      isPremium:
-        req.body.isPremium === "true",
-
+      trailerUrl: resolvedTrailerUrl,
+      videoUrl: resolvedVideoUrl,
+      isComingSoon: req.body.isComingSoon === "true",
+      releaseDate: req.body.releaseDate || null,
+      isPremium: req.body.isPremium === "true",
       rating: req.body.rating || 0,
-
       cast: sanitizeCast(cast),
-
       category,
-
       priority,
-    });
-    await notifyNewContent({
-      title: "🎬 New Movie Added",
-      message: `${movie.title} is now available to watch.`,
-      type: "NEW_MOVIE",
-      actionUrl: `/movies/${movie._id}`,
-      createdBy: req.user.id
+      videoSource: streamInfo.videoSource || "bunny_storage",
+      storageType: streamInfo.storageType || "bunny_storage",
+      videoId: streamInfo.videoId || "",
+      streamUrl: streamInfo.streamUrl || "",
+      playlistUrl: streamInfo.playlistUrl || "",
+      playbackUrl: streamInfo.playbackUrl || "",
+      thumbnailUrl: streamInfo.thumbnailUrl || "",
+      encodingStatus: streamInfo.encodingStatus || ""
     });
 
     return res.status(201).json({
@@ -317,7 +259,7 @@ const searchMovies = async (req, res) => {
 
     return res.status(500).json({
       success: false,
-      message: "Search failed",
+      message: `Search failed: ${error.message}`,
     });
   }
 };
@@ -468,63 +410,26 @@ const updateMovie = async (req, res) => {
       movie.videoUrl = req.body.videoUrl;
     }
 
-    // ========================================
-    // CONTENT & TRACKS UPDATE
-    // ========================================
-    const audioMetadata = parseJSON(req.body.audioMetadata, []);
-    const uploadedAudioFiles = req.files?.audioTracks || [];
-
-    if (req.body.audioMetadata !== undefined) {
-      const audioTracks = [];
-      for (const meta of audioMetadata) {
-        if (meta.fileUrl) {
-          audioTracks.push({
-            language: meta.language,
-            fileUrl: meta.fileUrl,
-            isDefault: meta.isDefault === true || meta.isDefault === "true"
-          });
-        } else {
-          const matchingFile = uploadedAudioFiles.find(f => f.originalname === meta.originalname);
-          if (matchingFile) {
-            const fileUrl = getMediaUrl(matchingFile);
-            audioTracks.push({
-              language: meta.language,
-              fileUrl,
-              isDefault: meta.isDefault === true || meta.isDefault === "true"
-            });
-          }
-        }
-      }
-      movie.audioTracks = audioTracks;
-    }
-
-    const subtitleMetadata = parseJSON(req.body.subtitleMetadata, []);
-    const uploadedSubtitleFiles = req.files?.subtitles || [];
-
-    if (req.body.subtitleMetadata !== undefined) {
-      const subtitles = [];
-      for (const meta of subtitleMetadata) {
-        if (meta.fileUrl) {
-          subtitles.push({
-            language: meta.language,
-            label: meta.label || "Subtitle",
-            fileUrl: meta.fileUrl,
-            isDefault: meta.isDefault === true || meta.isDefault === "true"
-          });
-        } else {
-          const matchingFile = uploadedSubtitleFiles.find(f => f.originalname === meta.originalname);
-          if (matchingFile) {
-            const fileUrl = getMediaUrl(matchingFile);
-            subtitles.push({
-              language: meta.language,
-              label: meta.label || "Subtitle",
-              fileUrl,
-              isDefault: meta.isDefault === true || meta.isDefault === "true"
-            });
-          }
-        }
-      }
-      movie.subtitles = subtitles;
+    const { parseBunnyStreamUrl } = require("../../utils/mediaUrl");
+    const streamInfo = parseBunnyStreamUrl(movie.videoUrl);
+    if (streamInfo) {
+      movie.videoSource = streamInfo.videoSource;
+      movie.storageType = streamInfo.storageType;
+      movie.videoId = streamInfo.videoId;
+      movie.playlistUrl = streamInfo.playlistUrl;
+      movie.playbackUrl = streamInfo.playbackUrl;
+      movie.streamUrl = streamInfo.streamUrl;
+      movie.thumbnailUrl = streamInfo.thumbnailUrl;
+      movie.encodingStatus = streamInfo.encodingStatus;
+    } else if (movie.videoUrl !== undefined) {
+      movie.videoSource = "bunny_storage";
+      movie.storageType = "bunny_storage";
+      movie.videoId = "";
+      movie.playlistUrl = "";
+      movie.playbackUrl = "";
+      movie.streamUrl = "";
+      movie.thumbnailUrl = "";
+      movie.encodingStatus = "";
     }
 
 

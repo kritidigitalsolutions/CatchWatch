@@ -70,53 +70,9 @@ const addTvShowsEpisode =
       const thumbnail =
         req.files?.thumbnail?.[0];
 
-      const audioMetadata = parseJSON(req.body.audioMetadata, []);
-      const uploadedAudioFiles = req.files?.audioTracks || [];
-      const audioTracks = [];
-      for (const meta of audioMetadata) {
-        if (meta.fileUrl) {
-          audioTracks.push({
-            language: meta.language,
-            fileUrl: meta.fileUrl,
-            isDefault: meta.isDefault === true || meta.isDefault === "true"
-          });
-        } else {
-          const matchingFile = uploadedAudioFiles.find(f => f.originalname === meta.originalname);
-          if (matchingFile) {
-            const fileUrl = getMediaUrl(matchingFile);
-            audioTracks.push({
-              language: meta.language,
-              fileUrl,
-              isDefault: meta.isDefault === true || meta.isDefault === "true"
-            });
-          }
-        }
-      }
-
-      const subtitleMetadata = parseJSON(req.body.subtitleMetadata, []);
-      const uploadedSubtitleFiles = req.files?.subtitles || [];
-      const subtitles = [];
-      for (const meta of subtitleMetadata) {
-        if (meta.fileUrl) {
-          subtitles.push({
-            language: meta.language,
-            label: meta.label || "Subtitle",
-            fileUrl: meta.fileUrl,
-            isDefault: meta.isDefault === true || meta.isDefault === "true"
-          });
-        } else {
-          const matchingFile = uploadedSubtitleFiles.find(f => f.originalname === meta.originalname);
-          if (matchingFile) {
-            const fileUrl = getMediaUrl(matchingFile);
-            subtitles.push({
-              language: meta.language,
-              label: meta.label || "Subtitle",
-              fileUrl,
-              isDefault: meta.isDefault === true || meta.isDefault === "true"
-            });
-          }
-        }
-      }
+      const resolvedVideoUrl = getMediaUrl(video, req.body.videoUrl || req.body.video || "");
+      const { parseBunnyStreamUrl } = require("../../utils/mediaUrl");
+      const streamInfo = parseBunnyStreamUrl(resolvedVideoUrl) || {};
 
       const episode =
         await TvShowsEpisode.create({
@@ -145,34 +101,22 @@ const addTvShowsEpisode =
             req.body.isVertical !==
             "false",
 
-          videoUrl: getMediaUrl(
-            video,
-            req.body.videoUrl || ""
-          ),
+          videoUrl: resolvedVideoUrl,
 
           thumbnail: getMediaUrl(
             thumbnail,
             req.body.thumbnail || req.body.thumbnailUrl || ""
           ),
 
-          audioTracks,
-
-          subtitles,
+          videoSource: streamInfo.videoSource || "bunny_storage",
+          storageType: streamInfo.storageType || "bunny_storage",
+          videoId: streamInfo.videoId || "",
+          playlistUrl: streamInfo.playlistUrl || "",
+          playbackUrl: streamInfo.playbackUrl || "",
+          streamUrl: streamInfo.streamUrl || "",
+          thumbnailUrl: streamInfo.thumbnailUrl || "",
+          encodingStatus: streamInfo.encodingStatus || ""
         });
-
-        try {
-  const tvShow = await TvShow.findById(tvShowId);
-
-  await notifyNewContent({
-    title: "🎬 New TV Show Episode",
-    message: `${tvShow.title} - Episode ${episode.episodeNumber} is now available.`,
-    type: "NEW_TV_SHOW_EPISODE",
-    actionUrl: `/tv-shows/${tvShow._id}`,
-    createdBy: req.user.id,
-  });
-} catch (err) {
-  console.error("TV Show Episode notification failed:", err.message);
-}
 
       await updateTvShowStats(
         tvShowId
@@ -324,13 +268,34 @@ const updateTvShowsEpisode =
 
       // VIDEO
       if (req.files?.video?.[0]) {
+        deleteMedia(episode.videoUrl);
+        episode.videoUrl = getMediaUrl(req.files.video[0]);
+      } else if (req.body.videoUrl !== undefined) {
+        episode.videoUrl = req.body.videoUrl;
+      }
 
-        deleteMedia(
-          episode.videoUrl
-        );
-
-        episode.videoUrl =
-          getMediaUrl(req.files.video[0]);
+      if (episode.videoUrl !== undefined) {
+        const { parseBunnyStreamUrl } = require("../../utils/mediaUrl");
+        const streamInfo = parseBunnyStreamUrl(episode.videoUrl);
+        if (streamInfo) {
+          episode.videoSource = streamInfo.videoSource;
+          episode.storageType = streamInfo.storageType;
+          episode.videoId = streamInfo.videoId;
+          episode.playlistUrl = streamInfo.playlistUrl;
+          episode.playbackUrl = streamInfo.playbackUrl;
+          episode.streamUrl = streamInfo.streamUrl;
+          episode.thumbnailUrl = streamInfo.thumbnailUrl;
+          episode.encodingStatus = streamInfo.encodingStatus;
+        } else {
+          episode.videoSource = "bunny_storage";
+          episode.storageType = "bunny_storage";
+          episode.videoId = "";
+          episode.playlistUrl = "";
+          episode.playbackUrl = "";
+          episode.streamUrl = "";
+          episode.thumbnailUrl = "";
+          episode.encodingStatus = "";
+        }
       }
 
 

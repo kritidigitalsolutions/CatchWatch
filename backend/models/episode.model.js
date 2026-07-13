@@ -32,25 +32,9 @@ const episodeSchema = new mongoose.Schema(
     },
 
     videoUrl: {
-      type: String
+      type: String,
+      required: true
     },
-
-    audioTracks: [
-      {
-        language: { type: String, trim: true },
-        fileUrl: { type: String, trim: true },
-        isDefault: { type: Boolean, default: false }
-      }
-    ],
-
-    subtitles: [
-      {
-        language: { type: String, trim: true },
-        label: { type: String, trim: true },
-        fileUrl: { type: String, trim: true },
-        isDefault: { type: Boolean, default: false }
-      }
-    ],
 
     thumbnail: {
       type: String,
@@ -58,6 +42,46 @@ const episodeSchema = new mongoose.Schema(
     },
 
     duration: {
+      type: String,
+      default: ""
+    },
+
+    videoSource: {
+      type: String,
+      default: "bunny_storage"
+    },
+
+    storageType: {
+      type: String,
+      default: "bunny_storage"
+    },
+
+    videoId: {
+      type: String,
+      default: ""
+    },
+
+    streamUrl: {
+      type: String,
+      default: ""
+    },
+
+    playlistUrl: {
+      type: String,
+      default: ""
+    },
+
+    playbackUrl: {
+      type: String,
+      default: ""
+    },
+
+    thumbnailUrl: {
+      type: String,
+      default: ""
+    },
+
+    encodingStatus: {
       type: String,
       default: ""
     }

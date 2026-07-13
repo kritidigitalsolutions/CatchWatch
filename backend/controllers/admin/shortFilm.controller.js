@@ -102,56 +102,60 @@ const addShortFilm = async (req, res) => {
           : 1;
     }
 
-    // Parse Multilingual Audio and Subtitle Tracks
-    const audioMetadata = parseJSON(req.body.audioMetadata, []);
-    const uploadedAudioFiles = req.files?.audioTracks || [];
-    const audioTracks = [];
-    for (const meta of audioMetadata) {
-      const matchingFile = uploadedAudioFiles.find(f => f.originalname === meta.originalname);
-      if (matchingFile) {
-        const fileUrl = getMediaUrl(matchingFile);
-        audioTracks.push({
-          language: meta.language,
-          fileUrl,
-          isDefault: meta.isDefault === true || meta.isDefault === "true"
-        });
-      }
-    }
-
-    const subtitleMetadata = parseJSON(req.body.subtitleMetadata, []);
-    const uploadedSubtitleFiles = req.files?.subtitles || [];
-    const subtitles = [];
-    for (const meta of subtitleMetadata) {
-      const matchingFile = uploadedSubtitleFiles.find(f => f.originalname === meta.originalname);
-      if (matchingFile) {
-        const fileUrl = getMediaUrl(matchingFile);
-        subtitles.push({
-          language: meta.language,
-          label: meta.label || "Subtitle",
-          fileUrl,
-          isDefault: meta.isDefault === true || meta.isDefault === "true"
-        });
-      }
-    }
+    const resolvedVideoUrl = getMediaUrl(video, req.body.videoUrl);
+    const { parseBunnyStreamUrl } = require("../../utils/mediaUrl");
+    const streamInfo = parseBunnyStreamUrl(resolvedVideoUrl) || {};
 
     const shortFilm = await ShortFilm.create({
       title: req.body.title,
       description: req.body.description || "",
       genre,
       category,
-      releaseYear: req.body.releaseYear || null,
-      duration: req.body.duration || "",
-      language: req.body.language || "",
-      poster: getMediaUrl(poster, req.body.poster),
-      banner: getMediaUrl(banner, req.body.banner),
-      trailerUrl: getMediaUrl(trailer, req.body.trailerUrl),
-      videoUrl: getMediaUrl(video, req.body.videoUrl),
-      audioTracks,
-      subtitles,
-      isPremium: req.body.isPremium === "true",
-      rating: req.body.rating || 0,
-      cast: sanitizeCast(cast),
+
+      releaseYear:
+        req.body.releaseYear || null,
+
+      duration:
+        req.body.duration || "",
+
+      language:
+        req.body.language || "",
+
+      poster: getMediaUrl(
+        poster,
+        req.body.poster
+      ),
+
+      banner: getMediaUrl(
+        banner,
+        req.body.banner
+      ),
+
+      trailerUrl: getMediaUrl(
+        trailer,
+        req.body.trailerUrl
+      ),
+
+      videoUrl: resolvedVideoUrl,
+
+      isPremium:
+        req.body.isPremium === "true",
+
+      rating:
+        req.body.rating || 0,
+
+      cast:
+        sanitizeCast(cast),
+
       priority,
+      videoSource: streamInfo.videoSource || "bunny_storage",
+      storageType: streamInfo.storageType || "bunny_storage",
+      videoId: streamInfo.videoId || "",
+      streamUrl: streamInfo.streamUrl || "",
+      playlistUrl: streamInfo.playlistUrl || "",
+      playbackUrl: streamInfo.playbackUrl || "",
+      thumbnailUrl: streamInfo.thumbnailUrl || "",
+      encodingStatus: streamInfo.encodingStatus || ""
     });
     try {
   await notifyNewContent({
@@ -453,20 +457,32 @@ const updateShortFilm = async (
     // VIDEO
 
     if (req.files?.video?.[0]) {
-      await deleteMedia(
-        shortFilm.videoUrl
-      );
+      await deleteMedia(shortFilm.videoUrl);
+      shortFilm.videoUrl = getMediaUrl(req.files.video[0]);
+    } else if (req.body.videoUrl !== undefined) {
+      shortFilm.videoUrl = req.body.videoUrl;
+    }
 
-      shortFilm.videoUrl =
-        getMediaUrl(
-          req.files.video[0]
-        );
-    } else if (
-      req.body.videoUrl !==
-      undefined
-    ) {
-      shortFilm.videoUrl =
-        req.body.videoUrl;
+    const { parseBunnyStreamUrl } = require("../../utils/mediaUrl");
+    const streamInfo = parseBunnyStreamUrl(shortFilm.videoUrl);
+    if (streamInfo) {
+      shortFilm.videoSource = streamInfo.videoSource;
+      shortFilm.storageType = streamInfo.storageType;
+      shortFilm.videoId = streamInfo.videoId;
+      shortFilm.playlistUrl = streamInfo.playlistUrl;
+      shortFilm.playbackUrl = shortFilm.playlistUrl;
+      shortFilm.streamUrl = streamInfo.streamUrl;
+      shortFilm.thumbnailUrl = streamInfo.thumbnailUrl;
+      shortFilm.encodingStatus = streamInfo.encodingStatus;
+    } else if (shortFilm.videoUrl !== undefined) {
+      shortFilm.videoSource = "bunny_storage";
+      shortFilm.storageType = "bunny_storage";
+      shortFilm.videoId = "";
+      shortFilm.playlistUrl = "";
+      shortFilm.playbackUrl = "";
+      shortFilm.streamUrl = "";
+      shortFilm.thumbnailUrl = "";
+      shortFilm.encodingStatus = "";
     }
 
     const castFiles =

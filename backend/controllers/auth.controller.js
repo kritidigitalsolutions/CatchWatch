@@ -94,7 +94,7 @@ const sendSMS = async (phone, otp) => {
     console.error(
       "SMS ERROR:",
       error.response?.data ||
-        error.message
+      error.message
     );
 
     return false;
@@ -179,8 +179,8 @@ exports.sendOTP = async (req, res) => {
     const otp = isDummyPhone
       ? DUMMY_OTP_CODE
       : Math.floor(
-          100000 + Math.random() * 900000
-        ).toString();
+        100000 + Math.random() * 900000
+      ).toString();
 
     if (isDummyPhone) {
       await User.updateOne(
@@ -218,24 +218,24 @@ exports.sendOTP = async (req, res) => {
       !user || !user.profileComplete;
 
     // console otp
- const smsSent =
-  isDummyPhone ||
-  (await sendSMS(
-    normalizedPhone,
-    otp
-  ));
+    const smsSent =
+      isDummyPhone ||
+      (await sendSMS(
+        normalizedPhone,
+        otp
+      ));
 
-if (!smsSent) {
-  return res.status(500).json({
-    success: false,
-    message:
-      "Failed to send OTP",
-  });
-}
+    if (!smsSent) {
+      return res.status(500).json({
+        success: false,
+        message:
+          "Failed to send OTP",
+      });
+    }
 
-console.log(
-  `📱 OTP sent to ${normalizedPhone}`
-);
+    console.log(
+      `📱 OTP sent to ${normalizedPhone}`
+    );
 
     return res.status(200).json({
       success: true,
@@ -568,6 +568,48 @@ exports.googleLogin = async (req, res) => {
     return res.status(500).json({
       success: false,
       message: "Google login failed",
+    });
+  }
+};
+
+exports.refreshToken = async (req, res) => {
+  try {
+    const user = await User.findById(req.user.id);
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: "User not found",
+      });
+    }
+
+    const token = generateUserToken(user);
+
+    res.cookie("authToken", token, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "lax",
+      maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
+    });
+
+    return res.status(200).json({
+      success: true,
+      message: "Token refreshed successfully",
+      token,
+      user: {
+        id: user._id,
+        name: user.name,
+        email: user.email,
+        phone: user.phone,
+        profileImage: user.profileImage,
+        profileComplete: user.profileComplete,
+        role: user.role,
+      },
+    });
+  } catch (error) {
+    console.error("REFRESH TOKEN ERROR:", error);
+    return res.status(500).json({
+      success: false,
+      message: "Token refresh failed",
     });
   }
 };

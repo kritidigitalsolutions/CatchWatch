@@ -6,7 +6,9 @@ const {
   sendOTP,
   verifyOtp,
   googleLogin,
+  refreshToken,
 } = require("../../controllers/auth.controller");
+const { isAuth } = require("../../middlewares/auth.middleware");
 
 
 // ========================================
@@ -40,13 +42,22 @@ router.post(
 router.post(
   "/logout",
   (req, res) => {
-    res.clearCookie("token", {
+    res.clearCookie("authToken", {
       httpOnly: true,
       secure: process.env.NODE_ENV === "production",
       sameSite: "lax",
     });
     res.json({ success: true, message: "Logged out successfully" });
   }
+);
+
+// ========================================
+// REFRESH TOKEN
+// ========================================
+router.post(
+  "/refresh-token",
+  isAuth,
+  refreshToken
 );
 
 module.exports = router;

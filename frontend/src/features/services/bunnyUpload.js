@@ -138,6 +138,67 @@ const uploadDirectToBunny = async (
   throw new Error("Bunny upload failed");
 };
 
+const uploadDirectToBunnyStream = async (file, onProgress) => {
+  const config = await fetchBunnyConfig();
+  const { libraryId, apiKey, pullZone } = config.bunnyStream || {};
+  if (!libraryId || !apiKey || !pullZone) {
+    throw new Error("Missing Bunny Stream configuration in bunny-config");
+  }
+
+  // Normalize pullZone host name
+  let pullZoneHost = String(pullZone).trim().replace(/\/+$/, "");
+  if (pullZoneHost && !pullZoneHost.includes(".")) {
+    pullZoneHost = `${pullZoneHost}.b-cdn.net`;
+  }
+
+  // Step 1: Create Video Object
+  const title = file.name || `Video-${Date.now()}`;
+  const createUrl = `https://video.bunnycdn.com/library/${libraryId}/videos`;
+
+  console.log("Direct Bunny Stream Upload: Creating video object...");
+  const createResponse = await axios.post(
+    createUrl,
+    { title },
+    {
+      headers: {
+        AccessKey: apiKey,
+        "Content-Type": "application/json",
+      },
+    }
+  );
+
+  const videoId = createResponse.data.guid;
+  if (!videoId) {
+    throw new Error("Failed to retrieve video GUID from Bunny Stream API");
+  }
+
+  console.log(`Direct Bunny Stream Upload: Video object created with GUID: ${videoId}. Starting upload...`);
+
+  // Step 2: Upload raw file contents
+  const uploadUrl = `https://video.bunnycdn.com/library/${libraryId}/videos/${videoId}`;
+  await axios.put(uploadUrl, file, {
+    headers: {
+      AccessKey: apiKey,
+      "Content-Type": "application/octet-stream",
+    },
+    maxContentLength: Infinity,
+    maxBodyLength: Infinity,
+    onUploadProgress: (progressEvent) => {
+      if (onProgress && progressEvent.total) {
+        const percentCompleted = Math.round(
+          (progressEvent.loaded * 100) / progressEvent.total
+        );
+        onProgress(percentCompleted);
+      }
+    },
+  });
+
+  console.log("Direct Bunny Stream Upload: Upload complete!");
+
+  // Return the playlist URL format
+  return `https://${pullZoneHost}/${videoId}/playlist.m3u8`;
+};
+
 export const uploadToBunny = async (
   file,
   type,
@@ -145,6 +206,16 @@ export const uploadToBunny = async (
   onProgress
 ) => {
   if (!file) return "";
+
+  const isVideo = subfolder === "videos" || subfolder === "trailers" || subfolder === "teasers" || subfolder === "clips";
+
+  if (isVideo) {
+    console.log("USING DIRECT BUNNY STREAM UPLOAD FOR VIDEO:", subfolder);
+    return uploadDirectToBunnyStream(
+      file,
+      onProgress
+    );
+  }
 
   console.log(
     "USING DIRECT BUNNY UPLOAD FOR:",

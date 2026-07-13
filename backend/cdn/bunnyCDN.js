@@ -1,6 +1,7 @@
 const fs = require("fs/promises");
 const https = require("https");
 const path = require("path");
+const axios = require("axios");
 
 const normalizeBaseUrl = (value) => String(value || "").trim().replace(/\/+$/, "");
 
@@ -458,6 +459,120 @@ const deleteFromBunny = async (remotePathOrUrl) => {
   return true;
 };
 
+const uploadStreamToBunnyStream = async ({ stream, title }) => {
+  const libraryId = process.env.BUNNY_STREAM_LIBRARY_ID;
+  const apiKey = process.env.BUNNY_STREAM_API_KEY;
+  let pullZone = String(process.env.BUNNY_STREAM_PULL_ZONE || "").trim();
+
+  if (pullZone && !pullZone.includes(".")) {
+    pullZone = `${pullZone}.b-cdn.net`;
+  }
+
+  if (!libraryId || !apiKey || !pullZone) {
+    throw new Error("Missing Bunny Stream environment variables: BUNNY_STREAM_LIBRARY_ID, BUNNY_STREAM_API_KEY, BUNNY_STREAM_PULL_ZONE");
+  }
+
+  // Step 1: Create Video Object slot
+  const createUrl = `https://video.bunnycdn.com/library/${libraryId}/videos`;
+  const createResponse = await axios.post(
+    createUrl,
+    { title: title || `Video-${Date.now()}` },
+    {
+      headers: {
+        AccessKey: apiKey,
+        "Content-Type": "application/json",
+      },
+    }
+  );
+
+  const videoId = createResponse.data.guid;
+  if (!videoId) {
+    throw new Error("Failed to retrieve video GUID from Bunny Stream API response");
+  }
+
+  // Step 2: Upload raw stream content
+  const uploadUrl = `https://video.bunnycdn.com/library/${libraryId}/videos/${videoId}`;
+  await axios.put(uploadUrl, stream, {
+    headers: {
+      AccessKey: apiKey,
+      "Content-Type": "application/octet-stream",
+    },
+    maxContentLength: Infinity,
+    maxBodyLength: Infinity,
+  });
+
+  // HLS stream manifest format
+  const playlistUrl = `https://${pullZone}/${videoId}/playlist.m3u8`;
+
+  return {
+    videoId,
+    url: playlistUrl,
+    pullZone,
+  };
+};
+
+const uploadImage = async ({ stream, remotePath, contentType }) => {
+  return uploadStreamToBunny({ stream, remotePath, contentType });
+};
+
+const uploadSubtitle = async ({ stream, remotePath, contentType }) => {
+  return uploadStreamToBunny({ stream, remotePath, contentType });
+};
+
+const uploadVideo = async ({ stream, title }) => {
+  const result = await uploadStreamToBunnyStream({ stream, title });
+  const urls = generatePlaybackUrls(result.videoId);
+  return {
+    videoId: result.videoId,
+    ...urls
+  };
+};
+
+const getVideoStatus = async (videoId) => {
+  const libraryId = process.env.BUNNY_STREAM_LIBRARY_ID;
+  const apiKey = process.env.BUNNY_STREAM_API_KEY;
+  if (!libraryId || !apiKey) {
+    throw new Error("Missing Bunny Stream environment variables: BUNNY_STREAM_LIBRARY_ID, BUNNY_STREAM_API_KEY");
+  }
+  const url = `https://video.bunnycdn.com/library/${libraryId}/videos/${videoId}`;
+  const response = await axios.get(url, {
+    headers: {
+      AccessKey: apiKey,
+      Accept: "application/json"
+    }
+  });
+  return response.data;
+};
+
+const deleteVideo = async (videoId) => {
+  const libraryId = process.env.BUNNY_STREAM_LIBRARY_ID;
+  const apiKey = process.env.BUNNY_STREAM_API_KEY;
+  if (!libraryId || !apiKey) {
+    throw new Error("Missing Bunny Stream environment variables: BUNNY_STREAM_LIBRARY_ID, BUNNY_STREAM_API_KEY");
+  }
+  const url = `https://video.bunnycdn.com/library/${libraryId}/videos/${videoId}`;
+  const response = await axios.delete(url, {
+    headers: {
+      AccessKey: apiKey,
+      Accept: "application/json"
+    }
+  });
+  return response.data;
+};
+
+const generatePlaybackUrls = (videoId) => {
+  let pullZone = String(process.env.BUNNY_STREAM_PULL_ZONE || "").trim().replace(/\/+$/, "");
+  if (pullZone && !pullZone.includes(".")) {
+    pullZone = `${pullZone}.b-cdn.net`;
+  }
+  return {
+    playlistUrl: `https://${pullZone}/${videoId}/playlist.m3u8`,
+    playbackUrl: `https://${pullZone}/${videoId}/playlist.m3u8`,
+    streamUrl: `https://${pullZone}/${videoId}/playlist.m3u8`,
+    thumbnailUrl: `https://${pullZone}/${videoId}/thumbnail.jpg`
+  };
+};
+
 module.exports = {
   buildPublicUrl,
   deleteFromBunny,
@@ -466,4 +581,12 @@ module.exports = {
   uploadFileToBunny,
   uploadMulterFileToBunny,
   uploadStreamToBunny,
+  uploadStreamToBunnyStream,
+  uploadImage,
+  uploadSubtitle,
+  uploadVideo,
+  getVideoStatus,
+  deleteVideo,
+  generatePlaybackUrls,
 };
+

@@ -7,6 +7,8 @@ const SupportMessage = require(
 );
 
 const User = require("../../models/user.model");
+const Notification = require("../../models/notification.model");
+const { sendPushNotification } = require("../../utils/fcm.service");
 
 
 
@@ -178,6 +180,60 @@ exports.adminReplyTicket =
       }
 
       await ticket.save();
+
+      // ========================================
+      // SEND NOTIFICATION TO USER
+      // ========================================
+      try {
+        const ticketUser = await User.findById(ticket.user);
+        if (ticketUser) {
+          const notifTitle = "Support Ticket Reply";
+          const notifBody = `Admin replied to your ticket: "${ticket.subject}"`;
+
+          // Create database notification
+          const dbNotification = await Notification.create({
+            title: notifTitle,
+            message: message,
+            type: "SUPPORT",
+            targetUser: ticketUser._id,
+            targetUserType: "ALL",
+            metadata: {
+              actionUrl: "/support",
+            },
+            sentAt: new Date(),
+            isActive: true,
+          });
+
+          // Send FCM push notification if token is available
+          if (ticketUser.fcmToken) {
+            const pushResult = await sendPushNotification({
+              token: ticketUser.fcmToken,
+              title: notifTitle,
+              body: message,
+              data: {
+                notificationId: dbNotification._id.toString(),
+                type: "SUPPORT",
+                ticketId: ticket._id.toString(),
+                actionUrl: "/support",
+              },
+            });
+
+            // Cleanup invalid token
+            if (
+              pushResult &&
+              !pushResult.success &&
+              pushResult.code === "messaging/registration-token-not-registered"
+            ) {
+              await User.findByIdAndUpdate(ticketUser._id, {
+                $unset: { fcmToken: 1 },
+              });
+              console.log(`Removed invalid FCM token for user ${ticketUser._id}`);
+            }
+          }
+        }
+      } catch (notifError) {
+        console.error("Error sending notification on admin reply:", notifError);
+      }
 
       // ========================================
       // RETURN UPDATED CHAT

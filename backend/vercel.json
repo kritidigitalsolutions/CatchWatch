@@ -12,6 +12,10 @@
       "headers": [
         {
           "key": "Access-Control-Allow-Origin",
+          "value": "https://catchandwatch.vercel.app"
+        },
+        {
+          "key": "Access-Control-Allow-Origin",
           "value": "https://mirchi-admin-panel.vercel.app"
         },
         {

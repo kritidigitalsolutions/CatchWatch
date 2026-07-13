@@ -1,6 +1,7 @@
 
 import { Routes, Route } from "react-router-dom";
 import { useState, createContext, useContext, useEffect, lazy, Suspense } from "react";
+import API from "./api/axios";
 
 import AdminLogin from "./pages/AdminLogin";
 import AdminLayout from "./layout/AdminLayout";
@@ -43,6 +44,53 @@ function App() {
       return () => clearTimeout(timer);
     }
   }, [toast]);
+
+  useEffect(() => {
+    const performAdminRefresh = async () => {
+      const token = localStorage.getItem("token");
+      if (token && token !== "secured_token") {
+        try {
+          const res = await API.post("/admin/auth/refresh-token");
+          if (res.data?.token) {
+            localStorage.setItem("token", res.data.token);
+            if (res.data.admin?.name) {
+              localStorage.setItem("adminName", res.data.admin.name);
+            }
+            console.log("Admin token refreshed successfully on app load.");
+          }
+        } catch (err) {
+          console.error("Admin token refresh failed on app load. Logging out.", err);
+          localStorage.clear();
+          window.location.href = "/";
+        }
+      }
+    };
+
+    performAdminRefresh();
+
+    // Set up silent refresh timer for every 25 minutes
+    const interval = setInterval(async () => {
+      const token = localStorage.getItem("token");
+      if (token && token !== "secured_token") {
+        try {
+          const res = await API.post("/admin/auth/refresh-token");
+          if (res.data?.token) {
+            localStorage.setItem("token", res.data.token);
+            if (res.data.admin?.name) {
+              localStorage.setItem("adminName", res.data.admin.name);
+            }
+            console.log("Admin token refreshed silently in background.");
+          }
+        } catch (err) {
+          console.error("Silent admin token refresh failed. Session expired.", err);
+          localStorage.clear();
+          window.location.href = "/";
+        }
+      }
+    }, 25 * 60 * 1000);
+
+    return () => clearInterval(interval);
+  }, []);
 
   return (
     <ToastContext.Provider value={{ showToast }}>

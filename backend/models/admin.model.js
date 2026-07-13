@@ -32,6 +32,16 @@ const adminSchema = new mongoose.Schema(
       type: [String],
       default: [],
     },
+
+    loginAttempts: {
+      type: Number,
+      required: true,
+      default: 0,
+    },
+
+    lockUntil: {
+      type: Date,
+    },
   },
   {
     timestamps: true,

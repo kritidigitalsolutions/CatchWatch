@@ -22,7 +22,7 @@ const sendEmail = async (
 ) => {
 
   await transporter.sendMail({
-    from: process.env.EMAIL_USER,
+    from: `"CatchWatch Support" <${process.env.EMAIL_USER}>`,
     to,
     subject,
     text,
