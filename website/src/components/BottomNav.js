@@ -10,7 +10,7 @@ import { MdCamera } from "react-icons/md";
 const BottomNav = () => {
   const navItems = [
     { name: 'Home', path: '/', icon: <IoMdHome />  },
-    { name: 'Short', path: '/shorts', icon: <TfiVideoClapper /> },
+    { name: 'REELS', path: '/reels-feed', icon: <TfiVideoClapper /> },
     { name: 'Add', path: '/upload', icon: <MdCamera />, isAdd: true },
     { name: 'Search', path: '/search', icon: <IoSearchSharp /> },
     { name: 'Profile', path: '/profile', icon: <CgProfile /> }

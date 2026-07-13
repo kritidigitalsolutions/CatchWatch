@@ -127,6 +127,7 @@ const Topbar = () => {
     { name: "Movies", path: "/movies" },
     { name: "Short Films", path: "/shorts" },
     { name: "TV Shows", path: "/tvshows" },
+    { name: "Reels", path: "/reels-feed" },
   ];
 
   const profileLinks = [

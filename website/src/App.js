@@ -4,6 +4,7 @@ import { refreshTokenCall } from './api/authApi';
 import Layout from './components/Layout';
 import HomePage from './pages/HomePage';
 import ShortsPage from './pages/ShortsPage';
+import ShortFilmsPage from './pages/ShortFilmsPage';
 import SelectVideoPage from './pages/SelectVideoPage';
 import SearchMoviesPage from './pages/SearchMoviesPage';
 import ProfileMenuPage from './pages/ProfileMenuPage';
@@ -89,7 +90,8 @@ const App = () => {
           <Route path="/legal/:type" element={<LegalPage />} />
           <Route element={<ProtectedRoute />}>
             <Route path="/" element={<HomePage />} />
-            <Route path="/shorts" element={<ShortsPage />} />
+            <Route path="/shorts" element={<ShortFilmsPage />} />
+            <Route path="/reels-feed" element={<ShortsPage />} />
             <Route path="/upload" element={<SelectVideoPage />} />
             <Route path="/search" element={<SearchMoviesPage />} />
             <Route path="/profile" element={<ProfileMenuPage />} />

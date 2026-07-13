@@ -10,6 +10,7 @@ import {
 
 // APIs Import
 import { getMovieBySlug } from '../api/movieApi';
+import { getShortFilmsBySlug } from '../api/shortApi';
 import { getEpisodeById } from '../api/episodesApi'; 
 import { getUserProfile } from '../api/userApi';
 import { toggleBookmark, getContentInteractions } from '../api/interactionApi';
@@ -140,8 +141,20 @@ const VideoPlayerPage = () => {
         let data;
 
         if (slug) {
-          response = await getMovieBySlug(slug);
-          data = response?.movie || response;
+          try {
+            response = await getMovieBySlug(slug);
+            data = response?.movie || response;
+          } catch (err) {
+            console.log("Not a movie, trying short film:", err);
+          }
+          if (!data) {
+            try {
+              response = await getShortFilmsBySlug(slug);
+              data = response?.shortFilm || response;
+            } catch (err) {
+              console.error("Short film fetch also failed:", err);
+            }
+          }
         } else if (id) {
           response = await getEpisodeById(id);
           data = response?.episode || response?.data || response;
