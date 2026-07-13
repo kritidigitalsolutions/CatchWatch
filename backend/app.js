@@ -36,12 +36,15 @@ const adminUrls = process.env.ADMIN_URL
 
 const defaultAllowed = [
   "https://catchandwatch.com",
+  "https://www.catchandwatch.com",
   "https://admin.catchandwatch.com",
+  "https://www.admin.catchandwatch.com",
   "http://localhost:5173",
-  "https://catchandwatch.vercel.app",
-  "https://catchandwatch.vercel.app/login",
   "http://localhost:3000", // Aapke React app ka URL
+  "http://localhost:3001",
 ];
+// "https://catchandwatch.vercel.app",
+// "https://catchandwatch.vercel.app/login",
 
 const allowedOrigins = [
   ...new Set([...frontendUrls, ...adminUrls, ...defaultAllowed]),
@@ -53,17 +56,14 @@ const corsOptions = {
     if (!origin) {
       return callback(null, true);
     }
-    // Check exact matches or wildcard
-    if (allowedOrigins.includes(origin) || allowedOrigins.includes("*")) {
-      return callback(null, true);
-    }
 
-    // Local development
+    // Dynamic checks
+    const isCatchWatchDomain = /^(https?:\/\/)?([a-z0-9-]+\.)*catchandwatch\.com$/i.test(origin);
     const isLocalhost =
       origin.startsWith("http://localhost:") ||
       origin.startsWith("http://127.0.0.1:");
 
-    if (isLocalhost) {
+    if (isCatchWatchDomain || isLocalhost || allowedOrigins.includes(origin) || allowedOrigins.includes("*")) {
       return callback(null, true);
     }
 
