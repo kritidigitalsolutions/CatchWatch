@@ -17,9 +17,9 @@ const SelectVideoPage = () => {
     const file = e.target.files[0];
     
     if (file) {
-      // 100 MB limit validation (100 * 1024 * 1024 bytes)
-      if (file.size > 104857600) {
-        setFeedback({ type: 'error', message: 'File size exceeds the 100MB limit. Please select a smaller video.' });
+      // 95 MB limit validation (Cloudflare safe limit)
+      if (file.size > 99614720) {
+        setFeedback({ type: 'error', message: 'File size exceeds the 95MB limit. Please select a smaller video.' });
         setFileObject(null);
         e.target.value = null; // Reset input
       } else {
@@ -101,7 +101,7 @@ const SelectVideoPage = () => {
           <h2 className="text-lg font-bold tracking-tight text-gray-800">
             {fileObject ? 'Change Selected Video' : 'Select your video'}
           </h2>
-          <p className="text-xs text-gray-400 mt-1 mb-4">MP4 · MOV • Max size threshold: 100 MB</p>
+          <p className="text-xs text-gray-400 mt-1 mb-4">MP4 · MOV • Max size threshold: 95 MB</p>
           
           <div className={`bg-white border text-xs font-bold px-5 py-2 rounded-full transition shadow-sm ${
             isUploading ? 'border-gray-300 text-gray-400' : 'border-brand-orange text-brand-orange hover:bg-brand-orange hover:text-white'
@@ -134,7 +134,7 @@ const SelectVideoPage = () => {
           )}
         </button>
         <p className="text-center text-[11px] text-gray-400 mt-3 font-medium">
-          By submitting, you comply with video formatting guidelines (Max 100 MB)
+          By submitting, you comply with video formatting guidelines (Max 95 MB)
         </p>
       </div>
     </div>
