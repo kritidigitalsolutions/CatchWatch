@@ -43,8 +43,6 @@ const defaultAllowed = [
   "http://localhost:3000",
   "http://localhost:3001",
 ];
-// "https://catchandwatch.vercel.app",
-// "https://catchandwatch.vercel.app/login",
 
 const allowedOrigins = [
   ...new Set([...frontendUrls, ...adminUrls, ...defaultAllowed]),
@@ -253,6 +251,29 @@ const reelRoutes = require("./routes/user/reel.routes");
 const commentRoutes = require("./routes/user/comment.routes");
 app.use("/api/reels", reelRoutes);
 app.use("/api/comments", commentRoutes);
+// ========================================
+// GLOBAL ERROR HANDLER
+// ========================================
+app.use((err, req, res, next) => {
+  console.error("GLOBAL ERROR:", err);
+
+  const origin = req.headers.origin;
+  const isCatchWatchDomain = origin && /^(https?:\/\/)?([a-z0-9-]+\.)*catchandwatch\.com$/i.test(origin);
+  const isLocalhost = origin && (origin.startsWith("http://localhost:") || origin.startsWith("http://127.0.0.1:"));
+
+  if (origin && (isCatchWatchDomain || isLocalhost || allowedOrigins.includes(origin) || allowedOrigins.includes("*"))) {
+    res.setHeader("Access-Control-Allow-Origin", origin);
+    res.setHeader("Access-Control-Allow-Credentials", "true");
+    res.setHeader("Access-Control-Allow-Methods", "GET,POST,PUT,PATCH,DELETE,OPTIONS");
+    res.setHeader("Access-Control-Allow-Headers", "Content-Type,Authorization,X-Requested-With,Accept");
+  }
+
+  res.status(err.status || 500).json({
+    success: false,
+    message: err.message || "Internal Server Error",
+  });
+});
+
 // ========================================
 // EXPORT
 // ========================================
