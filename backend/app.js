@@ -40,7 +40,7 @@ const defaultAllowed = [
   "https://admin.catchandwatch.com",
   "https://www.admin.catchandwatch.com",
   "http://localhost:5173",
-  "http://localhost:3000", // Aapke React app ka URL
+  "http://localhost:3000",
   "http://localhost:3001",
 ];
 // "https://catchandwatch.vercel.app",

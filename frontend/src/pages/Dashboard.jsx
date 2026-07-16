@@ -130,8 +130,10 @@ export default function Dashboard() {
 
   const moviesCount = contentStats.find(c => c.name === "Movies")?.value || 0;
   const seriesCount = contentStats.find(c => c.name === "Series")?.value || 0;
+  const shortFilmsCount = contentStats.find(c => c.name === "Short Films")?.value || 0;
+  const tvShowsCount = contentStats.find(c => c.name === "TV Shows")?.value || 0;
 
-  const totalContent = moviesCount + seriesCount;
+  const totalContent = moviesCount + seriesCount + shortFilmsCount + tvShowsCount;
 
 
   // const PIE = [

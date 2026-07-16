@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import API from "../api/axios";
 import { useNavigate } from "react-router-dom";
 import { Eye, EyeOff } from "lucide-react";
@@ -10,6 +10,13 @@ const AdminLogin = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [showPassword, setShowPassword] = useState(false);
+
+  useEffect(() => {
+    const token = localStorage.getItem("token");
+    if (token) {
+      navigate("/dashboard", { replace: true });
+    }
+  }, [navigate]);
 
   const handleChange = (e) => {
     setForm({ ...form, [e.target.name]: e.target.value });
@@ -25,7 +32,7 @@ const AdminLogin = () => {
       if (res.data.token) {
         localStorage.setItem("token", res.data.token);
         if (res.data.admin?.name) localStorage.setItem("adminName", res.data.admin.name);
-        navigate("/dashboard");
+        navigate("/dashboard", { replace: true });
       } else {
         setError("No token received. Please try again.");
       }

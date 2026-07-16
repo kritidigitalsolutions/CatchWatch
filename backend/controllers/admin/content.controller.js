@@ -1,5 +1,7 @@
 const Movie = require("../../models/movie.model");
 const Series = require("../../models/series.model");
+const ShortFilm = require("../../models/shortFilm.model");
+const TvShow = require("../../models/tvShow.model");
 
 // ========================================
 // GET CONTENT STATS
@@ -8,14 +10,24 @@ const getContentStats = async (req, res) => {
   try {
     const moviesCount = await Movie.countDocuments();
     const seriesCount = await Series.countDocuments();
+    const shortFilmsCount = await ShortFilm.countDocuments();
+    const tvShowsCount = await TvShow.countDocuments();
 
     return res.json({
       success: true,
       stats: {
         movies: moviesCount,
         series: seriesCount,
-        total: moviesCount + seriesCount
-      }
+        shortFilms: shortFilmsCount,
+        tvShows: tvShowsCount,
+        total: moviesCount + seriesCount + shortFilmsCount + tvShowsCount
+      },
+      data: [
+        { name: "Movies", value: moviesCount },
+        { name: "Series", value: seriesCount },
+        { name: "Short Films", value: shortFilmsCount },
+        { name: "TV Shows", value: tvShowsCount }
+      ]
     });
   } catch (error) {
     return res.status(500).json({

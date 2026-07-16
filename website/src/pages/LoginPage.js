@@ -15,6 +15,13 @@ const LoginPage = () => {
     const navigate = useNavigate();
 
     useEffect(() => {
+        const token = localStorage.getItem("authToken");
+        if (token) {
+            navigate("/", { replace: true });
+        }
+    }, [navigate]);
+
+    useEffect(() => {
         let interval;
         if (timer > 0) {
             interval = setInterval(() => {
@@ -98,7 +105,7 @@ const LoginPage = () => {
 
                 toast.success("Login successful!");
                 // User ko uske dashboard ya home page par redirect karein
-                navigate("/");
+                navigate("/", { replace: true });
             } else {
                 toast.error(response.message || "Invalid OTP entered.");
             }
