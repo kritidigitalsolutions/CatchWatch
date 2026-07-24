@@ -134,8 +134,10 @@ const categoryUserRoutes = require("./routes/user/category.routes");
 
 const updateUpcomingStatus = require("./middlewares/updateUpcomingStatus.middleware");
 
-app.use("/api/admin/auth", adminAuthRoutes);
+const subadminRoutes = require("./routes/admin/subadmin.routes");
 
+app.use("/api/admin/auth", adminAuthRoutes);
+app.use("/api/admin/subadmins", subadminRoutes);
 app.use("/api/admin/users", adminUserRoutes);
 
 app.use("/api/admin/user", adminUserRoutes);

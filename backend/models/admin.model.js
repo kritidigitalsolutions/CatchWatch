@@ -24,13 +24,18 @@ const adminSchema = new mongoose.Schema(
 
     role: {
       type: String,
-      enum: ["ADMIN"],
+      enum: ["ADMIN", "SUBADMIN"],
       default: "ADMIN",
     },
 
     permissions: {
       type: [String],
       default: [],
+    },
+
+    isActive: {
+      type: Boolean,
+      default: true,
     },
 
     loginAttempts: {

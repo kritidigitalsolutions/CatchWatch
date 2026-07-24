@@ -32,6 +32,11 @@ const AdminLogin = () => {
       if (res.data.token) {
         localStorage.setItem("token", res.data.token);
         if (res.data.admin?.name) localStorage.setItem("adminName", res.data.admin.name);
+        localStorage.setItem("adminRole", res.data.admin?.role || "ADMIN");
+        localStorage.setItem(
+          "adminPermissions",
+          JSON.stringify(res.data.admin?.permissions || [])
+        );
         navigate("/dashboard", { replace: true });
       } else {
         setError("No token received. Please try again.");

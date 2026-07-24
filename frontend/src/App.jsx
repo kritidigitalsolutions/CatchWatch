@@ -9,8 +9,11 @@ import ProtectedRoute from "./components/ProtectedRoute";
 import ForgotPassword from "./pages/ForgotPassword";
 import ResetPassword from "./pages/ResetPassword";
 
+import PermissionGuard from "./components/PermissionGuard";
+
 // ── Lazy Loaded Dashboard Pages ──
 const DashboardHome = lazy(() => import("./pages/Dashboard"));
+const SubAdminsPage = lazy(() => import("./pages/SubAdminsPage"));
 const UsersPage = lazy(() => import("./pages/UsersPage"));
 const CategoriesPage = lazy(() => import("./pages/Categories"));
 const AddContent = lazy(() => import("./pages/AddContent"));
@@ -56,6 +59,15 @@ function App() {
             if (res.data.admin?.name) {
               localStorage.setItem("adminName", res.data.admin.name);
             }
+            if (res.data.admin?.role) {
+              localStorage.setItem("adminRole", res.data.admin.role);
+            }
+            if (res.data.admin?.permissions) {
+              localStorage.setItem(
+                "adminPermissions",
+                JSON.stringify(res.data.admin.permissions)
+              );
+            }
             console.log("Admin token refreshed successfully on app load.");
           }
         } catch (err) {
@@ -78,6 +90,15 @@ function App() {
             localStorage.setItem("token", res.data.token);
             if (res.data.admin?.name) {
               localStorage.setItem("adminName", res.data.admin.name);
+            }
+            if (res.data.admin?.role) {
+              localStorage.setItem("adminRole", res.data.admin.role);
+            }
+            if (res.data.admin?.permissions) {
+              localStorage.setItem(
+                "adminPermissions",
+                JSON.stringify(res.data.admin.permissions)
+              );
             }
             console.log("Admin token refreshed silently in background.");
           }
@@ -145,21 +166,134 @@ function App() {
           >
             {/* Nested Dashboard Routes */}
             <Route index element={<DashboardHome />} />
-            <Route path="users" element={<UsersPage />} />
-            <Route path="categories" element={<CategoriesPage />} />
-            <Route path="add-content" element={<AddContent />} />
-            <Route path="content" element={<Content />} />
-            <Route path="ratings" element={<RatingsPage />} />
-            <Route path="plans" element={<PlansPage />} />
-            <Route path="promo" element={<PromoVoucher />} />
-            <Route path="pricing" element={<SubscriptionPage />} />
-            <Route path="notifications" element={<NotificationsPage />} />
-            <Route path="support" element={<SupportDetails />} />
-            <Route path="legal" element={<LegalPage />} />
-            <Route path="help" element={<HelpPage />} />
-            <Route path="settings" element={<Settings />} />
-            <Route path="dramas" element={<DramaPage />} />
-            <Route path="add-drama" element={<AddDramaPage />} />
+            <Route
+              path="subadmins"
+              element={
+                <PermissionGuard pageKey="subadmins">
+                  <SubAdminsPage />
+                </PermissionGuard>
+              }
+            />
+            <Route
+              path="users"
+              element={
+                <PermissionGuard pageKey="users">
+                  <UsersPage />
+                </PermissionGuard>
+              }
+            />
+            <Route
+              path="categories"
+              element={
+                <PermissionGuard pageKey="categories">
+                  <CategoriesPage />
+                </PermissionGuard>
+              }
+            />
+            <Route
+              path="add-content"
+              element={
+                <PermissionGuard pageKey="add-content">
+                  <AddContent />
+                </PermissionGuard>
+              }
+            />
+            <Route
+              path="content"
+              element={
+                <PermissionGuard pageKey="content">
+                  <Content />
+                </PermissionGuard>
+              }
+            />
+            <Route
+              path="ratings"
+              element={
+                <PermissionGuard pageKey="ratings">
+                  <RatingsPage />
+                </PermissionGuard>
+              }
+            />
+            <Route
+              path="plans"
+              element={
+                <PermissionGuard pageKey="plans">
+                  <PlansPage />
+                </PermissionGuard>
+              }
+            />
+            <Route
+              path="promo"
+              element={
+                <PermissionGuard pageKey="promo">
+                  <PromoVoucher />
+                </PermissionGuard>
+              }
+            />
+            <Route
+              path="pricing"
+              element={
+                <PermissionGuard pageKey="pricing">
+                  <SubscriptionPage />
+                </PermissionGuard>
+              }
+            />
+            <Route
+              path="notifications"
+              element={
+                <PermissionGuard pageKey="notifications">
+                  <NotificationsPage />
+                </PermissionGuard>
+              }
+            />
+            <Route
+              path="support"
+              element={
+                <PermissionGuard pageKey="support">
+                  <SupportDetails />
+                </PermissionGuard>
+              }
+            />
+            <Route
+              path="legal"
+              element={
+                <PermissionGuard pageKey="legal">
+                  <LegalPage />
+                </PermissionGuard>
+              }
+            />
+            <Route
+              path="help"
+              element={
+                <PermissionGuard pageKey="help">
+                  <HelpPage />
+                </PermissionGuard>
+              }
+            />
+            <Route
+              path="settings"
+              element={
+                <PermissionGuard pageKey="settings">
+                  <Settings />
+                </PermissionGuard>
+              }
+            />
+            <Route
+              path="dramas"
+              element={
+                <PermissionGuard pageKey="dramas">
+                  <DramaPage />
+                </PermissionGuard>
+              }
+            />
+            <Route
+              path="add-drama"
+              element={
+                <PermissionGuard pageKey="add-drama">
+                  <AddDramaPage />
+                </PermissionGuard>
+              }
+            />
           </Route>
         </Routes>
       </Suspense>

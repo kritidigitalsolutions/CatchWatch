@@ -1,10 +1,11 @@
 import "./Sidebar.css";
 import { NavLink } from "react-router-dom";
 // import { BarChart3, Users, Plus, Film, FileText, HelpCircle, CreditCard, Settings, LogOut } from "lucide-react";
-import { X, BarChart3, Users, Plus, Film, FileText, HelpCircle, CreditCard, Settings, LogOut, Star, Bell, MessageSquare, Clapperboard, Play, Layers } from "lucide-react";
+import { X, BarChart3, Users, Plus, Film, FileText, HelpCircle, CreditCard, Settings, LogOut, Star, Bell, MessageSquare, Clapperboard, Play, Layers, ShieldCheck } from "lucide-react";
 
 const NAV = [
   { id: "dashboard", label: "Dashboard", icon: BarChart3, color: "#FF7A1A" },
+  { id: "subadmins", label: "Sub-admins & Staff", icon: ShieldCheck, color: "#a855f7" },
   { id: "users", label: "Users", icon: Users, color: "#3b82f6" },
   { id: "categories", label: "Categories", icon: Layers, color: "#a855f7" },
   { id: "add-content", label: "Add Content", icon: Plus, color: "#10b981" },
@@ -27,6 +28,26 @@ export default function Sidebar({ theme, showSidebar, toggleSidebar, closeSideba
     window.location.href = "/";
   };
 
+  const role = localStorage.getItem("adminRole") || "ADMIN";
+  let permissions = [];
+  try {
+    const raw = localStorage.getItem("adminPermissions");
+    if (raw) permissions = JSON.parse(raw);
+  } catch (e) {
+    permissions = [];
+  }
+
+  const visibleNav = NAV.filter((item) => {
+    if (role === "ADMIN") return true;
+    if (item.id === "subadmins") return false;
+    if (item.id === "dashboard") return true;
+
+    return (
+      permissions.includes(item.id) ||
+      permissions.some((p) => p.startsWith(`${item.id}:`))
+    );
+  });
+
   return (
     <aside className={`sidebar ${showSidebar ? "open" : ""}`}>
       {/* ── Brand ── */}
@@ -36,7 +57,7 @@ export default function Sidebar({ theme, showSidebar, toggleSidebar, closeSideba
         </div>
         <div>
           <div className="sidebar-title">CatchWatch</div>
-          <div className="sidebar-tag">Admin Panel</div>
+          <div className="sidebar-tag">{role === "SUBADMIN" ? "Sub-Admin Panel" : "Admin Panel"}</div>
         </div>
         <button className="mobile-close-btn" onClick={toggleSidebar}>
           <X size={24} />
@@ -47,7 +68,7 @@ export default function Sidebar({ theme, showSidebar, toggleSidebar, closeSideba
 
       {/* ── Nav ── */}
       <nav className="sidebar-nav">
-        {NAV.map((item) => {
+        {visibleNav.map((item) => {
           const toPath = item.id === "dashboard" ? "/dashboard" : `/dashboard/${item.id}`;
           return (
             <NavLink

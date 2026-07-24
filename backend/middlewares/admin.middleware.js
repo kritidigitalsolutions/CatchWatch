@@ -25,7 +25,7 @@ const isAdmin = async (
       process.env.JWT_SECRET
     );
 
-    if (decoded.role !== "ADMIN") {
+    if (decoded.role !== "ADMIN" && decoded.role !== "SUBADMIN") {
       return res.status(403).json({
         success: false,
         message: "Admin access only",
@@ -50,4 +50,14 @@ const isAdmin = async (
   }
 };
 
-module.exports = { isAdmin };
+const isSuperAdmin = (req, res, next) => {
+  if (req.user && req.user.role === "ADMIN") {
+    return next();
+  }
+  return res.status(403).json({
+    success: false,
+    message: "Super admin access required for this action",
+  });
+};
+
+module.exports = { isAdmin, isSuperAdmin };
