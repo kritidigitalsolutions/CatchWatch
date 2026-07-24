@@ -39,6 +39,9 @@ exports.uploadReel = async (req, res) => {
     const { parseBunnyStreamUrl } = require("../utils/mediaUrl");
     const streamInfo = parseBunnyStreamUrl(resolvedVideoUrl) || {};
 
+    const uploadedThumbnail = thumbnailFile ? thumbnailFile.path.replace(/\\/g, "/") : (req.body.thumbnailUrl || req.body.thumbnail || "");
+    const finalThumbnail = streamInfo.thumbnailUrl || uploadedThumbnail || "";
+
     const reel = await Reel.create({
       user: req.user.id,
       videoUrl: videoFile.path.replace(/\\/g, "/"),
@@ -50,9 +53,9 @@ exports.uploadReel = async (req, res) => {
       streamUrl: streamInfo.streamUrl || "",
       playlistUrl: streamInfo.playlistUrl || "",
       playbackUrl: streamInfo.playbackUrl || "",
-      thumbnailUrl: streamInfo.thumbnailUrl || "",
+      thumbnailUrl: finalThumbnail,
       encodingStatus: streamInfo.encodingStatus || "",
-      thumbnail: thumbnailFile ? thumbnailFile.path.replace(/\\/g, "/") : ""
+      thumbnail: finalThumbnail
     });
 
     return res.status(201).json({
@@ -138,6 +141,9 @@ exports.getReelsFeed = async (req, res) => {
       }
 
       reels.forEach(r => {
+        const thumb = r.thumbnailUrl || r.thumbnail || "";
+        r.thumbnailUrl = thumb;
+        r.thumbnail = thumb;
         r.likesCount = likesMap[r._id.toString()] || 0;
         r.userInteraction = interactionMap[r._id.toString()] || null;
       });
@@ -209,6 +215,10 @@ exports.getSingleReel = async (
       contentType: "reel",
       type: "like",
     });
+
+    const thumb = reel.thumbnailUrl || reel.thumbnail || "";
+    reel.thumbnailUrl = thumb;
+    reel.thumbnail = thumb;
 
     reel.userInteraction = null;
     if (userId) {
@@ -416,6 +426,9 @@ exports.getMyReels = async (req, res) => {
       });
 
       reels.forEach(r => {
+        const thumb = r.thumbnailUrl || r.thumbnail || "";
+        r.thumbnailUrl = thumb;
+        r.thumbnail = thumb;
         r.likesCount = likesMap[r._id.toString()] || 0;
         r.userInteraction = interactionMap[r._id.toString()] || null;
       });
@@ -518,6 +531,9 @@ exports.getUserReels = async (req, res) => {
       }
 
       reels.forEach(r => {
+        const thumb = r.thumbnailUrl || r.thumbnail || "";
+        r.thumbnailUrl = thumb;
+        r.thumbnail = thumb;
         r.likesCount = likesMap[r._id.toString()] || 0;
         r.userInteraction = interactionMap[r._id.toString()] || null;
       });

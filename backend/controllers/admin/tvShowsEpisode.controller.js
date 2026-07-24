@@ -74,6 +74,12 @@ const addTvShowsEpisode =
       const { parseBunnyStreamUrl } = require("../../utils/mediaUrl");
       const streamInfo = parseBunnyStreamUrl(resolvedVideoUrl) || {};
 
+      const uploadedThumbnail = getMediaUrl(
+        thumbnail,
+        req.body.thumbnail || req.body.thumbnailUrl || ""
+      );
+      const finalThumb = streamInfo.thumbnailUrl || uploadedThumbnail || "";
+
       const episode =
         await TvShowsEpisode.create({
 
@@ -95,18 +101,16 @@ const addTvShowsEpisode =
 
           isLocked:
             req.body.isLocked ===
-            "true",
+            "true" || req.body.isLocked === true,
 
           isVertical:
             req.body.isVertical !==
-            "false",
+            "false" && req.body.isVertical !== false,
 
           videoUrl: resolvedVideoUrl,
 
-          thumbnail: getMediaUrl(
-            thumbnail,
-            req.body.thumbnail || req.body.thumbnailUrl || ""
-          ),
+          thumbnail: finalThumb,
+          thumbnailUrl: finalThumb,
 
           videoSource: streamInfo.videoSource || "bunny_storage",
           storageType: streamInfo.storageType || "bunny_storage",
@@ -114,7 +118,6 @@ const addTvShowsEpisode =
           playlistUrl: streamInfo.playlistUrl || "",
           playbackUrl: streamInfo.playbackUrl || "",
           streamUrl: streamInfo.streamUrl || "",
-          thumbnailUrl: streamInfo.thumbnailUrl || "",
           encodingStatus: streamInfo.encodingStatus || ""
         });
 
@@ -161,7 +164,13 @@ const getTvShowsEpisodes =
           tvShowId,
         }).sort({
           episodeNumber: 1,
-        });
+        }).lean();
+
+      episodes.forEach((ep) => {
+        const thumb = ep.thumbnailUrl || ep.thumbnail || "";
+        ep.thumbnailUrl = thumb;
+        ep.thumbnail = thumb;
+      });
 
       return res.json({
         success: true,
@@ -300,16 +309,23 @@ const updateTvShowsEpisode =
 
 
       // THUMBNAIL
-      if (
-        req.files?.thumbnail?.[0]
-      ) {
+      if (req.files?.thumbnail?.[0]) {
+        deleteMedia(episode.thumbnail);
+        const thumbUrl = getMediaUrl(req.files.thumbnail[0]);
+        episode.thumbnail = thumbUrl;
+        episode.thumbnailUrl = thumbUrl;
+      } else if (req.body.thumbnailUrl !== undefined) {
+        episode.thumbnail = req.body.thumbnailUrl;
+        episode.thumbnailUrl = req.body.thumbnailUrl;
+      } else if (req.body.thumbnail !== undefined) {
+        episode.thumbnail = req.body.thumbnail;
+        episode.thumbnailUrl = req.body.thumbnail;
+      }
 
-        deleteMedia(
-          episode.thumbnail
-        );
-
-        episode.thumbnail =
-          getMediaUrl(req.files.thumbnail[0]);
+      if (!episode.thumbnailUrl && episode.thumbnail) {
+        episode.thumbnailUrl = episode.thumbnail;
+      } else if (!episode.thumbnail && episode.thumbnailUrl) {
+        episode.thumbnail = episode.thumbnailUrl;
       }
 
       // Multilingual Tracks Support

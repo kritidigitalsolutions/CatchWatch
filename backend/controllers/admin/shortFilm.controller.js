@@ -106,6 +106,10 @@ const addShortFilm = async (req, res) => {
     const { parseBunnyStreamUrl } = require("../../utils/mediaUrl");
     const streamInfo = parseBunnyStreamUrl(resolvedVideoUrl) || {};
 
+    const uploadedPoster = getMediaUrl(poster, req.body.poster || req.body.posterUrl);
+    const uploadedBanner = getMediaUrl(banner, req.body.banner || req.body.bannerUrl);
+    const generatedThumb = streamInfo.thumbnailUrl || req.body.thumbnailUrl || req.body.thumbnail || "";
+
     const shortFilm = await ShortFilm.create({
       title: req.body.title,
       description: req.body.description || "",
@@ -121,15 +125,9 @@ const addShortFilm = async (req, res) => {
       language:
         req.body.language || "",
 
-      poster: getMediaUrl(
-        poster,
-        req.body.poster
-      ),
+      poster: uploadedPoster || generatedThumb,
 
-      banner: getMediaUrl(
-        banner,
-        req.body.banner
-      ),
+      banner: uploadedBanner || uploadedPoster || generatedThumb,
 
       trailerUrl: getMediaUrl(
         trailer,
@@ -139,7 +137,10 @@ const addShortFilm = async (req, res) => {
       videoUrl: resolvedVideoUrl,
 
       isPremium:
-        req.body.isPremium === "true",
+        req.body.isPremium === "true" || req.body.isPremium === true,
+
+      isNewContent:
+        req.body.isNewContent === "true" || req.body.isNewContent === true,
 
       rating:
         req.body.rating || 0,
@@ -394,8 +395,12 @@ const updateShortFilm = async (
         req.body.rating;
 
     shortFilm.isPremium =
-      req.body.isPremium ===
-      "true";
+      req.body.isPremium === "true" || req.body.isPremium === true;
+
+    if (req.body.isNewContent !== undefined) {
+      shortFilm.isNewContent =
+        req.body.isNewContent === "true" || req.body.isNewContent === true;
+    }
 
     // POSTER
 

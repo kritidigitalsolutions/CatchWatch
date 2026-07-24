@@ -210,9 +210,14 @@ router.get(
       const bunnyData = await getVideoStatus(videoId);
 
       // Map Bunny Stream status code
-      // 0 = Queued, 1 = Processing, 2 = Encoding, 3 = Finished, 4 = Failed, 5 = Preserving, 6 = Playable
+      // 0 = Queued, 1 = Processing, 2 = Encoding, 3 = Finished, 4 = Failed/Warning, 5 = Preserving, 6 = Playable
       let encodingStatus = "processing";
-      if (bunnyData.status === 3 || bunnyData.status === 6) {
+      const isEncoded = bunnyData.status === 3 ||
+                        bunnyData.status === 6 ||
+                        bunnyData.encodeProgress === 100 ||
+                        (bunnyData.availableResolutions && String(bunnyData.availableResolutions).trim().length > 0);
+
+      if (isEncoded) {
         encodingStatus = "ready";
       } else if (bunnyData.status === 4) {
         encodingStatus = "failed";

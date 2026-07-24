@@ -151,6 +151,11 @@ const shortFilmSchema = new mongoose.Schema(
       default: false,
     },
 
+    isNewContent: {
+      type: Boolean,
+      default: false,
+    },
+
     priority: {
       type: Number,
       default: 0,

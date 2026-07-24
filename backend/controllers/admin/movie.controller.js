@@ -122,6 +122,10 @@ console.log({
     const { parseBunnyStreamUrl } = require("../../utils/mediaUrl");
     const streamInfo = parseBunnyStreamUrl(resolvedVideoUrl) || {};
 
+    const uploadedPoster = getMediaUrl(poster, req.body.poster || req.body.posterUrl);
+    const uploadedBanner = getMediaUrl(banner, req.body.banner || req.body.bannerUrl);
+    const generatedThumb = streamInfo.thumbnailUrl || req.body.thumbnailUrl || req.body.thumbnail || "";
+
     const movie = await Movie.create({
       title: req.body.title,
       description: req.body.description || "",
@@ -129,13 +133,14 @@ console.log({
       releaseYear: req.body.releaseYear || null,
       duration: req.body.duration || "",
       language: req.body.language || "",
-      poster: getMediaUrl(poster, req.body.poster),
-      banner: getMediaUrl(banner, req.body.banner),
+      poster: uploadedPoster || generatedThumb,
+      banner: uploadedBanner || uploadedPoster || generatedThumb,
       trailerUrl: resolvedTrailerUrl,
       videoUrl: resolvedVideoUrl,
-      isComingSoon: req.body.isComingSoon === "true",
+      isComingSoon: req.body.isComingSoon === "true" || req.body.isComingSoon === true,
+      isNewContent: req.body.isNewContent === "true" || req.body.isNewContent === true,
       releaseDate: req.body.releaseDate || null,
-      isPremium: req.body.isPremium === "true",
+      isPremium: req.body.isPremium === "true" || req.body.isPremium === true,
       rating: req.body.rating || 0,
       cast: sanitizeCast(cast),
       category,
@@ -367,10 +372,15 @@ const updateMovie = async (req, res) => {
         req.body.rating;
 
     movie.isComingSoon =
-      req.body.isComingSoon === "true";
+      req.body.isComingSoon === "true" || req.body.isComingSoon === true;
 
     movie.isPremium =
-      req.body.isPremium === "true";
+      req.body.isPremium === "true" || req.body.isPremium === true;
+
+    if (req.body.isNewContent !== undefined) {
+      movie.isNewContent =
+        req.body.isNewContent === "true" || req.body.isNewContent === true;
+    }
 
     movie.category = category;
 
@@ -430,6 +440,13 @@ const updateMovie = async (req, res) => {
       movie.streamUrl = "";
       movie.thumbnailUrl = "";
       movie.encodingStatus = "";
+    }
+
+    if (!movie.poster && movie.thumbnailUrl) {
+      movie.poster = movie.thumbnailUrl;
+    }
+    if (!movie.banner) {
+      movie.banner = movie.poster || movie.thumbnailUrl || "";
     }
 
 

@@ -11,7 +11,7 @@ const MoviesPage = () => {
   };
 
   // Filter & Sort States
-  const FALLBACK_POSTER = "https://images.unsplash.com/photo-1594909122845-11baa439b7bf?q=80&w=500&auto=format&fit=crop";
+  const FALLBACK_POSTER = "https://img.magnific.com/premium-vector/abstract-orange-blur-gradient-background-design_624457-4943.jpg";
   const [selectedGenre, setSelectedGenre] = useState("All");
   const [sortOrder, setSortOrder] = useState("trending");
 
@@ -64,7 +64,7 @@ const MoviesPage = () => {
     return (b?.releaseYear || 0) - (a?.releaseYear || 0);
   });
 
-  const featuredMovie = moviesList?.[0];
+  // const featuredMovie = moviesList?.[0];
 
   if (isLoading) {
     return (
@@ -124,7 +124,7 @@ const MoviesPage = () => {
   return (
     <div className="space-y-10 max-w-7xl mx-auto w-full px-1">
       {/* 1. CINEMATIC FEATURE SPOTLIGHT WINDOW PANEL */}
-      {featuredMovie && (
+      {/* {featuredMovie && (
         <div className="relative w-full rounded-3xl bg-neutral-950 aspect-[16/8] md:aspect-[21/8] overflow-hidden shadow-xl border border-neutral-900 group">
           <div
             className="absolute inset-0 bg-cover bg-center opacity-40 group-hover:scale-105 transition-transform duration-1000 ease-out"
@@ -172,7 +172,7 @@ const MoviesPage = () => {
             </div>
           </div>
         </div>
-      )}
+      )} */}
 
       {/* 2. ADVANCED CONTROL CONSOLE FILTER PANEL */}
       <div className="bg-white border border-gray-200/80 rounded-2xl p-4 shadow-sm flex flex-col md:flex-row gap-4 justify-between md:items-center">
@@ -242,7 +242,7 @@ const MoviesPage = () => {
 
                 <div className="w-full aspect-[2/3] bg-neutral-900 rounded-xl overflow-hidden relative shadow-inner">
                   <img
-                    src={movie?.poster && movie.poster.trim() !== "" ? movie.poster : FALLBACK_POSTER}
+                    src={movie?.poster || movie?.banner || movie?.thumbnailUrl || movie?.thumbnail || FALLBACK_POSTER}
                     alt={movie?.title}
                     className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500 opacity-90"
                     loading="lazy"

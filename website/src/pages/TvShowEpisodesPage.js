@@ -129,14 +129,21 @@ const TvShowEpisodesPage = () => {
                                 )}
                                 <img
                                     src={
-                                      ep.thumbnail && ep.thumbnail.trim() !== ""
-                                        ? ep.thumbnail
-                                        : ep.poster && ep.poster.trim() !== ""
-                                          ? ep.poster
-                                          : FALLBACK_THUMBNAIL
+                                      ep.thumbnailUrl && ep.thumbnailUrl.trim() !== ""
+                                        ? ep.thumbnailUrl
+                                        : ep.thumbnail && ep.thumbnail.trim() !== ""
+                                          ? ep.thumbnail
+                                          : ep.poster && ep.poster.trim() !== ""
+                                            ? ep.poster
+                                            : FALLBACK_THUMBNAIL
                                     }
                                     alt={ep.title}
                                     className="w-full h-full object-cover opacity-90 group-hover:opacity-100 group-hover:scale-105 transition-all duration-500"
+                                    onError={(e) => {
+                                      if (e.target.src !== FALLBACK_THUMBNAIL) {
+                                        e.target.src = FALLBACK_THUMBNAIL;
+                                      }
+                                    }}
                                 />
                                 <div className="absolute inset-0 bg-black/30 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center">
                                     <div className="w-12 h-12 bg-brand-orange text-white rounded-full flex items-center justify-center text-xl font-bold shadow-lg transform scale-75 group-hover:scale-100 transition-transform duration-300">

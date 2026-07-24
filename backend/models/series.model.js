@@ -89,6 +89,11 @@ totalEpisodes: {
   min: 0
 },
 
+isNewContent: {
+  type: Boolean,
+  default: false,
+},
+
 
 
 

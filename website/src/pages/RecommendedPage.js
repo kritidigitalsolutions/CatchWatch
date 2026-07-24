@@ -2,7 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { FaPlay } from "react-icons/fa";
 import Loader from '../components/Loader';
-import { getMovies } from '../api/movieApi'; // Aapki API import
+import { getMovies } from '../api/movieApi';
+import { getAllContent } from '../api/contentApi';
 
 const RecommendedPage = () => {
   const navigate = useNavigate();
@@ -16,27 +17,31 @@ const RecommendedPage = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
 
-  const FALLBACK_POSTER = "https://images.unsplash.com/photo-1536440136628-849c177e76a1?q=80&w=500&auto=format&fit=crop";
+  const FALLBACK_POSTER = "https://img.magnific.com/premium-vector/abstract-orange-blur-gradient-background-design_624457-4943.jpg";
 
   useEffect(() => {
     const fetchRecommended = async () => {
       setIsLoading(true);
       setError(null);
-      
-      try {
-        // API se sabhi movies fetch karein
-        const response = await getMovies({ limit: 100 });
-        const allMovies = response?.movies || response || [];
 
-        // STRICT FILTER: Sirf unhi movies ko lo jinki category me "recommended" string exist karta hai
-        const onlyRecommended = allMovies.filter(
-          (movie) => movie.category && movie.category.includes("recommended")
+      try {
+        let allItems = [];
+        const contentRes = await getAllContent();
+        if (contentRes && contentRes.content && contentRes.content.length > 0) {
+          allItems = contentRes.content;
+        } else {
+          const response = await getMovies({ limit: 100 });
+          allItems = response?.movies || response || [];
+        }
+
+        // STRICT FILTER: Only items with "recommended" in category array
+        const onlyRecommended = allItems.filter(
+          (movie) => movie?.category && movie.category.includes("recommended")
         );
 
-        // State me sirf filter kiya hua data save karein
         setRecommendedMovies(onlyRecommended);
       } catch (err) {
-        console.error("API Error: Fetching Recommended movies failed:", err);
+        console.error("API Error: Fetching Recommended content failed:", err);
         setError("Unable to load recommended content at this moment.");
       } finally {
         setIsLoading(false);
@@ -62,7 +67,7 @@ const RecommendedPage = () => {
 
   return (
     <div className="space-y-6 max-w-7xl mx-auto w-full py-6">
-      
+
       {/* Header Segment */}
       <div className="bg-white border border-gray-200 rounded-2xl p-5 shadow-sm flex flex-col sm:flex-row justify-between sm:items-center gap-4">
         <div>
@@ -76,7 +81,7 @@ const RecommendedPage = () => {
             Personalized content handpicked based on your viewing preferences.
           </p>
         </div>
-        
+
         <div className="bg-orange-50 text-orange-600 text-xs font-bold uppercase tracking-wider px-4 py-2 rounded-xl border border-orange-100 self-start sm:self-auto">
           Displaying {recommendedMovies.length} Matches
         </div>
@@ -112,7 +117,7 @@ const RecommendedPage = () => {
               {/* Poster Image */}
               <div className="w-full aspect-[2/3] bg-neutral-900 rounded-xl overflow-hidden relative shadow-inner">
                 <img
-                  src={movie.poster && movie.poster.trim() !== "" ? movie.poster : FALLBACK_POSTER}
+                  src={movie.poster || movie.banner || movie.thumbnailUrl || movie.thumbnail || FALLBACK_POSTER}
                   alt={movie.title}
                   className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500 opacity-90"
                   loading="lazy"

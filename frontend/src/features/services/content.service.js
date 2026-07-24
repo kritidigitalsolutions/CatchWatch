@@ -92,6 +92,7 @@ export const createContent = async ({
   formData.append("duration", form.duration);
   formData.append("isPremium", String(form.isPremium));
   formData.append("isComingSoon", String(form.isComingSoon));
+  formData.append("isNewContent", String(form.isNewContent));
   formData.append("releaseDate", form.releaseDate || "");
   formData.append("priority", Number(form.priority) || 0);
   formData.append("rating", form.rating ? Number(form.rating) : 0);

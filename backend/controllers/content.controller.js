@@ -156,6 +156,8 @@
 
 const Movie = require("../models/movie.model");
 const Series = require("../models/series.model");
+const ShortFilm = require("../models/shortFilm.model");
+const TvShow = require("../models/tvShow.model");
 
 // ========================================
 // GET HOME CONTENT (COMBINED)
@@ -164,31 +166,45 @@ const getHomeContent = async (req, res) => {
   try {
     const movies = await Movie.find().sort({ priority: -1, createdAt: -1 }).limit(20).lean();
     const series = await Series.find().sort({ priority: -1, createdAt: -1 }).limit(20).lean();
+    const shortFilms = await ShortFilm.find().sort({ priority: -1, createdAt: -1 }).limit(20).lean();
+    const tvShows = await TvShow.find().sort({ priority: -1, createdAt: -1 }).limit(20).lean();
 
     const [
-  moviesCount,
-  seriesCount,
-  seriesData
-] = await Promise.all([
-  Movie.countDocuments(),
-  Series.countDocuments(),
-  Series.find({}, "totalEpisodes").lean()
-]);
+      moviesCount,
+      seriesCount,
+      shortFilmsCount,
+      tvShowsCount,
+      seriesData
+    ] = await Promise.all([
+      Movie.countDocuments(),
+      Series.countDocuments(),
+      ShortFilm.countDocuments(),
+      TvShow.countDocuments(),
+      Series.find({}, "totalEpisodes").lean()
+    ]);
     const episodesCount = seriesData.reduce((acc, s) => acc + (s.totalEpisodes || 0), 0);
 
-    const formattedMovies = movies.map((m) => ({
-      ...m,
-      type: "movie",
-      isTrending: m.category?.includes("trending") || false
-    }));
+    const normalizeMedia = (item, type) => {
+      const poster = item.poster || item.banner || item.thumbnailUrl || item.thumbnail || "";
+      const banner = item.banner || item.poster || item.thumbnailUrl || item.thumbnail || "";
+      const thumbnailUrl = item.thumbnailUrl || item.thumbnail || item.poster || item.banner || "";
+      return {
+        ...item,
+        poster,
+        banner,
+        thumbnailUrl,
+        thumbnail: thumbnailUrl,
+        type,
+        isTrending: item.category?.includes("trending") || false
+      };
+    };
 
-    const formattedSeries = series.map((s) => ({
-      ...s,
-      type: "series",
-      isTrending: s.category?.includes("trending") || false
-    }));
+    const formattedMovies = movies.map((m) => normalizeMedia(m, "movie"));
+    const formattedSeries = series.map((s) => normalizeMedia(s, "series"));
+    const formattedShortFilms = shortFilms.map((sf) => normalizeMedia(sf, "shortFilm"));
+    const formattedTvShows = tvShows.map((tv) => normalizeMedia(tv, "tvShow"));
 
-    const content = [...formattedMovies, ...formattedSeries].sort(
+    const content = [...formattedMovies, ...formattedSeries, ...formattedShortFilms, ...formattedTvShows].sort(
       (a, b) => {
         const priorityDiff = (b.priority || 0) - (a.priority || 0);
         if (priorityDiff !== 0) return priorityDiff;
@@ -200,6 +216,8 @@ const getHomeContent = async (req, res) => {
       success: true,
       moviesCount,
       seriesCount,
+      shortFilmsCount,
+      tvShowsCount,
       episodesCount,
       content
     });

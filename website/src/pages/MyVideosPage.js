@@ -19,7 +19,7 @@ const MyVideosPage = () => {
   const [error, setError] = useState(null);
 
   // Fallback Thumbnail if a reel doesn't have one
-  const FALLBACK_THUMBNAIL = "https://img.freepik.com/premium-photo/glowing-orange-neon-play-button-icon-dark-background_989822-6247.jpg";
+  // const FALLBACK_THUMBNAIL = "https://img.freepik.com/premium-photo/glowing-orange-neon-play-button-icon-dark-background_989822-6247.jpg";
 
   // Fetch Only User's Videos on Mount
   useEffect(() => {
@@ -135,8 +135,8 @@ const MyVideosPage = () => {
           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4 sm:gap-6">
             {videos.map((video) => {
               const id = video._id || video.id;
-              // Backend should ideally generate a thumbnail for videos, otherwise we use the fallback
-              const thumbnail = video.thumbnailUrl || video.poster || FALLBACK_THUMBNAIL;
+              const defaultFallback = "https://img.freepik.com/premium-photo/glowing-orange-neon-play-button-icon-dark-background_989822-6247.jpg";
+              const thumbnailSrc = video.thumbnailUrl || video.thumbnail || defaultFallback;
               
               return (
                 <div 
@@ -157,10 +157,15 @@ const MyVideosPage = () => {
                   )}
                   {/* Thumbnail Image */}
                   <img 
-                    src={thumbnail} 
-                    alt={video.title || "My Uploaded Video"} 
+                    src={thumbnailSrc} 
+                    alt={video.title || video.caption || "My Uploaded Video"} 
                     className="w-full h-full object-cover opacity-80 group-hover:opacity-100 group-hover:scale-105 transition-transform duration-500"
                     loading="lazy"
+                    onError={(e) => {
+                      if (e.target.src !== defaultFallback) {
+                        e.target.src = defaultFallback;
+                      }
+                    }}
                   />
 
                   {/* Play Button Overlay (Visible on Hover) */}

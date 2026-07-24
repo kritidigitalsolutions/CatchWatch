@@ -136,25 +136,27 @@ const addTvShow = async (
 
         poster: getMediaUrl(
           poster,
-          req.body.poster
+          req.body.posterUrl || req.body.poster || req.body.thumbnailUrl || req.body.thumbnail || ""
         ),
 
         banner: getMediaUrl(
           banner,
-          req.body.banner
+          req.body.bannerUrl || req.body.banner || req.body.posterUrl || req.body.poster || req.body.thumbnailUrl || req.body.thumbnail || ""
         ),
 
         trailerUrl: getMediaUrl(
           trailer,
-          req.body.trailerUrl
+          req.body.trailerUrl || req.body.trailer || ""
         ),
 
         isPremium:
-          req.body.isPremium ===
-          "true",
+          req.body.isPremium === "true" || req.body.isPremium === true,
 
         isComingSoon:
-          req.body.isComingSoon === "true",
+          req.body.isComingSoon === "true" || req.body.isComingSoon === true,
+
+        isNewContent:
+          req.body.isNewContent === "true" || req.body.isNewContent === true,
 
         status:
           req.body.status ||
@@ -332,8 +334,15 @@ const updateTvShow =
       drama.category = category;
 
       drama.isPremium =
-        req.body.isPremium ===
-        "true";
+        req.body.isPremium === "true" || req.body.isPremium === true;
+
+      drama.isComingSoon =
+        req.body.isComingSoon === "true" || req.body.isComingSoon === true;
+
+      if (req.body.isNewContent !== undefined) {
+        drama.isNewContent =
+          req.body.isNewContent === "true" || req.body.isNewContent === true;
+      }
 
       drama.status =
         req.body.status ||
@@ -342,33 +351,34 @@ const updateTvShow =
 
       // POSTER
       if (req.files?.poster?.[0]) {
-
         deleteMedia(drama.poster);
-
-        drama.poster =
-          getMediaUrl(req.files.poster[0]);
+        drama.poster = getMediaUrl(req.files.poster[0]);
+      } else if (req.body.posterUrl !== undefined) {
+        drama.poster = req.body.posterUrl;
+      } else if (req.body.poster !== undefined) {
+        drama.poster = req.body.poster;
       }
 
 
       // BANNER
       if (req.files?.banner?.[0]) {
-
         deleteMedia(drama.banner);
-
-        drama.banner =
-          getMediaUrl(req.files.banner[0]);
+        drama.banner = getMediaUrl(req.files.banner[0]);
+      } else if (req.body.bannerUrl !== undefined) {
+        drama.banner = req.body.bannerUrl;
+      } else if (req.body.banner !== undefined) {
+        drama.banner = req.body.banner;
       }
 
 
       // TRAILER
       if (req.files?.trailer?.[0]) {
-
-        deleteMedia(
-          drama.trailerUrl
-        );
-
-        drama.trailerUrl =
-          getMediaUrl(req.files.trailer[0]);
+        deleteMedia(drama.trailerUrl);
+        drama.trailerUrl = getMediaUrl(req.files.trailer[0]);
+      } else if (req.body.trailerUrl !== undefined) {
+        drama.trailerUrl = req.body.trailerUrl;
+      } else if (req.body.trailer !== undefined) {
+        drama.trailerUrl = req.body.trailer;
       }
 
 

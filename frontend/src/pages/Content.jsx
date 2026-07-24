@@ -338,6 +338,12 @@ export default function Content() {
     return `${cleanBase}${cleanPath}`;
   };
 
+  const getPosterUrl = (item) => {
+    if (!item) return "";
+    const raw = item.poster || item.banner || item.thumbnailUrl || item.thumbnail || "";
+    return getFullUrl(raw);
+  };
+
   const getYouTubeId = (url) => {
     if (!url) return null;
     const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|&v=)([^#&?]*).*/;
@@ -345,7 +351,40 @@ export default function Content() {
     return (match && match[2].length === 11) ? match[2] : null;
   };
 
+  const getBunnyEmbedUrl = (urlOrItem) => {
+    if (!urlOrItem) return null;
+    let url = typeof urlOrItem === 'string' ? urlOrItem : (urlOrItem.videoUrl || urlOrItem.video || urlOrItem.trailerUrl || '');
+    let vId = typeof urlOrItem === 'object' ? urlOrItem.videoId : null;
 
+    if (!vId && url && (url.includes('b-cdn.net') || url.includes('mediadelivery.net'))) {
+      const parts = url.split('/');
+      const found = parts.find(p => p.length >= 32 && (p.includes('-') || p.length === 36));
+      if (found) vId = found;
+    }
+
+    if (vId) {
+      return `https://iframe.mediadelivery.net/embed/711587/${vId}?autoplay=false&loop=false&muted=false`;
+    }
+    return null;
+  };
+
+
+
+  const [categoriesList, setCategoriesList] = useState([]);
+
+  useEffect(() => {
+    const fetchCats = async () => {
+      try {
+        const res = await API.get("/admin/categories");
+        if (res.data?.categories) {
+          setCategoriesList(res.data.categories.filter((c) => c.status === "Active"));
+        }
+      } catch (err) {
+        console.error("Failed to fetch categories list in Content.jsx:", err);
+      }
+    };
+    fetchCats();
+  }, []);
 
   useEffect(() => {
     const controller = new AbortController();
@@ -752,7 +791,7 @@ export default function Content() {
 
       const formData = new FormData();
       // Basic text fields
-      const textFields = ["title", "description", "language", "duration", "rating", "releaseYear", "isPremium", "isComingSoon", "releaseDate", "priority"];
+      const textFields = ["title", "description", "language", "duration", "rating", "releaseYear", "isPremium", "isComingSoon", "isNewContent", "releaseDate", "priority"];
 
       textFields.forEach(k => {
         const value = editData[k];
@@ -1117,7 +1156,7 @@ export default function Content() {
                       <tr key={movie._id}>
                         <td>
                           <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                            <img src={getFullUrl(movie.poster)} alt="" style={{ width: 40, height: 60, objectFit: "cover", borderRadius: 4 }} />
+                            <img src={getPosterUrl(movie)} alt="" style={{ width: 40, height: 60, objectFit: "cover", borderRadius: 4 }} />
                             <div>
                               <div style={{ fontWeight: 600 }}>{movie.title}</div>
                               <div style={{ fontSize: "0.8rem", color: "var(--text-muted)" }}>{movie.duration}</div>
@@ -1206,7 +1245,7 @@ export default function Content() {
                       <tr key={series._id}>
                         <td>
                           <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                            <img src={getFullUrl(series.poster)} alt="" style={{ width: 40, height: 60, objectFit: "cover", borderRadius: 4 }} />
+                            <img src={getPosterUrl(series)} alt="" style={{ width: 40, height: 60, objectFit: "cover", borderRadius: 4 }} />
                             <div>
                               <div style={{ fontWeight: 600 }}>{series.title}</div>
                               {isLocked(series) && (
@@ -1272,7 +1311,7 @@ export default function Content() {
               </button>
 
               <div className="series-mini-card">
-                <img src={getFullUrl(selectedSeries.poster || selectedSeries.banner)} alt="" className="mini-poster" />
+                <img src={getPosterUrl(selectedSeries)} alt="" className="mini-poster" />
                 <div className="mini-info">
                   <div className="mini-title-row">
                     <Tv size={24} className="type-icon" />
@@ -1950,7 +1989,7 @@ export default function Content() {
                 <div className="vp-container">
                   {/* Hero Banner */}
                   <div className="vp-hero">
-                    <img src={getFullUrl(selectedItem.banner || selectedItem.poster)} alt="" className="vp-hero-img" />
+                    <img src={getPosterUrl(selectedItem)} alt="" className="vp-hero-img" />
                     <div className="vp-hero-overlay">
                       <span className="vp-type-badge">{contentType === "movies" ? "MOVIE" : "SERIES"}</span>
                       <h2 className="vp-title">{selectedItem.title}</h2>
@@ -2003,6 +2042,8 @@ export default function Content() {
                       <div className="vp-video-wrap">
                         {getYouTubeId(selectedItem.trailerUrl) ? (
                           <iframe src={`https://www.youtube.com/embed/${getYouTubeId(selectedItem.trailerUrl)}`} title="Trailer" frameBorder="0" allowFullScreen></iframe>
+                        ) : getBunnyEmbedUrl(selectedItem.trailerUrl) ? (
+                          <iframe src={getBunnyEmbedUrl(selectedItem.trailerUrl)} title="Trailer" frameBorder="0" allowFullScreen></iframe>
                         ) : (
                           <video controls src={getFullUrl(selectedItem.trailerUrl)}></video>
                         )}
@@ -2023,6 +2064,8 @@ export default function Content() {
                           <div style={{ position: "relative", width: "100%", height: "0", paddingBottom: "56.25%", background: "#000", borderRadius: "8px", overflow: "hidden" }}>
                             {getYouTubeId(selectedItem.videoUrl || selectedItem.video) ? (
                               <iframe src={`https://www.youtube.com/embed/${getYouTubeId(selectedItem.videoUrl || selectedItem.video)}`} title="Full Movie" frameBorder="0" allowFullScreen style={{ position: "absolute", top: 0, left: 0, width: "100%", height: "100%" }}></iframe>
+                            ) : getBunnyEmbedUrl(selectedItem) ? (
+                              <iframe src={getBunnyEmbedUrl(selectedItem)} title="Full Movie" frameBorder="0" allowFullScreen style={{ position: "absolute", top: 0, left: 0, width: "100%", height: "100%" }}></iframe>
                             ) : (
                               <>
                                 <video
@@ -2429,12 +2472,21 @@ export default function Content() {
                       </select>
                     </div>
                     <div className="form-row">
+                      <label className="form-label">New Content (Carousel)</label>
+                      <select className="form-input" value={editData.isNewContent ? "yes" : "no"} onChange={e => setEditData(s => ({ ...s, isNewContent: e.target.value === "yes" }))}>
+                        <option value="no">No</option>
+                        <option value="yes">Yes</option>
+                      </select>
+                    </div>
+                    <div className="form-row">
                       <label className="form-label">Category</label>
                       <select className="form-input" value={editData.category?.[0] || ""} onChange={e => setEditData(s => ({ ...s, category: e.target.value ? [e.target.value] : [] }))}>
                         <option value="">None</option>
-                        <option value="trending">Trending</option>
-                        <option value="top10">Top 10</option>
-                        <option value="recommended">Recommended</option>
+                        {categoriesList.map((cat) => (
+                          <option key={cat._id} value={cat.slug}>
+                            {cat.name}
+                          </option>
+                        ))}
                       </select>
                     </div>
                     <div className="form-row">

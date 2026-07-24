@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
+import Hls from 'hls.js';
 import { FaArrowLeft, FaRegHeart, FaHeart, FaItunesNote, FaPlay, FaEye, FaTimes, FaTrash } from "react-icons/fa";
 import { FaShareNodes } from "react-icons/fa6";
 import { LuMessageCircleMore } from "react-icons/lu";
@@ -31,6 +32,7 @@ const SingleReelPage = () => {
   const { id } = useParams(); // URL se reel ki ID nikalna
   const navigate = useNavigate();
   const videoRef = useRef(null);
+  const hlsRef = useRef(null);
 
   const [reel, setReel] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -46,6 +48,21 @@ const SingleReelPage = () => {
   const [commentText, setCommentText] = useState("");
   const [isLoadingComments, setIsLoadingComments] = useState(false);
   const [commentsCount, setCommentsCount] = useState(0);
+
+  const rawSrc = reel?.videoUrl || reel?.url || reel?.video || reel?.streamUrl || "";
+
+  const bunnyEmbedUrl = (() => {
+    let vId = reel?.videoId;
+    if (!vId && rawSrc && (rawSrc.includes('b-cdn.net') || rawSrc.includes('mediadelivery.net'))) {
+      const parts = rawSrc.split('/');
+      const found = parts.find(p => p.length >= 32 && (p.includes('-') || p.length === 36));
+      if (found && !found.includes('.')) vId = found;
+    }
+    if (vId) {
+      return `https://iframe.mediadelivery.net/embed/711587/${vId}?autoplay=true&loop=true&muted=false`;
+    }
+    return null;
+  })();
 
   // 1. Fetch Single Reel Data
   useEffect(() => {
@@ -70,6 +87,42 @@ const SingleReelPage = () => {
 
     fetchReel();
   }, [id]);
+
+  // HLS stream attach effect for standard video elements
+  useEffect(() => {
+    if (bunnyEmbedUrl) return; // Managed via iframe embed
+
+    const videoElement = videoRef.current;
+    if (!videoElement || !rawSrc) return;
+
+    if (hlsRef.current) {
+      hlsRef.current.destroy();
+      hlsRef.current = null;
+    }
+
+    const isHls = rawSrc.toLowerCase().includes(".m3u8");
+    const canNativeHLS = videoElement.canPlayType('application/x-mpegURL') || videoElement.canPlayType('application/vnd.apple.mpegurl');
+
+    if (isHls && Hls.isSupported() && !canNativeHLS) {
+      const hls = new Hls({ enableWorker: true, lowLatencyMode: true });
+      hls.loadSource(rawSrc);
+      hls.attachMedia(videoElement);
+      hlsRef.current = hls;
+      hls.on(Hls.Events.MANIFEST_PARSED, () => {
+        videoElement.play().then(() => setIsPlaying(true)).catch(e => console.log("Autoplay prevented:", e));
+      });
+    } else {
+      videoElement.src = rawSrc;
+      videoElement.play().then(() => setIsPlaying(true)).catch(e => console.log("Autoplay prevented:", e));
+    }
+
+    return () => {
+      if (hlsRef.current) {
+        hlsRef.current.destroy();
+        hlsRef.current = null;
+      }
+    };
+  }, [rawSrc, bunnyEmbedUrl]);
 
   // Sync state once reel is loaded
   useEffect(() => {
@@ -253,14 +306,24 @@ const SingleReelPage = () => {
 
       {/* Video Player */}
       <div className="flex-1 relative bg-zinc-950 flex justify-center items-center">
-        <video
-          ref={videoRef}
-          src={reel.videoUrl || reel.url || reel.video || null}
-          className="w-full h-full object-cover cursor-pointer"
-          loop
-          playsInline
-          onClick={togglePlay}
-        />
+        {bunnyEmbedUrl ? (
+          <iframe
+            src={bunnyEmbedUrl}
+            title="Single Reel Video"
+            className="w-full h-full border-0 object-cover"
+            allow="autoplay; encrypted-media; picture-in-picture;"
+            allowFullScreen
+          ></iframe>
+        ) : (
+          <video
+            ref={videoRef}
+            src={rawSrc.toLowerCase().includes(".m3u8") && Hls.isSupported() ? undefined : (rawSrc || undefined)}
+            className="w-full h-full object-cover cursor-pointer"
+            loop
+            playsInline
+            onClick={togglePlay}
+          />
+        )}
 
         {/* Big Play Icon when paused */}
         {!isPlaying && (

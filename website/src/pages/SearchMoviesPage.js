@@ -93,9 +93,12 @@ const SearchMoviesPage = () => {
 
   // Safe Image Source Formatter
   const getValidImageSource = (item) => {
-    if (item.thumbnail && typeof item.thumbnail === 'string' && item.thumbnail.trim() !== "") return item.thumbnail;
-    if (item.poster && typeof item.poster === 'string' && item.poster.trim() !== "") return item.poster;
-    if (item.image && typeof item.image === 'string' && item.image.trim() !== "") return item.image;
+    if (!item) return FALLBACK_IMAGE;
+    if (item.poster && typeof item.poster === 'string' && item.poster.trim() !== "") return item.poster.trim();
+    if (item.banner && typeof item.banner === 'string' && item.banner.trim() !== "") return item.banner.trim();
+    if (item.thumbnailUrl && typeof item.thumbnailUrl === 'string' && item.thumbnailUrl.trim() !== "") return item.thumbnailUrl.trim();
+    if (item.thumbnail && typeof item.thumbnail === 'string' && item.thumbnail.trim() !== "") return item.thumbnail.trim();
+    if (item.image && typeof item.image === 'string' && item.image.trim() !== "") return item.image.trim();
     return FALLBACK_IMAGE;
   };
       if (isLoading) return <Loader />;

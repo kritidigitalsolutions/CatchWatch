@@ -156,7 +156,7 @@ const ShortFilmsPage = () => {
                 <div>
                   <div className="w-full aspect-[3/4] bg-neutral-900 rounded-3xl overflow-hidden relative shadow-md">
                     <img
-                      src={film.poster || FALLBACK_POSTER}
+                      src={film.poster || film.banner || film.thumbnailUrl || film.thumbnail || FALLBACK_POSTER}
                       alt={film.title}
                       className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
                       loading="lazy"

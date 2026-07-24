@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
+import Hls from 'hls.js';
 import { FaRegHeart, FaHeart, FaItunesNote, FaPlay, FaTimes, FaTrash } from "react-icons/fa";
 import { GiSaveArrow } from "react-icons/gi";
 import { FaShareNodes } from "react-icons/fa6";
@@ -30,6 +31,7 @@ const getLoggedInUserId = () => {
 // Individual Video Component
 const ShortVideo = ({ video, isActive }) => {
   const videoRef = useRef(null);
+  const hlsRef = useRef(null);
   const [isPlaying, setIsPlaying] = useState(false);
 
   // Interactive States
@@ -42,20 +44,77 @@ const ShortVideo = ({ video, isActive }) => {
   const [isLoadingComments, setIsLoadingComments] = useState(false);
   const [commentsCount, setCommentsCount] = useState(video.commentsCount || 0);
 
-  // Autoplay logic when video comes into view
+  const rawSrc = video.videoUrl || video.url || video.video || video.streamUrl || "";
+
+  const bunnyEmbedUrl = (() => {
+    let vId = video.videoId;
+    if (!vId && rawSrc && (rawSrc.includes('b-cdn.net') || rawSrc.includes('mediadelivery.net'))) {
+      const parts = rawSrc.split('/');
+      const found = parts.find(p => p.length >= 32 && (p.includes('-') || p.length === 36));
+      if (found && !found.includes('.')) vId = found;
+    }
+    if (vId) {
+      return `https://iframe.mediadelivery.net/embed/711587/${vId}?autoplay=${isActive ? 'true' : 'false'}&loop=true&muted=false`;
+    }
+    return null;
+  })();
+
+  // Autoplay logic for standard HTML5 video elements when video comes into view
   useEffect(() => {
-    if (videoRef.current) {
+    if (bunnyEmbedUrl) return; // Managed via iframe autoplay parameter
+
+    const videoElement = videoRef.current;
+    if (!videoElement || !rawSrc) return;
+
+    if (hlsRef.current) {
+      hlsRef.current.destroy();
+      hlsRef.current = null;
+    }
+
+    const isHls = rawSrc.toLowerCase().includes(".m3u8");
+    const canNativeHLS = videoElement.canPlayType('application/x-mpegURL') || videoElement.canPlayType('application/vnd.apple.mpegurl');
+
+    if (isHls && Hls.isSupported() && !canNativeHLS) {
+      const hls = new Hls({
+        enableWorker: true,
+        lowLatencyMode: true,
+      });
+      hls.loadSource(rawSrc);
+      hls.attachMedia(videoElement);
+      hlsRef.current = hls;
+
+      hls.on(Hls.Events.MANIFEST_PARSED, () => {
+        if (isActive) {
+          videoElement.play()
+            .then(() => setIsPlaying(true))
+            .catch((e) => console.log("Autoplay prevented:", e));
+        }
+      });
+    } else {
+      videoElement.src = rawSrc;
       if (isActive) {
-        videoRef.current.play()
+        videoElement.play()
           .then(() => setIsPlaying(true))
-          .catch((e) => console.log("Autoplay prevented by browser", e));
+          .catch((e) => console.log("Autoplay prevented:", e));
       } else {
-        videoRef.current.pause();
-        videoRef.current.currentTime = 0; // Rewind for next time it scrolls into view
+        videoElement.pause();
+        videoElement.currentTime = 0;
         setIsPlaying(false);
       }
     }
-  }, [isActive]);
+
+    if (!isActive && videoElement) {
+      videoElement.pause();
+      setIsPlaying(false);
+    }
+
+    return () => {
+      if (hlsRef.current) {
+        hlsRef.current.destroy();
+        hlsRef.current = null;
+      }
+    };
+  }, [isActive, rawSrc, bunnyEmbedUrl]);
 
   // Fetch stats and interactions if active
   useEffect(() => {
@@ -199,15 +258,25 @@ const ShortVideo = ({ video, isActive }) => {
   return (
     <div className="w-full h-full snap-start relative bg-zinc-950 flex-shrink-0">
 
-      {/* Video Element */}
-      <video
-        ref={videoRef}
-        src={video.videoUrl || video.url || video.video || null}
-        className="w-full h-full object-cover cursor-pointer"
-        loop
-        playsInline
-        onClick={togglePlay}
-      />
+      {/* Video Element / Iframe */}
+      {bunnyEmbedUrl ? (
+        <iframe
+          src={bunnyEmbedUrl}
+          title="Reel Video"
+          className="w-full h-full border-0 object-cover"
+          allow="autoplay; encrypted-media; picture-in-picture;"
+          allowFullScreen
+        ></iframe>
+      ) : (
+        <video
+          ref={videoRef}
+          src={rawSrc.toLowerCase().includes(".m3u8") && Hls.isSupported() ? undefined : (rawSrc || undefined)}
+          className="w-full h-full object-cover cursor-pointer"
+          loop
+          playsInline
+          onClick={togglePlay}
+        />
+      )}
 
       {/* Play Icon Overlay (Visible when paused manually) */}
       {!isPlaying && (

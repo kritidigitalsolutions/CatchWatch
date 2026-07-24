@@ -88,6 +88,11 @@ const movieSchema = new mongoose.Schema(
       default: false
     },
 
+    isNewContent: {
+      type: Boolean,
+      default: false
+    },
+
     releaseDate: {
       type: Date
     },
@@ -155,15 +160,10 @@ const movieSchema = new mongoose.Schema(
     },
 
     cast: [castSchema],
-
     category: [
       {
         type: String,
-        enum: [
-          "trending",
-          "top10",
-          "recommended"
-        ]
+        trim: true
       }
     ],
 

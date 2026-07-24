@@ -20,7 +20,7 @@ const TVShowsPage = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
 
-  const FALLBACK_POSTER = "https://images.unsplash.com/photo-1536440136628-849c177e76a1?q=80&w=500&auto=format&fit=crop";
+  const FALLBACK_POSTER = "https://img.magnific.com/premium-vector/abstract-orange-blur-gradient-background-design_624457-4943.jpg";
 
   useEffect(() => {
     const fetchShows = async () => {
@@ -133,7 +133,7 @@ const TVShowsPage = () => {
               {/* Aspect Display Container Thumbnail */}
               <div className="w-20 h-28 bg-neutral-900 rounded-xl flex-shrink-0 flex items-center justify-center text-gray-400 font-black text-[10px] shadow-inner group-hover:scale-105 transform transition overflow-hidden relative">
                 <img 
-                  src={show.poster && show.poster.trim() !== "" ? show.poster : FALLBACK_POSTER} 
+                  src={show.poster || show.banner || show.thumbnailUrl || show.thumbnail || FALLBACK_POSTER} 
                   alt={show.title} 
                   className="w-full h-full object-cover opacity-90 group-hover:opacity-100"
                 />

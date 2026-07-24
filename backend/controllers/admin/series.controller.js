@@ -94,6 +94,10 @@ const addSeries = async (req, res) => {
       priority = maxSeries && maxSeries.priority ? maxSeries.priority + 1 : 1;
     }
 
+    const uploadedPoster = getMediaUrl(poster, req.body.poster || req.body.posterUrl);
+    const uploadedBanner = getMediaUrl(banner, req.body.banner || req.body.bannerUrl);
+    const fallbackThumb = req.body.thumbnailUrl || req.body.thumbnail || "";
+
     const series = await Series.create({
       title: req.body.title,
       description: req.body.description || "",
@@ -101,12 +105,13 @@ const addSeries = async (req, res) => {
       releaseYear: req.body.releaseYear || null,
       duration: req.body.duration || "",
       language: req.body.language || "",
-      poster: getMediaUrl(poster, req.body.poster),
-      banner: getMediaUrl(banner, req.body.banner),
+      poster: uploadedPoster || uploadedBanner || fallbackThumb,
+      banner: uploadedBanner || uploadedPoster || fallbackThumb,
       trailerUrl: getMediaUrl(trailer, req.body.trailerUrl),
-      isComingSoon: req.body.isComingSoon === "true",
+      isComingSoon: req.body.isComingSoon === "true" || req.body.isComingSoon === true,
+      isNewContent: req.body.isNewContent === "true" || req.body.isNewContent === true,
       releaseDate: normalizeDateInput(req.body.releaseDate),
-      isPremium: req.body.isPremium === "true",
+      isPremium: req.body.isPremium === "true" || req.body.isPremium === true,
       rating: req.body.rating || 0,
       cast: sanitizeCast(cast),
       category,
@@ -225,11 +230,14 @@ const updateSeries = async (req, res) => {
       series.releaseDate = normalizeDateInput(req.body.releaseDate);
     }
     if (req.body.rating) series.rating = req.body.rating;
-    series.isComingSoon = req.body.isComingSoon === "true";
+    series.isComingSoon = req.body.isComingSoon === "true" || req.body.isComingSoon === true;
     if (!series.isComingSoon && req.body.releaseDate === undefined) {
       series.releaseDate = null;
     }
-    series.isPremium = req.body.isPremium === "true";
+    series.isPremium = req.body.isPremium === "true" || req.body.isPremium === true;
+    if (req.body.isNewContent !== undefined) {
+      series.isNewContent = req.body.isNewContent === "true" || req.body.isNewContent === true;
+    }
     series.category = category;
 
     if (req.files?.poster?.[0]) {

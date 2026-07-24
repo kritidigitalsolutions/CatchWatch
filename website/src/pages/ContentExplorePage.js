@@ -26,7 +26,7 @@ const ContentExplorerPage = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
 
-  const FALLBACK_POSTER = "https://images.unsplash.com/photo-1509281373149-e957c6296406?q=80&w=500&auto=format&fit=crop";
+  const FALLBACK_POSTER = "https://img.magnific.com/premium-vector/abstract-orange-blur-gradient-background-design_624457-4943.jpg";
 
   // Hook to fetch backend data
   useEffect(() => {
@@ -192,7 +192,7 @@ const ContentExplorerPage = () => {
               {/* Immersive Poster Image Box */}
               <div className="w-full aspect-[2/3] bg-neutral-900 rounded-xl overflow-hidden relative shadow-inner">
                 <img
-                  src={movie.poster && movie.poster.trim() !== "" ? movie.poster : FALLBACK_POSTER}
+                  src={movie.poster || movie.banner || movie.thumbnailUrl || movie.thumbnail || FALLBACK_POSTER}
                   alt={movie.title}
                   className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500 opacity-90"
                   loading="lazy"

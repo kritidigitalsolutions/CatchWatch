@@ -71,11 +71,16 @@ const storage = {
       let result;
 
       if (isVideo) {
-        console.log("TARGET: Bunny Stream");
-        const videoTitle = `${req.body.title || 'Video'}-${uniqueName}`;
-        result = await uploadWithRetry(file.stream, videoTitle);
+        console.log("TARGET: Bunny Storage CDN (Video)");
+        console.log("REMOTE PATH:", `${uploadInfo.remoteFolder}/${filename}`);
+        const { uploadStreamToBunny } = require("../cdn/bunnyCDN");
+        result = await uploadStreamToBunny({
+          stream: file.stream,
+          remotePath: `${uploadInfo.remoteFolder}/${filename}`,
+          contentType: file.mimetype || "video/mp4",
+        });
       } else {
-        console.log("TARGET: Bunny Storage");
+        console.log("TARGET: Bunny Storage CDN (Asset)");
         console.log("REMOTE PATH:", `${uploadInfo.remoteFolder}/${filename}`);
         const { uploadImage } = require("../cdn/bunnyCDN");
         result = await uploadImage({
@@ -91,9 +96,9 @@ const storage = {
       cb(null, {
         filename,
         destination: uploadInfo.remoteFolder,
-        path: result.playlistUrl || result.url,
-        cdnUrl: result.playlistUrl || result.url,
-        remotePath: result.videoId || result.path,
+        path: result.url || result.playlistUrl,
+        cdnUrl: result.url || result.playlistUrl,
+        remotePath: result.path || result.videoId,
       });
     } catch (error) {
       console.error("BUNNY UPLOAD ERROR");

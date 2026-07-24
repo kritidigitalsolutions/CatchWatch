@@ -1,3 +1,5 @@
+import { useState, useEffect } from "react";
+import API from "../../../api/axios";
 import {
   Star,
   Globe,
@@ -8,12 +10,28 @@ import {
   Rocket,
   Lock,
   ArrowUpCircle,
+  Sparkles,
 } from "lucide-react";
 
 export default function BasicInfoSection({
   form,
   ch,
 }) {
+  const [categoriesList, setCategoriesList] = useState([]);
+
+  useEffect(() => {
+    const fetchCats = async () => {
+      try {
+        const res = await API.get("/admin/categories");
+        if (res.data?.categories) {
+          setCategoriesList(res.data.categories.filter((c) => c.status === "Active"));
+        }
+      } catch (err) {
+        console.error("Failed to fetch categories in BasicInfoSection:", err);
+      }
+    };
+    fetchCats();
+  }, []);
   return (
     <div className="premium-card">
       <h3 className="section-title">
@@ -159,18 +177,11 @@ export default function BasicInfoSection({
             <option value="">
               Select Category
             </option>
-
-            <option value="trending">
-              Trending
-            </option>
-
-            <option value="top10">
-              Top 10
-            </option>
-
-            <option value="recommended">
-              Recommended
-            </option>
+            {categoriesList.map((cat) => (
+              <option key={cat._id} value={cat.slug}>
+                {cat.name}
+              </option>
+            ))}
           </select>
         </div>
 
@@ -282,6 +293,38 @@ export default function BasicInfoSection({
             Premium Content
           </span>
         </label>
+
+        <label
+          className="checkbox-row"
+          style={{
+            flex: 1,
+            minWidth: "200px",
+            background:
+              "rgba(255, 122, 26, 0.1)",
+            borderColor:
+              "rgba(255, 122, 26, 0.2)",
+          }}
+        >
+            <input
+              type="checkbox"
+              name="isNewContent"
+              onChange={ch}
+              checked={form.isNewContent}
+            />
+
+            <span
+              style={{
+                color: "#FF7A1A",
+              }}
+            >
+              <Sparkles
+                size={16}
+                style={{ marginRight: 8 }}
+              />
+
+              New Content (Show in Carousel)
+            </span>
+          </label>
       </div>
 
       {form.isComingSoon && (

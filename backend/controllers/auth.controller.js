@@ -89,6 +89,11 @@ const sendSMS = async (phone, otp) => {
       response.data
     );
 
+    if (response.data && response.data.ErrorCode !== "000") {
+      console.error("SMS Gateway Hub Error Code:", response.data);
+      return false;
+    }
+
     return true;
   } catch (error) {
     console.error(
@@ -234,7 +239,7 @@ exports.sendOTP = async (req, res) => {
     }
 
     console.log(
-      `📱 OTP sent to ${normalizedPhone}`
+      `📱 OTP sent to ${normalizedPhone} (Code: ${otp})`
     );
 
     return res.status(200).json({

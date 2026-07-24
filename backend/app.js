@@ -129,6 +129,9 @@ const tvShowsEpisodeAdminRoutes = require("./routes/admin/tvShowsEpisode.routes"
 const tvShowUserRoutes = require("./routes/user/tvShow.routes");
 const tvShowsEpisodeUserRoutes = require("./routes/user/tvShowsEpisode.routes");
 
+const categoryAdminRoutes = require("./routes/admin/category.routes");
+const categoryUserRoutes = require("./routes/user/category.routes");
+
 const updateUpcomingStatus = require("./middlewares/updateUpcomingStatus.middleware");
 
 app.use("/api/admin/auth", adminAuthRoutes);
@@ -136,6 +139,9 @@ app.use("/api/admin/auth", adminAuthRoutes);
 app.use("/api/admin/users", adminUserRoutes);
 
 app.use("/api/admin/user", adminUserRoutes);
+
+app.use("/api/admin/categories", categoryAdminRoutes);
+app.use("/api/categories", categoryUserRoutes);
 
 app.use("/api/admin/movies", updateUpcomingStatus, movieRoutes);
 

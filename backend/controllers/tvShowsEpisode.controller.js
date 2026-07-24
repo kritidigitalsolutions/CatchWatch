@@ -25,7 +25,13 @@ const getTvShowsEpisodes =
           tvShowId,
         }).sort({
           episodeNumber: 1,
-        });
+        }).lean();
+
+      episodes.forEach(ep => {
+        const thumb = ep.thumbnailUrl || ep.thumbnail || "";
+        ep.thumbnailUrl = thumb;
+        ep.thumbnail = thumb;
+      });
 
       return res.json({
         success: true,
@@ -96,7 +102,7 @@ const getEpisodeById = async (req, res) => {
     const { id } = req.params;
 
     // ID se database me episode find karein
-    const episode = await TvShowsEpisode.findById(id);
+    const episode = await TvShowsEpisode.findById(id).lean();
 
     if (!episode) {
       return res.status(404).json({
@@ -104,6 +110,10 @@ const getEpisodeById = async (req, res) => {
         message: "Episode not found",
       });
     }
+
+    const thumb = episode.thumbnailUrl || episode.thumbnail || "";
+    episode.thumbnailUrl = thumb;
+    episode.thumbnail = thumb;
 
     return res.json({
       success: true,
