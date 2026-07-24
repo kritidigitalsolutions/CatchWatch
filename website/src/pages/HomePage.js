@@ -136,9 +136,9 @@ const HomePage = () => {
 
       {/* Dynamic Carousel Banner Frame */}
       {carouselSlides.length > 0 && (
-        <div className="relative w-full rounded-2xl bg-neutral-900 aspect-[16/9] md:aspect-[21/9] overflow-hidden shadow-lg group">
+        <div className="relative w-full rounded-2xl bg-neutral-900 aspect-[16/9] md:aspect-[25/10] overflow-hidden shadow-lg group">
           <div
-            className="h-full w-full flex transition-transform duration-1000 ease-in-out"
+            className="h-full w-full flex transition-transform duration-1000 ease-out"
             style={{ transform: `translateX(-${currentSlide * 100}%)` }}
           >
             {carouselSlides.map((slide) => (

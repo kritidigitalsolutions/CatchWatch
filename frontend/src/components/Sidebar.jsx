@@ -19,7 +19,6 @@ const NAV = [
   { id: "support", label: "Support", icon: MessageSquare, color: "#06b6d4" },
   { id: "legal", label: "Legal", icon: FileText, color: "#8b5cf6" },
   { id: "help", label: "Help Center", icon: HelpCircle, color: "#06b6d4" },
-  { id: "test-content", label: "Sandbox Test", icon: Play, color: "#FF7A1A" },
   { id: "settings", label: "Settings", icon: Settings, color: "#64748b" },
 ];
 export default function Sidebar({ theme, showSidebar, toggleSidebar, closeSidebar }) {
