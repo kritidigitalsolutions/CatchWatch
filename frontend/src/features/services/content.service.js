@@ -120,12 +120,20 @@ export const createContent = async ({
     const audioMetadata = [];
     if (audioTracks && audioTracks.length > 0) {
       audioTracks.forEach((track) => {
-        audioMetadata.push({
-          language: track.language,
-          isDefault: track.isDefault,
-          originalname: track.file.name
-        });
-        formData.append("audioTracks", track.file);
+        if (track.file) {
+          audioMetadata.push({
+            language: track.language,
+            isDefault: track.isDefault,
+            originalname: track.file.name
+          });
+          formData.append("audioTracks", track.file);
+        } else if (track.fileUrl) {
+          audioMetadata.push({
+            language: track.language,
+            isDefault: track.isDefault,
+            fileUrl: track.fileUrl
+          });
+        }
       });
     }
     formData.append("audioMetadata", JSON.stringify(audioMetadata));
@@ -133,13 +141,22 @@ export const createContent = async ({
     const subtitleMetadata = [];
     if (subtitles && subtitles.length > 0) {
       subtitles.forEach((track) => {
-        subtitleMetadata.push({
-          language: track.language,
-          label: track.label,
-          isDefault: track.isDefault,
-          originalname: track.file.name
-        });
-        formData.append("subtitles", track.file);
+        if (track.file) {
+          subtitleMetadata.push({
+            language: track.language,
+            label: track.label || track.language,
+            isDefault: track.isDefault,
+            originalname: track.file.name
+          });
+          formData.append("subtitles", track.file);
+        } else if (track.fileUrl) {
+          subtitleMetadata.push({
+            language: track.language,
+            label: track.label || track.language,
+            isDefault: track.isDefault,
+            fileUrl: track.fileUrl
+          });
+        }
       });
     }
     formData.append("subtitleMetadata", JSON.stringify(subtitleMetadata));

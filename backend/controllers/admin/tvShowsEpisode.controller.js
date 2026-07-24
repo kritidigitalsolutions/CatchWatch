@@ -80,38 +80,73 @@ const addTvShowsEpisode =
       );
       const finalThumb = streamInfo.thumbnailUrl || uploadedThumbnail || "";
 
+      // Multilingual Tracks Support
+      const audioMetadata = parseJSON(req.body.audioMetadata, []);
+      const uploadedAudioFiles = req.files?.audioTracks || [];
+      const audioTracks = [];
+      if (req.body.audioMetadata !== undefined) {
+        for (const meta of audioMetadata) {
+          if (meta.fileUrl) {
+            audioTracks.push({
+              language: meta.language,
+              fileUrl: meta.fileUrl,
+              isDefault: meta.isDefault === true || meta.isDefault === "true"
+            });
+          } else {
+            const matchingFile = uploadedAudioFiles.find(f => f.originalname === meta.originalname);
+            if (matchingFile) {
+              const fileUrl = getMediaUrl(matchingFile);
+              audioTracks.push({
+                language: meta.language,
+                fileUrl,
+                isDefault: meta.isDefault === true || meta.isDefault === "true"
+              });
+            }
+          }
+        }
+      }
+
+      const subtitleMetadata = parseJSON(req.body.subtitleMetadata, []);
+      const uploadedSubtitleFiles = req.files?.subtitles || [];
+      const subtitles = [];
+      if (req.body.subtitleMetadata !== undefined) {
+        for (const meta of subtitleMetadata) {
+          if (meta.fileUrl) {
+            subtitles.push({
+              language: meta.language,
+              label: meta.label || meta.language || "Subtitle",
+              fileUrl: meta.fileUrl,
+              isDefault: meta.isDefault === true || meta.isDefault === "true"
+            });
+          } else {
+            const matchingFile = uploadedSubtitleFiles.find(f => f.originalname === meta.originalname);
+            if (matchingFile) {
+              const fileUrl = getMediaUrl(matchingFile);
+              subtitles.push({
+                language: meta.language,
+                label: meta.label || meta.language || "Subtitle",
+                fileUrl,
+                isDefault: meta.isDefault === true || meta.isDefault === "true"
+              });
+            }
+          }
+        }
+      }
+
       const episode =
         await TvShowsEpisode.create({
-
           tvShowId,
-
-          episodeNumber:
-            Number(
-              req.body.episodeNumber
-            ),
-
-          title:
-            req.body.title || "",
-
-          description:
-            req.body.description || "",
-
-          duration:
-            req.body.duration || "",
-
-          isLocked:
-            req.body.isLocked ===
-            "true" || req.body.isLocked === true,
-
-          isVertical:
-            req.body.isVertical !==
-            "false" && req.body.isVertical !== false,
-
+          episodeNumber: Number(req.body.episodeNumber),
+          title: req.body.title || "",
+          description: req.body.description || "",
+          duration: req.body.duration || "",
+          isLocked: req.body.isLocked === "true" || req.body.isLocked === true,
+          isVertical: req.body.isVertical !== "false" && req.body.isVertical !== false,
           videoUrl: resolvedVideoUrl,
-
           thumbnail: finalThumb,
           thumbnailUrl: finalThumb,
-
+          audioTracks,
+          subtitles,
           videoSource: streamInfo.videoSource || "bunny_storage",
           storageType: streamInfo.storageType || "bunny_storage",
           videoId: streamInfo.videoId || "",

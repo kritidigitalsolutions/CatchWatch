@@ -43,16 +43,16 @@ const HomePage = () => {
 
         if (catRes && catRes.categories && catRes.categories.length > 0) {
           const activeCats = catRes.categories.filter((c) => c.status === "Active");
-          
+
           // Ensure Trending and Top 10 stay at top, new categories start below Top 10
           const trendingCat = activeCats.find(c => c.slug === "trending" || c.name.toLowerCase().includes("trending"));
           const top10Cat = activeCats.find(c => c.slug === "top10" || c.name.toLowerCase().includes("top 10"));
           const recommendedCat = activeCats.find(c => c.slug === "recommended" || c.name.toLowerCase().includes("recommended"));
-          const otherCats = activeCats.filter(c =>  
-            c.slug !== "trending" && 
-            c.slug !== "top10" && 
-            c.slug !== "recommended" && 
-            !c.name.toLowerCase().includes("trending") && 
+          const otherCats = activeCats.filter(c =>
+            c.slug !== "trending" &&
+            c.slug !== "top10" &&
+            c.slug !== "recommended" &&
+            !c.name.toLowerCase().includes("trending") &&
             !c.name.toLowerCase().includes("top 10") &&
             !c.name.toLowerCase().includes("recommended")
           );

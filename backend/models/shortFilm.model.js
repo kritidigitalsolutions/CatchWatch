@@ -169,6 +169,10 @@ const shortFilmSchema = new mongoose.Schema(
     },
 
     cast: [castSchema],
+
+    audioTracks: [audioTrackSchema],
+
+    subtitles: [subtitleSchema],
   },
   {
     timestamps: true,
