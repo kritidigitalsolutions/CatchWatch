@@ -206,9 +206,10 @@ const getHomeContent = async (req, res) => {
 
     const content = [...formattedMovies, ...formattedSeries, ...formattedShortFilms, ...formattedTvShows].sort(
       (a, b) => {
-        const priorityDiff = (b.priority || 0) - (a.priority || 0);
-        if (priorityDiff !== 0) return priorityDiff;
-        return new Date(b.createdAt) - new Date(a.createdAt);
+        const pA = a.priority && Number(a.priority) > 0 ? Number(a.priority) : Infinity;
+        const pB = b.priority && Number(b.priority) > 0 ? Number(b.priority) : Infinity;
+        if (pA !== pB) return pA - pB;
+        return new Date(b.createdAt || 0) - new Date(a.createdAt || 0);
       }
     );
 

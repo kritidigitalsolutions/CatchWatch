@@ -88,9 +88,19 @@ const HomePage = () => {
     fetchHomeData();
   }, []);
 
+  const [isTransitionEnabled, setIsTransitionEnabled] = useState(true);
+
+  // Sort content by Priority ascending (Priority 1 first, Priority 2 second...)
+  const sortedMovies = [...moviesList].sort((a, b) => {
+    const pA = a.priority && Number(a.priority) > 0 ? Number(a.priority) : Infinity;
+    const pB = b.priority && Number(b.priority) > 0 ? Number(b.priority) : Infinity;
+    if (pA !== pB) return pA - pB;
+    return new Date(b.createdAt || 0) - new Date(a.createdAt || 0);
+  });
+
   // Carousel Slides (Show only content where isNewContent is true)
-  const newContentItems = moviesList.filter(item => item?.isNewContent === true || item?.isNewContent === "true");
-  const itemsForCarousel = newContentItems.length > 0 ? newContentItems : moviesList;
+  const newContentItems = sortedMovies.filter(item => item?.isNewContent === true || item?.isNewContent === "true");
+  const itemsForCarousel = newContentItems.length > 0 ? newContentItems : sortedMovies;
 
   const carouselSlides = itemsForCarousel.map((movie) => ({
     id: movie._id,
@@ -104,14 +114,29 @@ const HomePage = () => {
     encodingStatus: movie.encodingStatus
   }));
 
+  // Extended slides array: append clone of first slide at the end for continuous left-to-right wrap
+  const extendedSlides = carouselSlides.length > 1
+    ? [...carouselSlides, { ...carouselSlides[0], id: `${carouselSlides[0].id}-clone` }]
+    : carouselSlides;
+
   // Automatic slide transition
   useEffect(() => {
-    if (carouselSlides.length === 0) return;
+    if (carouselSlides.length <= 1) return;
     const slideTimer = setInterval(() => {
-      setCurrentSlide((prev) => (prev === carouselSlides.length - 1 ? 0 : prev + 1));
+      setIsTransitionEnabled(true);
+      setCurrentSlide((prev) => prev + 1);
     }, 5000);
     return () => clearInterval(slideTimer);
   }, [carouselSlides.length]);
+
+  const handleTransitionEnd = () => {
+    if (currentSlide === carouselSlides.length) {
+      setIsTransitionEnabled(false);
+      setCurrentSlide(0);
+    }
+  };
+
+  const activeDotIndex = currentSlide >= carouselSlides.length ? 0 : currentSlide;
 
   if (isLoading) return <Loader />;
 
@@ -138,12 +163,13 @@ const HomePage = () => {
       {carouselSlides.length > 0 && (
         <div className="relative w-full rounded-2xl bg-neutral-900 aspect-[16/9] md:aspect-[25/10] overflow-hidden shadow-lg group">
           <div
-            className="h-full w-full flex transition-transform duration-1000 ease-out"
+            onTransitionEnd={handleTransitionEnd}
+            className={`h-full w-full flex ${isTransitionEnabled ? "transition-transform duration-1000 ease-in-out" : ""}`}
             style={{ transform: `translateX(-${currentSlide * 100}%)` }}
           >
-            {carouselSlides.map((slide) => (
+            {extendedSlides.map((slide, index) => (
               <div
-                key={slide.id}
+                key={`${slide.id}-${index}`}
                 onClick={() => {
                   if (isComingSoon(slide)) {
                     alert("This content is coming soon! 🎬 Please check back shortly.");
@@ -177,8 +203,11 @@ const HomePage = () => {
             {carouselSlides.map((_, index) => (
               <button
                 key={index}
-                onClick={() => setCurrentSlide(index)}
-                className={`h-2.5 rounded-full transition-all duration-300 ${currentSlide === index ? "w-7 bg-brand-orange" : "w-2.5 bg-white/40 hover:bg-white/70"
+                onClick={() => {
+                  setIsTransitionEnabled(true);
+                  setCurrentSlide(index);
+                }}
+                className={`h-2.5 rounded-full transition-all duration-300 ${activeDotIndex === index ? "w-7 bg-brand-orange" : "w-2.5 bg-white/40 hover:bg-white/70"
                   }`}
               />
             ))}
