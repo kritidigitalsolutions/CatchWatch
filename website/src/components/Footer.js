@@ -136,6 +136,14 @@ const Footer = () => {
                 Help & Support Desk
               </button>
             </li>
+            <li>
+              <button
+                onClick={() => navigate("/delete-account")}
+                className="hover:text-white transition"
+              >
+                Delete Account
+              </button>
+            </li>
           </ul>
         </div>
       </div>

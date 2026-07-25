@@ -242,7 +242,9 @@ export default function Drama() {
 
       formData.append("cast", JSON.stringify(castPayload));
       formData.append("poster", posterUrl);
+      formData.append("posterUrl", posterUrl);
       formData.append("banner", bannerUrl);
+      formData.append("bannerUrl", bannerUrl);
       formData.append("trailerUrl", trailerUrl);
 
       await API.patch(`/admin/shortdramas/${selectedItem._id}`, formData, { headers: { "Content-Type": "multipart/form-data" } });

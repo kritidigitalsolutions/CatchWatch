@@ -441,12 +441,10 @@ const updateShortFilm = async (
         getMediaUrl(
           req.files.poster[0]
         );
-    } else if (
-      req.body.poster !==
-      undefined
-    ) {
-      shortFilm.poster =
-        req.body.poster;
+    } else if (req.body.posterUrl && String(req.body.posterUrl).trim()) {
+      shortFilm.poster = String(req.body.posterUrl).trim();
+    } else if (req.body.poster && String(req.body.poster).trim()) {
+      shortFilm.poster = String(req.body.poster).trim();
     }
 
     // BANNER
@@ -460,12 +458,10 @@ const updateShortFilm = async (
         getMediaUrl(
           req.files.banner[0]
         );
-    } else if (
-      req.body.banner !==
-      undefined
-    ) {
-      shortFilm.banner =
-        req.body.banner;
+    } else if (req.body.bannerUrl && String(req.body.bannerUrl).trim()) {
+      shortFilm.banner = String(req.body.bannerUrl).trim();
+    } else if (req.body.banner && String(req.body.banner).trim()) {
+      shortFilm.banner = String(req.body.banner).trim();
     }
 
     // TRAILER
@@ -479,12 +475,8 @@ const updateShortFilm = async (
         getMediaUrl(
           req.files.trailer[0]
         );
-    } else if (
-      req.body.trailerUrl !==
-      undefined
-    ) {
-      shortFilm.trailerUrl =
-        req.body.trailerUrl;
+    } else if (req.body.trailerUrl && String(req.body.trailerUrl).trim()) {
+      shortFilm.trailerUrl = String(req.body.trailerUrl).trim();
     }
 
     // VIDEO
@@ -492,8 +484,8 @@ const updateShortFilm = async (
     if (req.files?.video?.[0]) {
       await deleteMedia(shortFilm.videoUrl);
       shortFilm.videoUrl = getMediaUrl(req.files.video[0]);
-    } else if (req.body.videoUrl !== undefined) {
-      shortFilm.videoUrl = req.body.videoUrl;
+    } else if (req.body.videoUrl && String(req.body.videoUrl).trim()) {
+      shortFilm.videoUrl = String(req.body.videoUrl).trim();
     }
 
     const { parseBunnyStreamUrl } = require("../../utils/mediaUrl");

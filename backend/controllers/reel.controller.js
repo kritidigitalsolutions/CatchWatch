@@ -58,6 +58,19 @@ exports.uploadReel = async (req, res) => {
       thumbnail: finalThumbnail
     });
 
+    try {
+      const { notifyNewContent } = require("../utils/contentNotification");
+      await notifyNewContent({
+        title: "🔥 New Reel Uploaded",
+        message: caption ? `${caption.slice(0, 50)}...` : "A new short reel has been uploaded.",
+        type: "NEW_REEL",
+        actionUrl: `/reels-feed`,
+        createdBy: req.user?.id || req.user?._id,
+      });
+    } catch (err) {
+      console.error("Reel notification failed:", err.message);
+    }
+
     return res.status(201).json({
       success: true,
       message: "Reel uploaded successfully",

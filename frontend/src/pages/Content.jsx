@@ -768,30 +768,30 @@ export default function Content() {
       }
 
       // 2. Direct upload poster
-      let posterUrl = uploadData.posterUrl || "";
+      let posterUrl = uploadData.posterUrl || editData?.poster || selectedItem?.poster || "";
       if (uploadData.poster) {
         posterUrl = await uploadToBunny(uploadData.poster, typeFolder, "posters");
       }
 
       // 3. Direct upload banner
-      let bannerUrl = uploadData.bannerUrl || "";
+      let bannerUrl = uploadData.bannerUrl || editData?.banner || selectedItem?.banner || "";
       if (uploadData.banner) {
         bannerUrl = await uploadToBunny(uploadData.banner, typeFolder, "banners");
       }
 
       // 4. Direct upload trailer
-      let trailerUrl = uploadData.trailerUrl || "";
+      let trailerUrl = uploadData.trailerUrl || editData?.trailerUrl || selectedItem?.trailerUrl || "";
       if (uploadData.trailer) {
         trailerUrl = await uploadToBunny(
           uploadData.trailer,
           typeFolder,
           "trailers",
-          (percent) => setUploadProgress(percent)   // ✅ add this
+          (percent) => setUploadProgress(percent)
         );
       }
 
       // 5. Direct upload video (movies and short films only)
-      let videoUrl = uploadData.videoUrl || "";
+      let videoUrl = uploadData.videoUrl || editData?.videoUrl || selectedItem?.videoUrl || "";
       if ((contentType === "movies" || contentType === "shortFilms") && uploadData.video) {
         videoUrl = await uploadToBunny(uploadData.video, contentType === "movies" ? "movies" : "shortFilms", "videos", (percent) => {
           setUploadProgress(percent);
@@ -823,8 +823,13 @@ export default function Content() {
 
       formData.append("cast", JSON.stringify(castPayload));
       formData.append("poster", posterUrl);
+      formData.append("posterUrl", posterUrl);
       formData.append("banner", bannerUrl);
+      formData.append("bannerUrl", bannerUrl);
       formData.append("trailerUrl", trailerUrl);
+      if (contentType === "movies" || contentType === "shortFilms") {
+        formData.append("videoUrl", videoUrl);
+      }
       if (contentType === "movies" || contentType === "shortFilms") {
         const audioMetadata = [];
         (editData.audioTracks || []).forEach((track) => {

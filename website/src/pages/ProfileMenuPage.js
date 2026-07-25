@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { FaUserAlt, FaBell, FaFileAlt } from "react-icons/fa";
+import { FaUserAlt, FaBell, FaFileAlt, FaTrashAlt } from "react-icons/fa";
 import { MdWorkspacePremium, MdDownload, MdPrivacyTip, MdHelpCenter } from "react-icons/md";
 import { FaHeart } from "react-icons/fa6";
 import { HiReceiptRefund } from "react-icons/hi";
@@ -71,6 +71,7 @@ const ProfileMenuPage = () => {
     { label: 'Terms & Conditions', route: '/legal/terms-conditions', icon: <FaFileAlt /> },
     { label: 'Refund Policy guidelines', route: '/legal/refund-policy', icon: <HiReceiptRefund /> },
     { label: 'Help & Support Desk', route: '/support', icon: <MdHelpCenter /> },
+    { label: 'Delete Account', route: '/delete-account', icon: <FaTrashAlt />, isDanger: true },
     { label: 'Log Out Session', route: '/login', icon: <IoLogOut />, isLogout: true }
   ];
 
@@ -131,14 +132,14 @@ const ProfileMenuPage = () => {
               className={`flex items-center justify-between py-4 px-3 hover:bg-gray-50 rounded-xl cursor-pointer transition group ${item.isLogout ? 'mt-4 border-t border-gray-100' : ''}`}
             >
               <div className="flex items-center gap-4">
-                <span className={`text-xl w-6 flex items-center justify-center ${item.isLogout ? 'text-red-500' : 'text-gray-400 group-hover:text-brand-orange transition'}`}>
+                <span className={`text-xl w-6 flex items-center justify-center ${item.isLogout || item.isDanger ? 'text-red-500' : 'text-gray-400 group-hover:text-brand-orange transition'}`}>
                   {item.icon}
                 </span>
-                <span className={`text-sm font-bold ${item.isLogout ? 'text-red-500' : 'text-gray-700'}`}>
+                <span className={`text-sm font-bold ${item.isLogout || item.isDanger ? 'text-red-500' : 'text-gray-700'}`}>
                   {item.label}
                 </span>
               </div>
-              <span className={`font-bold text-xs transform transition group-hover:translate-x-1 ${item.isLogout ? 'text-red-300' : 'text-gray-300 group-hover:text-brand-orange'}`}>
+              <span className={`font-bold text-xs transform transition group-hover:translate-x-1 ${item.isLogout || item.isDanger ? 'text-red-400' : 'text-gray-300 group-hover:text-brand-orange'}`}>
                 ➔
               </span>
             </div>

@@ -1,5 +1,6 @@
 const Movie = require("../../models/movie.model");
 const { getMediaUrl, deleteMedia, deleteMediaFiles } = require("../../utils/mediaUrl");
+const { notifyNewContent } = require("../../utils/contentNotification");
 
 // ========================================
 // HELPERS
@@ -207,6 +208,18 @@ console.log({
       thumbnailUrl: streamInfo.thumbnailUrl || "",
       encodingStatus: streamInfo.encodingStatus || ""
     });
+
+    try {
+      await notifyNewContent({
+        title: "🎬 New Movie Added",
+        message: `${movie.title} is now available to watch.`,
+        type: "NEW_MOVIE",
+        actionUrl: `/watch/${movie._id}`,
+        createdBy: req.user?.id || req.user?._id,
+      });
+    } catch (err) {
+      console.error("Movie notification failed:", err.message);
+    }
 
     return res.status(201).json({
       success: true,
@@ -444,33 +457,33 @@ const updateMovie = async (req, res) => {
     if (req.files?.poster?.[0]) {
       await deleteMedia(movie.poster);
       movie.poster = getMediaUrl(req.files.poster[0]);
-    } else if (req.body.posterUrl !== undefined) {
-      movie.poster = req.body.posterUrl;
-    } else if (req.body.poster !== undefined) {
-      movie.poster = req.body.poster;
+    } else if (req.body.posterUrl && String(req.body.posterUrl).trim()) {
+      movie.poster = String(req.body.posterUrl).trim();
+    } else if (req.body.poster && String(req.body.poster).trim()) {
+      movie.poster = String(req.body.poster).trim();
     }
 
     if (req.files?.banner?.[0]) {
       await deleteMedia(movie.banner);
       movie.banner = getMediaUrl(req.files.banner[0]);
-    } else if (req.body.bannerUrl !== undefined) {
-      movie.banner = req.body.bannerUrl;
-    } else if (req.body.banner !== undefined) {
-      movie.banner = req.body.banner;
+    } else if (req.body.bannerUrl && String(req.body.bannerUrl).trim()) {
+      movie.banner = String(req.body.bannerUrl).trim();
+    } else if (req.body.banner && String(req.body.banner).trim()) {
+      movie.banner = String(req.body.banner).trim();
     }
 
     if (req.files?.trailer?.[0]) {
       await deleteMedia(movie.trailerUrl);
       movie.trailerUrl = getMediaUrl(req.files.trailer[0]);
-    } else if (req.body.trailerUrl !== undefined) {
-      movie.trailerUrl = req.body.trailerUrl;
+    } else if (req.body.trailerUrl && String(req.body.trailerUrl).trim()) {
+      movie.trailerUrl = String(req.body.trailerUrl).trim();
     }
 
     if (req.files?.video?.[0]) {
       await deleteMedia(movie.videoUrl);
       movie.videoUrl = getMediaUrl(req.files.video[0]);
-    } else if (req.body.videoUrl !== undefined) {
-      movie.videoUrl = req.body.videoUrl;
+    } else if (req.body.videoUrl && String(req.body.videoUrl).trim()) {
+      movie.videoUrl = String(req.body.videoUrl).trim();
     }
 
     const { parseBunnyStreamUrl } = require("../../utils/mediaUrl");

@@ -117,13 +117,17 @@ const addSeries = async (req, res) => {
       category,
       priority,
     });
-    await notifyNewContent({
-    title: "📺 New Series Added",
-    message: `${series.title} is now available to watch.`,
-    type: "NEW_SERIES",
-    actionUrl: `/series/${series._id}`,
-    createdBy: req.user.id
-});
+    try {
+      await notifyNewContent({
+        title: "📺 New Series Added",
+        message: `${series.title} is now available to watch.`,
+        type: "NEW_SERIES",
+        actionUrl: `/series/${series._id}`,
+        createdBy: req.user?.id || req.user?._id,
+      });
+    } catch (err) {
+      console.error("Series notification failed:", err.message);
+    }
 
     return res.status(201).json({
       success: true,

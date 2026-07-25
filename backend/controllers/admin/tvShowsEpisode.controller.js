@@ -160,6 +160,20 @@ const addTvShowsEpisode =
         tvShowId
       );
 
+      try {
+        const tvShow = await TvShow.findById(tvShowId);
+        const tvShowTitle = tvShow ? tvShow.title : "TV Show";
+        await notifyNewContent({
+          title: "📺 New Episode Added",
+          message: `${tvShowTitle} - Episode ${episode.episodeNumber} is now available.`,
+          type: "NEW_TV_EPISODE",
+          actionUrl: `/watch-episode/${episode._id}`,
+          createdBy: req.user?.id || req.user?._id,
+        });
+      } catch (err) {
+        console.error("TV Show Episode notification failed:", err.message);
+      }
+
       return res.status(201).json({
         success: true,
         message:
