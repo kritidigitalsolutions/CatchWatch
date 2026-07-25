@@ -412,20 +412,29 @@ export default function Content() {
                 setSelectedEpisode(prev => ({ 
                   ...prev, 
                   encodingStatus: res.data.status, 
-                  duration: res.data.duration ? String(Math.round(res.data.duration / 60)) : prev.duration,
-                  thumbnail: res.data.thumbnailUrl || prev.thumbnail,
-                  thumbnailUrl: res.data.thumbnailUrl || prev.thumbnailUrl
+                  duration: prev?.duration ? prev.duration : (res.data.duration ? String(Math.round(res.data.duration / 60)) : prev?.duration),
+                  thumbnail: res.data.thumbnailUrl || prev?.thumbnail,
+                  thumbnailUrl: res.data.thumbnailUrl || prev?.thumbnailUrl
                 }));
                 // Also update the episode in episodes list
-                setEpisodes(prev => prev.map(ep => ep.videoId === item.videoId ? { ...ep, encodingStatus: res.data.status, duration: res.data.duration ? String(Math.round(res.data.duration / 60)) : ep.duration, thumbnail: res.data.thumbnailUrl } : ep));
+                setEpisodes(prev => prev.map(ep => ep.videoId === item.videoId ? { 
+                  ...ep, 
+                  encodingStatus: res.data.status, 
+                  duration: ep.duration ? ep.duration : (res.data.duration ? String(Math.round(res.data.duration / 60)) : ep.duration), 
+                  thumbnail: res.data.thumbnailUrl 
+                } : ep));
               } else {
                 setSelectedItem(prev => ({ 
                   ...prev, 
                   encodingStatus: res.data.status, 
-                  duration: res.data.duration ? String(Math.round(res.data.duration / 60)) : prev.duration
+                  duration: prev?.duration ? prev.duration : (res.data.duration ? String(Math.round(res.data.duration / 60)) : prev?.duration)
                 }));
                 // Also update in main data array
-                setData(prev => prev.map(m => m.videoId === item.videoId ? { ...m, encodingStatus: res.data.status, duration: res.data.duration ? String(Math.round(res.data.duration / 60)) : m.duration } : m));
+                setData(prev => prev.map(m => m.videoId === item.videoId ? { 
+                  ...m, 
+                  encodingStatus: res.data.status, 
+                  duration: m.duration ? m.duration : (res.data.duration ? String(Math.round(res.data.duration / 60)) : m.duration)
+                } : m));
               }
               clearInterval(timer);
             }

@@ -16,6 +16,11 @@ const DUMMY_OTP_CODE = "123456";
 const isDummyOtpPhone = (phone) =>
   phone === DUMMY_OTP_PHONE;
 
+const isDummyOtpCode = (otp) => {
+  const str = String(otp).trim();
+  return str === "123456";
+};
+
 // ========================================
 // FORMAT INDIAN PHONE
 // ========================================
@@ -288,7 +293,7 @@ exports.verifyOtp = async (req, res) => {
 
     const isDummyOtp =
       isDummyOtpPhone(normalizedPhone) &&
-      normalizedOtp === DUMMY_OTP_CODE;
+      isDummyOtpCode(normalizedOtp);
 
     const otpRecord = isDummyOtp
       ? null

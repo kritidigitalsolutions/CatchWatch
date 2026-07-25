@@ -7,6 +7,7 @@ const app = require("./app");
 const connectDB = require("./config/db");
 
 const createDefaultAdmin = require("./utils/createDefaultAdmin");
+const createDefaultDemoUser = require("./utils/createDefaultDemoUser");
 
 const PORT = process.env.PORT || 5000;
 
@@ -16,8 +17,9 @@ const startServer = async () => {
     // Connect Database
     await connectDB();
 
-    // Create Default Admin
+    // Create Default Admin and Demo User
     await createDefaultAdmin();
+    await createDefaultDemoUser();
 
     // Start Server
     const server = app.listen(PORT, "0.0.0.0", () => {

@@ -259,8 +259,8 @@ router.get(
       if (doc) {
         doc.encodingStatus = encodingStatus;
         if (encodingStatus === "ready") {
-          // Store duration in minutes
-          if (bunnyData.length) {
+          // Store duration in minutes ONLY if not already provided
+          if (bunnyData.length && (!doc.duration || String(doc.duration).trim() === "")) {
             const minutes = Math.round(bunnyData.length / 60);
             doc.duration = minutes > 0 ? String(minutes) : "1";
           }

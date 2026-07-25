@@ -296,14 +296,17 @@ exports.updateProfile = async (
     }
 
     // update phone
-    if (phone) {
+    if (phone && String(phone).trim()) {
       const formatIndianPhone = (phoneNum) => {
-        const cleaned = String(phoneNum).replace(/\D/g, "");
+        let cleaned = String(phoneNum).replace(/\D/g, "");
+        if (cleaned.length === 11 && cleaned.startsWith("0")) {
+          cleaned = cleaned.slice(1);
+        }
         if (cleaned.length === 10) return "+91" + cleaned;
         if (cleaned.length === 12 && cleaned.startsWith("91")) return "+" + cleaned;
         return phoneNum;
       };
-      const normalizedPhone = formatIndianPhone(phone);
+      const normalizedPhone = formatIndianPhone(String(phone).trim());
       const phoneRegex = /^\+91[6-9]\d{9}$/;
       if (!phoneRegex.test(normalizedPhone)) {
         return res.status(400).json({
@@ -321,11 +324,9 @@ exports.updateProfile = async (
       user.phone = normalizedPhone;
     }
 
-
-
     // update username
-    if (username) {
-      let formattedUsername = username.trim();
+    if (username && String(username).trim()) {
+      let formattedUsername = String(username).trim();
       if (!formattedUsername.startsWith("@")) {
         formattedUsername = "@" + formattedUsername;
       }
@@ -347,7 +348,7 @@ exports.updateProfile = async (
     }
 
     // update genres
-    if (genres) {
+    if (genres && String(genres).trim() && genres !== "[]") {
       let genresArray = genres;
       if (typeof genres === "string") {
         try {
@@ -356,13 +357,9 @@ exports.updateProfile = async (
           genresArray = genres.split(",").map((g) => g.trim()).filter(Boolean);
         }
       }
-      if (!Array.isArray(genresArray) || genresArray.length === 0) {
-        return res.status(400).json({
-          success: false,
-          message: "At least one genre is required",
-        });
+      if (Array.isArray(genresArray) && genresArray.length > 0) {
+        user.genres = genresArray;
       }
-      user.genres = genresArray;
     }
 
     // update name

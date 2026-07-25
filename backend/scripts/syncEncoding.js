@@ -42,7 +42,7 @@ async function syncAllMedia() {
           if (isEncoded) {
             item.encodingStatus = "ready";
 
-            if (bunnyData.length) {
+            if (bunnyData.length && (!item.duration || String(item.duration).trim() === "")) {
               const minutes = Math.round(bunnyData.length / 60);
               item.duration = minutes > 0 ? String(minutes) : "1";
             }

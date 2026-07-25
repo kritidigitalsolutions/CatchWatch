@@ -4,15 +4,17 @@ const helmet = require("helmet");
 const path = require("path");
 const connectDB = require("./config/db");
 const createDefaultAdmin = require("./utils/createDefaultAdmin");
+const createDefaultDemoUser = require("./utils/createDefaultDemoUser");
 
 require("dotenv").config();
 
 const app = express();
 
-// Connect Database and Create Admin (for Serverless/Vercel)
+// Connect Database and Create Admin/Demo User (for Serverless/Vercel)
 if (process.env.NODE_ENV === "production" || process.env.VERCEL) {
   connectDB().then(() => {
     createDefaultAdmin();
+    createDefaultDemoUser();
   });
 }
 

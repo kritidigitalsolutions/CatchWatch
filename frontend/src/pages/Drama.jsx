@@ -80,20 +80,25 @@ export default function Drama() {
                 setSelectedEpisode(prev => ({ 
                   ...prev, 
                   encodingStatus: res.data.status, 
-                  duration: res.data.duration ? String(Math.round(res.data.duration / 60)) : prev.duration,
-                  thumbnail: res.data.thumbnailUrl || prev.thumbnail
+                  duration: prev?.duration ? prev.duration : (res.data.duration ? String(Math.round(res.data.duration / 60)) : prev?.duration),
+                  thumbnail: res.data.thumbnailUrl || prev?.thumbnail
                 }));
               }
               if (editData) {
                 setEditData(prev => ({ 
                   ...prev, 
                   encodingStatus: res.data.status, 
-                  duration: res.data.duration ? String(Math.round(res.data.duration / 60)) : prev.duration,
-                  thumbnail: res.data.thumbnailUrl || prev.thumbnail
+                  duration: prev?.duration ? prev.duration : (res.data.duration ? String(Math.round(res.data.duration / 60)) : prev?.duration),
+                  thumbnail: res.data.thumbnailUrl || prev?.thumbnail
                 }));
               }
               // Also update the episode in episodes list
-              setEpisodes(prev => prev.map(ep => ep.videoId === item.videoId ? { ...ep, encodingStatus: res.data.status, duration: res.data.duration ? String(Math.round(res.data.duration / 60)) : ep.duration, thumbnail: res.data.thumbnailUrl } : ep));
+              setEpisodes(prev => prev.map(ep => ep.videoId === item.videoId ? { 
+                ...ep, 
+                encodingStatus: res.data.status, 
+                duration: ep.duration ? ep.duration : (res.data.duration ? String(Math.round(res.data.duration / 60)) : ep.duration), 
+                thumbnail: res.data.thumbnailUrl 
+              } : ep));
               clearInterval(timer);
             }
           }

@@ -84,10 +84,18 @@ const EditProfilePage = () => {
     try {
       // Create FormData because we might be sending an image file
       const formData = new FormData();
-      formData.append('name', formProfile.name);
-      formData.append('username', formProfile.username);
-      formData.append('phone', formProfile.phone);
-      formData.append('bio', formProfile.bio);
+      if (formProfile.name?.trim()) {
+        formData.append('name', formProfile.name.trim());
+      }
+      if (formProfile.username?.trim()) {
+        formData.append('username', formProfile.username.trim());
+      }
+      if (formProfile.phone?.trim()) {
+        formData.append('phone', formProfile.phone.trim());
+      }
+      if (formProfile.bio !== undefined) {
+        formData.append('bio', formProfile.bio.trim());
+      }
       
       // Agar naya image select kiya hai toh hi append karein
       if (imageFile) {
@@ -105,7 +113,8 @@ const EditProfilePage = () => {
 
     } catch (error) {
       console.error("Error updating profile:", error);
-      setFeedback({ type: 'error', message: 'Failed to update profile. Please try again.' });
+      const errorMsg = error.response?.data?.message || 'Failed to update profile. Please try again.';
+      setFeedback({ type: 'error', message: errorMsg });
     } finally {
       setIsSaving(false);
     }
