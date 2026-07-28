@@ -88,7 +88,7 @@ const App = () => {
       <Layout>
         <Routes>
           <Route path="/login" element={<LoginPage />} />
-          <Route path="/legal/:type" element={<LegalPage />} />
+          <Route path="/:type" element={<LegalPage />} />
           <Route element={<ProtectedRoute />}>
             <Route path="/" element={<HomePage />} />
             <Route path="/shorts" element={<ShortFilmsPage />} />
@@ -111,7 +111,7 @@ const App = () => {
             <Route path="/watch/:slug" element={<VideoPlayerPage />} /> 
             <Route path="/watch-episode/:id" element={<VideoPlayerPage />} /> 
             <Route path="/notifications" element={<NotificationsPage />} />
-            {/* YAHAN NAYA ROUTE ADD KAREIN */}
+            {/* Add new routes here */}
             <Route path="/tv-shows-episodes/:id" element={<TvShowEpisodesPage />} /> 
             <Route path="/my-videos" element={<MyVideosPage />} />
             <Route path="/reels/:id" element={<SingleReelPage />} />

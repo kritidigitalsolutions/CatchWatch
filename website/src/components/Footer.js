@@ -106,7 +106,7 @@ const Footer = () => {
           <ul className="space-y-2.5 text-xs font-medium">
             <li>
               <button
-                onClick={() => navigate("/legal/terms-conditions")}
+                onClick={() => navigate("/terms-conditions")}
                 className="hover:text-white transition"
               >
                 Terms & Conditions
@@ -114,7 +114,7 @@ const Footer = () => {
             </li>
             <li>
               <button
-                onClick={() => navigate("/legal/refund-policy")}
+                onClick={() => navigate("/refund-policy")}
                 className="hover:text-white transition"
               >
                 Refund Policy Guidelines
@@ -122,7 +122,7 @@ const Footer = () => {
             </li>
             <li>
               <button
-                onClick={() => navigate("/legal/privacy-policy")}
+                onClick={() => navigate("/privacy-policy")}
                 className="hover:text-white transition"
               >
                 Privacy Regulation Matrix
