@@ -67,3 +67,80 @@ export const getProfileStats = async (userId) => {
     throw error;
   }
 };
+
+// Get Public User Profile (by ID or Username)
+export const getPublicUserProfile = async (identifier) => {
+  try {
+    const response = await axiosInstance.get(`/user/profile-details/${identifier}`);
+    return response.data;
+  } catch (error) {
+    console.error("Error fetching public user profile:", error);
+    throw error;
+  }
+};
+
+// Follow User
+export const followUser = async (targetUserId) => {
+  try {
+    const response = await axiosInstance.post(`/user/follow/${targetUserId}`);
+    return response.data;
+  } catch (error) {
+    console.error("Error following user:", error);
+    throw error;
+  }
+};
+
+// Unfollow User
+export const unfollowUser = async (targetUserId) => {
+  try {
+    const response = await axiosInstance.post(`/user/unfollow/${targetUserId}`);
+    return response.data;
+  } catch (error) {
+    console.error("Error unfollowing user:", error);
+    throw error;
+  }
+};
+
+// Toggle Follow User
+export const toggleFollowUser = async (targetUserId) => {
+  try {
+    const response = await axiosInstance.post(`/user/toggle-follow/${targetUserId}`);
+    return response.data;
+  } catch (error) {
+    console.error("Error toggling follow user:", error);
+    throw error;
+  }
+};
+
+// Get User Followers List
+export const getUserFollowers = async (userId, page = 1, limit = 20) => {
+  try {
+    const response = await axiosInstance.get(`/user/followers/${userId}?page=${page}&limit=${limit}`);
+    return response.data;
+  } catch (error) {
+    console.error("Error fetching user followers:", error);
+    throw error;
+  }
+};
+
+// Get User Following List
+export const getUserFollowing = async (userId, page = 1, limit = 20) => {
+  try {
+    const response = await axiosInstance.get(`/user/following/${userId}?page=${page}&limit=${limit}`);
+    return response.data;
+  } catch (error) {
+    console.error("Error fetching user following:", error);
+    throw error;
+  }
+};
+
+// Get User Posts / Reels
+export const getUserPosts = async (userId, page = 1, limit = 20) => {
+  try {
+    const response = await axiosInstance.get(`/user/posts/${userId}?page=${page}&limit=${limit}`);
+    return response.data;
+  } catch (error) {
+    console.error("Error fetching user posts:", error);
+    throw error;
+  }
+};

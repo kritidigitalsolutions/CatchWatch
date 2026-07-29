@@ -479,6 +479,7 @@ exports.getProfileStats = async (req, res) => {
     const User = require("../models/user.model");
     const Reel = require("../models/reel.model");
     const Interaction = require("../models/interaction.model");
+    const Follow = require("../models/follow.model");
 
     const user = await User.findById(userId);
     if (!user) {
@@ -529,28 +530,27 @@ exports.getProfileStats = async (req, res) => {
       });
     }
 
-    // 4. followers: follow interactions targetting this userId
-    const followers = await Interaction.countDocuments({
-      contentId: userId,
-      contentType: "user",
-      type: "follow",
+    // 4. followers count from Follow collection
+    const followers = await Follow.countDocuments({
+      following: userId,
     });
 
-    // 5. following: follow interactions initiated by this userId
-    const following = await Interaction.countDocuments({
-      user: userId,
-      contentType: "user",
-      type: "follow",
+    // 5. following count from Follow collection
+    const following = await Follow.countDocuments({
+      follower: userId,
     });
 
     return res.status(200).json({
       success: true,
       totalReels,
+      postsCount: totalReels,
       totalLikes,
       totallLikes: totalLikes, // support double-l typo from client spec
       totalDislikes,
       followers,
+      followersCount: followers,
       following,
+      followingCount: following,
     });
   } catch (error) {
     console.error("Get Profile Stats Error:", error);
@@ -560,3 +560,149 @@ exports.getProfileStats = async (req, res) => {
     });
   }
 };
+
+// ========================================
+// GET PUBLIC USER PROFILE (by ID or Username)
+// ========================================
+exports.getPublicUserProfile = async (req, res) => {
+  try {
+    const mongoose = require("mongoose");
+    const { identifier } = req.params;
+    const currentUserId = req.user?.id;
+
+    const Reel = require("../models/reel.model");
+    const Interaction = require("../models/interaction.model");
+    const Follow = require("../models/follow.model");
+
+    let query = {};
+    if (mongoose.Types.ObjectId.isValid(identifier)) {
+      query._id = identifier;
+    } else {
+      let formatted = identifier.trim();
+      if (!formatted.startsWith("@")) {
+        formatted = "@" + formatted;
+      }
+      query.username = new RegExp(`^${formatted}$`, "i");
+    }
+
+    const user = await User.findOne(query).select("-password -__v");
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: "User profile not found",
+      });
+    }
+
+    const targetUserId = user._id;
+
+    // Counts
+    const postsCount = await Reel.countDocuments({
+      user: targetUserId,
+      status: "ACTIVE",
+    });
+
+    const followersCount = await Follow.countDocuments({
+      following: targetUserId,
+    });
+
+    const followingCount = await Follow.countDocuments({
+      follower: targetUserId,
+    });
+
+    // Calculate total likes received on user's reels
+    const reels = await Reel.find({ user: targetUserId, status: "ACTIVE" }).select("_id").lean();
+    const reelIds = reels.map(r => r._id);
+    let totalLikes = 0;
+    if (reelIds.length > 0) {
+      totalLikes = await Interaction.countDocuments({
+        contentId: { $in: reelIds },
+        contentType: "reel",
+        type: "like",
+      });
+    }
+
+    // Check if current logged in user is following target user
+    let isFollowing = false;
+    let isSelf = false;
+
+    if (currentUserId) {
+      isSelf = currentUserId.toString() === targetUserId.toString();
+      if (!isSelf) {
+        const followExists = await Follow.exists({
+          follower: currentUserId,
+          following: targetUserId,
+        });
+        isFollowing = !!followExists;
+      }
+    }
+
+    const decoratedUser = await decorateUserWithSubscription(user);
+
+    return res.status(200).json({
+      success: true,
+      user: decoratedUser,
+      postsCount,
+      followersCount,
+      followingCount,
+      totalLikes,
+      isFollowing,
+      isSelf,
+    });
+  } catch (error) {
+    console.error("Get Public Profile Error:", error);
+    return res.status(500).json({
+      success: false,
+      message: "Server error",
+    });
+  }
+};
+
+// ========================================
+// GET USER POSTS / REELS
+// ========================================
+exports.getUserPosts = async (req, res) => {
+  try {
+    const mongoose = require("mongoose");
+    const { userId } = req.params;
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 20;
+    const skip = (page - 1) * limit;
+
+    const Reel = require("../models/reel.model");
+
+    let queryUser = userId;
+    if (!mongoose.Types.ObjectId.isValid(userId)) {
+      let formatted = userId.trim();
+      if (!formatted.startsWith("@")) formatted = "@" + formatted;
+      const foundUser = await User.findOne({ username: new RegExp(`^${formatted}$`, "i") });
+      if (!foundUser) {
+        return res.status(404).json({ success: false, message: "User not found" });
+      }
+      queryUser = foundUser._id;
+    }
+
+    const totalCount = await Reel.countDocuments({ user: queryUser, status: "ACTIVE" });
+    const reels = await Reel.find({ user: queryUser, status: "ACTIVE" })
+      .populate("user", "_id name username profileImage bio")
+      .sort({ createdAt: -1 })
+      .skip(skip)
+      .limit(limit)
+      .lean();
+
+    return res.status(200).json({
+      success: true,
+      totalCount,
+      page,
+      totalPages: Math.ceil(totalCount / limit),
+      reels,
+      posts: reels,
+    });
+  } catch (error) {
+    console.error("Get User Posts Error:", error);
+    return res.status(500).json({
+      success: false,
+      message: "Server error",
+    });
+  }
+};
+

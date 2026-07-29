@@ -505,18 +505,19 @@ const handleSubmit = async (e) => {
         {(form.type === "movie" || form.type === "shortFilm") && (
           <>
             {/* Secondary Audio Tracks Ingestion */}
-            <div style={{ background: "#111827", padding: "24px", borderRadius: "12px", border: "1px solid #1f2937", color: "#fff", display: "flex", flexDirection: "column", gap: "20px" }}>
+            {/* Secondary Audio Tracks Ingestion */}
+            <div style={{ background: "var(--bg2)", padding: "24px", borderRadius: "12px", border: "1px solid var(--border)", color: "var(--text)", display: "flex", flexDirection: "column", gap: "20px" }}>
               <h2 style={{ fontSize: "16px", fontWeight: "600", color: "#FF7A1A" }}>Secondary Audio Tracks</h2>
-              <div style={{ display: "flex", flexWrap: "wrap", gap: "15px", alignItems: "flex-end", background: "#1f2937", padding: "15px", borderRadius: "8px" }}>
+              <div style={{ display: "flex", flexWrap: "wrap", gap: "15px", alignItems: "flex-end", background: "var(--bg-input)", padding: "15px", borderRadius: "8px" }}>
                 <div style={{ minWidth: "150px" }}>
-                  <label style={{ display: "block", fontSize: "12px", color: "#9ca3af", marginBottom: "4px" }}>Language</label>
+                  <label style={{ display: "block", fontSize: "12px", color: "var(--text-muted)", marginBottom: "4px" }}>Language</label>
                   <input
                     type="text"
                     list="audio-languages"
                     value={selectedAudioLang}
                     onChange={(e) => setSelectedAudioLang(e.target.value)}
                     placeholder="Type or select"
-                    style={{ width: "100%", padding: "8px", borderRadius: "4px", background: "#111827", border: "1px solid #374151", color: "#fff" }}
+                    style={{ width: "100%", padding: "8px", borderRadius: "4px", background: "var(--bg)", border: "1px solid var(--border)", color: "var(--text)" }}
                   />
                   <datalist id="audio-languages">
                     {SUPPORTED_LANGUAGES.map((lang) => (
@@ -525,12 +526,12 @@ const handleSubmit = async (e) => {
                   </datalist>
                 </div>
                 <div>
-                  <label style={{ display: "block", fontSize: "12px", color: "#9ca3af", marginBottom: "4px" }}>Audio File</label>
-                  <input type="file" ref={audioInputRef} onChange={(e) => setAudioFile(e.target.files?.[0])} accept="audio/*" style={{ color: "#fff" }} />
+                  <label style={{ display: "block", fontSize: "12px", color: "var(--text-muted)", marginBottom: "4px" }}>Audio File</label>
+                  <input type="file" ref={audioInputRef} onChange={(e) => setAudioFile(e.target.files?.[0])} accept="audio/*" style={{ color: "var(--text)" }} />
                 </div>
                 <div style={{ display: "flex", alignItems: "center", gap: "6px", height: "36px" }}>
                   <input type="checkbox" id="audioDefault" checked={audioIsDefault} onChange={(e) => setAudioIsDefault(e.target.checked)} />
-                  <label htmlFor="audioDefault" style={{ fontSize: "13px", color: "#9ca3af", cursor: "pointer" }}>Is Default</label>
+                  <label htmlFor="audioDefault" style={{ fontSize: "13px", color: "var(--text-muted)", cursor: "pointer" }}>Is Default</label>
                 </div>
                 <button type="button" onClick={addAudioTrack} style={{ padding: "8px 16px", background: "#FF7A1A", border: "none", color: "#fff", borderRadius: "4px", cursor: "pointer", fontWeight: "600" }}>
                   Add Track
@@ -540,11 +541,11 @@ const handleSubmit = async (e) => {
               {audioTracks.length > 0 && (
                 <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
                   {audioTracks.map((track, i) => (
-                    <div key={i} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "10px 15px", background: "#1f2937", borderRadius: "6px" }}>
+                    <div key={i} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "10px 15px", background: "var(--bg-input)", borderRadius: "6px" }}>
                       <div style={{ display: "flex", gap: "20px", alignItems: "center" }}>
-                        <span style={{ fontWeight: "600", color: "#fff" }}>{track.language}</span>
-                        <span style={{ color: "#9ca3af", fontSize: "13px" }}>{track.file.name}</span>
-                        {track.isDefault && <span style={{ padding: "2px 8px", background: "#10b981", borderRadius: "12px", fontSize: "11px", fontWeight: "bold" }}>Default</span>}
+                        <span style={{ fontWeight: "600", color: "var(--text)" }}>{track.language}</span>
+                        <span style={{ color: "var(--text-muted)", fontSize: "13px" }}>{track.file.name}</span>
+                        {track.isDefault && <span style={{ padding: "2px 8px", background: "#10b981", color: "#fff", borderRadius: "12px", fontSize: "11px", fontWeight: "bold" }}>Default</span>}
                       </div>
                       <button type="button" onClick={() => setAudioTracks(audioTracks.filter((_, idx) => idx !== i))} style={{ background: "transparent", border: "none", color: "#ef4444", cursor: "pointer" }}>
                         <Trash size={16} />
@@ -556,18 +557,18 @@ const handleSubmit = async (e) => {
             </div>
 
             {/* Subtitles Ingestion */}
-            <div style={{ background: "#111827", padding: "24px", borderRadius: "12px", border: "1px solid #1f2937", color: "#fff", display: "flex", flexDirection: "column", gap: "20px" }}>
+            <div style={{ background: "var(--bg2)", padding: "24px", borderRadius: "12px", border: "1px solid var(--border)", color: "var(--text)", display: "flex", flexDirection: "column", gap: "20px" }}>
               <h2 style={{ fontSize: "16px", fontWeight: "600", color: "#FF7A1A" }}>Subtitles (.vtt files)</h2>
-              <div style={{ display: "flex", flexWrap: "wrap", gap: "15px", alignItems: "flex-end", background: "#1f2937", padding: "15px", borderRadius: "8px" }}>
+              <div style={{ display: "flex", flexWrap: "wrap", gap: "15px", alignItems: "flex-end", background: "var(--bg-input)", padding: "15px", borderRadius: "8px" }}>
                 <div style={{ minWidth: "150px" }}>
-                  <label style={{ display: "block", fontSize: "12px", color: "#9ca3af", marginBottom: "4px" }}>Language</label>
+                  <label style={{ display: "block", fontSize: "12px", color: "var(--text-muted)", marginBottom: "4px" }}>Language</label>
                   <input
                     type="text"
                     list="subtitle-languages"
                     value={selectedSubLang}
                     onChange={(e) => setSelectedSubLang(e.target.value)}
                     placeholder="Type or select"
-                    style={{ width: "100%", padding: "8px", borderRadius: "4px", background: "#111827", border: "1px solid #374151", color: "#fff" }}
+                    style={{ width: "100%", padding: "8px", borderRadius: "4px", background: "var(--bg)", border: "1px solid var(--border)", color: "var(--text)" }}
                   />
                   <datalist id="subtitle-languages">
                     {SUPPORTED_LANGUAGES.map((lang) => (
@@ -576,16 +577,16 @@ const handleSubmit = async (e) => {
                   </datalist>
                 </div>
                 <div>
-                  <label style={{ display: "block", fontSize: "12px", color: "#9ca3af", marginBottom: "4px" }}>Label (e.g. English [CC])</label>
-                  <input type="text" value={subLabel} onChange={(e) => setSubLabel(e.target.value)} style={{ padding: "8px", borderRadius: "4px", background: "#111827", border: "1px solid #374151", color: "#fff" }} />
+                  <label style={{ display: "block", fontSize: "12px", color: "var(--text-muted)", marginBottom: "4px" }}>Label (e.g. English [CC])</label>
+                  <input type="text" value={subLabel} onChange={(e) => setSubLabel(e.target.value)} style={{ padding: "8px", borderRadius: "4px", background: "var(--bg)", border: "1px solid var(--border)", color: "var(--text)" }} />
                 </div>
                 <div>
-                  <label style={{ display: "block", fontSize: "12px", color: "#9ca3af", marginBottom: "4px" }}>Subtitle File</label>
-                  <input type="file" ref={subInputRef} onChange={(e) => setSubFile(e.target.files?.[0])} accept=".vtt" style={{ color: "#fff" }} />
+                  <label style={{ display: "block", fontSize: "12px", color: "var(--text-muted)", marginBottom: "4px" }}>Subtitle File</label>
+                  <input type="file" ref={subInputRef} onChange={(e) => setSubFile(e.target.files?.[0])} accept=".vtt" style={{ color: "var(--text)" }} />
                 </div>
                 <div style={{ display: "flex", alignItems: "center", gap: "6px", height: "36px" }}>
                   <input type="checkbox" id="subDefault" checked={subIsDefault} onChange={(e) => setSubIsDefault(e.target.checked)} />
-                  <label htmlFor="subDefault" style={{ fontSize: "13px", color: "#9ca3af", cursor: "pointer" }}>Is Default</label>
+                  <label htmlFor="subDefault" style={{ fontSize: "13px", color: "var(--text-muted)", cursor: "pointer" }}>Is Default</label>
                 </div>
                 <button type="button" onClick={addSubtitleTrack} style={{ padding: "8px 16px", background: "#FF7A1A", border: "none", color: "#fff", borderRadius: "4px", cursor: "pointer", fontWeight: "600" }}>
                   Add Subtitle
@@ -595,12 +596,12 @@ const handleSubmit = async (e) => {
               {subtitles.length > 0 && (
                 <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
                   {subtitles.map((track, i) => (
-                    <div key={i} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "10px 15px", background: "#1f2937", borderRadius: "6px" }}>
+                    <div key={i} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "10px 15px", background: "var(--bg-input)", borderRadius: "6px" }}>
                       <div style={{ display: "flex", gap: "20px", alignItems: "center" }}>
-                        <span style={{ fontWeight: "600", color: "#fff" }}>{track.language}</span>
+                        <span style={{ fontWeight: "600", color: "var(--text)" }}>{track.language}</span>
                         <span style={{ color: "#38bdf8", fontSize: "13px" }}>Label: "{track.label}"</span>
-                        <span style={{ color: "#9ca3af", fontSize: "13px" }}>{track.file.name}</span>
-                        {track.isDefault && <span style={{ padding: "2px 8px", background: "#10b981", borderRadius: "12px", fontSize: "11px", fontWeight: "bold" }}>Default</span>}
+                        <span style={{ color: "var(--text-muted)", fontSize: "13px" }}>{track.file.name}</span>
+                        {track.isDefault && <span style={{ padding: "2px 8px", background: "#10b981", color: "#fff", borderRadius: "12px", fontSize: "11px", fontWeight: "bold" }}>Default</span>}
                       </div>
                       <button type="button" onClick={() => setSubtitles(subtitles.filter((_, idx) => idx !== i))} style={{ background: "transparent", border: "none", color: "#ef4444", cursor: "pointer" }}>
                         <Trash size={16} />

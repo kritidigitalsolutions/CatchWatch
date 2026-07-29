@@ -161,7 +161,7 @@ const HomePage = () => {
 
       {/* Dynamic Carousel Banner Frame */}
       {carouselSlides.length > 0 && (
-        <div className="relative w-full rounded-2xl bg-neutral-900 aspect-[16/9] md:aspect-[25/10] overflow-hidden shadow-lg group">
+        <div className="relative w-full rounded-lg md:rounded-2xl bg-neutral-900 aspect-[25/10] md:aspect-[25/10] overflow-hidden shadow-lg group">
           <div
             onTransitionEnd={handleTransitionEnd}
             className={`h-full w-full flex ${isTransitionEnabled ? "transition-transform duration-1000 ease-in-out" : ""}`}
@@ -184,11 +184,11 @@ const HomePage = () => {
                   style={{ backgroundImage: `url(${slide.image})` }}
                 />
                 <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/50 to-black/40 z-0" />
-                <div className="relative z-10 max-w-xl space-y-1 lg:space-y-4 mt-16 lg:mt-64 select-none pointer-events-none">
-                  <span className="inline-block bg-brand-orange text-[10px] md:text-xs font-black tracking-widest px-3 py-1 rounded-full uppercase shadow">
+                <div className="relative z-10 max-w-xl space-y-1 lg:space-y-4 mt-4 sm:mt-36 lg:mt-58 select-none pointer-events-none">
+                  <span className="inline-block bg-brand-orange text-[8px] md:text-xs font-black tracking-wider px-2 md:py-1 rounded-full uppercase shadow">
                     {slide.tag}
                   </span>
-                  <h2 className="text-xl sm:text-2xl lg:text-4xl font-black tracking-tight drop-shadow-md">
+                  <h2 className=" text-sm sm:text-2xl lg:text-4xl font-black tracking-tight drop-shadow-md">
                     {slide.title}
                   </h2>
                   <p className="text-brand-orange text-[10px] sm:text-xs md:text-sm font-bold tracking-wider drop-shadow">
@@ -199,7 +199,7 @@ const HomePage = () => {
             ))}
           </div>
 
-          <div className="absolute bottom-4 left-0 right-0 z-20 flex justify-center items-center gap-2.5">
+          <div className="absolute bottom-2 md:bottom-4 left-0 right-0 z-20 flex justify-center items-center gap-2.5">
             {carouselSlides.map((_, index) => (
               <button
                 key={index}
@@ -207,7 +207,7 @@ const HomePage = () => {
                   setIsTransitionEnabled(true);
                   setCurrentSlide(index);
                 }}
-                className={`h-2.5 rounded-full transition-all duration-300 ${activeDotIndex === index ? "w-7 bg-brand-orange" : "w-2.5 bg-white/40 hover:bg-white/70"
+                className={`md:h-2.5 h-1.5 rounded-full transition-all duration-300 ${activeDotIndex === index ? "md:w-7 w-4 bg-brand-orange" : "md:w-2.5 w-1.5 bg-white/40 hover:bg-white/70"
                   }`}
               />
             ))}
@@ -256,7 +256,7 @@ const HomePage = () => {
                     <span className="absolute left-[-10px] bottom-[-16px] text-7xl sm:text-9xl font-black tracking-tighter text-gray-200 select-none z-0 transition-colors group-hover:text-brand-orange/10 duration-300">
                       {index + 1}
                     </span>
-                    <div className="relative z-10 bg-neutral-900 rounded-2xl overflow-hidden shadow-md aspect-[2/3] border border-white/10">
+                    <div className="relative z-10  bg-neutral-900 rounded-2xl overflow-hidden shadow-md aspect-[2/3] border border-white/10">
                       {isComingSoon(movie) && (
                         <span className="absolute top-2 right-2 z-20 bg-amber-500 text-[8px] text-white font-black tracking-widest px-1.5 py-0.5 rounded uppercase">
                           Soon
@@ -305,7 +305,7 @@ const HomePage = () => {
               </button>
             </div>
 
-            <div className="grid grid-cols-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3.5 sm:gap-5">
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3.5 sm:gap-5">
               {categoryItems.map((movie) => (
                 <div
                   key={movie._id}

@@ -8,13 +8,14 @@ import { IoLogOut } from "react-icons/io5";
 import Loader from '../components/Loader';
 
 // Nayi API import karein
-import { getUserProfile } from '../api/userApi';
+import { getUserProfile, getProfileStats } from '../api/userApi';
 
 const ProfileMenuPage = () => {
   const navigate = useNavigate();
 
   // Dynamic States
   const [userData, setUserData] = useState(null);
+  const [stats, setStats] = useState({ postsCount: 0, followersCount: 0, followingCount: 0 });
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
@@ -22,15 +23,25 @@ const ProfileMenuPage = () => {
       setIsLoading(true);
       try {
         const response = await getUserProfile();
-        // API response ke mutabiq object adjust karein (e.g., response.user)
         const user = response?.user || response?.data || response;
 
         if (user) {
           setUserData(user);
+          try {
+            const statsRes = await getProfileStats(user._id || user.id);
+            if (statsRes) {
+              setStats({
+                postsCount: statsRes.postsCount ?? statsRes.totalReels ?? 0,
+                followersCount: statsRes.followersCount ?? statsRes.followers ?? 0,
+                followingCount: statsRes.followingCount ?? statsRes.following ?? 0,
+              });
+            }
+          } catch (stErr) {
+            console.error("Stats Fetch Error:", stErr);
+          }
         }
       } catch (error) {
         console.error("Profile Fetch Error:", error);
-        // Agar 401 Unauthorized aaye, toh token expire ho gaya hai, direct login par bhejein
         if (error.response && error.response.status === 401) {
           localStorage.removeItem("token");
           localStorage.removeItem("authToken");
@@ -47,7 +58,6 @@ const ProfileMenuPage = () => {
   // Logout Handler Function
   const handleLogout = async () => {
     try {
-      // Local Storage se token clear karein
       localStorage.removeItem("authToken");
       localStorage.removeItem("token");
 
@@ -59,7 +69,6 @@ const ProfileMenuPage = () => {
     }
   };
 
-  // Naye architecture ke hisaab se Legal routes update kiye gaye hain
   const matrixOptions = [
     { label: 'Edit Profile', route: '/profile/edit', icon: <FaUserAlt /> },
     { label: 'Subscription Plans', route: '/subscription', icon: <MdWorkspacePremium /> },
@@ -77,17 +86,16 @@ const ProfileMenuPage = () => {
 
   if (isLoading) return <Loader />;
 
-  // Default initial agar naam na ho
   const initial = userData?.name ? userData.name.charAt(0).toUpperCase() : 'U';
 
   return (
     <div className="max-w-4xl mx-auto w-full grid grid-cols-1 md:grid-cols-3 gap-6 items-start py-6 px-4 sm:px-6 lg:px-8">
 
       {/* Left Column Card Profile Overview Info Banner */}
-      <div className="bg-white border border-gray-200 rounded-2xl overflow-hidden shadow-sm text-center p-6 md:sticky md:top-24 transition-all hover:shadow-md">
+      <div className="bg-white  border border-gray-200 rounded-2xl overflow-hidden shadow-sm text-center p-6 md:sticky md:top-24 transition-all hover:shadow-md">
 
-        {/* Dynamic User Profile Picture ya Initial Letter */}
-        <div className="w-24 h-24 rounded-full border-4 border-brand-light-bg bg-brand-orange text-white text-4xl font-black flex items-center justify-center mx-auto shadow-md mb-4 overflow-hidden">
+        {/* Dynamic User Profile Picture */}
+        <div className="w-24 h-24 rounded-full border-4 border-brand-light-bg bg-brand-orange text-white text-4xl font-black flex items-center justify-center mx-auto shadow-md mb-3 overflow-hidden">
           {userData?.profileImage ? (
             <img src={userData.profileImage} alt={userData.name} className="w-full h-full object-cover" />
           ) : (
@@ -95,18 +103,46 @@ const ProfileMenuPage = () => {
           )}
         </div>
 
-        {/* Dynamic Name and Email */}
+        {/* Dynamic Name and Username */}
         <h2 className="text-xl font-extrabold text-gray-800 capitalize line-clamp-1">
           {userData?.name || "Guest User"}
         </h2>
-        <p className="text-sm text-gray-400 font-medium mt-0.5 line-clamp-1">
-          {userData?.email || userData?.username || "No Email Provided"}
+        {userData?.username && (
+          <p className="text-sm font-bold text-brand-orange mt-0.5">
+            {userData.username.startsWith("@") ? userData.username : `@${userData.username}`}
+          </p>
+        )}
+        <p className="text-xs text-gray-400 font-medium mt-0.5 line-clamp-1">
+          {userData?.email || userData?.phone || ""}
         </p>
 
+        {/* User Bio */}
+        {userData?.bio && (
+          <p className="text-xs text-gray-600 font-medium italic mt-2 px-2 line-clamp-2">
+            "{userData.bio}"
+          </p>
+        )}
+
+        {/* Stats Row: Posts, Followers, Following */}
+        <div className="grid grid-cols-3 gap-2 my-4 py-3 px-2 bg-gray-50 rounded-xl border border-gray-100">
+          <div className="text-center">
+            <span className="block text-base font-black text-gray-800">{stats.postsCount}</span>
+            <span className="text-[10px] font-bold uppercase tracking-wider text-gray-400">Posts</span>
+          </div>
+          <div className="text-center border-x border-gray-200">
+            <span className="block text-base font-black text-gray-800">{stats.followersCount}</span>
+            <span className="text-[10px] font-bold uppercase tracking-wider text-gray-400">Followers</span>
+          </div>
+          <div className="text-center">
+            <span className="block text-base font-black text-gray-800">{stats.followingCount}</span>
+            <span className="text-[10px] font-bold uppercase tracking-wider text-gray-400">Following</span>
+          </div>
+        </div>
+
         {/* Dynamic Plan Badge */}
-        <div className={`mt-4 p-3 rounded-xl text-[11px] font-bold uppercase tracking-wider ${userData?.isPremium || userData?.planId
-            ? "bg-orange-50 text-brand-orange border border-orange-100"
-            : "bg-gray-50 text-gray-500 border border-gray-100"
+        <div className={`p-3 rounded-xl text-[11px] font-bold uppercase tracking-wider ${userData?.isPremium || userData?.planId
+          ? "bg-orange-50 text-brand-orange border border-orange-100"
+          : "bg-gray-50 text-gray-500 border border-gray-100"
           }`}>
           {userData?.isPremium || userData?.planId ? "Premium Account Member" : "Free Basic Account"}
         </div>

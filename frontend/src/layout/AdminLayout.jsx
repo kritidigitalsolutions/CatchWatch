@@ -1,17 +1,22 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Outlet } from "react-router-dom";
 import Sidebar from "../components/Sidebar";
 import Topbar from "../components/Topbar";
 import "./AdminLayout.css";
 
 export default function AdminLayout() {
-  const [theme, setTheme] = useState("dark"); // "dark" | "light"
+  const [theme, setTheme] = useState(() => {
+    return localStorage.getItem("cw_theme") || "dark";
+  });
   const [showSidebar, setShowSidebar] = useState(false);
 
+  useEffect(() => {
+    document.body.classList.toggle("light", theme === "light");
+    localStorage.setItem("cw_theme", theme);
+  }, [theme]);
+
   const toggleTheme = () => {
-    const next = theme === "dark" ? "light" : "dark";
-    setTheme(next);
-    document.body.classList.toggle("light", next === "light");
+    setTheme(prev => (prev === "dark" ? "light" : "dark"));
   };
 
   const toggleSidebar = () => setShowSidebar(!showSidebar);

@@ -32,6 +32,8 @@ body {
   --bg:  #0f1724;
   --bg2: #162033;
   --bg3: #1e2a42;
+  --bg-card: #162033;
+  --bg-input: #0f1724;
 
   /* ── Borders ── */
   --border:  rgba(255, 255, 255, 0.08);
@@ -88,6 +90,8 @@ body.light {
   --bg:  #F5F7FA;
   --bg2: #FFFFFF;
   --bg3: #EEF1F6;
+  --bg-card: #FFFFFF;
+  --bg-input: #F1F5F9;
 
   --border:  #E5E7EB;
   --border2: #D1D5DB;

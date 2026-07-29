@@ -435,152 +435,152 @@ exports.verifyOtp = async (req, res) => {
 // ========================================
 // GOOGLE LOGIN
 // ========================================
-exports.googleLogin = async (req, res) => {
-  try {
-    const { idToken, token, fcmToken } = req.body;
+// exports.googleLogin = async (req, res) => {
+//   try {
+//     const { idToken, token, fcmToken } = req.body;
 
-    if (!idToken && !token) {
-      return res.status(400).json({
-        success: false,
-        message: "Google ID token is required",
-      });
-    }
+//     if (!idToken && !token) {
+//       return res.status(400).json({
+//         success: false,
+//         message: "Google ID token is required",
+//       });
+//     }
 
-    let uid;
-    let email;
-    let name;
-    let picture;
+//     let uid;
+//     let email;
+//     let name;
+//     let picture;
 
-    if (idToken) {
-      if (!process.env.GOOGLE_CLIENT_ID) {
-        return res.status(500).json({
-          success: false,
-          message: "Google client ID is not configured",
-        });
-      }
+//     if (idToken) {
+//       if (!process.env.GOOGLE_CLIENT_ID) {
+//         return res.status(500).json({
+//           success: false,
+//           message: "Google client ID is not configured",
+//         });
+//       }
 
-      const ticket = await googleClient.verifyIdToken({
-        idToken,
-        audience: process.env.GOOGLE_CLIENT_ID,
-      });
+//       const ticket = await googleClient.verifyIdToken({
+//         idToken,
+//         audience: process.env.GOOGLE_CLIENT_ID,
+//       });
 
-      const payload = ticket.getPayload();
+//       const payload = ticket.getPayload();
 
-      uid = payload.sub;
-      email = payload.email;
-      name = payload.name;
-      picture = payload.picture;
-    } else {
-      // Backward compatibility for Firebase Auth clients.
-      const decodedToken = await admin.auth().verifyIdToken(token);
+//       uid = payload.sub;
+//       email = payload.email;
+//       name = payload.name;
+//       picture = payload.picture;
+//     } else {
+//       // Backward compatibility for Firebase Auth clients.
+//       const decodedToken = await admin.auth().verifyIdToken(token);
 
-      uid = decodedToken.uid;
-      email = decodedToken.email;
-      name = decodedToken.name;
-      picture = decodedToken.picture;
-    }
+//       uid = decodedToken.uid;
+//       email = decodedToken.email;
+//       name = decodedToken.name;
+//       picture = decodedToken.picture;
+//     }
 
-    if (!email) {
-      return res.status(400).json({
-        success: false,
-        message: "Google account email not found",
-      });
-    }
+//     if (!email) {
+//       return res.status(400).json({
+//         success: false,
+//         message: "Google account email not found",
+//       });
+//     }
 
-    const normalizedEmail = email.toLowerCase().trim();
+//     const normalizedEmail = email.toLowerCase().trim();
 
-    // Find existing user by Google UID or by Email
-    let user = await User.findOne({
-      $or: [
-        { googleId: uid },
-        { email: normalizedEmail }
-      ]
-    });
+//     // Find existing user by Google UID or by Email
+//     let user = await User.findOne({
+//       $or: [
+//         { googleId: uid },
+//         { email: normalizedEmail }
+//       ]
+//     });
 
-    let isNewUser = false;
+//     let isNewUser = false;
 
-    // Create new user if not exists
-    if (!user) {
-      isNewUser = true;
+//     // Create new user if not exists
+//     if (!user) {
+//       isNewUser = true;
 
-      // We generate a highly unique temporary/placeholder phone string using UID and random characters
-      // to guarantee uniqueness and avoid duplicate key errors on the unique phone index.
-      const uniqueSuffix = Math.random().toString(36).substring(2, 8);
-      const tempPhone = `google_${uid.substring(0, 10)}_${uniqueSuffix}`;
+//       // We generate a highly unique temporary/placeholder phone string using UID and random characters
+//       // to guarantee uniqueness and avoid duplicate key errors on the unique phone index.
+//       const uniqueSuffix = Math.random().toString(36).substring(2, 8);
+//       const tempPhone = `google_${uid.substring(0, 10)}_${uniqueSuffix}`;
 
-      user = await User.create({
-        name: name || "User",
-        email: normalizedEmail,
-        profileImage: picture || "",
-        googleId: uid,
-        authProvider: "GOOGLE",
-        profileComplete: true,
-        phone: tempPhone,
-      });
-    } else {
-      // If the user exists but hasn't linked Google credentials yet, link them!
-      let updated = false;
-      if (!user.googleId) {
-        user.googleId = uid;
-        updated = true;
-      }
-      if (user.authProvider !== "GOOGLE") {
-        user.authProvider = "GOOGLE";
-        updated = true;
-      }
-      if (updated) {
-        await user.save();
-      }
-    }
+//       user = await User.create({
+//         name: name || "User",
+//         email: normalizedEmail,
+//         profileImage: picture || "",
+//         googleId: uid,
+//         authProvider: "GOOGLE",
+//         profileComplete: true,
+//         phone: tempPhone,
+//       });
+//     } else {
+//       // If the user exists but hasn't linked Google credentials yet, link them!
+//       let updated = false;
+//       if (!user.googleId) {
+//         user.googleId = uid;
+//         updated = true;
+//       }
+//       if (user.authProvider !== "GOOGLE") {
+//         user.authProvider = "GOOGLE";
+//         updated = true;
+//       }
+//       if (updated) {
+//         await user.save();
+//       }
+//     }
 
-    // Save FCM Token & disassociate it from any other users to prevent duplicate alerts
-    if (fcmToken && typeof fcmToken === "string") {
-      const normalizedFcmToken = fcmToken.trim();
-      if (normalizedFcmToken) {
-        await User.updateMany(
-          {
-            _id: { $ne: user._id },
-            fcmToken: normalizedFcmToken,
-          },
-          {
-            $unset: {
-              fcmToken: "",
-              fcmTokenUpdatedAt: "",
-            },
-          }
-        );
+//     // Save FCM Token & disassociate it from any other users to prevent duplicate alerts
+//     if (fcmToken && typeof fcmToken === "string") {
+//       const normalizedFcmToken = fcmToken.trim();
+//       if (normalizedFcmToken) {
+//         await User.updateMany(
+//           {
+//             _id: { $ne: user._id },
+//             fcmToken: normalizedFcmToken,
+//           },
+//           {
+//             $unset: {
+//               fcmToken: "",
+//               fcmTokenUpdatedAt: "",
+//             },
+//           }
+//         );
 
-        user.fcmToken = normalizedFcmToken;
-        user.fcmTokenUpdatedAt = new Date();
-        await user.save();
-      }
-    }
+//         user.fcmToken = normalizedFcmToken;
+//         user.fcmTokenUpdatedAt = new Date();
+//         await user.save();
+//       }
+//     }
 
-    // Generate JWT
-    const appToken = generateUserToken(user);
+//     // Generate JWT
+//     const appToken = generateUserToken(user);
 
-    return res.status(200).json({
-      success: true,
-      message: "Google login successful",
-      token: appToken,
-      isNewUser,
-      user: {
-        id: user._id,
-        name: user.name,
-        email: user.email,
-        profileImage: user.profileImage,
-        role: user.role,
-      },
-    });
+//     return res.status(200).json({
+//       success: true,
+//       message: "Google login successful",
+//       token: appToken,
+//       isNewUser,
+//       user: {
+//         id: user._id,
+//         name: user.name,
+//         email: user.email,
+//         profileImage: user.profileImage,
+//         role: user.role,
+//       },
+//     });
 
-  } catch (error) {
-    console.error("GOOGLE LOGIN ERROR:", error);
-    return res.status(500).json({
-      success: false,
-      message: "Google login failed",
-    });
-  }
-};
+//   } catch (error) {
+//     console.error("GOOGLE LOGIN ERROR:", error);
+//     return res.status(500).json({
+//       success: false,
+//       message: "Google login failed",
+//     });
+//   }
+// };
 
 exports.refreshToken = async (req, res) => {
   try {

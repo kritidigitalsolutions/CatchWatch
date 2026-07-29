@@ -96,7 +96,7 @@ exports.getReelsFeed = async (req, res) => {
     })
       .populate(
         "user",
-        "name username profileImage"
+        "name username profileImage bio"
       )
       .sort({ createdAt: -1 })
       .lean();
@@ -140,8 +140,10 @@ exports.getReelsFeed = async (req, res) => {
         likesMap[item._id.toString()] = item.count;
       });
 
-      // Map user interaction if user is logged in
+      // Map user interaction & following status if user is logged in
       let interactionMap = {};
+      let followedSet = new Set();
+
       if (userId) {
         const interactions = await Interaction.find({
           user: userId,
@@ -151,6 +153,11 @@ exports.getReelsFeed = async (req, res) => {
         interactions.forEach(int => {
           interactionMap[int.contentId.toString()] = int.type;
         });
+
+        const Follow = require("../models/follow.model");
+        const authorIds = reels.map(r => r.user?._id).filter(Boolean);
+        const follows = await Follow.find({ follower: userId, following: { $in: authorIds } }).select("following").lean();
+        follows.forEach(f => followedSet.add(f.following.toString()));
       }
 
       reels.forEach(r => {
@@ -159,6 +166,7 @@ exports.getReelsFeed = async (req, res) => {
         r.thumbnail = thumb;
         r.likesCount = likesMap[r._id.toString()] || 0;
         r.userInteraction = interactionMap[r._id.toString()] || null;
+        r.isFollowing = r.user?._id ? followedSet.has(r.user._id.toString()) : false;
       });
     }
 
@@ -197,7 +205,7 @@ exports.getSingleReel = async (
     )
       .populate(
         "user",
-        "name username profileImage"
+        "name username profileImage bio"
       )
       .lean();
 

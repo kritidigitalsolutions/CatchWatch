@@ -54,15 +54,15 @@ const userSchema = new mongoose.Schema(
       },
     },
 
-    googleId: {
-      type: String,
-      unique: true,
-      sparse: true,
-    },
+    // googleId: {
+    //   type: String,
+    //   unique: true,
+    //   sparse: true,
+    // },
 
     authProvider: {
       type: String,
-      enum: ["PHONE", "GOOGLE"],
+      // enum: ["PHONE", "GOOGLE"],
       default: "PHONE",
     },
 
@@ -73,13 +73,13 @@ const userSchema = new mongoose.Schema(
 
     role: {
       type: String,
-      enum: ["USER"],
+      // enum: ["USER"],
       default: "USER",
     },
 
     status: {
       type: String,
-      enum: ["Active", "Blocked"],
+      // enum: ["Active", "Blocked"],
       default: "Active",
     },
 

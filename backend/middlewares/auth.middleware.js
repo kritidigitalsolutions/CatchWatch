@@ -58,4 +58,23 @@ const isAuth = async (
   }
 };
 
-module.exports = { isAuth };
+const optionalAuth = async (req, res, next) => {
+  try {
+    let token = null;
+    const authHeader = req.headers.authorization;
+    if (authHeader && authHeader.startsWith("Bearer ")) {
+      token = authHeader.split(" ")[1];
+    }
+    if (token) {
+      const verified = jwt.verify(token, process.env.JWT_SECRET);
+      if (verified.role === "USER") {
+        req.user = verified;
+      }
+    }
+  } catch (err) {
+    // Silent ignore optional token failure
+  }
+  next();
+};
+
+module.exports = { isAuth, optionalAuth };

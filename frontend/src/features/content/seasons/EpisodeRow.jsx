@@ -53,7 +53,7 @@ export default function EpisodeRow({
           <div
             style={{
               fontWeight: "600",
-              color: "#fff",
+              color: "var(--text)",
               fontSize: "0.95rem",
               textOverflow: "ellipsis",
               overflow: "hidden",
@@ -183,9 +183,9 @@ export default function EpisodeRow({
           type="button"
           onClick={() => onEditClick(episodeIndex)}
           style={{
-            background: "rgba(255,255,255,0.03)",
-            border: "1px solid rgba(255,255,255,0.08)",
-            color: "#fff",
+            background: "var(--bg3)",
+            border: "1px solid var(--border)",
+            color: "var(--text)",
             borderRadius: "8px",
             width: "36px",
             height: "36px",

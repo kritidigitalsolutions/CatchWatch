@@ -11,6 +11,7 @@ import Loader from '../components/Loader';
 import { getReelsFeed, incrementShares } from '../api/reelsApi';
 import { toggleLike, toggleBookmark, getContentInteractions } from '../api/interactionApi';
 import { addComment, getComments, deleteComment } from '../api/commentApi';
+import { toggleFollowUser } from '../api/userApi';
 
 // Helper to decode JWT token to get current user ID
 const getLoggedInUserId = () => {
@@ -30,6 +31,7 @@ const getLoggedInUserId = () => {
 
 // Individual Video Component
 const ShortVideo = ({ video, isActive }) => {
+  const navigate = useNavigate();
   const videoRef = useRef(null);
   const hlsRef = useRef(null);
   const [isPlaying, setIsPlaying] = useState(false);
@@ -38,11 +40,49 @@ const ShortVideo = ({ video, isActive }) => {
   const [liked, setLiked] = useState(false);
   const [likesCount, setLikesCount] = useState(video.likesCount || video.likes?.length || 0);
   const [saved, setSaved] = useState(false);
+  const [isFollowing, setIsFollowing] = useState(video.isFollowing || false);
   const [showComments, setShowComments] = useState(false);
   const [comments, setComments] = useState([]);
   const [commentText, setCommentText] = useState("");
   const [isLoadingComments, setIsLoadingComments] = useState(false);
   const [commentsCount, setCommentsCount] = useState(video.commentsCount || 0);
+
+  const authorObj = (typeof video.user === "object" && video.user) ? video.user : (video.author || {});
+  const authorId = authorObj._id || authorObj.id || (typeof video.user === "string" ? video.user : null);
+  const authorUsername = authorObj.username ? authorObj.username.replace(/^@/, "") : authorId;
+  const loggedInUserId = getLoggedInUserId();
+  const isSelf = loggedInUserId && authorId && loggedInUserId.toString() === authorId.toString();
+
+  const handleProfileClick = (e) => {
+    e.stopPropagation();
+    if (authorUsername) {
+      navigate(`/user/${authorUsername}`);
+    } else if (authorId) {
+      navigate(`/user/${authorId}`);
+    }
+  };
+
+  const handleFollowToggle = async (e) => {
+    e.stopPropagation();
+    const token = localStorage.getItem("authToken") || localStorage.getItem("token");
+    if (!token) {
+      alert("Please log in to follow users.");
+      return;
+    }
+    if (!authorId) return;
+
+    const nextState = !isFollowing;
+    setIsFollowing(nextState);
+    try {
+      const res = await toggleFollowUser(authorId);
+      if (res && res.success) {
+        setIsFollowing(res.isFollowing);
+      }
+    } catch (err) {
+      console.error("Reel follow toggle error:", err);
+      setIsFollowing(!nextState);
+    }
+  };
 
   const rawSrc = video.videoUrl || video.url || video.video || video.streamUrl || "";
 
@@ -330,22 +370,46 @@ const ShortVideo = ({ video, isActive }) => {
 
       {/* Bottom User Description Meta Interface */}
       <div className="absolute bottom-6 left-4 right-20 z-20 text-white bg-gradient-to-t from-black/80 via-black/40 to-transparent p-3 rounded-xl backdrop-blur-[2px] border border-white/5">
-        <div className="flex items-center gap-3 mb-2">
-          {/* Author/Channel Image */}
-          <div className="w-9 h-9 rounded-full bg-brand-orange flex items-center justify-center font-bold text-sm border border-white/50 overflow-hidden">
-            {video.authorImage || video.channelImage || video.author?.profileImage ? (
-              <img
-                src={video.authorImage || video.channelImage || video.author?.profileImage || null}
-                alt="channel"
-                className="w-full h-full object-cover"
-              />
-            ) : (
-              "CW"
-            )}
+        <div className="flex items-center justify-between gap-2 mb-2">
+          {/* Author Avatar, Name & Username - Clickable */}
+          <div
+            onClick={handleProfileClick}
+            className="flex items-center gap-3 cursor-pointer group flex-1 min-w-0"
+          >
+            <div className="w-10 h-10 rounded-full bg-brand-orange flex items-center justify-center font-bold text-sm border-2 border-white/70 overflow-hidden flex-shrink-0 group-hover:scale-105 transition">
+              {authorObj.profileImage || video.authorImage || video.channelImage ? (
+                <img
+                  src={authorObj.profileImage || video.authorImage || video.channelImage}
+                  alt="author"
+                  className="w-full h-full object-cover"
+                />
+              ) : (
+                authorObj.name ? authorObj.name.charAt(0).toUpperCase() : "CW"
+              )}
+            </div>
+            <div className="min-w-0 flex-1">
+              <h4 className="font-extrabold tracking-wide text-sm sm:text-base line-clamp-1 group-hover:text-brand-orange transition">
+                {authorObj.name || video.authorName || "User"}
+              </h4>
+              <p className="text-xs font-bold text-gray-300 line-clamp-1 group-hover:underline">
+                {authorObj.username ? (authorObj.username.startsWith("@") ? authorObj.username : `@${authorObj.username}`) : "@user"}
+              </p>
+            </div>
           </div>
-          <span className="font-bold tracking-wide text-sm sm:text-base line-clamp-1">
-            {video.author?.name || video.authorName || video.title || "@user"}
-          </span>
+
+          {/* Follow / Unfollow Button */}
+          {!isSelf && authorId && (
+            <button
+              onClick={handleFollowToggle}
+              className={`px-3.5 py-1.5 rounded-full text-xs font-extrabold transition shadow flex-shrink-0 ${
+                isFollowing
+                  ? "bg-white/20 text-white border border-white/30 hover:bg-red-500/80 hover:border-red-500"
+                  : "bg-brand-orange text-white hover:bg-orange-600"
+              }`}
+            >
+              {isFollowing ? "Following" : "+ Follow"}
+            </button>
+          )}
         </div>
         <p className="text-xs sm:text-sm text-gray-200 font-medium mb-2 line-clamp-2">
           {video.description || video.caption || "Enjoy this reel exclusively on CatchWatch."}

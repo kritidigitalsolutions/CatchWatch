@@ -510,7 +510,7 @@ export default function SeasonSection({
                         value={audioLang}
                         onChange={(e) => setAudioLang(e.target.value)}
                         placeholder="Type/select"
-                        style={{ width: "100%", padding: "5px", borderRadius: "4px", background: "var(--bg-input, #111827)", border: "1px solid var(--border)", color: "#fff", fontSize: "11px" }}
+                        style={{ width: "100%", padding: "5px", borderRadius: "4px", background: "var(--bg-input, #111827)", border: "1px solid var(--border)", color: "var(--text)", fontSize: "11px" }}
                       />
                       <datalist id="modal-audio-languages">
                         {SUPPORTED_LANGUAGES.map((lang) => (
@@ -519,12 +519,12 @@ export default function SeasonSection({
                       </datalist>
                     </div>
                     <div>
-                      <label style={{ display: "block", fontSize: "10px", color: "#9ca3af", marginBottom: "2px" }}>Audio File</label>
-                      <input type="file" onChange={(e) => setAudioFile(e.target.files?.[0])} accept="audio/*" style={{ color: "#fff", fontSize: "11px" }} />
+                      <label style={{ display: "block", fontSize: "10px", color: "var(--text-muted)", marginBottom: "2px" }}>Audio File</label>
+                      <input type="file" onChange={(e) => setAudioFile(e.target.files?.[0])} accept="audio/*" style={{ color: "var(--text)", fontSize: "11px" }} />
                     </div>
                     <div style={{ display: "flex", alignItems: "center", gap: "4px", height: "26px" }}>
                       <input type="checkbox" id="modalAudioDefault" checked={audioIsDefault} onChange={(e) => setAudioIsDefault(e.target.checked)} />
-                      <label htmlFor="modalAudioDefault" style={{ fontSize: "11px", color: "#9ca3af", cursor: "pointer" }}>Default</label>
+                      <label htmlFor="modalAudioDefault" style={{ fontSize: "11px", color: "var(--text-muted)", cursor: "pointer" }}>Default</label>
                     </div>
                     <button type="button" onClick={addAudioTrackToModal} style={{ padding: "5px 10px", background: "#FF7A1A", border: "none", color: "#fff", borderRadius: "4px", cursor: "pointer", fontSize: "11px", fontWeight: "600" }}>
                       Add
@@ -534,11 +534,11 @@ export default function SeasonSection({
                   {modalAudioTracks.length > 0 && (
                     <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
                       {modalAudioTracks.map((track, i) => (
-                        <div key={i} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "6px 10px", background: "rgba(0,0,0,0.15)", borderRadius: "4px" }}>
+                        <div key={i} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "6px 10px", background: "var(--bg-input)", borderRadius: "4px" }}>
                           <div style={{ display: "flex", gap: "10px", alignItems: "center" }}>
-                            <span style={{ fontWeight: "600", fontSize: "11px", color: "#fff" }}>{track.language}</span>
-                            <span style={{ color: "#9ca3af", fontSize: "10px" }}>{track.fileUrl ? "Existing Track" : `New: ${track.file?.name}`}</span>
-                            {track.isDefault && <span style={{ padding: "0px 4px", background: "#10b981", borderRadius: "8px", fontSize: "9px", fontWeight: "bold" }}>Default</span>}
+                            <span style={{ fontWeight: "600", fontSize: "11px", color: "var(--text)" }}>{track.language}</span>
+                            <span style={{ color: "var(--text-muted)", fontSize: "10px" }}>{track.fileUrl ? "Existing Track" : `New: ${track.file?.name}`}</span>
+                            {track.isDefault && <span style={{ padding: "0px 4px", background: "#10b981", color: "#fff", borderRadius: "8px", fontSize: "9px", fontWeight: "bold" }}>Default</span>}
                           </div>
                           <button type="button" onClick={() => setModalAudioTracks(modalAudioTracks.filter((_, idx) => idx !== i))} style={{ background: "transparent", border: "none", color: "#ef4444", cursor: "pointer" }}>
                             <Trash2 size={12} />
@@ -554,14 +554,14 @@ export default function SeasonSection({
                   <h4 style={{ fontSize: "13px", fontWeight: "600", color: "#FF7A1A", marginBottom: "8px" }}>Subtitles (.vtt files)</h4>
                   <div style={{ display: "flex", flexWrap: "wrap", gap: "8px", alignItems: "flex-end", background: "rgba(0,0,0,0.2)", padding: "10px", borderRadius: "6px", marginBottom: "8px" }}>
                     <div style={{ minWidth: "110px" }}>
-                      <label style={{ display: "block", fontSize: "10px", color: "#9ca3af", marginBottom: "2px" }}>Language</label>
+                      <label style={{ display: "block", fontSize: "10px", color: "var(--text-muted)", marginBottom: "2px" }}>Language</label>
                       <input
                         type="text"
                         list="modal-sub-languages"
                         value={subLang}
                         onChange={(e) => setSubLang(e.target.value)}
                         placeholder="Type/select"
-                        style={{ width: "100%", padding: "5px", borderRadius: "4px", background: "var(--bg-input, #111827)", border: "1px solid var(--border)", color: "#fff", fontSize: "11px" }}
+                        style={{ width: "100%", padding: "5px", borderRadius: "4px", background: "var(--bg-input, #111827)", border: "1px solid var(--border)", color: "var(--text)", fontSize: "11px" }}
                       />
                       <datalist id="modal-sub-languages">
                         {SUPPORTED_LANGUAGES.map((lang) => (
@@ -570,16 +570,16 @@ export default function SeasonSection({
                       </datalist>
                     </div>
                     <div>
-                      <label style={{ display: "block", fontSize: "10px", color: "#9ca3af", marginBottom: "2px" }}>Label</label>
-                      <input type="text" value={subLabel} onChange={(e) => setSubLabel(e.target.value)} style={{ padding: "5px", borderRadius: "4px", background: "var(--bg-input, #111827)", border: "1px solid var(--border)", color: "#fff", fontSize: "11px", width: "80px" }} />
+                      <label style={{ display: "block", fontSize: "10px", color: "var(--text-muted)", marginBottom: "2px" }}>Label</label>
+                      <input type="text" value={subLabel} onChange={(e) => setSubLabel(e.target.value)} style={{ padding: "5px", borderRadius: "4px", background: "var(--bg-input, #111827)", border: "1px solid var(--border)", color: "var(--text)", fontSize: "11px", width: "80px" }} />
                     </div>
                     <div>
-                      <label style={{ display: "block", fontSize: "10px", color: "#9ca3af", marginBottom: "2px" }}>Subtitle File</label>
-                      <input type="file" onChange={(e) => setSubFile(e.target.files?.[0])} accept=".vtt" style={{ color: "#fff", fontSize: "11px" }} />
+                      <label style={{ display: "block", fontSize: "10px", color: "var(--text-muted)", marginBottom: "2px" }}>Subtitle File</label>
+                      <input type="file" onChange={(e) => setSubFile(e.target.files?.[0])} accept=".vtt" style={{ color: "var(--text)", fontSize: "11px" }} />
                     </div>
                     <div style={{ display: "flex", alignItems: "center", gap: "4px", height: "26px" }}>
                       <input type="checkbox" id="modalSubDefault" checked={subIsDefault} onChange={(e) => setSubIsDefault(e.target.checked)} />
-                      <label htmlFor="modalSubDefault" style={{ fontSize: "11px", color: "#9ca3af", cursor: "pointer" }}>Default</label>
+                      <label htmlFor="modalSubDefault" style={{ fontSize: "11px", color: "var(--text-muted)", cursor: "pointer" }}>Default</label>
                     </div>
                     <button type="button" onClick={addSubtitleToModal} style={{ padding: "5px 10px", background: "#FF7A1A", border: "none", color: "#fff", borderRadius: "4px", cursor: "pointer", fontSize: "11px", fontWeight: "600" }}>
                       Add
@@ -589,9 +589,9 @@ export default function SeasonSection({
                   {modalSubtitles.length > 0 && (
                     <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
                       {modalSubtitles.map((track, i) => (
-                        <div key={i} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "6px 10px", background: "rgba(0,0,0,0.15)", borderRadius: "4px" }}>
+                        <div key={i} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "6px 10px", background: "var(--bg-input)", borderRadius: "4px" }}>
                           <div style={{ display: "flex", gap: "10px", alignItems: "center" }}>
-                            <span style={{ fontWeight: "600", fontSize: "11px", color: "#fff" }}>{track.language}</span>
+                            <span style={{ fontWeight: "600", fontSize: "11px", color: "var(--text)" }}>{track.language}</span>
                             <span style={{ color: "#38bdf8", fontSize: "10px" }}>Label: "{track.label}"</span>
                             <span style={{ color: "#9ca3af", fontSize: "10px" }}>{track.fileUrl ? "Existing Track" : `New: ${track.file?.name}`}</span>
                             {track.isDefault && <span style={{ padding: "0px 4px", background: "#10b981", borderRadius: "8px", fontSize: "9px", fontWeight: "bold" }}>Default</span>}

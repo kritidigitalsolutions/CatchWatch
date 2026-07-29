@@ -66,9 +66,10 @@ export default function UsersPage() {
     }
   };
 
-  const filtered = users.filter(u =>
-    (u.name?.toLowerCase() || "").includes(search.toLowerCase()) ||
-    u.email.toLowerCase().includes(search.toLowerCase())
+  const filtered = users.filter((u) =>
+    (u.name || "").toLowerCase().includes((search || "").toLowerCase()) ||
+    (u.email || "").toLowerCase().includes((search || "").toLowerCase()) ||
+    (u.phone || "").toLowerCase().includes((search || "").toLowerCase())
   );
 
   return (
@@ -215,6 +216,10 @@ export default function UsersPage() {
                   <span className="p-detail-value mono">{selected.phone || "—"}</span>
                 </div>
                 <div className="p-detail-card">
+                  <span className="p-detail-label">Username</span>
+                  <span className="p-detail-value mono">{selected.username}</span>
+                </div>
+                <div className="p-detail-card">
                   <span className="p-detail-label">Email Address</span>
                   <span className="p-detail-value">{selected.email || "—"}</span>
                 </div>
@@ -227,6 +232,20 @@ export default function UsersPage() {
                 <div className="p-detail-card">
                   <span className="p-detail-label">Account ID</span>
                   <span className="p-detail-value mono">{selected._id}</span>
+                </div>
+                <div className="p-detail-card">
+                  <span className="p-detail-label">bio</span>
+                  <span className="p-detail-value mono">{selected.bio || "—"}</span>
+                </div>
+                <div className="p-detail-card">
+                  <span className="p-detail-label">Genres</span>
+                  <span className="p-detail-value mono">{selected.genres?.join(", ") || "—"}</span>
+                </div>
+                <div className="p-detail-card">
+                  <span className="p-detail-label">Subscription</span>
+                  <span className={`p-detail-value ${selected.subscription?.status === "active" ? "text-success" : "text-danger"}`}>
+                    {selected.subscription?.status === "active" ? "Active" : selected.subscription?.status || "Not Subscribed"}
+                  </span>
                 </div>
                 <div className="p-detail-card">
                   <span className="p-detail-label">Member Since</span>

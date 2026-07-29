@@ -30,6 +30,7 @@ import NotificationsPage from './pages/NotificationsPage';
 import MyVideosPage from './pages/MyVideosPage';
 import SingleReelPage from './pages/SingleReelPage';
 import DeleteAccountPage from './pages/DeleteAccountPage';
+import UserProfilePage from './pages/UserProfilePage';
 
 const App = () => {
   useEffect(() => {
@@ -115,6 +116,8 @@ const App = () => {
             <Route path="/tv-shows-episodes/:id" element={<TvShowEpisodesPage />} /> 
             <Route path="/my-videos" element={<MyVideosPage />} />
             <Route path="/reels/:id" element={<SingleReelPage />} />
+            <Route path="/user/:identifier" element={<UserProfilePage />} />
+            <Route path="/@:username" element={<UserProfilePage />} />
           </Route>
         </Routes>
       </Layout>
