@@ -1,19 +1,3 @@
-// const mongoose = require("mongoose");
-
-// const subscriptionSchema = new mongoose.Schema({
-//   user: {
-//     type: mongoose.Schema.Types.ObjectId,
-//     ref: "User",
-//   },
-//   plan: String,
-//   status: String, // active, cancelled, expired
-//   subscriptionId: String,
-//   startDate: Date,
-//   endDate: Date,
-// }, { timestamps: true });
-
-// module.exports = mongoose.model("Subscription", subscriptionSchema);
-
 const mongoose = require("mongoose");
 
 const subscriptionSchema =
@@ -56,11 +40,11 @@ const subscriptionSchema =
       status: {
         type: String,
 
-        enum: [
-          "active",
-          "cancelled",
-          "expired",
-        ],
+        // enum: [
+        //   "active",
+        //   "cancelled",
+        //   "expired",
+        // ],
 
         default: "active",
 
