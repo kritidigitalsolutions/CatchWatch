@@ -138,6 +138,12 @@ const updateUpcomingStatus = require("./middlewares/updateUpcomingStatus.middlew
 
 const subadminRoutes = require("./routes/admin/subadmin.routes");
 
+const adminVerificationRoutes = require("./routes/admin/verification.routes");
+const userVerificationRoutes = require("./routes/user/verification.routes");
+
+app.use("/api/admin/verification", adminVerificationRoutes);
+app.use("/api/verification", userVerificationRoutes);
+
 app.use("/api/admin/auth", adminAuthRoutes);
 app.use("/api/admin/subadmins", subadminRoutes);
 app.use("/api/admin/users", adminUserRoutes);
@@ -259,8 +265,16 @@ app.use("/api/admin/support", adminSupportRoutes);
 
 const reelRoutes = require("./routes/user/reel.routes");
 const commentRoutes = require("./routes/user/comment.routes");
+const userCreatorRoutes = require("./routes/user/creator.routes");
+const adminCreatorRoutes = require("./routes/admin/creator.routes");
+const adminRedeemRoutes = require("./routes/admin/redeem.routes");
+
 app.use("/api/reels", reelRoutes);
 app.use("/api/comments", commentRoutes);
+app.use("/api/creator", userCreatorRoutes);
+app.use("/api/admin/creator", adminCreatorRoutes);
+app.use("/api/admin/redeem", adminRedeemRoutes);
+app.use("/admin/redeem", adminRedeemRoutes);
 // ========================================
 // GLOBAL ERROR HANDLER
 // ========================================

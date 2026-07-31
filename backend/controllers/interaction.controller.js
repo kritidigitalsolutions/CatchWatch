@@ -61,6 +61,8 @@ exports.toggleLike = async (
       });
 
     let message = "";
+    let actionType = null;
+    let pointsDelta = 0;
 
     if (existing) {
       if (existing.type === "like") {
@@ -69,11 +71,15 @@ exports.toggleLike = async (
           _id: existing._id,
         });
         message = "Like removed";
+        actionType = "UNLIKE";
+        pointsDelta = -1;
       } else if (existing.type === "dislike") {
         // Change from dislike to like
         existing.type = "like";
         await existing.save();
         message = "Changed to like";
+        actionType = "LIKE";
+        pointsDelta = 1;
       }
     } else {
       // Create new like interaction
@@ -84,6 +90,19 @@ exports.toggleLike = async (
         type: "like",
       });
       message = "Like added";
+      actionType = "LIKE";
+      pointsDelta = 1;
+    }
+
+    if (contentType === "reel" && reel && reel.user && pointsDelta !== 0) {
+      const { recordEngagementEvent } = require("../utils/creator.helper");
+      await recordEngagementEvent({
+        creatorId: reel.user,
+        reelId: reel._id,
+        userId,
+        action: actionType,
+        pointsDelta,
+      });
     }
 
     // Calculate counts directly from Interaction collection
@@ -174,6 +193,7 @@ exports.toggleDislike = async (
       });
 
     let message = "";
+    let previousType = existing ? existing.type : null;
 
     if (existing) {
       if (existing.type === "dislike") {
@@ -197,6 +217,17 @@ exports.toggleDislike = async (
         type: "dislike",
       });
       message = "Dislike added";
+    }
+
+    if (contentType === "reel" && reel && reel.user && previousType === "like") {
+      const { recordEngagementEvent } = require("../utils/creator.helper");
+      await recordEngagementEvent({
+        creatorId: reel.user,
+        reelId: reel._id,
+        userId,
+        action: "UNLIKE",
+        pointsDelta: -1,
+      });
     }
 
     // Calculate counts directly from Interaction collection
@@ -256,9 +287,18 @@ exports.toggleFollow = async (
         type: "follow",
       });
 
+    const { recordEngagementEvent } = require("../utils/creator.helper");
+
     if (existing) {
       await Interaction.deleteOne({
         _id: existing._id,
+      });
+
+      await recordEngagementEvent({
+        creatorId: targetUserId,
+        userId,
+        action: "UNFOLLOW",
+        pointsDelta: -8,
       });
 
       return res.status(200).json({
@@ -272,6 +312,13 @@ exports.toggleFollow = async (
       contentId: targetUserId,
       contentType: "user",
       type: "follow",
+    });
+
+    await recordEngagementEvent({
+      creatorId: targetUserId,
+      userId,
+      action: "FOLLOW",
+      pointsDelta: 8,
     });
 
     return res.status(200).json({

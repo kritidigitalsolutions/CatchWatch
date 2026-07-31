@@ -49,11 +49,20 @@ exports.addComment = async (req, res) => {
       }
     );
 
+    const { recordEngagementEvent } = require("../utils/creator.helper");
+    await recordEngagementEvent({
+      creatorId: reel.user,
+      reelId: reel._id,
+      userId: req.user.id,
+      action: "COMMENT",
+      pointsDelta: 3,
+    });
+
     const populatedComment =
       await Comment.findById(comment._id)
         .populate(
           "user",
-          "_id name username profileImage"
+          "_id name username profileImage verification"
         );
 
     return res.status(201).json({
@@ -98,20 +107,34 @@ exports.getComments = async (req, res) => {
       })
         .populate(
           "user",
-          "_id name username profileImage"
+          "_id name username profileImage verification"
         )
         .sort({
           createdAt: -1,
         })
-        .skip(skip)
-        .limit(limit);
+        .lean();
+
+    // Sort so comments from verified users appear higher
+    const { decorateUserWithBlueTick } = require("../utils/creator.helper");
+    comments.forEach(c => {
+      if (c.user) c.user = decorateUserWithBlueTick(c.user);
+    });
+
+    comments.sort((a, b) => {
+      const aVerified = a.user?.blueTick || a.user?.verification?.isVerified || a.user?.verification?.status === "VERIFIED" ? 1 : 0;
+      const bVerified = b.user?.blueTick || b.user?.verification?.isVerified || b.user?.verification?.status === "VERIFIED" ? 1 : 0;
+      if (aVerified !== bVerified) return bVerified - aVerified;
+      return new Date(b.createdAt) - new Date(a.createdAt);
+    });
+
+    const paginatedComments = comments.slice(skip, skip + limit);
 
     return res.status(200).json({
       success: true,
       total,
       page,
       limit,
-      comments,
+      comments: paginatedComments,
     });
   } catch (error) {
     console.error("GET COMMENTS ERROR:", error);
@@ -166,6 +189,18 @@ exports.deleteComment = async (
         },
       }
     );
+
+    const reelDoc = await Reel.findById(comment.reel);
+    if (reelDoc && reelDoc.user) {
+      const { recordEngagementEvent } = require("../utils/creator.helper");
+      await recordEngagementEvent({
+        creatorId: reelDoc.user,
+        reelId: reelDoc._id,
+        userId: req.user.id,
+        action: "UNCOMMENT",
+        pointsDelta: -3,
+      });
+    }
 
     return res.status(200).json({
       success: true,

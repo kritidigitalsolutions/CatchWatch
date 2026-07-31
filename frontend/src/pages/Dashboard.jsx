@@ -58,6 +58,15 @@ export default function Dashboard() {
     totalIncome: 0,
   });
 
+  const [verificationStats, setVerificationStats] = useState({
+    totalVerifiedUsers: 0,
+    pendingRequests: 0,
+    rejectedRequests: 0,
+    suspendedUsers: 0,
+    todayApplications: 0,
+    verificationRate: "0%",
+  });
+
   const [loading, setLoading] = useState(true);
   const [growthData, setGrowthData] = useState([]);
 
@@ -82,16 +91,25 @@ export default function Dashboard() {
       //   API.get("/admin/user/growth"),
       //   API.get("/admin/content/stats"),
       // ]);
-      const [uRes, sRes, gRes, subStatsRes, incomeStatsRes, regStatsRes] = await Promise.all([
+      const [uRes, sRes, gRes, subStatsRes, incomeStatsRes, regStatsRes, verifStatsRes] = await Promise.all([
         API.get("/admin/users"),
         API.get("/admin/content/stats"),
         API.get("/admin/user/growth"),
         API.get("/admin/subscription/stats"),
         API.get("/admin/subscription/income-stats"),
         API.get("/admin/user/registration-stats"),
+        API.get("/admin/verification/stats"),
       ]);
 
       setContentStats(sRes.data.data || []);
+      setVerificationStats(verifStatsRes.data?.success ? verifStatsRes.data : {
+        totalVerifiedUsers: 0,
+        pendingRequests: 0,
+        rejectedRequests: 0,
+        suspendedUsers: 0,
+        todayApplications: 0,
+        verificationRate: "0%",
+      });
 
 
 

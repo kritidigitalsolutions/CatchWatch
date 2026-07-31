@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { FaArrowLeft, FaBell, FaTrashAlt, FaCheckDouble } from 'react-icons/fa';
 import Loader from '../components/Loader';
+import VerifiedBadge from '../components/VerifiedBadge';
 
 // APIs import karein
 import { 
@@ -196,8 +197,11 @@ const NotificationsPage = () => {
 
                   {/* Content */}
                   <div className="flex-1 min-w-0 pr-8">
-                    <h4 className={`text-sm sm:text-base mb-1 ${!isReadStatus ? 'font-extrabold text-gray-900' : 'font-bold text-gray-700'}`}>
-                      {notif.title || "New Update"}
+                    <h4 className={`text-sm sm:text-base mb-1 flex items-center gap-1.5 ${!isReadStatus ? 'font-extrabold text-gray-900' : 'font-bold text-gray-700'}`}>
+                      <span>{notif.title || "New Update"}</span>
+                      {(notif.type === "VERIFICATION" || notif.title?.includes("Verified") || notif.title?.includes("Congratulations")) && (
+                        <VerifiedBadge isVerified={true} size="sm" />
+                      )}
                     </h4>
                     <p className="text-xs sm:text-sm text-gray-500 font-medium leading-relaxed line-clamp-2">
                       {notif.message || notif.text}

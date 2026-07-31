@@ -144,3 +144,118 @@ export const getUserPosts = async (userId, page = 1, limit = 20) => {
     throw error;
   }
 };
+
+// Apply Profile Verification
+export const applyVerification = async (formData) => {
+  try {
+    const response = await axiosInstance.post("/verification/apply", formData, {
+      headers: {
+        "Content-Type": "multipart/form-data",
+      },
+    });
+    return response.data;
+  } catch (error) {
+    console.error("Error applying verification:", error);
+    throw error;
+  }
+};
+
+// Get Verification Status
+export const getVerificationStatus = async () => {
+  try {
+    const response = await axiosInstance.get("/verification/status");
+    return response.data;
+  } catch (error) {
+    console.error("Error fetching verification status:", error);
+    throw error;
+  }
+};
+
+// Cancel Verification Request
+export const cancelVerification = async () => {
+  try {
+    const response = await axiosInstance.put("/verification/cancel");
+    return response.data;
+  } catch (error) {
+    console.error("Error cancelling verification:", error);
+    throw error;
+  }
+};
+
+// Search Users with Priority Ordering
+export const searchUsers = async (query) => {
+  try {
+    const response = await axiosInstance.get(`/user/search?q=${encodeURIComponent(query)}`);
+    return response.data;
+  } catch (error) {
+    console.error("Error searching users:", error);
+    throw error;
+  }
+};
+
+// Creator Wallet API
+export const getCreatorWallet = async () => {
+  try {
+    const response = await axiosInstance.get("/creator/wallet");
+    return response.data;
+  } catch (error) {
+    console.error("Error fetching creator wallet:", error);
+    throw error;
+  }
+};
+
+// Creator Redeem Request API
+export const requestRedeem = async (redeemData) => {
+  try {
+    const payload = typeof redeemData === "number" ? { points: redeemData } : redeemData;
+    const response = await axiosInstance.post("/creator/redeem", payload);
+    return response.data;
+  } catch (error) {
+    console.error("Error requesting redeem:", error);
+    throw error;
+  }
+};
+
+// Creator Redeem History API
+export const getRedeemHistory = async () => {
+  try {
+    const response = await axiosInstance.get("/creator/redeem/history");
+    return response.data;
+  } catch (error) {
+    console.error("Error fetching redeem history:", error);
+    throw error;
+  }
+};
+
+// Creator Points API
+export const getCreatorPoints = async () => {
+  try {
+    const response = await axiosInstance.get("/creator/points");
+    return response.data;
+  } catch (error) {
+    console.error("Error fetching creator points:", error);
+    throw error;
+  }
+};
+
+// Creator Point History API
+export const getPointHistory = async () => {
+  try {
+    const response = await axiosInstance.get("/creator/point-history");
+    return response.data;
+  } catch (error) {
+    console.error("Error fetching point history:", error);
+    throw error;
+  }
+};
+
+// Creator Dashboard API
+export const getCreatorDashboard = async () => {
+  try {
+    const response = await axiosInstance.get("/creator/dashboard");
+    return response.data;
+  } catch (error) {
+    console.error("Error fetching creator dashboard:", error);
+    throw error;
+  }
+};

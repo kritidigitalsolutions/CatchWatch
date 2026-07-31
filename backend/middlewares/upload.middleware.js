@@ -14,6 +14,7 @@ const getUploadInfo = (req, file) => {
   if (req.originalUrl.includes("/shortdramas")) type = "shortdramas";
   if (req.originalUrl.includes("/user")) type = "profile";
   if (req.originalUrl.includes("/support")) type = "support";
+  if (req.originalUrl.includes("/verification")) type = "verification";
 
   let subfolder = "others";
 
@@ -29,6 +30,8 @@ const getUploadInfo = (req, file) => {
     subfolder = "cast";
   } else if (file.fieldname === "attachments") {
     subfolder = "attachments";
+  } else if (["idFront", "idBack", "selfie"].includes(file.fieldname)) {
+    subfolder = "documents";
   }
 
   return {

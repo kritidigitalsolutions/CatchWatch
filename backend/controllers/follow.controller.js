@@ -164,7 +164,7 @@ exports.getFollowers = async (req, res) => {
 
     const totalCount = await Follow.countDocuments({ following: userId });
     const follows = await Follow.find({ following: userId })
-      .populate("follower", "_id name username profileImage bio role status")
+      .populate("follower", "_id name username profileImage bio role status verification")
       .sort({ createdAt: -1 })
       .skip(skip)
       .limit(limit)
@@ -207,7 +207,7 @@ exports.getFollowing = async (req, res) => {
 
     const totalCount = await Follow.countDocuments({ follower: userId });
     const follows = await Follow.find({ follower: userId })
-      .populate("following", "_id name username profileImage bio role status")
+      .populate("following", "_id name username profileImage bio role status verification")
       .sort({ createdAt: -1 })
       .skip(skip)
       .limit(limit)

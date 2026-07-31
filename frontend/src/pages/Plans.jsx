@@ -1,9 +1,11 @@
 import { useState, useEffect } from "react";
-import { Pencil, Trash2, Eye, X } from "lucide-react";
+import { Pencil, Trash2, Eye, X, BadgeCheck, CreditCard, ShieldCheck } from "lucide-react";
 import API from "../api/axios";
 import "./Dashboard.css";
 
 export default function PlansPage() {
+  const [activeTab, setActiveTab] = useState("SUBSCRIPTION"); // 'SUBSCRIPTION' | 'BLUETICK'
+
   const [form, setForm] = useState({
     name: "",
     price: "",
@@ -12,7 +14,7 @@ export default function PlansPage() {
     planType: "monthly",
     sortOrder: 0,
     isRecommended: false,
-    isActive: true
+    isActive: true,
   });
 
   const [loading, setLoading] = useState(false);
@@ -33,16 +35,35 @@ export default function PlansPage() {
   // =========================
   const fetchPlans = async () => {
     try {
-      const res = await API.get("/admin/plan");
-      setPlans(res.data.plans);
+      const res = await API.get("/admin/plan", {
+        params: { category: activeTab },
+      });
+      setPlans(res.data.plans || []);
     } catch (err) {
       console.error(err);
+      setPlans([]);
     }
   };
 
   useEffect(() => {
     fetchPlans();
-  }, []);
+  }, [activeTab]);
+
+  // Reset form on tab change
+  const handleTabChange = (tab) => {
+    setActiveTab(tab);
+    setEditId(null);
+    setForm({
+      name: "",
+      price: "",
+      duration: "",
+      features: "",
+      planType: "monthly",
+      sortOrder: 0,
+      isRecommended: false,
+      isActive: true,
+    });
+  };
 
   // =========================
   // ➕ CREATE / ✏️ UPDATE
@@ -63,7 +84,8 @@ export default function PlansPage() {
         planType: form.planType,
         sortOrder: Number(form.sortOrder),
         isRecommended: form.isRecommended,
-        isActive: form.isActive
+        isActive: form.isActive,
+        category: activeTab,
       };
 
       if (editId) {
@@ -76,21 +98,20 @@ export default function PlansPage() {
 
       setForm({
         name: "",
-        price: "", 
+        price: "",
         duration: "",
         features: "",
         planType: "monthly",
         sortOrder: 0,
         isRecommended: false,
-        isActive: true
+        isActive: true,
       });
 
       setEditId(null);
       fetchPlans();
-
     } catch (err) {
       console.error(err);
-      alert("An error occurred. Please try again.");
+      alert(err.response?.data?.message || "An error occurred. Please try again.");
     }
 
     setLoading(false);
@@ -118,11 +139,11 @@ export default function PlansPage() {
       name: plan.name,
       price: plan.price,
       duration: plan.duration,
-      features: plan.features.join(", "),
+      features: plan.features ? plan.features.join(", ") : "",
       planType: plan.planType || "monthly",
       sortOrder: plan.sortOrder || 0,
       isRecommended: plan.isRecommended || false,
-      isActive: plan.isActive !== false
+      isActive: plan.isActive !== false,
     });
     setEditId(plan._id);
   };
@@ -131,20 +152,65 @@ export default function PlansPage() {
     <div className="add-content-page">
       {/* Header */}
       <div className="pg-header">
-        <h1 className="pg-title">💳 Subscription Plans</h1>
-        <p className="pg-sub">Create and manage plans</p>
+        <h1 className="pg-title">💳 Subscription & Verification Plans</h1>
+        <p className="pg-sub">Configure user subscription tiers and Blue Tick profile verification plans.</p>
+      </div>
+
+      {/* ── Category Sub-page / Tab Switcher ── */}
+      <div style={{ display: "flex", gap: 12, marginBottom: 24, borderBottom: "1px solid rgba(255,255,255,0.1)", paddingBottom: 8 }}>
+        <button
+          onClick={() => handleTabChange("SUBSCRIPTION")}
+          style={{
+            padding: "10px 20px",
+            borderRadius: "10px",
+            border: "none",
+            background: activeTab === "SUBSCRIPTION" ? "#ec4899" : "rgba(255,255,255,0.05)",
+            color: "#fff",
+            fontWeight: 700,
+            cursor: "pointer",
+            display: "flex",
+            alignItems: "center",
+            gap: 8,
+            fontSize: "0.95rem",
+          }}
+        >
+          <CreditCard size={18} /> Standard Subscription Plans
+        </button>
+
+        <button
+          onClick={() => handleTabChange("BLUETICK")}
+          style={{
+            padding: "10px 20px",
+            borderRadius: "10px",
+            border: "none",
+            background: activeTab === "BLUETICK" ? "#3b82f6" : "rgba(255,255,255,0.05)",
+            color: "#fff",
+            fontWeight: 700,
+            cursor: "pointer",
+            display: "flex",
+            alignItems: "center",
+            gap: 8,
+            fontSize: "0.95rem",
+          }}
+        >
+          <BadgeCheck size={18} /> Blue Tick & Verification Plans
+        </button>
       </div>
 
       {/* ================= FORM ================= */}
       <form onSubmit={handleSubmit}>
         <div className="form-card">
-          <h3>{editId ? "Edit Plan" : "Create New Plan"}</h3>
+          <h3>
+            {editId
+              ? `Edit ${activeTab === "BLUETICK" ? "Blue Tick" : "Subscription"} Plan`
+              : `Create New ${activeTab === "BLUETICK" ? "Blue Tick Verification" : "Subscription"} Plan`}
+          </h3>
 
           <div className="form-2col">
             <input
               className="form-input-styled"
               name="name"
-              placeholder="Plan Name (Basic, Premium)"
+              placeholder={activeTab === "BLUETICK" ? "Plan Name (e.g. Monthly Blue Tick, Pro Verified)" : "Plan Name (e.g. Basic, VIP Premium)"}
               value={form.name}
               onChange={ch}
               required
@@ -164,7 +230,7 @@ export default function PlansPage() {
               className="form-input-styled"
               name="duration"
               type="number"
-              placeholder="Duration (days)"
+              placeholder="Validity Duration in Days (e.g. 30, 90, 365)"
               value={form.duration}
               onChange={ch}
               required
@@ -173,7 +239,7 @@ export default function PlansPage() {
             <input
               className="form-input-styled form-full"
               name="features"
-              placeholder="Features (comma separated)"
+              placeholder="Features list (comma separated, e.g. Official Blue Tick Badge, Higher Search Priority, Dedicated Support)"
               value={form.features}
               onChange={ch}
             />
@@ -206,7 +272,7 @@ export default function PlansPage() {
                 checked={form.isRecommended}
                 onChange={ch}
               />
-              Recommended Plan
+              Recommended / Featured Badge
             </label>
 
             <label style={{ display: "flex", alignItems: "center", gap: 8, marginTop: 8 }}>
@@ -223,29 +289,34 @@ export default function PlansPage() {
           <button
             className="btn-lg"
             type="submit"
-            style={{ marginTop: 16 }}
+            style={{
+              marginTop: 16,
+              background: activeTab === "BLUETICK" ? "#3b82f6" : undefined,
+            }}
             disabled={loading}
           >
             {loading
               ? "Processing..."
               : editId
               ? "Update Plan"
-              : "Create Plan"}
+              : `Create ${activeTab === "BLUETICK" ? "Blue Tick" : "Subscription"} Plan`}
           </button>
         </div>
       </form>
 
       {/* ================= TABLE ================= */}
       <div className="content-box" style={{ marginTop: 24 }}>
-        <h3>All Plans</h3>
+        <h3>
+          {activeTab === "BLUETICK" ? "✔️ All Blue Tick & Verification Plans" : "💳 All Standard Subscription Plans"}
+        </h3>
 
         <div className="tbl-wrap">
           <table className="tbl">
             <thead>
               <tr>
-                <th>Name</th>
+                <th>Plan Name</th>
                 <th>Price</th>
-                <th>Duration</th>
+                <th>Validity</th>
                 <th>Type</th>
                 <th>Status</th>
                 <th>Recommended</th>
@@ -256,15 +327,20 @@ export default function PlansPage() {
             <tbody>
               {plans.length === 0 ? (
                 <tr>
-                  <td colSpan="5">No plans found</td>
+                  <td colSpan="7" style={{ textAlign: "center", padding: "30px 0", color: "#94a3b8" }}>
+                    No {activeTab === "BLUETICK" ? "Blue Tick" : "subscription"} plans created yet. Use the form above to add one.
+                  </td>
                 </tr>
               ) : (
                 plans.map((p) => (
                   <tr key={p._id}>
-                    <td>{p.name}</td>
+                    <td style={{ fontWeight: 600 }}>
+                      {p.name}{" "}
+                      {p.category === "BLUETICK" && <BadgeCheck size={16} color="#3b82f6" style={{ verticalAlign: "middle" }} />}
+                    </td>
                     <td>₹{p.price}</td>
                     <td>{p.duration} days</td>
-                    <td style={{ textTransform: 'capitalize' }}>{p.planType || "Monthly"}</td>
+                    <td style={{ textTransform: "capitalize" }}>{p.planType || "Monthly"}</td>
                     <td>
                       <span className={p.isActive !== false ? "status active" : "status expired"}>
                         {p.isActive !== false ? "Active" : "Inactive"}
@@ -272,26 +348,11 @@ export default function PlansPage() {
                     </td>
                     <td>{p.isRecommended ? "Yes" : "No"}</td>
 
-                    {/* <td style={{ display: "flex", gap: 8 }}>
-                      <button
-                        className="btn-sm"
-                        onClick={() => handleEdit(p)}
-                      >
-                        ✏️ Edit
-                      </button>
-
-                      <button
-                        className="btn-sm danger"
-                        onClick={() => handleDelete(p._id)}
-                      >
-                        ❌ Delete
-                      </button>
-                    </td> */}
                     <td className="actions">
                       <button
                         className="icon-btn view"
                         onClick={() => setViewPlan(p)}
-                        title="View"
+                        title="View Details"
                       >
                         <Eye size={16} />
                       </button>
@@ -299,19 +360,19 @@ export default function PlansPage() {
                       <button
                         className="icon-btn edit"
                         onClick={() => handleEdit(p)}
-                        title="Edit"
+                        title="Edit Plan"
                       >
                         <Pencil size={16} />
                       </button>
 
-  <button
-    className="icon-btn delete"
-    onClick={() => handleDelete(p._id)}
-    title="Delete"
-  >
-    <Trash2 size={16} />
-  </button>
-</td>
+                      <button
+                        className="icon-btn delete"
+                        onClick={() => handleDelete(p._id)}
+                        title="Delete Plan"
+                      >
+                        <Trash2 size={16} />
+                      </button>
+                    </td>
                   </tr>
                 ))
               )}
@@ -319,55 +380,70 @@ export default function PlansPage() {
           </table>
         </div>
       </div>
+
       {/* ================= VIEW MODAL ================= */}
       {viewPlan && (
         <div className="modal-overlay" onClick={() => setViewPlan(null)}>
-          <div className="modal-box modal-box-view" onClick={e => e.stopPropagation()}>
+          <div className="modal-box modal-box-view" onClick={(e) => e.stopPropagation()}>
             <div className="modal-head">
-              <h3>💳 Plan Details</h3>
-              <button className="modal-close" onClick={() => setViewPlan(null)}><X size={24} /></button>
+              <h3>
+                {viewPlan.category === "BLUETICK" ? "✔️ Blue Tick Plan Details" : "💳 Subscription Plan Details"}
+              </h3>
+              <button className="modal-close" onClick={() => setViewPlan(null)}>
+                <X size={24} />
+              </button>
             </div>
-            
+
             <div className="modal-body p-0">
-              <div className="profile-details-grid" style={{ padding: 24, display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
-                <div className="p-detail-card" style={{ background: 'var(--bg-card-soft)', padding: '16px', borderRadius: '8px' }}>
-                  <span className="p-detail-label" style={{ display: 'block', fontSize: '0.8rem', color: 'var(--text-muted)', marginBottom: '4px' }}>Plan Name</span>
-                  <span className="p-detail-value" style={{ fontWeight: 600, fontSize: '1.1rem' }}>{viewPlan.name}</span>
-                </div>
-                <div className="p-detail-card" style={{ background: 'var(--bg-card-soft)', padding: '16px', borderRadius: '8px' }}>
-                  <span className="p-detail-label" style={{ display: 'block', fontSize: '0.8rem', color: 'var(--text-muted)', marginBottom: '4px' }}>Price</span>
-                  <span className="p-detail-value" style={{ fontWeight: 600, fontSize: '1.1rem' }}>₹{viewPlan.price}</span>
-                </div>
-                <div className="p-detail-card" style={{ background: 'var(--bg-card-soft)', padding: '16px', borderRadius: '8px' }}>
-                  <span className="p-detail-label" style={{ display: 'block', fontSize: '0.8rem', color: 'var(--text-muted)', marginBottom: '4px' }}>Duration</span>
-                  <span className="p-detail-value" style={{ fontWeight: 600, fontSize: '1.1rem' }}>{viewPlan.duration} days</span>
-                </div>
-                <div className="p-detail-card" style={{ background: 'var(--bg-card-soft)', padding: '16px', borderRadius: '8px' }}>
-                  <span className="p-detail-label" style={{ display: 'block', fontSize: '0.8rem', color: 'var(--text-muted)', marginBottom: '4px' }}>Type</span>
-                  <span className="p-detail-value" style={{ fontWeight: 600, fontSize: '1.1rem', textTransform: 'capitalize' }}>{viewPlan.planType || 'Monthly'}</span>
-                </div>
-                <div className="p-detail-card" style={{ background: 'var(--bg-card-soft)', padding: '16px', borderRadius: '8px' }}>
-                  <span className="p-detail-label" style={{ display: 'block', fontSize: '0.8rem', color: 'var(--text-muted)', marginBottom: '4px' }}>Status</span>
-                  <span className="p-detail-value" style={{ fontWeight: 600, fontSize: '1.1rem' }}>
-                    <span className={viewPlan.isActive !== false ? "status active" : "status expired"}>
-                      {viewPlan.isActive !== false ? "Active" : "Inactive"}
-                    </span>
+              <div className="profile-details-grid" style={{ padding: 24, display: "grid", gridTemplateColumns: "1fr 1fr", gap: "16px" }}>
+                <div className="p-detail-card" style={{ background: "var(--bg-card-soft)", padding: "16px", borderRadius: "8px" }}>
+                  <span className="p-detail-label" style={{ display: "block", fontSize: "0.8rem", color: "var(--text-muted)", marginBottom: "4px" }}>
+                    Plan Name
+                  </span>
+                  <span className="p-detail-value" style={{ fontWeight: 600, fontSize: "1.1rem" }}>
+                    {viewPlan.name}
                   </span>
                 </div>
-                <div className="p-detail-card" style={{ background: 'var(--bg-card-soft)', padding: '16px', borderRadius: '8px', gridColumn: '1 / -1' }}>
-                  <span className="p-detail-label" style={{ display: 'block', fontSize: '0.8rem', color: 'var(--text-muted)', marginBottom: '4px' }}>Recommended</span>
-                  <span className="p-detail-value" style={{ fontWeight: 600, fontSize: '1.1rem' }}>{viewPlan.isRecommended ? 'Yes' : 'No'}</span>
+
+                <div className="p-detail-card" style={{ background: "var(--bg-card-soft)", padding: "16px", borderRadius: "8px" }}>
+                  <span className="p-detail-label" style={{ display: "block", fontSize: "0.8rem", color: "var(--text-muted)", marginBottom: "4px" }}>
+                    Price
+                  </span>
+                  <span className="p-detail-value" style={{ fontWeight: 600, fontSize: "1.1rem" }}>
+                    ₹{viewPlan.price}
+                  </span>
                 </div>
-                <div className="p-detail-card" style={{ background: 'var(--bg-card-soft)', padding: '16px', borderRadius: '8px', gridColumn: "1 / -1" }}>
-                  <span className="p-detail-label" style={{ display: 'block', fontSize: '0.8rem', color: 'var(--text-muted)', marginBottom: '8px' }}>Features</span>
-                  <span className="p-detail-value" style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                    {viewPlan.features && viewPlan.features.length > 0 
+
+                <div className="p-detail-card" style={{ background: "var(--bg-card-soft)", padding: "16px", borderRadius: "8px" }}>
+                  <span className="p-detail-label" style={{ display: "block", fontSize: "0.8rem", color: "var(--text-muted)", marginBottom: "4px" }}>
+                    Validity Duration
+                  </span>
+                  <span className="p-detail-value" style={{ fontWeight: 600, fontSize: "1.1rem" }}>
+                    {viewPlan.duration} days
+                  </span>
+                </div>
+
+                <div className="p-detail-card" style={{ background: "var(--bg-card-soft)", padding: "16px", borderRadius: "8px" }}>
+                  <span className="p-detail-label" style={{ display: "block", fontSize: "0.8rem", color: "var(--text-muted)", marginBottom: "4px" }}>
+                    Category
+                  </span>
+                  <span className="p-detail-value" style={{ fontWeight: 600, fontSize: "1.1rem" }}>
+                    {viewPlan.category || "SUBSCRIPTION"}
+                  </span>
+                </div>
+
+                <div className="p-detail-card" style={{ background: "var(--bg-card-soft)", padding: "16px", borderRadius: "8px", gridColumn: "1 / -1" }}>
+                  <span className="p-detail-label" style={{ display: "block", fontSize: "0.8rem", color: "var(--text-muted)", marginBottom: "8px" }}>
+                    Included Features
+                  </span>
+                  <span className="p-detail-value" style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
+                    {viewPlan.features && viewPlan.features.length > 0
                       ? viewPlan.features.map((f, i) => (
-                          <div key={i} style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '0.95rem' }}>
-                            <span style={{ color: 'var(--primary-color)' }}>✓</span> {f}
+                          <div key={i} style={{ display: "flex", alignItems: "center", gap: "8px", fontSize: "0.95rem" }}>
+                            <span style={{ color: viewPlan.category === "BLUETICK" ? "#3b82f6" : "var(--primary-color)" }}>✓</span> {f}
                           </div>
-                        )) 
-                      : "No features added"}
+                        ))
+                      : "No features specified"}
                   </span>
                 </div>
               </div>

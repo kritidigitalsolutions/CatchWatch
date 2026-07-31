@@ -15,6 +15,7 @@ import PermissionGuard from "./components/PermissionGuard";
 const DashboardHome = lazy(() => import("./pages/Dashboard"));
 const SubAdminsPage = lazy(() => import("./pages/SubAdminsPage"));
 const UsersPage = lazy(() => import("./pages/UsersPage"));
+const VerificationManagement = lazy(() => import("./pages/VerificationManagement"));
 const CategoriesPage = lazy(() => import("./pages/Categories"));
 const AddContent = lazy(() => import("./pages/AddContent"));
 const Content = lazy(() => import("./pages/Content"));
@@ -179,6 +180,14 @@ function App() {
               element={
                 <PermissionGuard pageKey="users">
                   <UsersPage />
+                </PermissionGuard>
+              }
+            />
+            <Route
+              path="verification"
+              element={
+                <PermissionGuard pageKey="verification">
+                  <VerificationManagement />
                 </PermissionGuard>
               }
             />

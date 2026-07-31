@@ -31,6 +31,7 @@ import MyVideosPage from './pages/MyVideosPage';
 import SingleReelPage from './pages/SingleReelPage';
 import DeleteAccountPage from './pages/DeleteAccountPage';
 import UserProfilePage from './pages/UserProfilePage';
+import CompleteProfilePage from './pages/CompleteProfilePage';
 
 const App = () => {
   useEffect(() => {
@@ -98,6 +99,7 @@ const App = () => {
             <Route path="/search" element={<SearchMoviesPage />} />
             <Route path="/profile" element={<ProfileMenuPage />} />
             <Route path="/profile/edit" element={<EditProfilePage />} />
+            <Route path="/complete-profile" element={<CompleteProfilePage />} />
             <Route path="/delete-account" element={<DeleteAccountPage />} />
             <Route path="/profile/delete" element={<DeleteAccountPage />} />
             <Route path="/downloads" element={<DownloadsPage />} />

@@ -13,8 +13,6 @@ const planSchema =
         required: true,
 
         trim: true,
-
-        unique: true,
       },
 
       // ========================================
@@ -95,6 +93,14 @@ const planSchema =
         type: Boolean,
 
         default: false,
+      },
+
+      // plan category (SUBSCRIPTION vs BLUETICK)
+      category: {
+        type: String,
+        enum: ["SUBSCRIPTION", "BLUETICK"],
+        default: "SUBSCRIPTION",
+        index: true,
       },
     },
 

@@ -6,6 +6,11 @@ export const getPlans = async () => {
   return response.data;
 };
 
+export const getBluetickPlans = async () => {
+  const response = await axiosInstance.get("/plan/bluetick");
+  return response.data;
+};
+
 // Subscriptions
 export const createPlan = async (data) => {
   const response = await axiosInstance.post("/subscription/create-plan", data);

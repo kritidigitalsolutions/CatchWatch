@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { FaCamera } from "react-icons/fa";
 import Loader from '../components/Loader';
+import ProfileVerificationSection from '../components/ProfileVerificationSection';
 
 // APIs import karein
 import { getUserProfile, updateProfile } from '../api/userApi';
@@ -227,6 +228,10 @@ const EditProfilePage = () => {
             "Save Data Profile Modifications"
           )}
         </button>
+      </div>
+
+      <div className="p-6">
+        <ProfileVerificationSection userProfile={formProfile} />
       </div>
     </div>
   );

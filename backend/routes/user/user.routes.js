@@ -17,6 +17,7 @@ const {
   getProfileStats,
   getPublicUserProfile,
   getUserPosts,
+  searchUsers,
 } = require("../../controllers/user.controller");
 
 const {
@@ -106,6 +107,15 @@ router.get(
   "/profile-stats/:userId",
   optionalAuth,
   getProfileStats
+);
+
+// ========================================
+// SEARCH USERS
+// ========================================
+router.get(
+  "/search",
+  optionalAuth,
+  searchUsers
 );
 
 module.exports = router;

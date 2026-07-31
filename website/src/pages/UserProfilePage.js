@@ -2,6 +2,8 @@ import React, { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { FaUserPlus, FaUserCheck, FaPlay, FaHeart, FaTimes } from "react-icons/fa";
 import Loader from "../components/Loader";
+import VerifiedBadge from "../components/VerifiedBadge";
+import ProfileVerificationSection from "../components/ProfileVerificationSection";
 import {
   getPublicUserProfile,
   toggleFollowUser,
@@ -160,8 +162,9 @@ const UserProfilePage = () => {
           <div className="flex-1">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
               <div>
-                <h1 className="text-2xl sm:text-3xl font-extrabold text-gray-900 capitalize">
-                  {user.name}
+                <h1 className="text-2xl sm:text-3xl font-extrabold text-gray-900 capitalize flex items-center gap-2 flex-wrap">
+                  <span>{user.name}</span>
+                  <VerifiedBadge user={user} size="lg" />
                 </h1>
                 <p className="text-sm font-bold text-brand-orange mt-0.5">
                   {user.username ? (user.username.startsWith("@") ? user.username : `@${user.username}`) : "@user"}
@@ -240,14 +243,17 @@ const UserProfilePage = () => {
                 <span className="block text-xl font-black text-gray-900">{profileData.followingCount}</span>
                 <span className="text-xs font-bold uppercase tracking-wider text-gray-400">Following</span>
               </div>
-              <div className="hidden sm:block">
+              {/* <div className="hidden sm:block">
                 <span className="block text-xl font-black text-gray-900">{profileData.totalLikes || 0}</span>
                 <span className="text-xs font-bold uppercase tracking-wider text-gray-400">Total Likes</span>
-              </div>
+              </div> */}
             </div>
           </div>
         </div>
       </div>
+
+      {/* Profile Verification Section (Only for Self Profile) */}
+      {profileData.isSelf && <ProfileVerificationSection userProfile={user} />}
 
       {/* User Posts / Reels Section */}
       <div className="mt-8">
@@ -361,7 +367,10 @@ const UserProfilePage = () => {
                         )}
                       </div>
                       <div>
-                        <h4 className="text-sm font-bold text-gray-900">{u.name}</h4>
+                        <h4 className="text-sm font-bold text-gray-900 flex items-center gap-1.5">
+                          <span>{u.name}</span>
+                          <VerifiedBadge user={u} size="sm" />
+                        </h4>
                         <p className="text-xs font-medium text-gray-400">
                           {u.username ? (u.username.startsWith("@") ? u.username : `@${u.username}`) : ""}
                         </p>

@@ -3,7 +3,7 @@ const Plan = require("../../models/plan.model");
 // CREATE PLAN
 exports.createPlan = async (req, res) => {
   try {
-    const { name, price, duration, features, isActive } = req.body;
+    const { name, price, duration, features, isActive, category, planType, sortOrder, isRecommended } = req.body;
 
     const plan = await Plan.create({
       name,
@@ -11,6 +11,10 @@ exports.createPlan = async (req, res) => {
       duration,
       features,
       isActive,
+      category: category || "SUBSCRIPTION",
+      planType: planType || "monthly",
+      sortOrder: sortOrder || 0,
+      isRecommended: !!isRecommended,
     });
 
     res.status(201).json({
@@ -88,7 +92,12 @@ exports.deletePlan = async (req, res) => {
 // GET ALL PLANS (ADMIN)
 exports.getAllPlans = async (req, res) => {
   try {
-    const plans = await Plan.find().sort({ createdAt: -1 });
+    const { category } = req.query;
+    let query = {};
+    if (category) {
+      query.category = category;
+    }
+    const plans = await Plan.find(query).sort({ sortOrder: 1, createdAt: -1 });
 
     res.json({
       success: true,

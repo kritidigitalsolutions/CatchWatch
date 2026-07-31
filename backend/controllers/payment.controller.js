@@ -280,33 +280,6 @@ exports.verifyPayment = async (
     }
 
     // ========================================
-    // CHECK EXISTING SUBSCRIPTION
-    // ========================================
-
-    let existing =
-      await Subscription.findOne({
-        user: userId,
-        status: "active",
-      });
-
-    existing =
-      await expireSubscriptionIfNeeded(
-        existing
-      );
-
-    if (
-      existing &&
-      existing.status ===
-        "active"
-    ) {
-      return res.status(400).json({
-        success: false,
-        message:
-          "You already have an active subscription",
-      });
-    }
-
-    // ========================================
     // GET PLAN
     // ========================================
 
@@ -318,6 +291,35 @@ exports.verifyPayment = async (
         success: false,
         message: "Plan not found",
       });
+    }
+
+    // ========================================
+    // CHECK EXISTING SUBSCRIPTION (Only for video streaming plans, skip for BLUETICK)
+    // ========================================
+
+    if (plan.type !== "BLUETICK") {
+      let existing =
+        await Subscription.findOne({
+          user: userId,
+          status: "active",
+        });
+
+      existing =
+        await expireSubscriptionIfNeeded(
+          existing
+        );
+
+      if (
+        existing &&
+        existing.status ===
+          "active"
+      ) {
+        return res.status(400).json({
+          success: false,
+          message:
+            "You already have an active subscription",
+        });
+      }
     }
 
     // ========================================

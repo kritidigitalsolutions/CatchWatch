@@ -6,6 +6,7 @@ import { GiSaveArrow } from "react-icons/gi";
 import { FaShareNodes } from "react-icons/fa6";
 import { LuMessageCircleMore } from "react-icons/lu";
 import Loader from '../components/Loader';
+import VerifiedBadge from '../components/VerifiedBadge';
 
 // APIs Import
 import { getReelsFeed, incrementShares } from '../api/reelsApi';
@@ -388,8 +389,9 @@ const ShortVideo = ({ video, isActive }) => {
               )}
             </div>
             <div className="min-w-0 flex-1">
-              <h4 className="font-extrabold tracking-wide text-sm sm:text-base line-clamp-1 group-hover:text-brand-orange transition">
-                {authorObj.name || video.authorName || "User"}
+              <h4 className="font-extrabold tracking-wide text-sm sm:text-base line-clamp-1 group-hover:text-brand-orange transition flex items-center gap-1.5">
+                <span>{authorObj.name || video.authorName || "User"}</span>
+                <VerifiedBadge user={authorObj} size="sm" />
               </h4>
               <p className="text-xs font-bold text-gray-300 line-clamp-1 group-hover:underline">
                 {authorObj.username ? (authorObj.username.startsWith("@") ? authorObj.username : `@${authorObj.username}`) : "@user"}
@@ -449,20 +451,27 @@ const ShortVideo = ({ video, isActive }) => {
               ) : (
                 comments.map((c) => {
                   const isOwnComment = c.user?._id === getLoggedInUserId();
+                  const isVerifiedUser = c.user?.verification?.isVerified || c.user?.verification?.status === "VERIFIED";
                   return (
-                    <div key={c._id} className="flex gap-2.5 items-start justify-between bg-white/5 p-2.5 rounded-xl border border-white/5">
-                      <div className="flex gap-2.5 items-start flex-1 min-w-0">
+                    <div
+                      key={c._id}
+                      className={`flex items-start justify-between gap-2 p-2.5 rounded-xl border transition ${
+                        isVerifiedUser ? "bg-blue-950/40 border-blue-500/40 shadow-sm" : "bg-white/5 border-white/5"
+                      }`}
+                    >
+                      <div className="flex items-start gap-2.5 flex-1 min-w-0">
                         {/* Avatar */}
-                        <div className="w-8 h-8 rounded-full bg-brand-orange flex-shrink-0 flex items-center justify-center font-bold text-xs border border-white/20 overflow-hidden">
+                        <div className="w-7 h-7 rounded-full bg-brand-orange text-white text-xs font-bold flex items-center justify-center flex-shrink-0 overflow-hidden">
                           {c.user?.profileImage ? (
-                            <img src={c.user.profileImage || null} alt="user" className="w-full h-full object-cover" />
+                            <img src={c.user.profileImage} alt="user" className="w-full h-full object-cover" />
                           ) : (
                             (c.user?.name || "U")[0].toUpperCase()
                           )}
                         </div>
                         <div className="flex-1 min-w-0">
-                          <div className="text-xs font-black text-orange-400 truncate">
-                            {c.user?.name || c.user?.username || "Anonymous"}
+                          <div className="text-xs font-black text-orange-400 truncate flex items-center gap-1">
+                            <span>{c.user?.name || c.user?.username || "Anonymous"}</span>
+                            <VerifiedBadge user={c.user} size="sm" />
                           </div>
                           <div className="text-[12px] text-zinc-200 mt-0.5 break-words font-medium leading-relaxed">
                             {c.text}

@@ -24,10 +24,12 @@ const generateUserToken = (user) => {
 
 const Subscription = require("../models/subscription.model");
 const { expireSubscriptionIfNeeded } = require("../utils/subscription.helper");
+const { decorateUserWithBlueTick } = require("../utils/creator.helper");
 
 const decorateUserWithSubscription = async (userObj) => {
   if (!userObj) return null;
-  const user = userObj.toObject ? userObj.toObject() : userObj;
+  let user = userObj.toObject ? userObj.toObject() : userObj;
+  user = decorateUserWithBlueTick(user);
   try {
     let activeSub = await Subscription.findOne({
       user: user._id || user.id,
@@ -159,54 +161,68 @@ exports.completeProfile = async (
       });
     }
 
-    // Validate username (must start with @)
-    if (!username || typeof username !== "string") {
-      return res.status(400).json({
-        success: false,
-        message: "Username is required",
-      });
-    }
-    let formattedUsername = username.trim();
-    if (!formattedUsername.startsWith("@")) {
-      formattedUsername = "@" + formattedUsername;
-    }
-    if (!/^@[a-zA-Z0-9_]+$/.test(formattedUsername)) {
-      return res.status(400).json({
-        success: false,
-        message:
-          "Username must start with @ and contain only letters, numbers and underscores",
-      });
+    let formattedUsername = "";
+
+    if (username && typeof username === "string" && username.trim()) {
+      formattedUsername = username.trim();
+      if (!formattedUsername.startsWith("@")) {
+        formattedUsername = "@" + formattedUsername;
+      }
+      if (!/^@[a-zA-Z0-9_]+$/.test(formattedUsername)) {
+        return res.status(400).json({
+          success: false,
+          message:
+            "Username must start with @ and contain only letters, numbers and underscores",
+        });
+      }
+
+      // Check username unique
+      const existingUsername = await User.findOne({ username: formattedUsername });
+      if (existingUsername && existingUsername._id.toString() !== user._id.toString()) {
+        return res.status(400).json({
+          success: false,
+          message: "Username already in use",
+        });
+      }
+    } else {
+      // AUTO-GENERATE UNIQUE USERNAME
+      let baseSlug = name.trim().toLowerCase().replace(/[^a-z0-9]/g, "_").replace(/_+/g, "_").replace(/^_+|_+$/g, "");
+      if (!baseSlug) {
+        baseSlug = "user";
+      }
+
+      let candidate = "@" + baseSlug;
+      let existing = await User.findOne({ username: candidate });
+
+      if (existing && existing._id.toString() !== user._id.toString()) {
+        let isUnique = false;
+        while (!isUnique) {
+          const randomDigits = Math.floor(1000 + Math.random() * 9000);
+          candidate = `@${baseSlug}_${randomDigits}`;
+          const check = await User.findOne({ username: candidate });
+          if (!check || check._id.toString() === user._id.toString()) {
+            isUnique = true;
+          }
+        }
+      }
+      formattedUsername = candidate;
     }
 
-    // Check username unique
-    const existingUsername = await User.findOne({ username: formattedUsername });
-    if (existingUsername && existingUsername._id.toString() !== user._id.toString()) {
-      return res.status(400).json({
-        success: false,
-        message: "Username already in use",
-      });
-    }
-
-    // Validate genres
-    if (!genres) {
-      return res.status(400).json({
-        success: false,
-        message: "Genres are required",
-      });
-    }
-    let genresArray = genres;
-    if (typeof genres === "string") {
-      try {
-        genresArray = JSON.parse(genres);
-      } catch {
-        genresArray = genres.split(",").map((g) => g.trim()).filter(Boolean);
+    // Validate genres (default to ["Drama"] if omitted)
+    let genresArray = ["Drama"];
+    if (genres) {
+      if (typeof genres === "string") {
+        try {
+          genresArray = JSON.parse(genres);
+        } catch {
+          genresArray = genres.split(",").map((g) => g.trim()).filter(Boolean);
+        }
+      } else if (Array.isArray(genres)) {
+        genresArray = genres;
       }
     }
     if (!Array.isArray(genresArray) || genresArray.length === 0) {
-      return res.status(400).json({
-        success: false,
-        message: "At least one genre is required",
-      });
+      genresArray = ["Drama"];
     }
 
 
@@ -705,4 +721,52 @@ exports.getUserPosts = async (req, res) => {
     });
   }
 };
+
+// ========================================
+// SEARCH USERS WITH PRIORITY ORDERING
+// Priority Order: Verified Users -> Premium Users -> Normal Users
+// ========================================
+exports.searchUsers = async (req, res) => {
+  try {
+    const queryStr = req.query.query || req.query.q || "";
+    if (!queryStr.trim()) {
+      return res.status(200).json({ success: true, users: [] });
+    }
+
+    const searchRegex = new RegExp(queryStr.trim().replace(/^@/, ""), "i");
+
+    const rawUsers = await User.find({
+      $or: [
+        { name: searchRegex },
+        { username: searchRegex },
+      ],
+      status: "Active",
+    }).select("_id name username profileImage bio verification role").lean();
+
+    const decoratedUsers = await Promise.all(
+      rawUsers.map(async (u) => await decorateUserWithSubscription(u))
+    );
+
+    decoratedUsers.sort((a, b) => {
+      const aVerified = a.verification?.isVerified || a.verification?.status === "VERIFIED" ? 1 : 0;
+      const bVerified = b.verification?.isVerified || b.verification?.status === "VERIFIED" ? 1 : 0;
+      if (aVerified !== bVerified) return bVerified - aVerified;
+
+      const aPremium = a.isPremium ? 1 : 0;
+      const bPremium = b.isPremium ? 1 : 0;
+      if (aPremium !== bPremium) return bPremium - aPremium;
+
+      return 0;
+    });
+
+    return res.status(200).json({
+      success: true,
+      users: decoratedUsers,
+    });
+  } catch (error) {
+    console.error("SEARCH USERS ERROR:", error);
+    return res.status(500).json({ success: false, message: "Server error" });
+  }
+};
+
 

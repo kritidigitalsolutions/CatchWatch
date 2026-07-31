@@ -91,9 +91,101 @@ const userSchema = new mongoose.Schema(
     fcmTokenUpdatedAt: {
       type: Date,
     },
+
+    verification: {
+      status: {
+        type: String,
+        enum: [
+          "NOT_VERIFIED",
+          "PENDING",
+          "VERIFIED",
+          "REJECTED",
+          "SUSPENDED"
+        ],
+        default: "NOT_VERIFIED"
+      },
+      badgeType: {
+        type: String,
+        default: "BLUE"
+      },
+      verifiedAt: Date,
+      verifiedBy: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "Admin"
+      },
+      rejectionReason: String,
+      suspensionReason: String,
+      expiryDate: Date,
+      isVerified: {
+        type: Boolean,
+        default: false
+      }
+    },
+
+    // Creator Quality Score & Rewards Fields
+    isCreator: {
+      type: Boolean,
+      default: true,
+    },
+
+    isVerified: {
+      type: Boolean,
+      default: false,
+    },
+
+    creatorStatus: {
+      type: String,
+      enum: ["Active", "Disabled", "Pending"],
+      default: "Active",
+    },
+
+    creatorJoinedAt: {
+      type: Date,
+      default: Date.now,
+    },
+
+    creatorCategory: {
+      type: String,
+      default: "General",
+    },
+
+    qualityScore: {
+      type: Number,
+      default: 0,
+      min: 0,
+      max: 100,
+    },
+
+    creatorLevel: {
+      type: String,
+      enum: ["Bronze", "Silver", "Gold", "Platinum", "Diamond"],
+      default: "Bronze",
+    },
+
+    totalEngagementPoints: {
+      type: Number,
+      default: 0,
+    },
+
+    totalQualifiedViews: {
+      type: Number,
+      default: 0,
+    },
+
+    totalWatchMinutes: {
+      type: Number,
+      default: 0,
+    },
+
+    totalCreatorFollowers: {
+      type: Number,
+      default: 0,
+    },
   },
   {
     timestamps: true,
+    toJSON: { virtuals: true },
+    toObject: { virtuals: true },
   }
 );
 

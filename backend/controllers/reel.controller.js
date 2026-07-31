@@ -96,7 +96,7 @@ exports.getReelsFeed = async (req, res) => {
     })
       .populate(
         "user",
-        "name username profileImage bio"
+        "name username profileImage bio verification"
       )
       .sort({ createdAt: -1 })
       .lean();
@@ -114,6 +114,8 @@ exports.getReelsFeed = async (req, res) => {
         // Ignored
       }
     }
+
+    const { decorateUserWithBlueTick } = require("../utils/creator.helper");
 
     if (reels.length > 0) {
       const reelIds = reels.map(r => r._id);
@@ -161,6 +163,9 @@ exports.getReelsFeed = async (req, res) => {
       }
 
       reels.forEach(r => {
+        if (r.user) {
+          r.user = decorateUserWithBlueTick(r.user);
+        }
         const thumb = r.thumbnailUrl || r.thumbnail || "";
         r.thumbnailUrl = thumb;
         r.thumbnail = thumb;
@@ -200,12 +205,12 @@ exports.getSingleReel = async (
       });
     }
 
-    const reel = await Reel.findById(
+    let reel = await Reel.findById(
       req.params.id
     )
       .populate(
         "user",
-        "name username profileImage bio"
+        "name username profileImage bio verification"
       )
       .lean();
 
@@ -214,6 +219,11 @@ exports.getSingleReel = async (
         success: false,
         message: "Reel not found",
       });
+    }
+
+    const { decorateUserWithBlueTick } = require("../utils/creator.helper");
+    if (reel.user) {
+      reel.user = decorateUserWithBlueTick(reel.user);
     }
 
     // Check if user is logged in (optional auth)
@@ -326,17 +336,21 @@ exports.deleteReel = async (
 };
 
 // ========================================
-// INCREMENT VIEWS COUNT
+// INCREMENT VIEWS COUNT (WITH QUALIFIED VIEW RULES)
 // ========================================
 exports.incrementViews = async (req, res) => {
   try {
-    const { id } = req.params;
-    if (!mongoose.Types.ObjectId.isValid(id)) {
+    const { id, reelId } = req.params;
+    const targetReelId = id || reelId;
+    const { watchDuration, deviceId } = req.body;
+    const ip = req.ip || req.headers["x-forwarded-for"] || req.socket.remoteAddress || "";
+
+    if (!mongoose.Types.ObjectId.isValid(targetReelId)) {
       return res.status(400).json({ success: false, message: "Invalid Reel ID" });
     }
 
     const reel = await Reel.findByIdAndUpdate(
-      id,
+      targetReelId,
       { $inc: { viewsCount: 1 } },
       { new: true }
     );
@@ -345,9 +359,63 @@ exports.incrementViews = async (req, res) => {
       return res.status(404).json({ success: false, message: "Reel not found" });
     }
 
+    // Try extract logged in viewer ID if auth header present
+    let viewerId = req.user?.id || null;
+    if (!viewerId) {
+      const authHeader = req.headers.authorization;
+      if (authHeader && authHeader.startsWith("Bearer ")) {
+        try {
+          const jwt = require("jsonwebtoken");
+          const token = authHeader.split(" ")[1];
+          const decoded = jwt.verify(token, process.env.JWT_SECRET);
+          viewerId = decoded.id;
+        } catch (err) {}
+      }
+    }
+
+    const { validateQualifiedView, recordEngagementEvent } = require("../utils/creator.helper");
+    const QualifiedView = require("../models/qualifiedView.model");
+
+    let isQualified = false;
+    const durationNum = Number(watchDuration) || 0;
+
+    if (viewerId) {
+      const validation = await validateQualifiedView({
+        reel,
+        viewerId,
+        watchDuration: durationNum,
+        ip,
+        deviceId: deviceId || "",
+      });
+
+      isQualified = validation.qualified;
+
+      await QualifiedView.create({
+        creatorId: reel.user,
+        viewerId,
+        reelId: reel._id,
+        watchDuration: durationNum,
+        isQualified,
+        deviceId: deviceId || "",
+        ip,
+      });
+
+      if (isQualified) {
+        await recordEngagementEvent({
+          creatorId: reel.user,
+          reelId: reel._id,
+          userId: viewerId,
+          action: "QUALIFIED_VIEW",
+          pointsDelta: 0,
+          watchDuration: durationNum,
+        });
+      }
+    }
+
     return res.status(200).json({
       success: true,
-      message: "Views count incremented",
+      qualifiedView: isQualified,
+      totalViews: reel.viewsCount,
       viewsCount: reel.viewsCount,
     });
   } catch (error) {
@@ -357,17 +425,47 @@ exports.incrementViews = async (req, res) => {
 };
 
 // ========================================
-// INCREMENT SHARES COUNT
+// REEL COMMENT COUNT API
+// ========================================
+exports.getCommentCount = async (req, res) => {
+  try {
+    const { id, reelId } = req.params;
+    const targetReelId = id || reelId;
+
+    if (!mongoose.Types.ObjectId.isValid(targetReelId)) {
+      return res.status(400).json({ success: false, message: "Invalid Reel ID" });
+    }
+
+    const Comment = require("../models/comment.model");
+    const count = await Comment.countDocuments({
+      reel: targetReelId,
+      status: "ACTIVE",
+    });
+
+    return res.status(200).json({
+      success: true,
+      commentCount: count,
+    });
+  } catch (error) {
+    console.error("GET COMMENT COUNT ERROR:", error);
+    return res.status(500).json({ success: false, message: "Server error" });
+  }
+};
+
+// ========================================
+// INCREMENT SHARES COUNT (GRANT +5 POINTS)
 // ========================================
 exports.incrementShares = async (req, res) => {
   try {
-    const { id } = req.params;
-    if (!mongoose.Types.ObjectId.isValid(id)) {
+    const { id, reelId } = req.params;
+    const targetReelId = id || reelId;
+
+    if (!mongoose.Types.ObjectId.isValid(targetReelId)) {
       return res.status(400).json({ success: false, message: "Invalid Reel ID" });
     }
 
     const reel = await Reel.findByIdAndUpdate(
-      id,
+      targetReelId,
       { $inc: { sharesCount: 1 } },
       { new: true }
     );
@@ -376,13 +474,152 @@ exports.incrementShares = async (req, res) => {
       return res.status(404).json({ success: false, message: "Reel not found" });
     }
 
+    // Try extract logged in user ID
+    let userId = req.user?.id || null;
+    if (!userId) {
+      const authHeader = req.headers.authorization;
+      if (authHeader && authHeader.startsWith("Bearer ")) {
+        try {
+          const jwt = require("jsonwebtoken");
+          const token = authHeader.split(" ")[1];
+          const decoded = jwt.verify(token, process.env.JWT_SECRET);
+          userId = decoded.id;
+        } catch (err) {}
+      }
+    }
+
+    const { recordEngagementEvent } = require("../utils/creator.helper");
+    await recordEngagementEvent({
+      creatorId: reel.user,
+      reelId: reel._id,
+      userId,
+      action: "SHARE",
+      pointsDelta: 5,
+    });
+
     return res.status(200).json({
       success: true,
       message: "Shares count incremented",
+      shareCount: reel.sharesCount,
       sharesCount: reel.sharesCount,
     });
   } catch (error) {
     console.error("INCREMENT SHARES ERROR:", error);
+    return res.status(500).json({ success: false, message: "Server error" });
+  }
+};
+
+// ========================================
+// SAVE REEL API (GRANT +4 POINTS)
+// ========================================
+exports.saveReel = async (req, res) => {
+  try {
+    const { id, reelId } = req.params;
+    const targetReelId = id || reelId;
+    const userId = req.user.id;
+
+    if (!mongoose.Types.ObjectId.isValid(targetReelId)) {
+      return res.status(400).json({ success: false, message: "Invalid Reel ID" });
+    }
+
+    const reel = await Reel.findById(targetReelId);
+    if (!reel || reel.status === "DELETED") {
+      return res.status(404).json({ success: false, message: "Reel not found" });
+    }
+
+    const Interaction = require("../models/interaction.model");
+    let existingSave = await Interaction.findOne({
+      user: userId,
+      contentId: reel._id,
+      contentType: "reel",
+      type: "bookmark",
+    });
+
+    if (!existingSave) {
+      await Interaction.create({
+        user: userId,
+        contentId: reel._id,
+        contentType: "reel",
+        type: "bookmark",
+      });
+
+      const { recordEngagementEvent } = require("../utils/creator.helper");
+      await recordEngagementEvent({
+        creatorId: reel.user,
+        reelId: reel._id,
+        userId,
+        action: "SAVE",
+        pointsDelta: 4,
+      });
+    }
+
+    const saveCount = await Interaction.countDocuments({
+      contentId: reel._id,
+      contentType: "reel",
+      type: "bookmark",
+    });
+
+    return res.status(200).json({
+      success: true,
+      saved: true,
+      saveCount,
+    });
+  } catch (error) {
+    console.error("SAVE REEL ERROR:", error);
+    return res.status(500).json({ success: false, message: "Server error" });
+  }
+};
+
+// ========================================
+// UNSAVE REEL API (DEDUCT -4 POINTS)
+// ========================================
+exports.unsaveReel = async (req, res) => {
+  try {
+    const { id, reelId } = req.params;
+    const targetReelId = id || reelId;
+    const userId = req.user.id;
+
+    if (!mongoose.Types.ObjectId.isValid(targetReelId)) {
+      return res.status(400).json({ success: false, message: "Invalid Reel ID" });
+    }
+
+    const reel = await Reel.findById(targetReelId);
+    if (!reel || reel.status === "DELETED") {
+      return res.status(404).json({ success: false, message: "Reel not found" });
+    }
+
+    const Interaction = require("../models/interaction.model");
+    const existingSave = await Interaction.findOneAndDelete({
+      user: userId,
+      contentId: reel._id,
+      contentType: "reel",
+      type: "bookmark",
+    });
+
+    if (existingSave) {
+      const { recordEngagementEvent } = require("../utils/creator.helper");
+      await recordEngagementEvent({
+        creatorId: reel.user,
+        reelId: reel._id,
+        userId,
+        action: "UNSAVE",
+        pointsDelta: -4,
+      });
+    }
+
+    const saveCount = await Interaction.countDocuments({
+      contentId: reel._id,
+      contentType: "reel",
+      type: "bookmark",
+    });
+
+    return res.status(200).json({
+      success: true,
+      saved: false,
+      saveCount,
+    });
+  } catch (error) {
+    console.error("UNSAVE REEL ERROR:", error);
     return res.status(500).json({ success: false, message: "Server error" });
   }
 };

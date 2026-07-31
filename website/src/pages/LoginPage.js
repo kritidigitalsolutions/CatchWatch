@@ -102,10 +102,18 @@ const LoginPage = () => {
             if (response && response.token) {
                 // Token ko localStorage me save kar lein
                 localStorage.setItem("authToken", response.token);
+                if (response.user) {
+                    localStorage.setItem("user", JSON.stringify(response.user));
+                }
 
                 toast.success("Login successful!");
-                // User ko uske dashboard ya home page par redirect karein
-                navigate("/", { replace: true });
+                
+                // If profile is incomplete or new user, redirect to /complete-profile
+                if (response.isNewUser || (response.user && !response.user.profileComplete)) {
+                    navigate("/complete-profile", { replace: true });
+                } else {
+                    navigate("/", { replace: true });
+                }
             } else {
                 toast.error(response.message || "Invalid OTP entered.");
             }

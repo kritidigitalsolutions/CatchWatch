@@ -15,6 +15,9 @@ const {
   deleteReel,
   incrementViews,
   incrementShares,
+  getCommentCount,
+  saveReel,
+  unsaveReel,
   getMyReels,
   getUserReels,
 } = require("../../controllers/reel.controller");
@@ -68,10 +71,36 @@ router.post(
   incrementViews
 );
 
+// Comment Count API
+router.get(
+  "/:id/comment-count",
+  getCommentCount
+);
+
 // Increment share count
 router.post(
   "/:id/share",
   incrementShares
+);
+
+// Save Reel
+router.post(
+  "/:id/save",
+  isAuth,
+  saveReel
+);
+
+// Unsave Reel
+router.post(
+  "/:id/unsave",
+  isAuth,
+  unsaveReel
+);
+
+router.delete(
+  "/:id/save",
+  isAuth,
+  unsaveReel
 );
 
 module.exports = router;
