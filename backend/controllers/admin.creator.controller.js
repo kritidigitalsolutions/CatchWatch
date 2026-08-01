@@ -147,12 +147,14 @@ exports.getAdminRedeemRequests = async (req, res) => {
 
 // ========================================
 // ADMIN: APPROVE REDEEM REQUEST
+// ========================================
+// ADMIN: APPROVE REDEEM REQUEST
 // PUT /api/admin/redeem/:id/approve
 // ========================================
 exports.approveRedeem = async (req, res) => {
   try {
     const requestId = req.params.id || req.body.id;
-    const { amount, adminRemark } = req.body;
+    const { amount, transactionId, adminRemark } = req.body;
 
     if (!requestId || !mongoose.Types.ObjectId.isValid(requestId)) {
       return res.status(400).json({ success: false, message: "Valid Request ID required" });
@@ -175,11 +177,14 @@ exports.approveRedeem = async (req, res) => {
       ? Number(amount)
       : Math.round(redeemReq.points * 0.1);
 
+    const adminId = req.user?.id || req.user?._id;
+
     redeemReq.amount = finalAmount;
+    if (transactionId) redeemReq.transactionId = transactionId;
     redeemReq.status = "APPROVED";
     redeemReq.adminRemark = adminRemark || "Approved by admin";
     redeemReq.processedAt = new Date();
-    redeemReq.processedBy = req.user.id;
+    if (adminId) redeemReq.processedBy = adminId;
     await redeemReq.save();
 
     // Update Creator Wallet
@@ -192,10 +197,10 @@ exports.approveRedeem = async (req, res) => {
     // Send Notification
     await Notification.create({
       title: "Redeem Request Approved! 🎉",
-      message: `Your redeem request for ${redeemReq.points} coins has been approved! Payout Amount: ₹${finalAmount}`,
+      message: `Your redeem request for ${redeemReq.points} coins has been approved and paid! Amount: ₹${finalAmount}${transactionId ? ` (Ref: ${transactionId})` : ""}`,
       type: "SYSTEM",
       targetUser: redeemReq.creatorId,
-      createdBy: req.user.id,
+      createdBy: adminId,
     });
 
     return res.status(200).json({
@@ -234,13 +239,14 @@ exports.rejectRedeem = async (req, res) => {
       });
     }
 
+    const adminId = req.user?.id || req.user?._id;
     const rejectionReason = reason || adminRemark || "Redeem request rejected by admin.";
 
     redeemReq.status = "REJECTED";
     redeemReq.rejectionReason = rejectionReason;
     redeemReq.adminRemark = rejectionReason;
     redeemReq.processedAt = new Date();
-    redeemReq.processedBy = req.user.id;
+    if (adminId) redeemReq.processedBy = adminId;
     await redeemReq.save();
 
     // Restore Creator Wallet available points
@@ -256,7 +262,7 @@ exports.rejectRedeem = async (req, res) => {
       message: `Your redeem request for ${redeemReq.points} coins was rejected.\nReason: ${rejectionReason}`,
       type: "SYSTEM",
       targetUser: redeemReq.creatorId,
-      createdBy: req.user.id,
+      createdBy: adminId,
     });
 
     return res.status(200).json({

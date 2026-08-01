@@ -15,6 +15,7 @@ const getUploadInfo = (req, file) => {
   if (req.originalUrl.includes("/user")) type = "profile";
   if (req.originalUrl.includes("/support")) type = "support";
   if (req.originalUrl.includes("/verification")) type = "verification";
+  if (req.originalUrl.includes("/ad") || req.originalUrl.includes("/campaigns")) type = "ads";
 
   let subfolder = "others";
 
@@ -22,7 +23,7 @@ const getUploadInfo = (req, file) => {
     subfolder = "posters";
   } else if (file.fieldname === "banner") {
     subfolder = "banners";
-  } else if (file.fieldname === "video") {
+  } else if (file.fieldname === "video" || file.fieldname === "media") {
     subfolder = "videos";
   } else if (file.fieldname === "trailer") {
     subfolder = "trailers";

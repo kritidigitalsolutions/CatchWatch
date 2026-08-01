@@ -289,14 +289,7 @@ exports.getCreatorDashboard = async (req, res) => {
       return res.status(404).json({ success: false, message: "User not found" });
     }
 
-    // Strictly enforce Blue Tick & Verified Creator requirement
-    if (!isVerifiedCreator(user)) {
-      return res.status(403).json({
-        success: false,
-        message: "Creator Dashboard is disabled for non-verified or inactive accounts.",
-        blueTick: false,
-      });
-    }
+    const isVerified = isVerifiedCreator(user);
 
     const todayStr = new Date().toISOString().split("T")[0];
     const analytics = await CreatorAnalytics.findOne({ creatorId: userId, date: todayStr });
@@ -347,11 +340,54 @@ exports.getCreatorDashboard = async (req, res) => {
 
     const now = new Date();
     const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-    const todayPointsHistory = await CreatorPointHistory.find({
-      creatorId: userId,
-      createdAt: { $gte: startOfToday },
-    });
+
+    const startOfWeek = new Date(startOfToday);
+    startOfWeek.setDate(startOfWeek.getDate() - startOfWeek.getDay());
+
+    const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+
+    const [todayPointsHistory, weeklyHistory, monthlyHistory, recentHistoryDocs, reelsList] = await Promise.all([
+      CreatorPointHistory.find({ creatorId: userId, createdAt: { $gte: startOfToday } }),
+      CreatorPointHistory.find({ creatorId: userId, createdAt: { $gte: startOfWeek } }),
+      CreatorPointHistory.find({ creatorId: userId, createdAt: { $gte: startOfMonth } }),
+      CreatorPointHistory.find({ creatorId: userId })
+        .populate("userId", "name username profileImage")
+        .populate("reelId", "caption thumbnail thumbnailUrl viewsCount likesCount commentsCount sharesCount")
+        .sort({ createdAt: -1 })
+        .limit(15)
+        .lean(),
+      Reel.find({ user: userId, status: "ACTIVE" })
+        .sort({ createdAt: -1 })
+        .limit(20)
+        .lean(),
+    ]);
+
     const todayPoints = todayPointsHistory.reduce((sum, h) => sum + (h.points || 0), 0);
+    const weeklyPoints = weeklyHistory.reduce((sum, h) => sum + (h.points || 0), 0);
+    const monthlyPoints = monthlyHistory.reduce((sum, h) => sum + (h.points || 0), 0);
+
+    // Format top reels with interactions
+    const topReels = await Promise.all(
+      reelsList.map(async (r) => {
+        const [likes, saves, comments] = await Promise.all([
+          Interaction.countDocuments({ contentId: r._id, contentType: "reel", type: "like" }),
+          Interaction.countDocuments({ contentId: r._id, contentType: "reel", type: "bookmark" }),
+          Comment.countDocuments({ reel: r._id, status: "ACTIVE" }),
+        ]);
+
+        return {
+          _id: r._id,
+          caption: r.caption || "Untitled Reel",
+          thumbnailUrl: r.thumbnailUrl || r.thumbnail || "",
+          viewsCount: r.viewsCount || 0,
+          sharesCount: r.sharesCount || 0,
+          likesCount: likes,
+          savesCount: saves,
+          commentsCount: comments,
+          createdAt: r.createdAt,
+        };
+      })
+    );
 
     const qualityScore = user.qualityScore || (analytics ? analytics.qualityScore : 0);
     const creatorLevel = user.creatorLevel || determineCreatorLevel(qualityScore);
@@ -362,6 +398,8 @@ exports.getCreatorDashboard = async (req, res) => {
       qualityScore,
       totalPoints: user.totalEngagementPoints || 0,
       todayPoints: Math.max(0, todayPoints),
+      weeklyPoints: Math.max(0, weeklyPoints),
+      monthlyPoints: Math.max(0, monthlyPoints),
       qualifiedViews: qualifiedViewsCount || user.totalQualifiedViews || 0,
       watchMinutes: user.totalWatchMinutes || 0,
       completionRate: analytics ? analytics.completionRate : 70,
@@ -371,7 +409,16 @@ exports.getCreatorDashboard = async (req, res) => {
       saves: totalSaves,
       followers: followersCount,
       redeemablePoints: wallet.availablePoints || 0,
-      blueTick: true,
+      blueTick: isVerified,
+      pointHistory: recentHistoryDocs.map((item) => ({
+        _id: item._id,
+        action: item.action,
+        points: item.points,
+        user: item.userId,
+        reel: item.reelId,
+        createdAt: item.createdAt,
+      })),
+      topReels,
     });
   } catch (error) {
     console.error("GET CREATOR DASHBOARD ERROR:", error);

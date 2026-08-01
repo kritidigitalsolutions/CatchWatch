@@ -35,30 +35,42 @@ const decorateUserWithBlueTick = (userObj) => {
  * Determines creator level based on quality score (0-100).
  */
 const determineCreatorLevel = (score) => {
-  if (score >= 81) return "Diamond";
-  if (score >= 61) return "Platinum";
-  if (score >= 41) return "Gold";
-  if (score >= 21) return "Silver";
-  return "Bronze";
+  if (score >= 81) return "Premium Creator";
+  if (score >= 61) return "Professional Creator";
+  if (score >= 31) return "Rising Creator";
+  return "Beginner";
 };
 
 /**
- * Calculates Quality Score based on metrics.
- * Formula:
- * WatchTime * 0.35 + CompletionRate * 0.20 + Shares * 0.15 + Saves * 0.10 + Comments * 0.10 + Likes * 0.05 + Followers * 0.05
- * Normalized between 0 and 100.
+ * Calculates Quality Score based on metrics and dynamic system weights.
  */
 const calculateQualityScore = ({
-  watchTime = 0, // in minutes or normalized score
+  watchTime = 0, // in seconds or minutes
   completionRate = 0, // 0 - 100 %
   shares = 0,
   saves = 0,
   comments = 0,
   likes = 0,
   followers = 0,
+  weights = {
+    qualifiedWatchTime: 35,
+    completionRate: 20,
+    shares: 15,
+    saves: 10,
+    comments: 10,
+    likes: 5,
+    newFollowers: 5,
+  },
 }) => {
-  // Normalize raw numbers to 0-100 scale components for formula input
-  const normalizedWatchTime = Math.min(100, (watchTime / 60) * 10); // 10 minutes = 100
+  const wWatch = (weights.qualifiedWatchTime || 35) / 100;
+  const wComp = (weights.completionRate || 20) / 100;
+  const wShare = (weights.shares || 15) / 100;
+  const wSave = (weights.saves || 10) / 100;
+  const wComment = (weights.comments || 10) / 100;
+  const wLike = (weights.likes || 5) / 100;
+  const wFollow = (weights.newFollowers || 5) / 100;
+
+  const normalizedWatchTime = Math.min(100, (watchTime / 60) * 10);
   const normalizedCompletion = Math.min(100, Math.max(0, completionRate));
   const normalizedShares = Math.min(100, (shares / 50) * 100);
   const normalizedSaves = Math.min(100, (saves / 50) * 100);
@@ -67,13 +79,13 @@ const calculateQualityScore = ({
   const normalizedFollowers = Math.min(100, (followers / 1000) * 100);
 
   const rawScore =
-    normalizedWatchTime * 0.35 +
-    normalizedCompletion * 0.20 +
-    normalizedShares * 0.15 +
-    normalizedSaves * 0.10 +
-    normalizedComments * 0.10 +
-    normalizedLikes * 0.05 +
-    normalizedFollowers * 0.05;
+    normalizedWatchTime * wWatch * 100 +
+    normalizedCompletion * wComp +
+    normalizedShares * wShare * 100 +
+    normalizedSaves * wSave * 100 +
+    normalizedComments * wComment * 100 +
+    normalizedLikes * wLike * 100 +
+    normalizedFollowers * wFollow * 100;
 
   const finalScore = Math.min(100, Math.max(0, Math.round(rawScore)));
   return finalScore;

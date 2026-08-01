@@ -158,8 +158,8 @@ const userSchema = new mongoose.Schema(
 
     creatorLevel: {
       type: String,
-      enum: ["Bronze", "Silver", "Gold", "Platinum", "Diamond"],
-      default: "Bronze",
+      enum: ["Beginner", "Rising Creator", "Professional Creator", "Premium Creator", "Bronze", "Silver", "Gold", "Platinum", "Diamond"],
+      default: "Beginner",
     },
 
     totalEngagementPoints: {

@@ -282,8 +282,9 @@ const ProfileMenuPage = () => {
 
   const matrixOptions = [
     { label: "My Profile", route: `/user/${usernameFormatted.replace(/^@/, "")}`, icon: <FaUserAlt /> },
+    { label: "Creator Studio & Analytics", route: "/creator/dashboard", icon: <FaTrophy /> },
     { label: "Edit Profile", route: "/profile/edit", icon: <FaUserAlt /> },
-    { label: "Creator Verification Badge", route: `/user/${usernameFormatted.replace(/^@/, "")}`, icon: <FaShieldAlt /> },
+    { label: "Creator Verification Badge", route: "/profile/verification", icon: <FaShieldAlt /> },
     { label: "Subscription Plans", route: "/subscription", icon: <MdWorkspacePremium /> },
     { label: "My Videos", route: "/my-videos", icon: <MdDownload /> },
     { label: "My Downloads", route: "/downloads", icon: <MdDownload /> },

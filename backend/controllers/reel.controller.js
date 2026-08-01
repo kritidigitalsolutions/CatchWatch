@@ -96,31 +96,54 @@ exports.getReelsFeed = async (req, res) => {
     })
       .populate(
         "user",
-        "name username profileImage bio verification"
+        "name username profileImage bio verification isVerified"
       )
       .sort({ createdAt: -1 })
       .lean();
 
-    // Check if user is logged in (optional auth)
+    // Check optional viewer auth token
     let userId = null;
+    let isVerifiedUser = false;
     const authHeader = req.headers.authorization;
+
     if (authHeader && authHeader.startsWith("Bearer ")) {
       try {
         const jwt = require("jsonwebtoken");
         const token = authHeader.split(" ")[1];
         const decoded = jwt.verify(token, process.env.JWT_SECRET);
-        userId = decoded.id;
-      } catch (err) {
-        // Ignored
+        userId = decoded.id || decoded._id;
+      } catch (err) {}
+    }
+
+    if (userId) {
+      const User = require("../models/user.model");
+      const Subscription = require("../models/subscription.model");
+
+      const [viewerUser, activeSub] = await Promise.all([
+        User.findById(userId).lean(),
+        Subscription.findOne({
+          user: userId,
+          status: "ACTIVE",
+          endDate: { $gte: new Date() },
+        }),
+      ]);
+
+      if (
+        viewerUser &&
+        (viewerUser.isVerified ||
+          viewerUser.verification?.status === "VERIFIED" ||
+          Boolean(activeSub))
+      ) {
+        isVerifiedUser = true; // Premium / Verified user gets Ad-Free experience!
       }
     }
 
     const { decorateUserWithBlueTick } = require("../utils/creator.helper");
 
     if (reels.length > 0) {
-      const reelIds = reels.map(r => r._id);
-      
-      // Calculate total likes for all active reels in one aggregation query
+      const reelIds = reels.map((r) => r._id);
+
+      // Calculate total likes for all active reels
       const likesCounts = await Interaction.aggregate([
         {
           $match: {
@@ -138,11 +161,10 @@ exports.getReelsFeed = async (req, res) => {
       ]);
 
       const likesMap = {};
-      likesCounts.forEach(item => {
+      likesCounts.forEach((item) => {
         likesMap[item._id.toString()] = item.count;
       });
 
-      // Map user interaction & following status if user is logged in
       let interactionMap = {};
       let followedSet = new Set();
 
@@ -150,19 +172,24 @@ exports.getReelsFeed = async (req, res) => {
         const interactions = await Interaction.find({
           user: userId,
           contentId: { $in: reelIds },
-          contentType: "reel"
+          contentType: "reel",
         });
-        interactions.forEach(int => {
+        interactions.forEach((int) => {
           interactionMap[int.contentId.toString()] = int.type;
         });
 
         const Follow = require("../models/follow.model");
-        const authorIds = reels.map(r => r.user?._id).filter(Boolean);
-        const follows = await Follow.find({ follower: userId, following: { $in: authorIds } }).select("following").lean();
-        follows.forEach(f => followedSet.add(f.following.toString()));
+        const authorIds = reels.map((r) => r.user?._id).filter(Boolean);
+        const follows = await Follow.find({
+          follower: userId,
+          following: { $in: authorIds },
+        })
+          .select("following")
+          .lean();
+        follows.forEach((f) => followedSet.add(f.following.toString()));
       }
 
-      reels.forEach(r => {
+      reels.forEach((r) => {
         if (r.user) {
           r.user = decorateUserWithBlueTick(r.user);
         }
@@ -171,14 +198,92 @@ exports.getReelsFeed = async (req, res) => {
         r.thumbnail = thumb;
         r.likesCount = likesMap[r._id.toString()] || 0;
         r.userInteraction = interactionMap[r._id.toString()] || null;
-        r.isFollowing = r.user?._id ? followedSet.has(r.user._id.toString()) : false;
+        r.isFollowing = r.user?._id
+          ? followedSet.has(r.user._id.toString())
+          : false;
+        r.isAd = false;
       });
+    }
+
+    // AD INSERTION ENGINE (Only if user is UNVERIFIED & Ads are enabled)
+    let finalFeed = reels;
+
+    if (!isVerifiedUser) {
+      try {
+        const SystemSettings = require("../models/systemSettings.model");
+        const AdCampaign = require("../models/adCampaign.model");
+        const Ad = require("../models/ad.model");
+
+        const settings = await SystemSettings.getSettings();
+        const adFrequency = settings.adSettings?.adFrequency || 3;
+        const now = new Date();
+
+        // Query active ad campaigns
+        const activeCampaigns = await AdCampaign.find({
+          status: "ACTIVE",
+          startDate: { $lte: now },
+          endDate: { $gte: now },
+          $expr: { $gt: ["$budget", "$spent"] },
+        })
+          .sort({ priority: -1 })
+          .lean();
+
+        if (activeCampaigns.length > 0) {
+          const campaignIds = activeCampaigns.map((c) => c._id);
+          const activeAds = await Ad.find({
+            campaignId: { $in: campaignIds },
+            status: "ACTIVE",
+          }).lean();
+
+          if (activeAds.length > 0) {
+            finalFeed = [];
+            let reelCounter = 0;
+
+            reels.forEach((reelItem) => {
+              finalFeed.push(reelItem);
+              if (reelItem.allowAds !== false) {
+                reelCounter++;
+                if (reelCounter % adFrequency === 0) {
+                  // Pick random active ad creative
+                  const selectedAd =
+                    activeAds[Math.floor(Math.random() * activeAds.length)];
+                  finalFeed.push({
+                    _id: `ad_${reelCounter}_${selectedAd._id}`,
+                    adId: selectedAd._id,
+                    campaignId: selectedAd.campaignId,
+                    advertiserId: selectedAd.advertiserId,
+                    title: selectedAd.title || "Sponsored Ad",
+                    caption: selectedAd.title || "Sponsored Ad",
+                    adType: selectedAd.adType || "VIDEO",
+                    mediaUrl: selectedAd.mediaUrl,
+                    videoUrl: selectedAd.mediaUrl,
+                    thumbnailUrl: selectedAd.thumbnailUrl || selectedAd.mediaUrl,
+                    ctaText: selectedAd.ctaText || "Learn More",
+                    destinationUrl: selectedAd.destinationUrl || "#",
+                    durationSeconds: selectedAd.durationSeconds || 15,
+                    isAd: true,
+                    user: {
+                      name: "Sponsored Ad",
+                      username: "@sponsored",
+                      profileImage: selectedAd.thumbnailUrl || "",
+                      isVerified: true,
+                    },
+                  });
+                }
+              }
+            });
+          }
+        }
+      } catch (adError) {
+        console.error("Ad Insertion Error in Feed:", adError);
+      }
     }
 
     return res.status(200).json({
       success: true,
-      count: reels.length,
-      reels,
+      count: finalFeed.length,
+      isAdFree: isVerifiedUser,
+      reels: finalFeed,
     });
   } catch (error) {
     console.error("GET FEED ERROR:", error);
@@ -374,12 +479,25 @@ exports.incrementViews = async (req, res) => {
     }
 
     const { validateQualifiedView, recordEngagementEvent } = require("../utils/creator.helper");
+    const { validateViewAttempt } = require("./fraud.controller");
     const QualifiedView = require("../models/qualifiedView.model");
 
     let isQualified = false;
     const durationNum = Number(watchDuration) || 0;
+    const userAgent = req.headers["user-agent"] || "";
 
-    if (viewerId) {
+    // 1. Fraud Check
+    const fraudCheck = await validateViewAttempt({
+      viewerId,
+      creatorId: reel.user,
+      reelId: reel._id,
+      watchDuration: durationNum,
+      ip,
+      deviceId: deviceId || "",
+      userAgent,
+    });
+
+    if (viewerId && fraudCheck.isQualified) {
       const validation = await validateQualifiedView({
         reel,
         viewerId,

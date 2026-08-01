@@ -32,6 +32,8 @@ import SingleReelPage from './pages/SingleReelPage';
 import DeleteAccountPage from './pages/DeleteAccountPage';
 import UserProfilePage from './pages/UserProfilePage';
 import CompleteProfilePage from './pages/CompleteProfilePage';
+import CreatorDashboard from './pages/CreatorDashboard';
+import VerificationPage from './pages/VerificationPage';
 
 const App = () => {
   useEffect(() => {
@@ -120,6 +122,9 @@ const App = () => {
             <Route path="/reels/:id" element={<SingleReelPage />} />
             <Route path="/user/:identifier" element={<UserProfilePage />} />
             <Route path="/@:username" element={<UserProfilePage />} />
+            <Route path="/creator/dashboard" element={<CreatorDashboard />} />
+            <Route path="/profile/verification" element={<VerificationPage />} />
+            <Route path="/verification" element={<VerificationPage />} />
           </Route>
         </Routes>
       </Layout>

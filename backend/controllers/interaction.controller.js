@@ -701,6 +701,20 @@ console.log("Bookmark Body:", req.body);
 
     if (existing) {
       await Interaction.deleteOne({ _id: existing._id });
+      if (contentType === "reel") {
+        const Reel = require("../models/reel.model");
+        const reel = await Reel.findById(contentId);
+        if (reel && reel.user) {
+          const { recordEngagementEvent } = require("../utils/creator.helper");
+          await recordEngagementEvent({
+            creatorId: reel.user,
+            reelId: reel._id,
+            userId,
+            action: "UNSAVE",
+            pointsDelta: -4,
+          });
+        }
+      }
       return res.status(200).json({
         success: true,
         bookmarked: false,
@@ -713,6 +727,20 @@ console.log("Bookmark Body:", req.body);
         contentType,
         type: "bookmark",
       });
+      if (contentType === "reel") {
+        const Reel = require("../models/reel.model");
+        const reel = await Reel.findById(contentId);
+        if (reel && reel.user) {
+          const { recordEngagementEvent } = require("../utils/creator.helper");
+          await recordEngagementEvent({
+            creatorId: reel.user,
+            reelId: reel._id,
+            userId,
+            action: "SAVE",
+            pointsDelta: 4,
+          });
+        }
+      }
       return res.status(200).json({
         success: true,
         bookmarked: true,

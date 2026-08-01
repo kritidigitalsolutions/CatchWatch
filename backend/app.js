@@ -275,6 +275,19 @@ app.use("/api/creator", userCreatorRoutes);
 app.use("/api/admin/creator", adminCreatorRoutes);
 app.use("/api/admin/redeem", adminRedeemRoutes);
 app.use("/admin/redeem", adminRedeemRoutes);
+
+// MONETIZATION & AD ENGINE ROUTES
+const adminAdRoutes = require("./routes/admin/ad.routes");
+const adminFraudRoutes = require("./routes/admin/fraud.routes");
+const adminAnalyticsRoutes = require("./routes/admin/analytics.routes");
+const adminSettingsRoutes = require("./routes/admin/settings.routes");
+const userAdRoutes = require("./routes/user/ad.routes");
+
+app.use("/api/admin/ads", adminAdRoutes);
+app.use("/api/admin/fraud", adminFraudRoutes);
+app.use("/api/admin/analytics", adminAnalyticsRoutes);
+app.use("/api/admin/settings", adminSettingsRoutes);
+app.use("/api/ads", userAdRoutes);
 // ========================================
 // GLOBAL ERROR HANDLER
 // ========================================

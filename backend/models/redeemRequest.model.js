@@ -53,6 +53,10 @@ const redeemRequestSchema = new mongoose.Schema(
       type: String,
       default: "",
     },
+    transactionId: {
+      type: String,
+      default: "",
+    },
     adminRemark: {
       type: String,
       default: "",

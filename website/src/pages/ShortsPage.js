@@ -1,14 +1,16 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Hls from 'hls.js';
-import { FaRegHeart, FaHeart, FaItunesNote, FaPlay, FaTimes, FaTrash } from "react-icons/fa";
+import { FaRegHeart, FaHeart, FaItunesNote, FaPlay, FaTimes, FaTrash, FaVolumeMute, FaVolumeUp } from "react-icons/fa";
 import { GiSaveArrow } from "react-icons/gi";
 import { FaShareNodes } from "react-icons/fa6";
 import { LuMessageCircleMore } from "react-icons/lu";
 import Loader from '../components/Loader';
 import VerifiedBadge from '../components/VerifiedBadge';
+import { HiSpeakerphone } from "react-icons/hi";
 
 // APIs Import
+import API from '../api/axiosConfig';
 import { getReelsFeed, incrementShares } from '../api/reelsApi';
 import { toggleLike, toggleBookmark, getContentInteractions } from '../api/interactionApi';
 import { addComment, getComments, deleteComment } from '../api/commentApi';
@@ -85,9 +87,19 @@ const ShortVideo = ({ video, isActive }) => {
     }
   };
 
-  const rawSrc = video.videoUrl || video.url || video.video || video.streamUrl || "";
+  const rawSrc = video.videoUrl || video.mediaUrl || video.url || video.video || video.streamUrl || "";
+
+  const isImageAd = Boolean(
+    video.isAd && (
+      video.adType === "IMAGE" ||
+      video.adType === "BANNER" ||
+      video.adType === "CAROUSEL" ||
+      (rawSrc && rawSrc.match(/\.(jpeg|jpg|png|webp|gif|svg)($|\?)/i))
+    )
+  );
 
   const bunnyEmbedUrl = (() => {
+    if (isImageAd) return null;
     let vId = video.videoId;
     if (!vId && rawSrc && (rawSrc.includes('b-cdn.net') || rawSrc.includes('mediadelivery.net'))) {
       const parts = rawSrc.split('/');
@@ -299,8 +311,23 @@ const ShortVideo = ({ video, isActive }) => {
   return (
     <div className="w-full h-full snap-start relative bg-zinc-950 flex-shrink-0">
 
-      {/* Video Element / Iframe */}
-      {bunnyEmbedUrl ? (
+      {/* Sponsored Ad Badge */}
+      {video.isAd && (
+        <div className="absolute top-4 left-4 z-30 bg-gradient-to-r from-amber-500 to-orange-500 text-black px-3.5 py-1 rounded-full text-xs font-black uppercase tracking-wider shadow-xl flex items-center gap-1.5 border border-amber-300/40">
+          <span className="flex items-center gap-1"><HiSpeakerphone /> <p>Sponsored Ad</p></span>
+        </div>
+      )}
+
+      {/* Media Element: Image Ad vs Video Ad */}
+      {isImageAd ? (
+        <div className="w-full h-full relative flex items-center justify-center bg-black">
+          <img
+            src={rawSrc || video.thumbnailUrl || video.thumbnail}
+            alt={video.title || video.caption || "Sponsored Ad"}
+            className="w-full h-full object-cover"
+          />
+        </div>
+      ) : bunnyEmbedUrl ? (
         <iframe
           src={bunnyEmbedUrl}
           title="Reel Video"
@@ -320,7 +347,7 @@ const ShortVideo = ({ video, isActive }) => {
       )}
 
       {/* Play Icon Overlay (Visible when paused manually) */}
-      {!isPlaying && (
+      {!isImageAd && !isPlaying && (
         <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-10">
           <div className="w-16 h-16 bg-black/40 rounded-full flex items-center justify-center text-white text-2xl backdrop-blur-sm pl-1">
             <FaPlay />
@@ -419,9 +446,23 @@ const ShortVideo = ({ video, isActive }) => {
         <div className="flex items-center gap-2 text-xs text-gray-300">
           <span><FaItunesNote /></span>
           <span className="truncate bg-white/10 px-2 py-0.5 rounded text-[11px]">
-            Original Audio - CatchWatch Music
+            {video.isAd ? "Sponsored Ad Creative" : "Original Audio - CatchWatch Music"}
           </span>
         </div>
+
+        {/* Sponsored Ad Call To Action Button */}
+        {video.isAd && (
+          <a
+            href={video.destinationUrl || "#"}
+            target="_blank"
+            rel="noopener noreferrer"
+            onClick={(e) => e.stopPropagation()}
+            className="mt-3 w-full py-2.5 bg-gradient-to-r from-brand-orange to-orange-600 hover:from-orange-600 hover:to-orange-700 text-white font-black text-xs sm:text-sm rounded-xl transition shadow-xl flex items-center justify-center gap-2 tracking-wide cursor-pointer text-center"
+          >
+            <span>{video.ctaText || "Learn More"}</span>
+            <span>→</span>
+          </a>
+        )}
       </div>
 
       {/* Comments Slide-Up Bottom Drawer overlay */}
@@ -520,6 +561,141 @@ const ShortVideo = ({ video, isActive }) => {
   );
 };
 
+// Ad Video / Card Component
+const AdVideo = ({ ad, isActive }) => {
+  const videoRef = useRef(null);
+  const [isMuted, setIsMuted] = useState(true);
+
+  const mediaSrc = ad.mediaUrl || ad.videoUrl || ad.url || "";
+  const isImageMedia = Boolean(
+    ad.adType === "IMAGE" ||
+    ad.adType === "BANNER" ||
+    ad.adType === "CAROUSEL" ||
+    (mediaSrc && mediaSrc.match(/\.(jpeg|jpg|png|webp|gif|svg)($|\?)/i))
+  );
+
+  useEffect(() => {
+    if (isActive) {
+      // Record Ad Impression safely
+      const rawAdId = ad.adId || ad._id;
+      API.post("/ads/event", {
+        adId: rawAdId,
+        campaignId: ad.campaignId,
+        eventType: "IMPRESSION",
+      }).catch(() => {});
+    }
+  }, [isActive, ad]);
+
+  useEffect(() => {
+    if (isImageMedia) return;
+    const videoElement = videoRef.current;
+    if (!videoElement || !mediaSrc) return;
+
+    if (isActive) {
+      videoElement.muted = isMuted;
+      videoElement.currentTime = 0;
+      const playPromise = videoElement.play();
+      if (playPromise !== undefined) {
+        playPromise
+          .catch((err) => {
+            console.log("Ad video autoplay attempt muted fallback:", err);
+            videoElement.muted = true;
+            setIsMuted(true);
+            videoElement.play().catch(() => {});
+          });
+      }
+    } else {
+      videoElement.pause();
+      videoElement.currentTime = 0;
+    }
+  }, [isActive, mediaSrc, isImageMedia]);
+
+  const toggleSound = (e) => {
+    e.stopPropagation();
+    if (videoRef.current) {
+      const nextMuted = !isMuted;
+      videoRef.current.muted = nextMuted;
+      setIsMuted(nextMuted);
+    }
+  };
+
+  const handleCtaClick = () => {
+    const rawAdId = ad.adId || ad._id;
+    API.post("/ads/event", {
+      adId: rawAdId,
+      campaignId: ad.campaignId,
+      eventType: "CLICK",
+    }).catch(() => {});
+    if (ad.destinationUrl && ad.destinationUrl !== "#") {
+      window.open(ad.destinationUrl, "_blank");
+    }
+  };
+
+  return (
+    <div className="w-full h-full snap-start relative bg-zinc-950 flex flex-col justify-between overflow-hidden">
+      {/* Sponsored Badge */}
+      <div className="absolute top-16 left-4 z-20 bg-amber-500/90 text-black text-[11px] font-bold px-3 py-1 rounded-full uppercase tracking-wider shadow-lg flex items-center gap-1">
+        <span className="flex items-center gap-1 w-full flex-row"><HiSpeakerphone /> <p>Sponsored Ad</p></span>
+      </div>
+
+      {/* Mute/Unmute Audio Button for Video Ads */}
+      {!isImageMedia && (
+        <button
+          onClick={toggleSound}
+          className="absolute top-16 right-4 z-20 bg-black/60 backdrop-blur-md text-white p-2.5 rounded-full hover:bg-black/80 transition"
+          title={isMuted ? "Unmute Audio" : "Mute Audio"}
+        >
+          {isMuted ? <FaVolumeMute size={16} /> : <FaVolumeUp size={16} />}
+        </button>
+      )}
+
+      {/* Ad Media */}
+      <div className="absolute inset-0 w-full h-full flex items-center justify-center bg-black">
+        {isImageMedia ? (
+          <img
+            src={mediaSrc || ad.thumbnailUrl}
+            alt={ad.title || "Sponsored Ad"}
+            className="w-full h-full object-cover"
+          />
+        ) : (
+          <video
+            ref={videoRef}
+            src={mediaSrc}
+            autoPlay
+            loop
+            muted={isMuted}
+            playsInline
+            className="w-full h-full object-cover cursor-pointer"
+            onClick={() => {
+              if (videoRef.current) {
+                if (videoRef.current.paused) {
+                  videoRef.current.play();
+                } else {
+                  videoRef.current.pause();
+                }
+              }
+            }}
+          />
+        )}
+      </div>
+
+      {/* Overlay Details & CTA */}
+      <div className="absolute bottom-6 left-4 right-4 z-20 bg-black/70 backdrop-blur-md p-4 rounded-2xl border border-white/10 flex flex-col gap-3">
+        <div>
+          <h3 className="text-white font-bold text-base">{ad.title || "Sponsored Offer"}</h3>
+          <p className="text-zinc-300 text-xs mt-1">Check out this special recommendation</p>
+        </div>
+        <button
+          onClick={handleCtaClick}
+          className="w-full bg-gradient-to-r from-brand-orange to-orange-600 hover:opacity-95 text-white font-bold py-3 rounded-xl shadow-lg transition active:scale-95 text-sm tracking-wide"
+        >
+          {ad.ctaText || "Learn More"} →
+        </button>
+      </div>
+    </div>
+  );
+};
+
 // Main Page Component
 const ShortsPage = () => {
   const navigate = useNavigate();
@@ -532,12 +708,9 @@ const ShortsPage = () => {
     const fetchGlobalReels = async () => {
       setIsLoading(true);
       try {
-        // Fetching global reels feed (No specific user filters)
         const response = await getReelsFeed({ limit: 50 });
-
-        // Extract array depending on how your backend formats the response
-        const data = response?.reels || response?.data || response || [];
-        setReels(Array.isArray(data) ? data : []);
+        const rawData = response?.reels || response?.data || response || [];
+        setReels(Array.isArray(rawData) ? rawData : []);
       } catch (err) {
         console.error("API Error fetching reels:", err);
         setError("Failed to load Reels at the moment.");
@@ -554,7 +727,7 @@ const ShortsPage = () => {
     if (reels.length === 0) return;
     const currentReel = reels[activeIndex];
 
-    if (currentReel && currentReel.isPremium) {
+    if (currentReel && !currentReel.isAd && currentReel.isPremium) {
       const isUserPremium = localStorage.getItem("userIsPremium") === "true";
       if (!isUserPremium) {
         alert("This reel is premium content. Redirecting to subscription plans...");
@@ -567,7 +740,6 @@ const ShortsPage = () => {
   const handleScroll = (e) => {
     const scrollPosition = e.target.scrollTop;
     const containerHeight = e.target.clientHeight;
-    // Calculate the index of the video currently fully in view
     const newActiveIndex = Math.round(scrollPosition / containerHeight);
 
     if (newActiveIndex !== activeIndex) {
@@ -592,10 +764,6 @@ const ShortsPage = () => {
       {/* Absolute Transparent Frame Header */}
       <div className="absolute top-0 left-0 right-0 p-4 flex justify-between items-center bg-gradient-to-b from-black/80 to-transparent z-50 text-white pointer-events-none">
         <h1 className="text-xl font-black tracking-wide drop-shadow-md">Reels</h1>
-        {/* <div className="flex gap-4 text-xl pointer-events-auto">
-          <button className="hover:text-brand-orange transition"><FaSearch /></button>
-          <button className="hover:text-brand-orange transition">⋮</button>
-        </div> */}
       </div>
 
       {/* Scrollable Video Feed Container */}
@@ -604,11 +772,15 @@ const ShortsPage = () => {
         onScroll={handleScroll}
       >
         {reels.map((video, index) => (
-          <ShortVideo
-            key={video._id || video.id || index}
-            video={video}
-            isActive={index === activeIndex}
-          />
+          video.isAd ? (
+            <AdVideo key={video._id || index} ad={video} isActive={index === activeIndex} />
+          ) : (
+            <ShortVideo
+              key={video._id || video.id || index}
+              video={video}
+              isActive={index === activeIndex}
+            />
+          )
         ))}
       </div>
     </div>

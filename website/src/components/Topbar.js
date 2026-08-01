@@ -128,10 +128,12 @@ const Topbar = () => {
     { name: "Short Films", path: "/shorts" },
     { name: "TV Shows", path: "/tvshows" },
     { name: "Reels", path: "/reels-feed" },
+    { name: "Creator Studio", path: "/creator/dashboard" },
   ];
 
   const profileLinks = [
     { name: "My Profile", path: "/profile" },
+    { name: "Creator Studio", path: "/creator/dashboard" },
     { name: "Edit Profile", path: "/profile/edit" },
     { name: "Subscription Plans", path: "/subscription" },
     { name: "Downloads", path: "/downloads" },

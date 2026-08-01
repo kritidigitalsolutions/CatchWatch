@@ -265,12 +265,12 @@ const ProfileVerificationSection = ({ userProfile }) => {
   const status = verifStatus.status || "NOT_VERIFIED";
 
   return (
-    <div className="bg-white border border-gray-200 rounded-3xl p-6 sm:p-8 shadow-sm mt-8">
+    <div className="bg-white border border-gray-200 rounded-3xl p-5 sm:p-6 shadow-sm mt-0">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-6 border-b border-gray-100">
+      <div className="flex flex-col sm:flex-col sm:items-left  gap-4 pb-6 border-b border-gray-100">
         <div>
-          <h2 className="text-xl font-black text-gray-900 flex items-center gap-2">
-            <FaShieldAlt className="text-brand-orange text-2xl" />
+          <h2 className="text-[20px] font-black text-gray-900 flex items-center gap-2">
+            <FaShieldAlt className="text-brand-orange text-[20px]" />
             <span>Profile Verification</span>
           </h2>
           <p className="text-xs text-gray-500 font-semibold mt-1">
@@ -281,9 +281,9 @@ const ProfileVerificationSection = ({ userProfile }) => {
         {/* Current Status Display Badge */}
         <div className="flex items-center gap-3">
           {status === "VERIFIED" && (
-            <div className="flex items-center gap-2 bg-blue-50 text-blue-600 border border-blue-200 px-4 py-2 rounded-xl text-sm font-extrabold">
-              <VerifiedBadge isVerified={true} size="lg" />
-              <span>✔ Verified Account</span>
+            <div className="flex items-center gap-1 bg-blue-50 text-blue-600 border border-blue-200 px-2 py-2 rounded-xl text-xs font-extrabold">
+              <VerifiedBadge isVerified={true} size="mdlg" />
+              <span>Verified Account</span>
             </div>
           )}
 
@@ -350,7 +350,7 @@ const ProfileVerificationSection = ({ userProfile }) => {
             </span>
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-1 xl:grid-cols-2 gap-4">
             {bluetickPlans.map((plan) => (
               <div
                 key={plan._id}
@@ -409,7 +409,7 @@ const ProfileVerificationSection = ({ userProfile }) => {
         <h3 className="text-xs font-extrabold text-gray-400 uppercase tracking-wider mb-4">
           Verification Benefits
         </h3>
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           <div className="bg-gray-50 border border-gray-100 p-4 rounded-2xl">
             <div className="w-8 h-8 rounded-lg bg-blue-100 text-blue-600 flex items-center justify-center font-bold text-sm mb-2">
               ✔

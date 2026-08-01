@@ -93,6 +93,11 @@ const reelSchema = new mongoose.Schema(
       enum: ["ACTIVE", "DELETED"],
       default: "ACTIVE",
     },
+
+    allowAds: {
+      type: Boolean,
+      default: true,
+    },
   },
   {
     timestamps: true,
