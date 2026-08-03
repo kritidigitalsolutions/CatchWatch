@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   FaUserAlt,
@@ -75,11 +75,7 @@ const ProfileMenuPage = () => {
   const [redeemFeedback, setRedeemFeedback] = useState({ type: "", message: "" });
   const [showHistoryModal, setShowHistoryModal] = useState(false);
 
-  useEffect(() => {
-    fetchProfileAndCreatorData();
-  }, []);
-
-  const fetchProfileAndCreatorData = async () => {
+  const fetchProfileAndCreatorData = useCallback(async () => {
     setIsLoading(true);
     try {
       // 1. Fetch Profile
@@ -162,7 +158,11 @@ const ProfileMenuPage = () => {
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [navigate]);
+
+  useEffect(() => {
+    fetchProfileAndCreatorData();
+  }, [fetchProfileAndCreatorData]);
 
   // Logout Handler Function
   const handleLogout = async () => {
@@ -878,4 +878,4 @@ const ProfileMenuPage = () => {
   );
 };
 
-export default ProfileMenuPage;
+export default ProfileMenuPage;

@@ -586,13 +586,18 @@ const AdVideo = ({ ad, isActive }) => {
     }
   }, [isActive, ad]);
 
+  const isMutedRef = useRef(isMuted);
+  useEffect(() => {
+    isMutedRef.current = isMuted;
+  }, [isMuted]);
+
   useEffect(() => {
     if (isImageMedia) return;
     const videoElement = videoRef.current;
     if (!videoElement || !mediaSrc) return;
 
     if (isActive) {
-      videoElement.muted = isMuted;
+      videoElement.muted = isMutedRef.current;
       videoElement.currentTime = 0;
       const playPromise = videoElement.play();
       if (playPromise !== undefined) {
