@@ -61,6 +61,15 @@ export default function CreatorDashboard() {
     return "linear-gradient(135deg, #475569, #64748b)";
   };
 
+  if (loading) {
+    return (
+      <div className="loading-container">
+        <div className="loading-spinner"></div>
+        <p>Loading Creator Dashboard...</p>
+      </div>
+    );
+  }
+
   return (
     <div className="creator-dashboard-container">
       {/* Profile & Quality Score Banner */}
