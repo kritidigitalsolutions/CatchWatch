@@ -274,9 +274,13 @@ const UserProfilePage = () => {
                   >
                     {/* Thumbnail / Video Preview */}
                     <img
-                      src={reel.thumbnailUrl || reel.thumbnail || "https://via.placeholder.com/300x533"}
+                      src={reel.thumbnailUrl || reel.thumbnail || "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 300 533'%3E%3Crect width='300' height='533' fill='%231e293b'/%3E%3Cpath d='M120 236 L190 266 L120 296 Z' fill='%2364748b'/%3E%3C/svg%3E"}
                       alt={reel.caption || "Reel"}
                       className="w-full h-full object-cover group-hover:scale-105 transition duration-300"
+                      onError={(e) => {
+                        e.target.onerror = null;
+                        e.target.src = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 300 533'%3E%3Crect width='300' height='533' fill='%231e293b'/%3E%3Cpath d='M120 236 L190 266 L120 296 Z' fill='%2364748b'/%3E%3C/svg%3E";
+                      }}
                     />
 
                     {/* Gradient Overlay */}

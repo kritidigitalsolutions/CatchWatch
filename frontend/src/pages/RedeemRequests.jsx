@@ -250,7 +250,10 @@ export default function RedeemRequests() {
                           src={creator.profileImage || "/default-avatar.png"}
                           alt="Avatar"
                           style={{ width: "42px", height: "42px", borderRadius: "50%", objectFit: "cover", border: "2px solid #f59e0b" }}
-                          onError={(e) => (e.target.src = "https://via.placeholder.com/50")}
+                          onError={(e) => {
+                            e.target.onerror = null;
+                            e.target.src = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' fill='%231e293b'/%3E%3Ccircle cx='50' cy='38' r='18' fill='%2364748b'/%3E%3Cpath d='M20 82 C20 62 35 55 50 55 C65 55 80 62 80 82 Z' fill='%2364748b'/%3E%3C/svg%3E";
+                          }}
                         />
                         <div>
                           <div style={{ fontWeight: 700, color: "#fff", display: "flex", alignItems: "center", gap: "6px" }}>

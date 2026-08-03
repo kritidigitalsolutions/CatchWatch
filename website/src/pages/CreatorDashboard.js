@@ -71,7 +71,10 @@ export default function CreatorDashboard() {
               src={profile?.profileImage || "/default-avatar.png"}
               alt="Avatar"
               className="creator-avatar"
-              onError={(e) => (e.target.src = "https://via.placeholder.com/100")}
+              onError={(e) => {
+                e.target.onerror = null;
+                e.target.src = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' fill='%231e293b'/%3E%3Ccircle cx='50' cy='38' r='18' fill='%2364748b'/%3E%3Cpath d='M20 82 C20 62 35 55 50 55 C65 55 80 62 80 82 Z' fill='%2364748b'/%3E%3C/svg%3E";
+              }}
             />
             <div className="badge-pill" style={{ background: getBadgeColor(level) }}>
               <LuSparkles size={14} /> {level}
@@ -298,9 +301,13 @@ export default function CreatorDashboard() {
                   <tr key={reel._id} style={{ borderBottom: "1px solid #f3f4f6" }}>
                     <td style={{ padding: "14px 18px", display: "flex", alignItems: "center", gap: "12px" }}>
                       <img
-                        src={reel.thumbnailUrl || "https://via.placeholder.com/60"}
+                        src={reel.thumbnailUrl || "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 300 400'%3E%3Crect width='300' height='400' fill='%231e293b'/%3E%3Cpath d='M120 170 L190 200 L120 230 Z' fill='%2364748b'/%3E%3C/svg%3E"}
                         alt="Reel"
                         style={{ width: "44px", height: "58px", borderRadius: "8px", objectFit: "cover", border: "1px solid #e5e7eb" }}
+                        onError={(e) => {
+                          e.target.onerror = null;
+                          e.target.src = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 300 400'%3E%3Crect width='300' height='400' fill='%231e293b'/%3E%3Cpath d='M120 170 L190 200 L120 230 Z' fill='%2364748b'/%3E%3C/svg%3E";
+                        }}
                       />
                       <div>
                         <div style={{ fontWeight: 700, color: "#111827" }}>{reel.caption || "Untitled Reel"}</div>
