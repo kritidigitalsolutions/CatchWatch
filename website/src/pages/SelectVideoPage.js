@@ -1,10 +1,13 @@
 import React, { useState } from 'react';
 import { BsCloudUploadFill, BsImage } from "react-icons/bs";
+import { FaCamera, FaCloudUploadAlt } from "react-icons/fa";
 
 // Apne API file ka path yahan adjust kar lein
 import { uploadReel } from '../api/reelsApi'; 
+import LiveCameraRecorder from '../components/LiveCameraRecorder';
 
 const SelectVideoPage = () => {
+  const [uploadMode, setUploadMode] = useState('file'); // 'file' | 'camera'
   const [fileObject, setFileObject] = useState(null);
   const [thumbnailFile, setThumbnailFile] = useState(null);
   const [autoThumbnailBlob, setAutoThumbnailBlob] = useState(null);
@@ -92,6 +95,21 @@ const SelectVideoPage = () => {
     }
   };
 
+  // Handle Video Recorded via Live Camera
+  const handleCameraVideoRecorded = async (recordedFile) => {
+    setFeedback({ type: 'success', message: '✓ Live camera video captured successfully!' });
+    setFileObject(recordedFile);
+    setThumbnailFile(null);
+    setUploadMode('file'); // Switch back to editor view to add caption & upload
+
+    // Auto extract video thumbnail from recorded file
+    const thumbResult = await generateVideoThumbnail(recordedFile);
+    if (thumbResult) {
+      setAutoThumbnailBlob(thumbResult.blob);
+      setThumbnailPreview(thumbResult.previewUrl);
+    }
+  };
+
   // Handle Custom Thumbnail File Selection
   const handleCustomThumbnail = (e) => {
     const file = e.target.files[0];
@@ -153,6 +171,36 @@ const SelectVideoPage = () => {
       <div className="border-b border-gray-100 pb-4 mb-6">
         <h1 className="text-xl sm:text-2xl font-extrabold tracking-tight">Create Studio Reel</h1>
         <p className="text-xs sm:text-sm text-gray-500 mt-1">Publish immersive video blocks to the CatchWatch feed array.</p>
+
+        {/* Mode Selector Tabs */}
+        <div className="flex gap-3 mt-4">
+          <button
+            type="button"
+            onClick={() => setUploadMode('file')}
+            className={`flex-1 py-2.5 px-4 rounded-xl text-xs font-bold transition flex items-center justify-center gap-2 border ${
+              uploadMode === 'file'
+                ? 'bg-brand-orange text-white border-brand-orange shadow-sm'
+                : 'bg-gray-50 text-gray-600 border-gray-200 hover:bg-gray-100'
+            }`}
+          >
+            <FaCloudUploadAlt className="text-base" /> Upload
+          </button>
+
+          <button
+            type="button"
+            onClick={() => setUploadMode('camera')}
+            className={`flex-1 py-2.5 px-4 rounded-xl text-xs font-bold transition flex items-center justify-center gap-2 border relative ${
+              uploadMode === 'camera'
+                ? 'bg-brand-orange text-white border-brand-orange shadow-sm'
+                : 'bg-gray-50 text-gray-600 border-gray-200 hover:bg-gray-100'
+            }`}
+          >
+            <FaCamera className="text-sm" /> Camera
+            {/* <span className="bg-red-500 text-white text-[9px] font-black px-1.5 py-0.5 rounded-full uppercase animate-pulse">
+              LIVE
+            </span> */}
+          </button>
+        </div>
       </div>
 
       {/* Feedback Message Alert */}
@@ -166,40 +214,67 @@ const SelectVideoPage = () => {
         </div>
       )}
 
-      {/* Drag & Drop File Container Interface */}
-      <div className="flex-1 flex flex-col gap-6 py-2">
-        <label className={`w-full border-2 border-dashed rounded-xl p-8 sm:p-10 text-center flex flex-col items-center justify-center transition-all ${
-          isUploading ? 'opacity-50 cursor-not-allowed border-gray-300' : 'border-brand-orange hover:bg-brand-light-bg/30 cursor-pointer'
-        }`}>
-          <input 
-            type="file" 
-            accept="video/mp4,video/quicktime" 
-            className="hidden" 
-            onChange={handleFileCapture} 
-            disabled={isUploading}
+      {/* Main Content Area: Camera Studio or File Selector */}
+      {uploadMode === 'camera' ? (
+        <div className="my-2">
+          <LiveCameraRecorder 
+            onVideoRecorded={handleCameraVideoRecorded} 
+            onCancel={() => setUploadMode('file')} 
           />
-          
-          <div className="w-14 h-14 bg-brand-light-bg text-brand-orange rounded-full flex items-center justify-center text-2xl mb-3 shadow-sm">
-            <BsCloudUploadFill />
-          </div>
-          
-          <h2 className="text-base sm:text-lg font-bold tracking-tight text-gray-800">
-            {fileObject ? 'Change Selected Video' : 'Select your video'}
-          </h2>
-          <p className="text-xs text-gray-400 mt-1 mb-3">MP4 · MOV • Max size threshold: 95 MB</p>
-          
-          <div className={`bg-white border text-xs font-bold px-5 py-2 rounded-full transition shadow-sm ${
-            isUploading ? 'border-gray-300 text-gray-400' : 'border-brand-orange text-brand-orange hover:bg-brand-orange hover:text-white'
-          }`}>
-            Tap to browse gallery
-          </div>
+        </div>
+      ) : (
+        /* Drag & Drop File Container Interface */
+        <div className="flex-1 flex flex-col gap-6 py-2">
+          <div className="flex flex-col gap-3">
+            <label className={`w-full border-2 border-dashed rounded-xl p-8 sm:p-10 text-center flex flex-col items-center justify-center transition-all ${
+              isUploading ? 'opacity-50 cursor-not-allowed border-gray-300' : 'border-brand-orange hover:bg-brand-light-bg/30 cursor-pointer'
+            }`}>
+              <input 
+                type="file" 
+                accept="video/mp4,video/quicktime,video/webm" 
+                className="hidden" 
+                onChange={handleFileCapture} 
+                disabled={isUploading}
+              />
+              
+              <div className="w-14 h-14 bg-brand-light-bg text-brand-orange rounded-full flex items-center justify-center text-2xl mb-3 shadow-sm">
+                <BsCloudUploadFill />
+              </div>
+              
+              <h2 className="text-base sm:text-lg font-bold tracking-tight text-gray-800">
+                {fileObject ? 'Change Selected Video' : 'Select your video'}
+              </h2>
+              <p className="text-xs text-gray-400 mt-1 mb-3">MP4 · MOV · WEBM • Max size threshold: 95 MB</p>
+              
+              <div className="flex flex-wrap gap-2 justify-center">
+                <div className={`bg-white border text-xs font-bold px-5 py-2 rounded-full transition shadow-sm ${
+                  isUploading ? 'border-gray-300 text-gray-400' : 'border-brand-orange text-brand-orange hover:bg-brand-orange hover:text-white'
+                }`}>
+                  Tap to browse gallery
+                </div>
+              </div>
 
-          {fileObject && (
-            <div className="mt-4 p-3 bg-green-50 rounded-lg text-xs text-green-700 font-semibold border border-green-200 max-w-sm truncate w-full">
-              ✓ Ready: {fileObject.name} ({(fileObject.size / (1024 * 1024)).toFixed(2)} MB)
-            </div>
-          )}
-        </label>
+              {fileObject && (
+                <div className="mt-4 p-3 bg-green-50 rounded-lg text-xs text-green-700 font-semibold border border-green-200 max-w-sm truncate w-full">
+                  ✓ Ready: {fileObject.name} ({(fileObject.size / (1024 * 1024)).toFixed(2)} MB)
+                </div>
+              )}
+            </label>
+
+            {/* Quick Button to Launch Camera */}
+            {!fileObject && (
+              <div className="text-center">
+                <span className="text-xs text-gray-400 font-medium">or</span>
+                <button
+                  type="button"
+                  onClick={() => setUploadMode('camera')}
+                  className="mt-2 w-full bg-gradient-to-r from-gray-900 to-gray-800 hover:from-black hover:to-gray-900 text-white text-xs font-bold py-3 px-4 rounded-xl shadow-md transition flex items-center justify-center gap-2"
+                >
+                  <FaCamera className="text-brand-orange text-sm" /> Record Video directly with Camera
+                </button>
+              </div>
+            )}
+          </div>
 
         {/* Thumbnail Preview & Custom Cover Picker */}
         {fileObject && (
@@ -255,6 +330,7 @@ const SelectVideoPage = () => {
           </div>
         )}
       </div>
+      )}
 
       {/* Submission Panel Block Footer */}
       <div className="mt-8 pt-6 border-t border-gray-100">

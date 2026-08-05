@@ -118,6 +118,9 @@ const storage = {
 };
 
 const fileFilter = (req, file, cb) => {
+  // Normalize MIME type by stripping parameters like codecs (e.g. "video/webm;codecs=vp9,opus" -> "video/webm")
+  const baseMimeType = file.mimetype ? file.mimetype.split(";")[0].toLowerCase().trim() : "";
+
   const allowedMimeTypes = [
     "image/jpeg",
     "image/jpg",
@@ -127,6 +130,7 @@ const fileFilter = (req, file, cb) => {
     "video/mkv",
     "video/webm",
     "video/quicktime",
+    "video/x-matroska",
     "audio/mpeg",
     "audio/mp3",
     "audio/aac",
@@ -152,18 +156,25 @@ const fileFilter = (req, file, cb) => {
     ];
 
     if (
+      allowedMimeTypes.includes(baseMimeType) ||
       allowedMimeTypes.includes(file.mimetype) ||
+      allowedSupportTypes.includes(baseMimeType) ||
       allowedSupportTypes.includes(file.mimetype)
     ) {
       return cb(null, true);
     }
   } else {
-    if (allowedMimeTypes.includes(file.mimetype)) {
+    if (
+      allowedMimeTypes.includes(baseMimeType) ||
+      allowedMimeTypes.includes(file.mimetype) ||
+      baseMimeType.startsWith("video/") ||
+      baseMimeType.startsWith("image/")
+    ) {
       return cb(null, true);
     }
   }
 
-  cb(new Error("Invalid file type"), false);
+  cb(new Error(`Invalid file type: ${file.mimetype}`), false);
 };
 
 // Replace the multer instantiation block

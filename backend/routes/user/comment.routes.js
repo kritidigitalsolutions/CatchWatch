@@ -40,10 +40,10 @@ router.post(
   togglePinComment
 );
 
-router.post(
-  "/:commentId/pin",
-  isAuth,
-  togglePinComment
-);
+// router.post(
+//   "/:commentId/pin",
+//   isAuth,
+//   togglePinComment
+// );
 
 module.exports = router;

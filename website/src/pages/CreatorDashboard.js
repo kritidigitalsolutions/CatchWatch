@@ -71,7 +71,7 @@ export default function CreatorDashboard() {
     return (
       <div className="loading-container">
         <div className="loading-spinner"></div>
-        <p>Loading Creator Dashboard...</p>
+        {/* <p>Loading Creator Dashboard...</p> */}
       </div>
     );
   }
@@ -234,7 +234,7 @@ export default function CreatorDashboard() {
           {/* Time Period Filter Sub-Bar */}
           <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: "12px", marginBottom: "18px" }}>
             <h3 className="section-title" style={{ margin: 0 }}>Interactions & Performance By Time</h3>
-            <div className="timeframe-pills" style={{ display: "flex", gap: "8px" }}>
+            <div className="timeframe-pills" style={{ display: "flex", gap: "8px", flexWrap: "wrap" }}>
               {[
                 { key: "all", label: "All Time" },
                 { key: "today", label: "Today" },

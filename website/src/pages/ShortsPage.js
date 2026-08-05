@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Hls from 'hls.js';
-import { FaRegHeart, FaHeart, FaItunesNote, FaPlay, FaTimes, FaTrash, FaVolumeMute, FaVolumeUp, FaThumbtack } from "react-icons/fa";
+import { FaRegHeart, FaHeart, FaPlay, FaTimes, FaTrash, FaVolumeMute, FaVolumeUp, FaThumbtack } from "react-icons/fa";
 import { FaBookmark } from "react-icons/fa";
 import { FaShareNodes } from "react-icons/fa6";
 import { LuMessageCircleMore } from "react-icons/lu";
@@ -480,10 +480,10 @@ const ShortVideo = ({ video, isActive }) => {
           {video.description || video.caption || "Enjoy this reel exclusively on CatchWatch."}
         </p>
         <div className="flex items-center gap-2 text-xs text-gray-300">
-          <span><FaItunesNote /></span>
+          {/* <span><FaItunesNote /></span>
           <span className="truncate bg-white/10 px-2 py-0.5 rounded text-[11px]">
             {video.isAd ? "Sponsored Ad Creative" : "Original Audio - CatchWatch Music"}
-          </span>
+          </span> */}
         </div>
 
         {/* Sponsored Ad Call To Action Button */}
