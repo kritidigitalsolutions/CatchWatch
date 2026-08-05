@@ -454,11 +454,7 @@ exports.incrementViews = async (req, res) => {
       return res.status(400).json({ success: false, message: "Invalid Reel ID" });
     }
 
-    const reel = await Reel.findByIdAndUpdate(
-      targetReelId,
-      { $inc: { viewsCount: 1 } },
-      { new: true }
-    );
+    let reel = await Reel.findById(targetReelId);
 
     if (!reel || reel.status === "DELETED") {
       return res.status(404).json({ success: false, message: "Reel not found" });
@@ -476,6 +472,17 @@ exports.incrementViews = async (req, res) => {
           viewerId = decoded.id;
         } catch (err) {}
       }
+    }
+
+    const isSelfView = viewerId && String(viewerId) === String(reel.user);
+
+    // Only increment view count if viewer is NOT the creator
+    if (!isSelfView) {
+      reel = await Reel.findByIdAndUpdate(
+        targetReelId,
+        { $inc: { viewsCount: 1 } },
+        { new: true }
+      );
     }
 
     const { validateQualifiedView, recordEngagementEvent } = require("../utils/creator.helper");
@@ -497,7 +504,7 @@ exports.incrementViews = async (req, res) => {
       userAgent,
     });
 
-    if (viewerId && fraudCheck.isQualified) {
+    if (viewerId && !isSelfView && fraudCheck.isQualified) {
       const validation = await validateQualifiedView({
         reel,
         viewerId,
@@ -533,8 +540,7 @@ exports.incrementViews = async (req, res) => {
     return res.status(200).json({
       success: true,
       qualifiedView: isQualified,
-      totalViews: reel.viewsCount,
-      viewsCount: reel.viewsCount,
+      viewsCount: reel.viewsCount || 0,
     });
   } catch (error) {
     console.error("INCREMENT VIEWS ERROR:", error);
@@ -571,7 +577,7 @@ exports.getCommentCount = async (req, res) => {
 };
 
 // ========================================
-// INCREMENT SHARES COUNT (GRANT +5 POINTS)
+// INCREMENT SHARES COUNT (GRANT +5 POINTS FOR NON-SELF SHARES)
 // ========================================
 exports.incrementShares = async (req, res) => {
   try {
@@ -582,11 +588,7 @@ exports.incrementShares = async (req, res) => {
       return res.status(400).json({ success: false, message: "Invalid Reel ID" });
     }
 
-    const reel = await Reel.findByIdAndUpdate(
-      targetReelId,
-      { $inc: { sharesCount: 1 } },
-      { new: true }
-    );
+    let reel = await Reel.findById(targetReelId);
 
     if (!reel || reel.status === "DELETED") {
       return res.status(404).json({ success: false, message: "Reel not found" });
@@ -606,20 +608,31 @@ exports.incrementShares = async (req, res) => {
       }
     }
 
+    const isSelfShare = userId && String(userId) === String(reel.user);
+
+    // Only increment shares count if user is NOT the creator
+    if (!isSelfShare) {
+      reel = await Reel.findByIdAndUpdate(
+        targetReelId,
+        { $inc: { sharesCount: 1 } },
+        { new: true }
+      );
+    }
+
     const { recordEngagementEvent } = require("../utils/creator.helper");
     await recordEngagementEvent({
       creatorId: reel.user,
       reelId: reel._id,
       userId,
       action: "SHARE",
-      pointsDelta: 5,
+      pointsDelta: isSelfShare ? 0 : 5,
     });
 
     return res.status(200).json({
       success: true,
-      message: "Shares count incremented",
-      shareCount: reel.sharesCount,
-      sharesCount: reel.sharesCount,
+      message: isSelfShare ? "Self share recorded (no points or count added)" : "Shares count incremented",
+      shareCount: reel.sharesCount || 0,
+      sharesCount: reel.sharesCount || 0,
     });
   } catch (error) {
     console.error("INCREMENT SHARES ERROR:", error);

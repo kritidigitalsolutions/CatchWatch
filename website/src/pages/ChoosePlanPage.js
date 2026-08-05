@@ -9,6 +9,7 @@ import {
 import { getUserProfile } from '../api/userApi';
 import Loader from '../components/Loader';
 import { MdWorkspacePremium } from "react-icons/md";
+import { FaChevronDown, FaChevronUp } from "react-icons/fa";
 
 const ChoosePlanPage = () => {
   const navigate = useNavigate();
@@ -20,6 +21,12 @@ const ChoosePlanPage = () => {
   const [remainingDays, setRemainingDays] = useState(0);
   const [isLoading, setIsLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
+  const [expandedPlans, setExpandedPlans] = useState({});
+
+  const toggleExpandPlan = (planId, e) => {
+    e.stopPropagation();
+    setExpandedPlans((prev) => ({ ...prev, [planId]: !prev[planId] }));
+  };
 
   // Load Razorpay SDK
   useEffect(() => {
@@ -264,15 +271,43 @@ const ChoosePlanPage = () => {
                       </div>
 
                       <div className="space-y-3 mb-6">
-                        {(plan.features && plan.features.length > 0 
-                          ? plan.features 
-                          : ['All content access', 'Ad-free Streaming', 'HD Quality playback']
-                        ).map((feat, index) => (
-                          <div key={index} className="flex items-start gap-2.5 text-xs text-gray-600 font-semibold leading-relaxed">
-                            <span className="text-green-500 font-bold text-sm">✓</span>
-                            <span>{feat}</span>
-                          </div>
-                        ))}
+                        {(() => {
+                          const allFeats = plan.features && plan.features.length > 0
+                            ? plan.features
+                            : ['All content access', 'Ad-free Streaming', 'HD Quality playback'];
+                          const isExpanded = expandedPlans[plan._id];
+                          const visibleFeats = isExpanded ? allFeats : allFeats.slice(0, 3);
+
+                          return (
+                            <>
+                              {visibleFeats.map((feat, index) => (
+                                <div key={index} className="flex items-start gap-2.5 text-xs text-gray-600 font-semibold leading-relaxed">
+                                  <span className="text-green-500 font-bold text-sm">✓</span>
+                                  <span>{feat}</span>
+                                </div>
+                              ))}
+                              {allFeats.length > 3 && (
+                                <button
+                                  type="button"
+                                  onClick={(e) => toggleExpandPlan(plan._id, e)}
+                                  className="mt-2 text-xs font-black text-brand-orange hover:text-brand-orange/80 flex items-center gap-1 focus:outline-none transition"
+                                >
+                                  {isExpanded ? (
+                                    <>
+                                      <span>Show Less</span>
+                                      <FaChevronUp className="text-[10px]" />
+                                    </>
+                                  ) : (
+                                    <>
+                                      <span>+ Read More ({allFeats.length - 3} more features)</span>
+                                      <FaChevronDown className="text-[10px]" />
+                                    </>
+                                  )}
+                                </button>
+                              )}
+                            </>
+                          );
+                        })()}
                       </div>
                     </div>
 

@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
-import { FaClock, FaExclamationCircle, FaShieldAlt, FaIdCard, FaTimes, FaCheck, FaGem } from "react-icons/fa";
+import { FaClock, FaExclamationCircle, FaShieldAlt, FaIdCard, FaTimes, FaCheck, FaGem, FaChevronDown, FaChevronUp } from "react-icons/fa";
 import VerifiedBadge from "./VerifiedBadge";
-import { getVerificationStatus, applyVerification, cancelVerification } from "../api/userApi";
+import { getVerificationStatus, applyVerification } from "../api/userApi";
 import { getBluetickPlans, createPaymentOrder, verifyPayment } from "../api/subscriptionApi";
 
 const ProfileVerificationSection = ({ userProfile }) => {
@@ -13,6 +13,11 @@ const ProfileVerificationSection = ({ userProfile }) => {
   // Bluetick Plans state
   const [bluetickPlans, setBluetickPlans] = useState([]);
   const [selectedPlanId, setSelectedPlanId] = useState(null);
+  const [expandedPlans, setExpandedPlans] = useState({});
+
+  const toggleExpandPlan = (planId) => {
+    setExpandedPlans((prev) => ({ ...prev, [planId]: !prev[planId] }));
+  };
 
   // Form State
   const [formData, setFormData] = useState({
@@ -250,95 +255,139 @@ const ProfileVerificationSection = ({ userProfile }) => {
     }
   };
 
-  const handleCancelRequest = async () => {
-    if (!window.confirm("Are you sure you want to cancel your pending verification request?")) return;
-    try {
-      const res = await cancelVerification();
-      if (res && res.success) {
-        fetchStatus();
-      }
-    } catch (err) {
-      alert("Failed to cancel verification request.");
-    }
-  };
 
   const status = verifStatus.status || "NOT_VERIFIED";
 
+  const isAlreadyVerified = Boolean(
+    userProfile?.isVerified ||
+    verifStatus?.isVerified ||
+    verifStatus?.status === "APPROVED" ||
+    userProfile?.verification?.status === "APPROVED"
+  );
+  const isPendingReview = verifStatus?.status === "PENDING";
+
   return (
-    <div className="bg-white border border-gray-200 rounded-3xl p-5 sm:p-6 shadow-sm mt-0">
-      {/* Header */}
-      <div className="flex flex-col sm:flex-col sm:items-left  gap-4 pb-6 border-b border-gray-100">
+    <div className="bg-white border border-gray-100 rounded-3xl p-6 shadow-xl relative overflow-hidden">
+      {/* Accent Gradient Border Line Top */}
+      <div className="absolute top-0 left-0 right-0 h-1.5 bg-gradient-to-r from-brand-orange via-blue-500 to-indigo-600"></div>
+
+      {/* Header Info Banner */}
+      <div className="flex items-start justify-between flex-wrap gap-4 border-b border-gray-100 pb-5">
         <div>
-          <h2 className="text-[20px] font-black text-gray-900 flex items-center gap-2">
-            <FaShieldAlt className="text-brand-orange text-[20px]" />
-            <span>Profile Verification</span>
-          </h2>
-          <p className="text-xs text-gray-500 font-semibold mt-1">
+          <div className="flex items-center gap-2">
+            <div className="w-8 h-8 rounded-xl bg-orange-50 text-brand-orange flex items-center justify-center text-base">
+              <FaShieldAlt />
+            </div>
+            <h2 className="text-lg font-black text-gray-900 tracking-tight">
+              Profile Verification
+            </h2>
+          </div>
+          <p className="text-xs font-semibold text-gray-500 mt-1">
             Get verified to build authenticity and unlock exclusive creator benefits.
           </p>
         </div>
 
-        {/* Current Status Display Badge */}
-        <div className="flex items-center gap-3">
-          {status === "VERIFIED" && (
-            <div className="flex items-center gap-1 bg-blue-50 text-blue-600 border border-blue-200 px-2 py-2 rounded-xl text-xs font-extrabold">
-              <VerifiedBadge isVerified={true} size="mdlg" />
+        {/* Current Badge Status Indicator */}
+        <div>
+          {isAlreadyVerified ? (
+            <div className="flex items-center gap-2 bg-blue-50 text-blue-700 border border-blue-200 px-3.5 py-1.5 rounded-full text-xs font-extrabold shadow-sm">
+              <VerifiedBadge isVerified={true} size="md" />
               <span>Verified Account</span>
             </div>
-          )}
-
-          {status === "PENDING" && (
-            <div className="flex items-center gap-2 bg-amber-50 text-amber-600 border border-amber-200 px-4 py-2 rounded-xl text-sm font-extrabold">
-              <FaClock />
-              <span>Verification Under Review</span>
-            </div>
-          )}
-
-          {status === "REJECTED" && (
-            <div className="flex flex-col sm:items-end gap-1">
-              <div className="flex items-center gap-2 bg-red-50 text-red-600 border border-red-200 px-4 py-1.5 rounded-xl text-xs font-extrabold">
-                <FaExclamationCircle />
-                <span>Verification Rejected</span>
-              </div>
-              {verifStatus.rejectionReason && (
-                <span className="text-[11px] text-red-500 font-bold">Reason: {verifStatus.rejectionReason}</span>
-              )}
-            </div>
-          )}
-
-          {status === "SUSPENDED" && (
-            <div className="flex flex-col sm:items-end gap-1">
-              <div className="flex items-center gap-2 bg-purple-50 text-purple-600 border border-purple-200 px-4 py-1.5 rounded-xl text-xs font-extrabold">
-                <FaExclamationCircle />
-                <span>Verification Suspended</span>
-              </div>
-              {verifStatus.suspensionReason && (
-                <span className="text-[11px] text-purple-500 font-bold">Reason: {verifStatus.suspensionReason}</span>
-              )}
-            </div>
-          )}
-
-          {/* Action Button */}
-          {status === "NOT_VERIFIED" || status === "REJECTED" ? (
-            <button
-              onClick={() => setIsModalOpen(true)}
-              className="px-5 py-2.5 bg-brand-orange hover:bg-orange-600 text-white font-extrabold text-xs sm:text-sm rounded-xl transition shadow-sm"
-            >
-              Apply for Verification
-            </button>
           ) : status === "PENDING" ? (
-            <button
-              onClick={handleCancelRequest}
-              className="px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 font-bold text-xs rounded-xl border border-gray-200 transition"
-            >
-              Cancel Request
-            </button>
-          ) : null}
+            <div className="flex items-center gap-2 bg-yellow-50 text-yellow-700 border border-yellow-200 px-3.5 py-1.5 rounded-full text-xs font-extrabold shadow-sm">
+              <FaClock className="text-yellow-500 animate-spin" />
+              <span>Under Review</span>
+            </div>
+          ) : (
+            <div className="flex items-center gap-2 bg-gray-50 text-gray-600 border border-gray-200 px-3.5 py-1.5 rounded-full text-xs font-bold">
+              <span>Unverified Account</span>
+            </div>
+          )}
         </div>
       </div>
 
-      {/* ── Bluetick Verification Plans Section ── */}
-      {bluetickPlans.length > 0 && (
+      {/* Status Banner Message */}
+      <div className="mt-5">
+        {status === "PENDING" && (
+          <div className="bg-amber-50/70 border border-amber-200/80 rounded-2xl p-4 flex items-start gap-3 text-amber-900">
+            <FaClock className="text-amber-500 mt-0.5 flex-shrink-0 text-base" />
+            <div>
+              <h4 className="text-xs font-black uppercase tracking-wider text-amber-800">
+                Verification Application Under Review
+              </h4>
+              <p className="text-xs font-medium text-amber-700 mt-0.5">
+                Our administration team is reviewing your identification documents. Response usually takes 24-48 hours.
+              </p>
+            </div>
+          </div>
+        )}
+
+        {status === "REJECTED" && (
+          <div className="bg-red-50/70 border border-red-200/80 rounded-2xl p-4 flex items-start gap-3 text-red-900">
+            <FaExclamationCircle className="text-red-500 mt-0.5 flex-shrink-0 text-base" />
+            <div>
+              <h4 className="text-xs font-black uppercase tracking-wider text-red-800">
+                Verification Application Rejected
+              </h4>
+              <p className="text-xs font-medium text-red-700 mt-0.5">
+                {verifStatus.rejectionReason
+                  ? `Reason: ${verifStatus.rejectionReason}`
+                  : "Your submitted documents did not meet our verification criteria. You may select a plan and re-apply."}
+              </p>
+            </div>
+          </div>
+        )}
+
+        {status === "SUSPENDED" && (
+          <div className="bg-purple-50/70 border border-purple-200/80 rounded-2xl p-4 flex items-start gap-3 text-purple-900">
+            <FaExclamationCircle className="text-purple-500 mt-0.5 flex-shrink-0 text-base" />
+            <div>
+              <h4 className="text-xs font-black uppercase tracking-wider text-purple-800">
+                Verification Suspended
+              </h4>
+              <p className="text-xs font-medium text-purple-700 mt-0.5">
+                {verifStatus.suspensionReason
+                  ? `Reason: ${verifStatus.suspensionReason}`
+                  : "Your blue tick status has been temporarily suspended."}
+              </p>
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* ── Active Verified Member Card (Shown when user has active verification / plan) ── */}
+      {isAlreadyVerified && (
+        <div className="mt-6 pt-2">
+          <div className="bg-gradient-to-r from-blue-600 to-indigo-700 text-white rounded-2xl p-5 shadow-lg border border-blue-500/30">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-full bg-white/20 backdrop-blur-md flex items-center justify-center text-xl font-black">
+                  ✓
+                </div>
+                <div>
+                  <h4 className="text-base font-black flex items-center gap-2">
+                    <span>Active Verified Profile</span>
+                    <VerifiedBadge isVerified={true} size="md" />
+                  </h4>
+                  <p className="text-xs text-blue-100 font-medium mt-0.5">
+                    Your profile is officially authenticated & protected on CatchWatch.
+                  </p>
+                </div>
+              </div>
+            </div>
+            <div className="mt-4 pt-3 border-t border-white/20 grid grid-cols-2 gap-2.5 text-xs font-bold text-blue-50">
+              <div className="flex items-center gap-1.5">⚡ Search Ranking Boost</div>
+              <div className="flex items-center gap-1.5">🛡️ Impersonation Protection</div>
+              <div className="flex items-center gap-1.5">💬 Pinned & Highlighted Comments</div>
+              <div className="flex items-center gap-1.5">🎧 VIP Creator Support Desk</div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── Bluetick Verification Plans Section (Only shown for unverified users who have not applied) ── */}
+      {!isAlreadyVerified && !isPendingReview && bluetickPlans.length > 0 && (
         <div className="mt-6 pt-2">
           <div className="flex items-center justify-between mb-4">
             <h3 className="text-sm font-extrabold text-gray-900 flex items-center gap-2">
@@ -350,7 +399,7 @@ const ProfileVerificationSection = ({ userProfile }) => {
             </span>
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-1 xl:grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-1 xl:grid-cols-1 gap-4">
             {bluetickPlans.map((plan) => (
               <div
                 key={plan._id}
@@ -380,24 +429,41 @@ const ProfileVerificationSection = ({ userProfile }) => {
                   {/* Features */}
                   {plan.features && plan.features.length > 0 && (
                     <div className="mt-4 space-y-2 border-t border-gray-100 pt-3">
-                      {plan.features.map((feat, idx) => (
+                      {(expandedPlans[plan._id] ? plan.features : plan.features.slice(0, 3)).map((feat, idx) => (
                         <div key={idx} className="flex items-start gap-2 text-xs font-bold text-gray-700">
                           <FaCheck className="text-blue-500 mt-0.5 flex-shrink-0" />
                           <span>{feat}</span>
                         </div>
                       ))}
+                      {plan.features.length > 3 && (
+                        <button
+                          type="button"
+                          onClick={() => toggleExpandPlan(plan._id)}
+                          className="mt-2 text-xs font-black text-blue-600 hover:text-blue-700 flex items-center gap-1 focus:outline-none transition"
+                        >
+                          {expandedPlans[plan._id] ? (
+                            <>
+                              <span>Show Less</span>
+                              <FaChevronUp className="text-[10px]" />
+                            </>
+                          ) : (
+                            <>
+                              <span>+ Read More ({plan.features.length - 3} more features)</span>
+                              <FaChevronDown className="text-[10px]" />
+                            </>
+                          )}
+                        </button>
+                      )}
                     </div>
                   )}
                 </div>
 
-                {(status === "NOT_VERIFIED" || status === "REJECTED") && (
-                  <button
+                <button
                     onClick={() => handleOpenApplyModalWithPlan(plan._id)}
                     className="w-full mt-5 py-2.5 bg-blue-600 hover:bg-blue-700 text-white font-extrabold text-xs rounded-xl transition shadow-sm"
                   >
                     Select & Apply
                   </button>
-                )}
               </div>
             ))}
           </div>

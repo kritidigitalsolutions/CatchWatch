@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import Hls from 'hls.js';
-import { FaArrowLeft, FaRegHeart, FaHeart, FaItunesNote, FaPlay, FaEye, FaTimes, FaTrash } from "react-icons/fa";
+import { FaArrowLeft, FaRegHeart, FaHeart, FaItunesNote, FaPlay, FaEye, FaTimes, FaTrash, FaThumbtack } from "react-icons/fa";
 import { FaShareNodes } from "react-icons/fa6";
 import { LuMessageCircleMore } from "react-icons/lu";
 import { GiSaveArrow } from "react-icons/gi";
@@ -10,7 +10,7 @@ import Loader from '../components/Loader';
 // APIs Import
 import { getReelById, incrementViews, incrementShares } from '../api/reelsApi';
 import { toggleLike, toggleBookmark, getContentInteractions } from '../api/interactionApi';
-import { addComment, getComments, deleteComment } from '../api/commentApi';
+import { addComment, getComments, deleteComment, pinComment } from '../api/commentApi';
 
 // Helper to decode JWT token to get current user ID
 const getLoggedInUserId = () => {
@@ -166,6 +166,30 @@ const SingleReelPage = () => {
       fetchComments();
     }
   }, [showComments, id]);
+
+  const handleCommentPin = async (commentId, isCurrentlyPinned, e) => {
+    e.stopPropagation();
+    try {
+      const res = await pinComment(commentId, !isCurrentlyPinned);
+      if (res && res.success) {
+        setComments((prev) => {
+          const updated = prev.map((item) => {
+            if (item._id === commentId) {
+              return { ...item, isPinned: !isCurrentlyPinned };
+            }
+            return { ...item, isPinned: false };
+          });
+          return updated.sort((a, b) => {
+            if (a.isPinned !== b.isPinned) return b.isPinned ? 1 : -1;
+            return new Date(b.createdAt) - new Date(a.createdAt);
+          });
+        });
+      }
+    } catch (err) {
+      console.error("Pin comment failed", err);
+      alert(err.response?.data?.message || "Failed to pin comment");
+    }
+  };
 
   // Autoplay handler
   useEffect(() => {
@@ -413,8 +437,30 @@ const SingleReelPage = () => {
               ) : (
                 comments.map((c) => {
                   const isOwnComment = c.user?._id === getLoggedInUserId();
+                  const isReelCreator = Boolean(
+                    reel?.user?._id === getLoggedInUserId() ||
+                    reel?.user === getLoggedInUserId()
+                  );
+
+                  const isVerifiedCreator = isReelCreator && (
+                    Boolean(reel?.user?.blueTick || reel?.user?.isVerified || reel?.user?.verification?.isVerified || reel?.user?.verification?.status === "VERIFIED" || reel?.user?.verification?.status === "APPROVED") ||
+                    (() => {
+                      try {
+                        const u = JSON.parse(localStorage.getItem("user") || localStorage.getItem("userInfo") || "{}");
+                        return Boolean(u?.blueTick || u?.isVerified || u?.verification?.isVerified || u?.verification?.status === "VERIFIED" || u?.verification?.status === "APPROVED");
+                      } catch (e) { return false; }
+                    })()
+                  );
+
                   return (
-                    <div key={c._id} className="flex gap-2.5 items-start justify-between bg-white/5 p-2.5 rounded-xl border border-white/5">
+                    <div
+                      key={c._id}
+                      className={`flex gap-2.5 items-start justify-between p-2.5 rounded-xl border transition ${
+                        c.isPinned
+                          ? "bg-amber-950/40 border-amber-500/50 shadow-sm"
+                          : "bg-white/5 border-white/5"
+                      }`}
+                    >
                       <div className="flex gap-2.5 items-start flex-1 min-w-0">
                         {/* Avatar */}
                         <div className="w-8 h-8 rounded-full bg-brand-orange flex-shrink-0 flex items-center justify-center font-bold text-xs border border-white/20 overflow-hidden">
@@ -425,6 +471,13 @@ const SingleReelPage = () => {
                           )}
                         </div>
                         <div className="flex-1 min-w-0">
+                          {/* Pinned Tag */}
+                          {c.isPinned && (
+                            <div className="flex items-center gap-1 text-[10px] font-black text-amber-400 bg-amber-500/15 border border-amber-500/30 px-2 py-0.5 rounded-full w-fit mb-1">
+                              <FaThumbtack className="text-amber-400 text-[9px]" />
+                              <span>Pinned by Creator</span>
+                            </div>
+                          )}
                           <div className="text-xs font-black text-orange-400 truncate">
                             {c.user?.name || c.user?.username || "Anonymous"}
                           </div>
@@ -436,15 +489,33 @@ const SingleReelPage = () => {
                           </div>
                         </div>
                       </div>
-                      {isOwnComment && (
-                        <button
-                          onClick={(e) => handleCommentDelete(c._id, e)}
-                          className="text-zinc-500 hover:text-red-500 transition text-[11px] p-1 bg-white/5 hover:bg-red-500/10 rounded"
-                          title="Delete Comment"
-                        >
-                          <FaTrash />
-                        </button>
-                      )}
+
+                      <div className="flex items-center gap-1 flex-shrink-0">
+                        {/* Pin Button ONLY for Verified Blue Tick Reel Creator */}
+                        {isVerifiedCreator && (
+                          <button
+                            onClick={(e) => handleCommentPin(c._id, c.isPinned, e)}
+                            className={`p-1.5 rounded transition text-[11px] flex items-center justify-center ${
+                              c.isPinned
+                                ? "bg-amber-500/20 text-amber-400 border border-amber-500/40"
+                                : "bg-white/5 text-zinc-400 hover:text-amber-400 hover:bg-white/10"
+                            }`}
+                            title={c.isPinned ? "Unpin Comment" : "Pin Comment to Top"}
+                          >
+                            <FaThumbtack className={c.isPinned ? "text-amber-400" : "rotate-45"} />
+                          </button>
+                        )}
+
+                        {isOwnComment && (
+                          <button
+                            onClick={(e) => handleCommentDelete(c._id, e)}
+                            className="text-zinc-500 hover:text-red-500 transition text-[11px] p-1.5 bg-white/5 hover:bg-red-500/10 rounded"
+                            title="Delete Comment"
+                          >
+                            <FaTrash />
+                          </button>
+                        )}
+                      </div>
                     </div>
                   );
                 })

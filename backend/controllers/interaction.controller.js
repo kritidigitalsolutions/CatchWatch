@@ -95,13 +95,14 @@ exports.toggleLike = async (
     }
 
     if (contentType === "reel" && reel && reel.user && pointsDelta !== 0) {
+      const isSelfLike = String(userId) === String(reel.user);
       const { recordEngagementEvent } = require("../utils/creator.helper");
       await recordEngagementEvent({
         creatorId: reel.user,
         reelId: reel._id,
         userId,
         action: actionType,
-        pointsDelta,
+        pointsDelta: isSelfLike ? 0 : pointsDelta,
       });
     }
 
@@ -731,13 +732,14 @@ console.log("Bookmark Body:", req.body);
         const Reel = require("../models/reel.model");
         const reel = await Reel.findById(contentId);
         if (reel && reel.user) {
+          const isSelfSave = String(userId) === String(reel.user);
           const { recordEngagementEvent } = require("../utils/creator.helper");
           await recordEngagementEvent({
             creatorId: reel.user,
             reelId: reel._id,
             userId,
             action: "SAVE",
-            pointsDelta: 4,
+            pointsDelta: isSelfSave ? 0 : 4,
           });
         }
       }

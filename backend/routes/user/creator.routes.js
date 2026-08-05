@@ -1,6 +1,6 @@
 const express = require("express");
 const router = express.Router();
-const { isAuth } = require("../../middlewares/auth.middleware");
+const { isAuth, optionalAuth } = require("../../middlewares/auth.middleware");
 
 const {
   getCreatorWallet,
@@ -9,6 +9,7 @@ const {
   getCreatorPoints,
   getPointHistory,
   getCreatorDashboard,
+  getLeaderboard,
 } = require("../../controllers/creator.controller");
 
 // Wallet API
@@ -26,5 +27,8 @@ router.get("/point-history", isAuth, getPointHistory);
 
 // Creator Dashboard API (Verified Users Only)
 router.get("/dashboard", isAuth, getCreatorDashboard);
+
+// Creator / User Leaderboard API (Public & Auth)
+router.get("/leaderboard", optionalAuth, getLeaderboard);
 
 module.exports = router;

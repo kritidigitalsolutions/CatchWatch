@@ -152,6 +152,11 @@ const recordEngagementEvent = async ({
   try {
     if (!creatorId) return;
 
+    // Self-interaction check: Creator should never earn reward points for interacting with their own content
+    if (userId && String(userId) === String(creatorId)) {
+      pointsDelta = 0;
+    }
+
     const todayStr = new Date().toISOString().split("T")[0];
 
     // 1. Point History Entry

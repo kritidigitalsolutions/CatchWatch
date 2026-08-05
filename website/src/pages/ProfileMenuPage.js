@@ -21,9 +21,10 @@ import {
   MdPrivacyTip,
   MdHelpCenter,
 } from "react-icons/md";
-import { FaHeart } from "react-icons/fa6";
 import { HiReceiptRefund } from "react-icons/hi";
 import { IoLogOut } from "react-icons/io5";
+import { FaBookmark } from "react-icons/fa";
+import { BiSolidVideos } from "react-icons/bi";
 
 import Loader from "../components/Loader";
 import VerifiedBadge from "../components/VerifiedBadge";
@@ -283,13 +284,14 @@ const ProfileMenuPage = () => {
   const matrixOptions = [
     { label: "My Profile", route: `/user/${usernameFormatted.replace(/^@/, "")}`, icon: <FaUserAlt /> },
     { label: "Creator Studio & Analytics", route: "/creator/dashboard", icon: <FaTrophy /> },
+    { label: "Creator Leaderboard", route: "/leaderboard", icon: <FaTrophy /> },
     { label: "Edit Profile", route: "/profile/edit", icon: <FaUserAlt /> },
     { label: "Creator Verification Badge", route: "/profile/verification", icon: <FaShieldAlt /> },
     { label: "Subscription Plans", route: "/subscription", icon: <MdWorkspacePremium /> },
-    { label: "My Videos", route: "/my-videos", icon: <MdDownload /> },
+    { label: "My Videos", route: "/my-videos", icon: <BiSolidVideos /> },
     { label: "My Downloads", route: "/downloads", icon: <MdDownload /> },
     { label: "Notifications Stream", route: "/notifications", icon: <FaBell /> },
-    { label: "Personal Wish List", route: "/wishlist", icon: <FaHeart /> },
+    { label: "Personal Wish List", route: "/wishlist", icon:<FaBookmark /> },
     { label: "Privacy Regulations", route: "/legal/privacy-policy", icon: <MdPrivacyTip /> },
     { label: "Terms & Conditions", route: "/legal/terms-conditions", icon: <FaFileAlt /> },
     { label: "Refund Policy guidelines", route: "/legal/refund-policy", icon: <HiReceiptRefund /> },

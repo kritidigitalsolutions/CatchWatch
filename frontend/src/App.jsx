@@ -308,8 +308,8 @@ function App() {
                 </PermissionGuard>
               }
             />
+            
             <Route path="ad-management" element={<AdManagement />} />
-            <Route path="ad-purchases" element={<AdManagement />} />
             <Route path="fraud-monitoring" element={<FraudMonitoring />} />
             <Route path="redeem-requests" element={<RedeemRequests />} />
             <Route path="admin-analytics" element={<AdminAnalytics />} />

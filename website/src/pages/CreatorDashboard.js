@@ -1,4 +1,6 @@
 import React, { useState, useEffect, useCallback } from "react";
+import { useNavigate } from 'react-router-dom';
+
 import API from "../api/axiosConfig";
 import {
   FaAward,
@@ -18,15 +20,18 @@ import VerifiedBadge from "../components/VerifiedBadge";
 import "./CreatorDashboard.css";
 
 export default function CreatorDashboard() {
+  const navigate = useNavigate();
   const [dashboardData, setDashboardData] = useState(null);
   const [profile, setProfile] = useState(null);
   const [activeTab, setActiveTab] = useState("OVERVIEW"); // OVERVIEW | REELS | HISTORY
+  const [selectedTimeframe, setSelectedTimeframe] = useState("all"); // all | today | week | month | year
   const [loading, setLoading] = useState(true);
 
-  const fetchData = useCallback(async () => {
+  const fetchData = useCallback(async (timeframe = "all") => {
     try {
+      
       setLoading(true);
-      const dashRes = await API.get("/creator/dashboard");
+      const dashRes = await API.get(`/creator/dashboard?timeframe=${timeframe}`);
       if (dashRes.data?.success) {
         setDashboardData(dashRes.data);
       }
@@ -47,8 +52,9 @@ export default function CreatorDashboard() {
   }, []);
 
   useEffect(() => {
-    fetchData();
-  }, [fetchData]);
+    fetchData(selectedTimeframe);
+    
+  }, [fetchData, selectedTimeframe]);
 
   const score = dashboardData?.qualityScore || profile?.qualityScore || 0;
   const level = dashboardData?.creatorLevel || profile?.creatorLevel || "Beginner";
@@ -61,7 +67,7 @@ export default function CreatorDashboard() {
     return "linear-gradient(135deg, #475569, #64748b)";
   };
 
-  if (loading) {
+  if (loading && !dashboardData) {
     return (
       <div className="loading-container">
         <div className="loading-spinner"></div>
@@ -69,6 +75,14 @@ export default function CreatorDashboard() {
       </div>
     );
   }
+
+  const timeStats = dashboardData?.timeStats || {
+    today: { likes: 0, comments: 0, views: 0, saves: 0, shares: 0 },
+    week: { likes: 0, comments: 0, views: 0, saves: 0, shares: 0 },
+    month: { likes: 0, comments: 0, views: 0, saves: 0, shares: 0 },
+    year: { likes: 0, comments: 0, views: 0, saves: 0, shares: 0 },
+    total: { likes: 0, comments: 0, views: 0, saves: 0, shares: 0 },
+  };
 
   return (
     <div className="creator-dashboard-container">
@@ -142,6 +156,13 @@ export default function CreatorDashboard() {
         >
           <FaHistory style={{ marginRight: "6px" }} /> Points History Log ({dashboardData?.pointHistory?.length || 0})
         </button>
+        <button
+          className="time-filter-btn"
+          style={{ background: "#fff7ed", borderColor: "#fed7aa", color: "#ea580c" }}
+          onClick={() => navigate("/leaderboard")}
+        >
+          <FaAward style={{ marginRight: "6px" }} /> Community Leaderboard 🏆
+        </button>
       </div>
 
       {/* TAB 1: OVERVIEW & METRICS */}
@@ -210,6 +231,141 @@ export default function CreatorDashboard() {
             </div>
           </div>
 
+          {/* Time Period Filter Sub-Bar */}
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: "12px", marginBottom: "18px" }}>
+            <h3 className="section-title" style={{ margin: 0 }}>Interactions & Performance By Time</h3>
+            <div className="timeframe-pills" style={{ display: "flex", gap: "8px" }}>
+              {[
+                { key: "all", label: "All Time" },
+                { key: "today", label: "Today" },
+                { key: "week", label: "This Week" },
+                { key: "month", label: "This Month" },
+                { key: "year", label: "This Year" },
+              ].map((pill) => (
+                <button
+                  key={pill.key}
+                  className={`time-filter-btn ${selectedTimeframe === pill.key ? "active" : ""}`}
+                  style={{ padding: "6px 14px", fontSize: "0.8rem", borderRadius: "10px" }}
+                  onClick={() => setSelectedTimeframe(pill.key)}
+                >
+                  {pill.label}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Engagement Counts Matrix for Selected Timeframe */}
+          <div className="points-breakdown-grid" style={{ marginBottom: "32px" }}>
+            <div className="point-card">
+              <div className="point-header">
+                <FaThumbsUp size={16} color="#2563eb" />
+                <span>Likes Count</span>
+              </div>
+              <div className="point-value">{(dashboardData?.likes || 0).toLocaleString()}</div>
+            </div>
+
+            <div className="point-card">
+              <div className="point-header">
+                <LuMessageSquare size={16} color="#0891b2" />
+                <span>Comments Count</span>
+              </div>
+              <div className="point-value">{(dashboardData?.comments || 0).toLocaleString()}</div>
+            </div>
+
+            <div className="point-card">
+              <div className="point-header">
+                <FaEye size={16} color="#059669" />
+                <span>Qualified Views</span>
+              </div>
+              <div className="point-value">{(dashboardData?.viewsByTime?.[selectedTimeframe] || dashboardData?.qualifiedViews || 0).toLocaleString()}</div>
+            </div>
+
+            <div className="point-card">
+              <div className="point-header">
+                <FaShareAlt size={16} color="#8b5cf6" />
+                <span>Shares Count</span>
+              </div>
+              <div className="point-value">{(dashboardData?.shares || 0).toLocaleString()}</div>
+            </div>
+
+            <div className="point-card">
+              <div className="point-header">
+                <FaBookmark size={16} color="#d97706" />
+                <span>Saves Count</span>
+              </div>
+              <div className="point-value">{(dashboardData?.saves || 0).toLocaleString()}</div>
+            </div>
+          </div>
+
+          {/* Comparative Time Breakdown Table */}
+          <h3 className="section-title">Time Period Breakdown Matrix</h3>
+          <div className="creator-card" style={{ padding: 0, overflow: "hidden", display: "block", marginBottom: "32px" }}>
+            <table style={{ width: "100%", borderCollapse: "collapse", textAlign: "left", fontSize: "0.88rem" }}>
+              <thead>
+                <tr style={{ background: "#f9fafb", color: "#6b7280", borderBottom: "1px solid #e5e7eb" }}>
+                  <th style={{ padding: "14px 18px" }}>Metric</th>
+                  <th style={{ padding: "14px 18px" }}>Today</th>
+                  <th style={{ padding: "14px 18px" }}>This Week</th>
+                  <th style={{ padding: "14px 18px" }}>This Month</th>
+                  <th style={{ padding: "14px 18px" }}>This Year</th>
+                  <th style={{ padding: "14px 18px" }}>All Time</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr style={{ borderBottom: "1px solid #f3f4f6" }}>
+                  <td style={{ padding: "14px 18px", fontWeight: 700, color: "#111827", display: "flex", alignItems: "center", gap: "8px" }}>
+                    <FaThumbsUp size={14} color="#2563eb" /> Likes
+                  </td>
+                  <td style={{ padding: "14px 18px", fontWeight: 600 }}>{(timeStats.today?.likes || 0).toLocaleString()}</td>
+                  <td style={{ padding: "14px 18px", fontWeight: 600 }}>{(timeStats.week?.likes || 0).toLocaleString()}</td>
+                  <td style={{ padding: "14px 18px", fontWeight: 600 }}>{(timeStats.month?.likes || 0).toLocaleString()}</td>
+                  <td style={{ padding: "14px 18px", fontWeight: 600 }}>{(timeStats.year?.likes || 0).toLocaleString()}</td>
+                  <td style={{ padding: "14px 18px", fontWeight: 800, color: "#2563eb" }}>{(timeStats.total?.likes || 0).toLocaleString()}</td>
+                </tr>
+                <tr style={{ borderBottom: "1px solid #f3f4f6" }}>
+                  <td style={{ padding: "14px 18px", fontWeight: 700, color: "#111827", display: "flex", alignItems: "center", gap: "8px" }}>
+                    <LuMessageSquare size={14} color="#0891b2" /> Comments
+                  </td>
+                  <td style={{ padding: "14px 18px", fontWeight: 600 }}>{(timeStats.today?.comments || 0).toLocaleString()}</td>
+                  <td style={{ padding: "14px 18px", fontWeight: 600 }}>{(timeStats.week?.comments || 0).toLocaleString()}</td>
+                  <td style={{ padding: "14px 18px", fontWeight: 600 }}>{(timeStats.month?.comments || 0).toLocaleString()}</td>
+                  <td style={{ padding: "14px 18px", fontWeight: 600 }}>{(timeStats.year?.comments || 0).toLocaleString()}</td>
+                  <td style={{ padding: "14px 18px", fontWeight: 800, color: "#0891b2" }}>{(timeStats.total?.comments || 0).toLocaleString()}</td>
+                </tr>
+                <tr style={{ borderBottom: "1px solid #f3f4f6" }}>
+                  <td style={{ padding: "14px 18px", fontWeight: 700, color: "#111827", display: "flex", alignItems: "center", gap: "8px" }}>
+                    <FaEye size={14} color="#059669" /> Views
+                  </td>
+                  <td style={{ padding: "14px 18px", fontWeight: 600 }}>{(timeStats.today?.views || 0).toLocaleString()}</td>
+                  <td style={{ padding: "14px 18px", fontWeight: 600 }}>{(timeStats.week?.views || 0).toLocaleString()}</td>
+                  <td style={{ padding: "14px 18px", fontWeight: 600 }}>{(timeStats.month?.views || 0).toLocaleString()}</td>
+                  <td style={{ padding: "14px 18px", fontWeight: 600 }}>{(timeStats.year?.views || 0).toLocaleString()}</td>
+                  <td style={{ padding: "14px 18px", fontWeight: 800, color: "#059669" }}>{(timeStats.total?.views || 0).toLocaleString()}</td>
+                </tr>
+                <tr style={{ borderBottom: "1px solid #f3f4f6" }}>
+                  <td style={{ padding: "14px 18px", fontWeight: 700, color: "#111827", display: "flex", alignItems: "center", gap: "8px" }}>
+                    <FaShareAlt size={14} color="#8b5cf6" /> Shares
+                  </td>
+                  <td style={{ padding: "14px 18px", fontWeight: 600 }}>{(timeStats.today?.shares || 0).toLocaleString()}</td>
+                  <td style={{ padding: "14px 18px", fontWeight: 600 }}>{(timeStats.week?.shares || 0).toLocaleString()}</td>
+                  <td style={{ padding: "14px 18px", fontWeight: 600 }}>{(timeStats.month?.shares || 0).toLocaleString()}</td>
+                  <td style={{ padding: "14px 18px", fontWeight: 600 }}>{(timeStats.year?.shares || 0).toLocaleString()}</td>
+                  <td style={{ padding: "14px 18px", fontWeight: 800, color: "#8b5cf6" }}>{(timeStats.total?.shares || 0).toLocaleString()}</td>
+                </tr>
+                <tr>
+                  <td style={{ padding: "14px 18px", fontWeight: 700, color: "#111827", display: "flex", alignItems: "center", gap: "8px" }}>
+                    <FaBookmark size={14} color="#d97706" /> Saves
+                  </td>
+                  <td style={{ padding: "14px 18px", fontWeight: 600 }}>{(timeStats.today?.saves || 0).toLocaleString()}</td>
+                  <td style={{ padding: "14px 18px", fontWeight: 600 }}>{(timeStats.week?.saves || 0).toLocaleString()}</td>
+                  <td style={{ padding: "14px 18px", fontWeight: 600 }}>{(timeStats.month?.saves || 0).toLocaleString()}</td>
+                  <td style={{ padding: "14px 18px", fontWeight: 600 }}>{(timeStats.year?.saves || 0).toLocaleString()}</td>
+                  <td style={{ padding: "14px 18px", fontWeight: 800, color: "#d97706" }}>{(timeStats.total?.saves || 0).toLocaleString()}</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
           {/* Time Points Breakdown */}
           <h3 className="section-title">Points Period Breakdown</h3>
           <div className="points-breakdown-grid" style={{ marginBottom: "32px" }}>
@@ -243,42 +399,6 @@ export default function CreatorDashboard() {
                 <span>Lifetime Points</span>
               </div>
               <div className="point-value">{(dashboardData?.totalPoints || 0).toLocaleString()}</div>
-            </div>
-          </div>
-
-          {/* Engagement Counts Matrix */}
-          <h3 className="section-title">Total Interactions Breakdown</h3>
-          <div className="points-breakdown-grid">
-            <div className="point-card">
-              <div className="point-header">
-                <FaThumbsUp size={16} color="#2563eb" />
-                <span>Likes Count (1pt)</span>
-              </div>
-              <div className="point-value">{(dashboardData?.likes || 0).toLocaleString()}</div>
-            </div>
-
-            <div className="point-card">
-              <div className="point-header">
-                <LuMessageSquare size={16} color="#0891b2" />
-                <span>Comments Count (3pts)</span>
-              </div>
-              <div className="point-value">{(dashboardData?.comments || 0).toLocaleString()}</div>
-            </div>
-
-            <div className="point-card">
-              <div className="point-header">
-                <FaShareAlt size={16} color="#059669" />
-                <span>Shares Count (5pts)</span>
-              </div>
-              <div className="point-value">{(dashboardData?.shares || 0).toLocaleString()}</div>
-            </div>
-
-            <div className="point-card">
-              <div className="point-header">
-                <FaBookmark size={16} color="#d97706" />
-                <span>Saves Count (4pts)</span>
-              </div>
-              <div className="point-value">{(dashboardData?.saves || 0).toLocaleString()}</div>
             </div>
           </div>
         </>

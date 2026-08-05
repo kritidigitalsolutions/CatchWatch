@@ -34,12 +34,45 @@ import UserProfilePage from './pages/UserProfilePage';
 import CompleteProfilePage from './pages/CompleteProfilePage';
 import CreatorDashboard from './pages/CreatorDashboard';
 import VerificationPage from './pages/VerificationPage';
+import LeaderboardPage from './pages/LeaderboardPage';
+
+// Helper to check if JWT token is actually expired
+const isTokenExpired = (token) => {
+  if (!token || token === "secured_token") return false;
+  try {
+    const base64Url = token.split(".")[1];
+    if (!base64Url) return false;
+    const base64 = base64Url.replace(/-/g, "+").replace(/_/g, "/");
+    const jsonPayload = decodeURIComponent(
+      atob(base64)
+        .split("")
+        .map((c) => "%" + ("00" + c.charCodeAt(0).toString(16)).slice(-2))
+        .join("")
+    );
+    const decoded = JSON.parse(jsonPayload);
+    if (decoded.exp) {
+      return Date.now() >= decoded.exp * 1000 - 10000; // expired if exp is in the past
+    }
+    return false;
+  } catch (e) {
+    return false;
+  }
+};
 
 const App = () => {
   useEffect(() => {
     const performRefresh = async () => {
       const token = localStorage.getItem("authToken") || localStorage.getItem("token");
       if (token && token !== "secured_token") {
+        if (isTokenExpired(token)) {
+          console.warn("Token expired. Logging out.");
+          localStorage.removeItem("authToken");
+          localStorage.removeItem("token");
+          localStorage.removeItem("user");
+          window.location.href = "/login";
+          return;
+        }
+
         try {
           const res = await refreshTokenCall();
           if (res && res.token) {
@@ -50,11 +83,7 @@ const App = () => {
             console.log("Token refreshed successfully on app load.");
           }
         } catch (err) {
-          console.error("Token verification/refresh failed on app load. Logging out.", err);
-          localStorage.removeItem("authToken");
-          localStorage.removeItem("token");
-          localStorage.removeItem("user");
-          window.location.href = "/login";
+          console.warn("Silent token refresh on load encountered an issue; continuing with valid stored session.");
         }
       }
     };
@@ -65,6 +94,15 @@ const App = () => {
     const interval = setInterval(async () => {
       const token = localStorage.getItem("authToken") || localStorage.getItem("token");
       if (token && token !== "secured_token") {
+        if (isTokenExpired(token)) {
+          console.warn("Token expired during background check. Logging out.");
+          localStorage.removeItem("authToken");
+          localStorage.removeItem("token");
+          localStorage.removeItem("user");
+          window.location.href = "/login";
+          return;
+        }
+
         try {
           const res = await refreshTokenCall();
           if (res && res.token) {
@@ -75,11 +113,7 @@ const App = () => {
             console.log("Token refreshed silently in background.");
           }
         } catch (err) {
-          console.error("Silent token refresh failed. Session expired.", err);
-          localStorage.removeItem("authToken");
-          localStorage.removeItem("token");
-          localStorage.removeItem("user");
-          window.location.href = "/login";
+          console.warn("Silent background token refresh failed; continuing with current session.");
         }
       }
     }, 25 * 60 * 1000);
@@ -123,6 +157,7 @@ const App = () => {
             <Route path="/user/:identifier" element={<UserProfilePage />} />
             <Route path="/@:username" element={<UserProfilePage />} />
             <Route path="/creator/dashboard" element={<CreatorDashboard />} />
+            <Route path="/leaderboard" element={<LeaderboardPage />} />
             <Route path="/profile/verification" element={<VerificationPage />} />
             <Route path="/verification" element={<VerificationPage />} />
           </Route>

@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { FaPlay } from "react-icons/fa";
+import { FaPlay, FaChevronLeft, FaChevronRight } from "react-icons/fa";
 import Loader from '../components/Loader';
 import { getMovies } from '../api/movieApi';
 import { getAllContent } from '../api/contentApi';
@@ -9,6 +9,7 @@ import { getCategories } from '../api/categoryApi';
 const HomePage = () => {
   const navigate = useNavigate();
   const [currentSlide, setCurrentSlide] = useState(0);
+  const [isHovered, setIsHovered] = useState(false);
 
   const isComingSoon = (movie) => {
     return movie?.isComingSoon === true || movie?.isComingSoon === "true";
@@ -21,6 +22,19 @@ const HomePage = () => {
 
   // Fallback images
   const FALLBACK_POSTER = "https://img.magnific.com/premium-vector/abstract-orange-blur-gradient-background-design_624457-4943.jpg";
+
+  // Image URL Resolver Helper
+  const getImageUrl = (url) => {
+    if (!url || typeof url !== "string") return FALLBACK_POSTER;
+    const cleanUrl = url.trim();
+    if (!cleanUrl) return FALLBACK_POSTER;
+    if (cleanUrl.startsWith("http://") || cleanUrl.startsWith("https://") || cleanUrl.startsWith("data:")) {
+      return cleanUrl;
+    }
+    const apiBase = process.env.REACT_APP_API_URL || "http://localhost:5000";
+    const baseUrl = apiBase.replace(/\/api\/?$/, "");
+    return `${baseUrl}${cleanUrl.startsWith("/") ? "" : "/"}${cleanUrl}`;
+  };
 
   // API Integration Effect
   useEffect(() => {
@@ -107,33 +121,38 @@ const HomePage = () => {
     title: movie.title,
     tag: movie.isNewContent ? "New Release" : (movie.isPremium ? "Premium Release" : "Featured Stream"),
     subText: `${movie.genre?.join(" • ") || "Cinema"} • ${movie.releaseYear || "New"}`,
-    image: movie.banner || movie.poster || movie.thumbnailUrl || movie.thumbnail || FALLBACK_POSTER,
+    image: getImageUrl(movie.banner || movie.poster || movie.thumbnailUrl || movie.thumbnail),
     slug: movie.slug,
     isComingSoon: movie.isComingSoon,
     videoSource: movie.videoSource,
     encodingStatus: movie.encodingStatus
   }));
 
-  // Extended slides array: append clone of first slide at the end for continuous left-to-right wrap
-  const extendedSlides = carouselSlides.length > 1
-    ? [...carouselSlides, { ...carouselSlides[0], id: `${carouselSlides[0].id}-clone` }]
-    : carouselSlides;
-
-  // Automatic slide transition
+  // Safeguard: Ensure currentSlide index never exceeds available slides
   useEffect(() => {
-    if (carouselSlides.length <= 1) return;
-    const slideTimer = setInterval(() => {
-      setIsTransitionEnabled(true);
-      setCurrentSlide((prev) => prev + 1);
-    }, 5000);
-    return () => clearInterval(slideTimer);
-  }, [carouselSlides.length]);
-
-  const handleTransitionEnd = () => {
-    if (currentSlide === carouselSlides.length) {
-      setIsTransitionEnabled(false);
+    if (carouselSlides.length > 0 && currentSlide >= carouselSlides.length) {
       setCurrentSlide(0);
     }
+  }, [carouselSlides.length, currentSlide]);
+
+  // Safe Automatic Slide Transition using Modulo (prevents out-of-bounds blank box)
+  useEffect(() => {
+    if (carouselSlides.length <= 1 || isHovered) return;
+    const slideTimer = setInterval(() => {
+      setIsTransitionEnabled(true);
+      setCurrentSlide((prev) => (prev + 1) % carouselSlides.length);
+    }, 5000);
+    return () => clearInterval(slideTimer);
+  }, [carouselSlides.length, isHovered]);
+
+  const handleNextSlide = () => {
+    setIsTransitionEnabled(true);
+    setCurrentSlide((prev) => (prev + 1) % carouselSlides.length);
+  };
+
+  const handlePrevSlide = () => {
+    setIsTransitionEnabled(true);
+    setCurrentSlide((prev) => (prev - 1 + carouselSlides.length) % carouselSlides.length);
   };
 
   const activeDotIndex = currentSlide >= carouselSlides.length ? 0 : currentSlide;
@@ -161,13 +180,16 @@ const HomePage = () => {
 
       {/* Dynamic Carousel Banner Frame */}
       {carouselSlides.length > 0 && (
-        <div className="relative w-full rounded-lg md:rounded-2xl bg-neutral-900 aspect-[25/10] md:aspect-[25/10] overflow-hidden shadow-lg group">
+        <div
+          onMouseEnter={() => setIsHovered(true)}
+          onMouseLeave={() => setIsHovered(false)}
+          className="relative w-full rounded-lg md:rounded-2xl bg-neutral-900 aspect-[25/10] md:aspect-[25/10] overflow-hidden shadow-lg group"
+        >
           <div
-            onTransitionEnd={handleTransitionEnd}
             className={`h-full w-full flex ${isTransitionEnabled ? "transition-transform duration-1000 ease-in-out" : ""}`}
             style={{ transform: `translateX(-${currentSlide * 100}%)` }}
           >
-            {extendedSlides.map((slide, index) => (
+            {carouselSlides.map((slide, index) => (
               <div
                 key={`${slide.id}-${index}`}
                 onClick={() => {
@@ -198,6 +220,32 @@ const HomePage = () => {
               </div>
             ))}
           </div>
+
+          {/* Navigation Arrows on Hover */}
+          {carouselSlides.length > 1 && (
+            <>
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handlePrevSlide();
+                }}
+                className="absolute left-3 top-1/2 -translate-y-1/2 z-20 w-9 h-9 md:w-11 md:h-11 rounded-full bg-black/50 hover:bg-brand-orange text-white flex items-center justify-center backdrop-blur-sm opacity-0 group-hover:opacity-100 transition-all duration-300 shadow-md"
+                aria-label="Previous Slide"
+              >
+                <FaChevronLeft className="text-sm md:text-lg" />
+              </button>
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handleNextSlide();
+                }}
+                className="absolute right-3 top-1/2 -translate-y-1/2 z-20 w-9 h-9 md:w-11 md:h-11 rounded-full bg-black/50 hover:bg-brand-orange text-white flex items-center justify-center backdrop-blur-sm opacity-0 group-hover:opacity-100 transition-all duration-300 shadow-md"
+                aria-label="Next Slide"
+              >
+                <FaChevronRight className="text-sm md:text-lg" />
+              </button>
+            </>
+          )}
 
           <div className="absolute bottom-2 md:bottom-4 left-0 right-0 z-20 flex justify-center items-center gap-2.5">
             {carouselSlides.map((_, index) => (

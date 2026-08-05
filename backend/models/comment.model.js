@@ -22,6 +22,17 @@ const commentSchema = new mongoose.Schema(
       trim: true,
       maxlength: 500,
     },
+
+    isPinned: {
+      type: Boolean,
+      default: false,
+      index: true,
+    },
+
+    pinnedAt: {
+      type: Date,
+      default: null,
+    },
   },
   {
     timestamps: true,

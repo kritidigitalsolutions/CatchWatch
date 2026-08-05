@@ -297,36 +297,86 @@ exports.getCreatorDashboard = async (req, res) => {
     const reels = await Reel.find({ user: userId, status: "ACTIVE" }).select("_id viewsCount sharesCount").lean();
     const reelIds = reels.map((r) => r._id);
 
-    const qualifiedViewsCount = await QualifiedView.countDocuments({
-      creatorId: userId,
-      isQualified: true,
-    });
-
     const Interaction = require("../models/interaction.model");
     const Comment = require("../models/comment.model");
+    const QualifiedView = require("../models/qualifiedView.model");
+    const CreatorPointHistory = require("../models/creatorPointHistory.model");
 
-    let totalLikes = 0;
-    let totalSaves = 0;
+    const now = new Date();
+    const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate());
 
-    if (reelIds.length > 0) {
-      totalLikes = await Interaction.countDocuments({
-        contentId: { $in: reelIds },
-        contentType: "reel",
-        type: "like",
-      });
+    const startOfWeek = new Date(startOfToday);
+    startOfWeek.setDate(startOfWeek.getDate() - startOfWeek.getDay());
 
-      totalSaves = await Interaction.countDocuments({
-        contentId: { $in: reelIds },
-        contentType: "reel",
-        type: "bookmark",
-      });
-    }
+    const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+    const startOfYear = new Date(now.getFullYear(), 0, 1);
 
-    const totalComments = reelIds.length > 0 ? await Comment.countDocuments({ reel: { $in: reelIds }, status: "ACTIVE" }) : 0;
+    // Helpers to count interactions excluding self-interactions
+    const countLikes = async (since) => {
+      if (reelIds.length === 0) return 0;
+      const filter = { contentId: { $in: reelIds }, contentType: "reel", type: "like", user: { $ne: userId } };
+      if (since) filter.createdAt = { $gte: since };
+      return Interaction.countDocuments(filter);
+    };
 
-    const totalShares = reels.reduce((sum, r) => sum + (r.sharesCount || 0), 0);
+    const countComments = async (since) => {
+      if (reelIds.length === 0) return 0;
+      const filter = { reel: { $in: reelIds }, user: { $ne: userId }, status: { $ne: "DELETED" } };
+      if (since) filter.createdAt = { $gte: since };
+      return Comment.countDocuments(filter);
+    };
 
-    const followersCount = await Follow.countDocuments({ following: userId });
+    const countViews = async (since) => {
+      const filter = { creatorId: userId, isQualified: true, viewerId: { $ne: userId } };
+      if (since) filter.createdAt = { $gte: since };
+      return QualifiedView.countDocuments(filter);
+    };
+
+    const countSaves = async (since) => {
+      if (reelIds.length === 0) return 0;
+      const filter = { contentId: { $in: reelIds }, contentType: "reel", type: "bookmark", user: { $ne: userId } };
+      if (since) filter.createdAt = { $gte: since };
+      return Interaction.countDocuments(filter);
+    };
+
+    const countShares = async (since) => {
+      const filter = { creatorId: userId, action: "SHARE", userId: { $ne: userId } };
+      if (since) filter.createdAt = { $gte: since };
+      return CreatorPointHistory.countDocuments(filter);
+    };
+
+    const [
+      likesToday, likesWeek, likesMonth, likesYear, likesTotal,
+      commentsToday, commentsWeek, commentsMonth, commentsYear, commentsTotal,
+      viewsToday, viewsWeek, viewsMonth, viewsYear, viewsTotal,
+      savesToday, savesWeek, savesMonth, savesYear, savesTotal,
+      sharesToday, sharesWeek, sharesMonth, sharesYear, sharesTotal,
+      followersCount,
+    ] = await Promise.all([
+      countLikes(startOfToday), countLikes(startOfWeek), countLikes(startOfMonth), countLikes(startOfYear), countLikes(null),
+      countComments(startOfToday), countComments(startOfWeek), countComments(startOfMonth), countComments(startOfYear), countComments(null),
+      countViews(startOfToday), countViews(startOfWeek), countViews(startOfMonth), countViews(startOfYear), countViews(null),
+      countSaves(startOfToday), countSaves(startOfWeek), countSaves(startOfMonth), countSaves(startOfYear), countSaves(null),
+      countShares(startOfToday), countShares(startOfWeek), countShares(startOfMonth), countShares(startOfYear), countShares(null),
+      Follow.countDocuments({ following: userId }),
+    ]);
+
+    const likesByTime = { today: likesToday, week: likesWeek, month: likesMonth, year: likesYear, total: likesTotal };
+    const commentsByTime = { today: commentsToday, week: commentsWeek, month: commentsMonth, year: commentsYear, total: commentsTotal };
+    const viewsByTime = { today: viewsToday, week: viewsWeek, month: viewsMonth, year: viewsYear, total: viewsTotal };
+    const savesByTime = { today: savesToday, week: savesWeek, month: savesMonth, year: savesYear, total: savesTotal };
+    const sharesByTime = { today: sharesToday, week: sharesWeek, month: sharesMonth, year: sharesYear, total: sharesTotal };
+
+    const timeStats = {
+      today: { likes: likesToday, comments: commentsToday, views: viewsToday, saves: savesToday, shares: sharesToday },
+      week: { likes: likesWeek, comments: commentsWeek, views: viewsWeek, saves: savesWeek, shares: sharesWeek },
+      month: { likes: likesMonth, comments: commentsMonth, views: viewsMonth, saves: savesMonth, shares: sharesMonth },
+      year: { likes: likesYear, comments: commentsYear, views: viewsYear, saves: savesYear, shares: sharesYear },
+      total: { likes: likesTotal, comments: commentsTotal, views: viewsTotal, saves: savesTotal, shares: sharesTotal },
+    };
+
+    const timeframe = String(req.query.timeframe || "all").toLowerCase();
+    const selectedStats = timeStats[timeframe] || timeStats.total;
 
     let wallet = await CreatorWallet.findOne({ creatorId: userId });
     if (!wallet) {
@@ -337,14 +387,6 @@ exports.getCreatorDashboard = async (req, res) => {
         walletBalance: Math.round((user.totalEngagementPoints || 0) * 0.1),
       });
     }
-
-    const now = new Date();
-    const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-
-    const startOfWeek = new Date(startOfToday);
-    startOfWeek.setDate(startOfWeek.getDate() - startOfWeek.getDay());
-
-    const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
 
     const [todayPointsHistory, weeklyHistory, monthlyHistory, recentHistoryDocs, reelsList] = await Promise.all([
       CreatorPointHistory.find({ creatorId: userId, createdAt: { $gte: startOfToday } }),
@@ -366,13 +408,13 @@ exports.getCreatorDashboard = async (req, res) => {
     const weeklyPoints = weeklyHistory.reduce((sum, h) => sum + (h.points || 0), 0);
     const monthlyPoints = monthlyHistory.reduce((sum, h) => sum + (h.points || 0), 0);
 
-    // Format top reels with interactions
+    // Format top reels with non-self interaction counts
     const topReels = await Promise.all(
       reelsList.map(async (r) => {
         const [likes, saves, comments] = await Promise.all([
-          Interaction.countDocuments({ contentId: r._id, contentType: "reel", type: "like" }),
-          Interaction.countDocuments({ contentId: r._id, contentType: "reel", type: "bookmark" }),
-          Comment.countDocuments({ reel: r._id, status: "ACTIVE" }),
+          Interaction.countDocuments({ contentId: r._id, contentType: "reel", type: "like", user: { $ne: userId } }),
+          Interaction.countDocuments({ contentId: r._id, contentType: "reel", type: "bookmark", user: { $ne: userId } }),
+          Comment.countDocuments({ reel: r._id, user: { $ne: userId }, status: "ACTIVE" }),
         ]);
 
         return {
@@ -394,20 +436,27 @@ exports.getCreatorDashboard = async (req, res) => {
 
     return res.status(200).json({
       success: true,
+      timeframe,
       creatorLevel,
       qualityScore,
       totalPoints: user.totalEngagementPoints || 0,
       todayPoints: Math.max(0, todayPoints),
       weeklyPoints: Math.max(0, weeklyPoints),
       monthlyPoints: Math.max(0, monthlyPoints),
-      qualifiedViews: qualifiedViewsCount || user.totalQualifiedViews || 0,
+      qualifiedViews: viewsByTime.total || user.totalQualifiedViews || 0,
       watchMinutes: user.totalWatchMinutes || 0,
       completionRate: analytics ? analytics.completionRate : 70,
-      likes: totalLikes,
-      comments: totalComments,
-      shares: totalShares,
-      saves: totalSaves,
+      likes: selectedStats.likes,
+      comments: selectedStats.comments,
+      shares: selectedStats.shares,
+      saves: selectedStats.saves,
       followers: followersCount,
+      likesByTime,
+      commentsByTime,
+      viewsByTime,
+      savesByTime,
+      sharesByTime,
+      timeStats,
       redeemablePoints: wallet.availablePoints || 0,
       blueTick: isVerified,
       pointHistory: recentHistoryDocs.map((item) => ({
@@ -422,6 +471,179 @@ exports.getCreatorDashboard = async (req, res) => {
     });
   } catch (error) {
     console.error("GET CREATOR DASHBOARD ERROR:", error);
+    return res.status(500).json({ success: false, message: "Server error" });
+  }
+};
+
+// ========================================
+// PUBLIC / USER CREATOR LEADERBOARD API
+// GET /api/creator/leaderboard?timeframe=today|week|month|year|all&limit=50
+// ========================================
+exports.getLeaderboard = async (req, res) => {
+  try {
+    const timeframe = String(req.query.timeframe || "all").toLowerCase();
+    const limit = Math.min(100, Math.max(1, Number(req.query.limit) || 50));
+    const viewerId = req.user?.id || null;
+
+    const Follow = require("../models/follow.model");
+
+    const now = new Date();
+    let startDate = null;
+
+    if (timeframe === "today") {
+      startDate = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    } else if (timeframe === "week") {
+      startDate = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+      startDate.setDate(startDate.getDate() - startDate.getDay());
+    } else if (timeframe === "month") {
+      startDate = new Date(now.getFullYear(), now.getMonth(), 1);
+    } else if (timeframe === "year") {
+      startDate = new Date(now.getFullYear(), 0, 1);
+    }
+
+    let topCreators = [];
+
+    if (!startDate || timeframe === "all") {
+      topCreators = await User.find({
+        $or: [{ isCreator: true }, { totalEngagementPoints: { $gt: 0 } }]
+      })
+        .select("name username profileImage verification isVerified qualityScore creatorLevel totalEngagementPoints totalQualifiedViews totalWatchMinutes createdAt")
+        .sort({ totalEngagementPoints: -1, qualityScore: -1, totalQualifiedViews: -1 })
+        .limit(limit)
+        .lean();
+    } else {
+      const pointAgg = await CreatorPointHistory.aggregate([
+        { $match: { createdAt: { $gte: startDate } } },
+        { $group: { _id: "$creatorId", periodPoints: { $sum: "$points" } } },
+        { $sort: { periodPoints: -1 } },
+        { $limit: limit }
+      ]);
+
+      const creatorIds = pointAgg.map((item) => item._id);
+      const periodPointsMap = pointAgg.reduce((map, item) => {
+        map[item._id.toString()] = item.periodPoints;
+        return map;
+      }, {});
+
+      const users = await User.find({ _id: { $in: creatorIds } })
+        .select("name username profileImage verification isVerified qualityScore creatorLevel totalEngagementPoints totalQualifiedViews totalWatchMinutes createdAt")
+        .lean();
+
+      topCreators = creatorIds
+        .map((id) => {
+          const userDoc = users.find((u) => u._id.toString() === id.toString());
+          if (!userDoc) return null;
+          return {
+            ...userDoc,
+            periodPoints: periodPointsMap[id.toString()] || 0
+          };
+        })
+        .filter(Boolean);
+
+      if (topCreators.length < limit) {
+        const existingIds = new Set(topCreators.map((u) => u._id.toString()));
+        const remaining = await User.find({
+          _id: { $nin: Array.from(existingIds) },
+          $or: [{ isCreator: true }, { totalEngagementPoints: { $gt: 0 } }]
+        })
+          .select("name username profileImage verification isVerified qualityScore creatorLevel totalEngagementPoints totalQualifiedViews totalWatchMinutes createdAt")
+          .sort({ totalEngagementPoints: -1, qualityScore: -1 })
+          .limit(limit - topCreators.length)
+          .lean();
+
+        topCreators.push(
+          ...remaining.map((u) => ({ ...u, periodPoints: 0 }))
+        );
+      }
+    }
+
+    const rankedLeaderboard = await Promise.all(
+      topCreators.map(async (creator, index) => {
+        const decorated = decorateUserWithBlueTick(creator);
+        const rank = index + 1;
+
+        const [reelsCount, followersCount] = await Promise.all([
+          Reel.countDocuments({ user: creator._id, status: "ACTIVE" }),
+          Follow.countDocuments({ following: creator._id }),
+        ]);
+
+        const badges = [];
+        if (rank === 1) badges.push("👑 #1 Champion");
+        else if (rank === 2) badges.push("🥈 #2 Runner Up");
+        else if (rank === 3) badges.push("🥉 #3 Podium Finish");
+
+        if (decorated.blueTick) badges.push("Verified Official");
+        if ((creator.qualityScore || 0) >= 81) badges.push("Premium Creator");
+        if (reelsCount >= 5) badges.push("Top Publisher");
+        if (followersCount >= 10) badges.push("Popular Creator");
+
+        return {
+          rank,
+          _id: creator._id,
+          name: creator.name || "Anonymous Creator",
+          username: creator.username || `@creator_${creator._id.toString().slice(-4)}`,
+          profileImage: creator.profileImage || "",
+          blueTick: Boolean(decorated.blueTick),
+          qualityScore: creator.qualityScore || 0,
+          creatorLevel: creator.creatorLevel || determineCreatorLevel(creator.qualityScore || 0),
+          totalPoints: creator.totalEngagementPoints || 0,
+          periodPoints: creator.periodPoints !== undefined ? creator.periodPoints : (creator.totalEngagementPoints || 0),
+          qualifiedViews: creator.totalQualifiedViews || 0,
+          watchMinutes: creator.totalWatchMinutes || 0,
+          reelsCount,
+          followersCount,
+          badges,
+        };
+      })
+    );
+
+    let currentUserRank = null;
+    if (viewerId) {
+      const viewerIndex = rankedLeaderboard.findIndex((u) => u._id.toString() === viewerId.toString());
+      if (viewerIndex !== -1) {
+        currentUserRank = rankedLeaderboard[viewerIndex];
+      } else {
+        const viewerDoc = await User.findById(viewerId);
+        if (viewerDoc) {
+          const decoratedViewer = decorateUserWithBlueTick(viewerDoc);
+          const higherCount = await User.countDocuments({
+            totalEngagementPoints: { $gt: viewerDoc.totalEngagementPoints || 0 }
+          });
+          const [reelsCount, followersCount] = await Promise.all([
+            Reel.countDocuments({ user: viewerId, status: "ACTIVE" }),
+            Follow.countDocuments({ following: viewerId }),
+          ]);
+
+          currentUserRank = {
+            rank: higherCount + 1,
+            _id: viewerDoc._id,
+            name: viewerDoc.name || "You",
+            username: viewerDoc.username || "@you",
+            profileImage: viewerDoc.profileImage || "",
+            blueTick: Boolean(decoratedViewer.blueTick),
+            qualityScore: viewerDoc.qualityScore || 0,
+            creatorLevel: viewerDoc.creatorLevel || determineCreatorLevel(viewerDoc.qualityScore || 0),
+            totalPoints: viewerDoc.totalEngagementPoints || 0,
+            periodPoints: viewerDoc.totalEngagementPoints || 0,
+            qualifiedViews: viewerDoc.totalQualifiedViews || 0,
+            watchMinutes: viewerDoc.totalWatchMinutes || 0,
+            reelsCount,
+            followersCount,
+            badges: ["Active Member"],
+          };
+        }
+      }
+    }
+
+    return res.status(200).json({
+      success: true,
+      timeframe,
+      totalCount: rankedLeaderboard.length,
+      leaderboard: rankedLeaderboard,
+      currentUserRank,
+    });
+  } catch (error) {
+    console.error("GET LEADERBOARD ERROR:", error);
     return res.status(500).json({ success: false, message: "Server error" });
   }
 };

@@ -258,4 +258,15 @@ export const getCreatorDashboard = async () => {
     console.error("Error fetching creator dashboard:", error);
     throw error;
   }
+};
+
+// Creator Leaderboard API
+export const getLeaderboard = async (timeframe = "all", limit = 50) => {
+  try {
+    const response = await axiosInstance.get(`/creator/leaderboard?timeframe=${timeframe}&limit=${limit}`);
+    return response.data;
+  } catch (error) {
+    console.error("Error fetching leaderboard:", error);
+    throw error;
+  }
 };

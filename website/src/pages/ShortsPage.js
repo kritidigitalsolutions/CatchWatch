@@ -1,8 +1,8 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Hls from 'hls.js';
-import { FaRegHeart, FaHeart, FaItunesNote, FaPlay, FaTimes, FaTrash, FaVolumeMute, FaVolumeUp } from "react-icons/fa";
-import { GiSaveArrow } from "react-icons/gi";
+import { FaRegHeart, FaHeart, FaItunesNote, FaPlay, FaTimes, FaTrash, FaVolumeMute, FaVolumeUp, FaThumbtack } from "react-icons/fa";
+import { FaBookmark } from "react-icons/fa";
 import { FaShareNodes } from "react-icons/fa6";
 import { LuMessageCircleMore } from "react-icons/lu";
 import Loader from '../components/Loader';
@@ -13,7 +13,7 @@ import { HiSpeakerphone } from "react-icons/hi";
 import API from '../api/axiosConfig';
 import { getReelsFeed, incrementShares } from '../api/reelsApi';
 import { toggleLike, toggleBookmark, getContentInteractions } from '../api/interactionApi';
-import { addComment, getComments, deleteComment } from '../api/commentApi';
+import { addComment, getComments, deleteComment, pinComment } from '../api/commentApi';
 import { toggleFollowUser } from '../api/userApi';
 
 // Helper to decode JWT token to get current user ID
@@ -208,6 +208,42 @@ const ShortVideo = ({ video, isActive }) => {
     }
   }, [showComments, video._id]);
 
+  const handleCommentPin = async (commentId, isCurrentlyPinned, e) => {
+    e.stopPropagation();
+    try {
+      const res = await pinComment(commentId, !isCurrentlyPinned);
+      if (res && res.success) {
+        setComments((prev) => {
+          const updated = prev.map((item) => {
+            if (item._id === commentId) {
+              return { ...item, isPinned: !isCurrentlyPinned };
+            }
+            return { ...item, isPinned: false };
+          });
+          return updated.sort((a, b) => {
+            if (a.isPinned !== b.isPinned) return b.isPinned ? 1 : -1;
+            return new Date(b.createdAt) - new Date(a.createdAt);
+          });
+        });
+      }
+    } catch (err) {
+      console.error("Pin comment failed", err);
+      alert(err.response?.data?.message || "Failed to pin comment");
+    }
+  };
+
+  // const handleCommentDelete = async (commentId, e) => {
+  //   e.stopPropagation();
+  //   if (!window.confirm("Delete this comment?")) return;
+  //   try {
+  //     await deleteComment(commentId);
+  //     setComments((prev) => prev.filter((item) => item._id !== commentId));
+  //     setCommentsCount((prev) => Math.max(0, prev - 1));
+  //   } catch (err) {
+  //     console.error("Delete comment failed", err);
+  //   }
+  // };
+
   const togglePlay = () => {
     if (videoRef.current) {
       if (isPlaying) {
@@ -380,7 +416,7 @@ const ShortVideo = ({ video, isActive }) => {
         {/* Save Button */}
         <button onClick={handleSaveToggle} className="flex flex-col items-center group">
           <div className={`w-12 h-12 bg-black/40 backdrop-blur-md border border-white/10 rounded-full flex items-center justify-center text-xl hover:bg-white/20 transition ${saved ? 'text-orange-500 scale-110' : ''}`}>
-            <GiSaveArrow />
+            <FaBookmark />
           </div>
           <span className={`text-[10px] uppercase font-bold tracking-wide mt-0.5 ${saved ? 'text-orange-400' : ''}`}>
             {saved ? 'Saved' : 'Save'}
@@ -493,11 +529,32 @@ const ShortVideo = ({ video, isActive }) => {
                 comments.map((c) => {
                   const isOwnComment = c.user?._id === getLoggedInUserId();
                   const isVerifiedUser = c.user?.verification?.isVerified || c.user?.verification?.status === "VERIFIED";
+                  const isReelCreator = Boolean(
+                    video?.user?._id === getLoggedInUserId() ||
+                    video?.user === getLoggedInUserId() ||
+                    video?.authorId === getLoggedInUserId() ||
+                    isSelf
+                  );
+
+                  const isVerifiedCreator = isReelCreator && (
+                    Boolean(authorObj?.blueTick || authorObj?.isVerified || authorObj?.verification?.isVerified || authorObj?.verification?.status === "VERIFIED" || authorObj?.verification?.status === "APPROVED") ||
+                    (() => {
+                      try {
+                        const u = JSON.parse(localStorage.getItem("user") || localStorage.getItem("userInfo") || "{}");
+                        return Boolean(u?.blueTick || u?.isVerified || u?.verification?.isVerified || u?.verification?.status === "VERIFIED" || u?.verification?.status === "APPROVED");
+                      } catch (e) { return false; }
+                    })()
+                  );
+
                   return (
                     <div
                       key={c._id}
                       className={`flex items-start justify-between gap-2 p-2.5 rounded-xl border transition ${
-                        isVerifiedUser ? "bg-blue-950/40 border-blue-500/40 shadow-sm" : "bg-white/5 border-white/5"
+                        c.isPinned
+                          ? "bg-amber-950/40 border-amber-500/50 shadow-sm"
+                          : isVerifiedUser
+                          ? "bg-blue-950/40 border-blue-500/40 shadow-sm"
+                          : "bg-white/5 border-white/5"
                       }`}
                     >
                       <div className="flex items-start gap-2.5 flex-1 min-w-0">
@@ -510,6 +567,13 @@ const ShortVideo = ({ video, isActive }) => {
                           )}
                         </div>
                         <div className="flex-1 min-w-0">
+                          {/* Pinned Tag */}
+                          {c.isPinned && (
+                            <div className="flex items-center gap-1 text-[10px] font-black text-amber-400 bg-amber-500/15 border border-amber-500/30 px-2 py-0.5 rounded-full w-fit mb-1">
+                              <FaThumbtack className="text-amber-400 text-[9px]" />
+                              <span>Pinned by Creator</span>
+                            </div>
+                          )}
                           <div className="text-xs font-black text-orange-400 truncate flex items-center gap-1">
                             <span>{c.user?.name || c.user?.username || "Anonymous"}</span>
                             <VerifiedBadge user={c.user} size="sm" />
@@ -522,15 +586,33 @@ const ShortVideo = ({ video, isActive }) => {
                           </div>
                         </div>
                       </div>
-                      {isOwnComment && (
-                        <button
-                          onClick={(e) => handleCommentDelete(c._id, e)}
-                          className="text-zinc-500 hover:text-red-500 transition text-[11px] p-1 bg-white/5 hover:bg-red-500/10 rounded"
-                          title="Delete Comment"
-                        >
-                          <FaTrash />
-                        </button>
-                      )}
+
+                      <div className="flex items-center gap-1 flex-shrink-0">
+                        {/* Pin Button ONLY for Verified Blue Tick Reel Creator */}
+                        {isVerifiedCreator && (
+                          <button
+                            onClick={(e) => handleCommentPin(c._id, c.isPinned, e)}
+                            className={`p-1.5 rounded transition text-[11px] flex items-center justify-center ${
+                              c.isPinned
+                                ? "bg-amber-500/20 text-amber-400 border border-amber-500/40"
+                                : "bg-white/5 text-zinc-400 hover:text-amber-400 hover:bg-white/10"
+                            }`}
+                            title={c.isPinned ? "Unpin Comment" : "Pin Comment to Top"}
+                          >
+                            <FaThumbtack className={c.isPinned ? "text-amber-400" : "rotate-45"} />
+                          </button>
+                        )}
+
+                        {isOwnComment && (
+                          <button
+                            onClick={(e) => handleCommentDelete(c._id, e)}
+                            className="text-zinc-500 hover:text-red-500 transition text-[11px] p-1.5 bg-white/5 hover:bg-red-500/10 rounded"
+                            title="Delete Comment"
+                          >
+                            <FaTrash />
+                          </button>
+                        )}
+                      </div>
                     </div>
                   );
                 })
