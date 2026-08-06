@@ -91,7 +91,7 @@ const WishlistPage = () => {
   if (isLoading) return <Loader />;
 
   return (
-    <div className="max-w-7xl mx-auto w-full space-y-6 px-2 sm:px-0 py-6">
+    <div className="max-w-[1600px] mx-auto w-full space-y-6 px-2 sm:px-0 py-6">
       {/* Page Header */}
       <div className="bg-brand-orange text-white p-5 sm:p-6 rounded-2xl flex items-center gap-4 shadow-md">
         <button

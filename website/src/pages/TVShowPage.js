@@ -72,7 +72,7 @@ const TVShowsPage = () => {
   }
 
   return (
-    <div className="space-y-6 max-w-7xl mx-auto w-full py-6">
+    <div className="space-y-6 max-w-[1600px] mx-auto w-full py-6">
       {/* Page Context Banner */}
       <div className="bg-white border border-gray-200 rounded-2xl p-6 shadow-sm flex flex-col md:flex-row justify-between md:items-center gap-4">
         <div>

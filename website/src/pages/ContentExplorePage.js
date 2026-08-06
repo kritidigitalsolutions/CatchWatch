@@ -96,7 +96,7 @@ const ContentExplorerPage = () => {
   }
 
   return (
-    <div className="space-y-6 max-w-7xl mx-auto w-full py-6">
+    <div className="space-y-6 max-w-[1600px] mx-auto w-full py-6">
 
       {/* Dynamic Header Segment */}
       <div className="bg-white border border-gray-200 rounded-2xl p-5 shadow-sm flex flex-col sm:flex-row justify-between sm:items-center gap-4">

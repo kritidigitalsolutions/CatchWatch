@@ -112,7 +112,7 @@ const ShortFilmsPage = () => {
 
   if (error) {
     return (
-      <div className="max-w-7xl mx-auto w-full px-4 py-20 flex flex-col items-center justify-center space-y-6 text-center">
+      <div className="max-w-[1600px] mx-auto w-full px-4 py-20 flex flex-col items-center justify-center space-y-6 text-center">
         <div className="w-16 h-16 bg-red-100 text-red-500 rounded-full flex items-center justify-center text-3xl shadow-sm">
           ⚠️
         </div>
@@ -131,7 +131,7 @@ const ShortFilmsPage = () => {
   }
 
   return (
-    <div className="space-y-10 max-w-7xl mx-auto w-full px-4 py-6">
+    <div className="space-y-10 max-w-[1600px] mx-auto w-full px-4 py-6">
       
       {/* 1. SHORT & SWEET SECTION */}
       <div className="space-y-4">

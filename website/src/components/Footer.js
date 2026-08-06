@@ -7,7 +7,7 @@ const Footer = () => {
   return (
     <footer className="w-full bg-neutral-900 text-gray-400 border-t border-neutral-800 mt-auto">
       {/* Upper Data Columns Footer Space */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 md:py-16 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-8">
+      <div className="max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8 py-10 md:py-16 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-8">
         {/* Brand Information Area Block Component */}
         <div className="space-y-4 sm:col-span-2 md:col-span-1">
           <div
@@ -16,9 +16,8 @@ const Footer = () => {
           >
             <div>
               <img
-                src="logo512.png"
-                height={90}
-                width={90}
+                src="/logo512.png"
+                className="h-10 sm:h-12 w-auto object-contain"
                 alt="CatchWatch Logo"
               />
             </div>
@@ -150,7 +149,7 @@ const Footer = () => {
 
       {/* Underline Copyright Metadata Bottom Segment Bar */}
       <div className="w-full bg-neutral-950 border-t border-neutral-900 py-6 text-center text-[11px] text-neutral-600 tracking-wide px-4">
-        <div className="max-w-7xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-4">
+        <div className="max-w-[1600px] mx-auto flex flex-col sm:flex-row items-center justify-between gap-4">
           <span>
             &copy; {currentYear} CATCH&WATCH Video Streaming Network Services
             Inc. All Rights Reserved.

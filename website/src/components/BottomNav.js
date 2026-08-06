@@ -17,7 +17,7 @@ const BottomNav = () => {
   ];
 
   return (
-    <nav className="fixed bottom-0 left-0 right-0 h-16 bg-white border-t border-gray-200 z-50 flex justify-around items-center md:sticky md:top-0 md:bottom-auto md:h-20 md:border-t-0 md:border-b md:shadow-sm px-4 max-w-7xl mx-auto">
+    <nav className="fixed bottom-0 left-0 right-0 h-16 bg-white border-t border-gray-200 z-50 flex justify-around items-center md:sticky md:top-0 md:bottom-auto md:h-20 md:border-t-0 md:border-b md:shadow-sm px-4 max-w-[1600px] mx-auto">
       {/* Brand Logo Only Visible on Desktop Header Mode */}
       <div className="hidden md:block text-2xl font-black text-brand-orange tracking-wide cursor-pointer">
         CATCHWATCH

@@ -145,24 +145,26 @@ const Topbar = () => {
 
   return (
     <header className="sticky top-0 w-full bg-white border-b border-gray-200 z-50 shadow-sm">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 md:h-20 flex justify-between items-center">
+      <div className="max-w-[1600px] w-full mx-auto px-4 sm:px-6 lg:px-8 h-16 md:h-20 flex justify-between items-center gap-2 sm:gap-4">
 
         {/* Brand Logo */}
-        <div onClick={() => navigate("/")} className="flex items-center gap-2 cursor-pointer group">
-          <div>
-            <img src="/logo192.png" height={90} width={90} alt="logo" />
-          </div>
+        <div onClick={() => navigate("/")} className="flex items-center cursor-pointer flex-shrink-0 py-1">
+          <img
+            src="/logo192.png"
+            className="h-8 sm:h-10 md:h-12 w-auto object-contain"
+            alt="CatchWatch Logo"
+          />
         </div>
 
-        {/* Desktop Links */}
+        {/* Desktop Links (Visible on lg screens and up) */}
         {isAuthenticated && (
-          <nav className="hidden md:flex items-center gap-6 lg:gap-8">
+          <nav className="hidden lg:flex items-center gap-3 xl:gap-5 2xl:gap-7 flex-shrink-0">
             {navLinks.map((link, index) => (
               <NavLink
                 key={index}
                 to={link.path}
                 className={({ isActive }) =>
-                  `text-sm font-bold tracking-wide uppercase transition-colors ${isActive ? "text-brand-orange" : "text-gray-500 hover:text-gray-900"}`
+                  `text-xs xl:text-sm font-bold tracking-wide uppercase transition-colors whitespace-nowrap ${isActive ? "text-brand-orange" : "text-gray-600 hover:text-gray-900"}`
                 }
               >
                 {link.name}
@@ -171,27 +173,28 @@ const Topbar = () => {
           </nav>
         )}
 
-        {/* Desktop Action Trigger Panels */}
-        <div className="hidden md:flex items-center gap-4">
+        {/* Desktop Action Trigger Panels (Visible on lg screens and up) */}
+        <div className="hidden lg:flex items-center gap-3 xl:gap-4 flex-shrink-0">
           {isAuthenticated ? (
             <>
-              <div className="">
+              <div>
                 <NavLink
                   to="/upload"
                   className={({ isActive }) =>
-                    `flex flex-row bg-orange-100 px-3 py-1 rounded-2xl items-center gap-1 tracking-wide  transition-colors ${isActive ? "text-brand-orange" : "text-gray-500 hover:text-gray-900"}`
+                    `flex flex-row bg-orange-100 hover:bg-orange-200 px-3 py-1.5 rounded-2xl items-center gap-1.5 text-xs font-bold tracking-wide whitespace-nowrap transition-colors ${isActive ? "text-brand-orange" : "text-gray-700 hover:text-gray-900"}`
                   }
                 >
                   <span>Upload reels</span>
-                  <MdCamera />
+                  <MdCamera className="text-base" />
                 </NavLink>
               </div>
 
               <NavLink
                 to="/search"
                 className={({ isActive }) =>
-                  `text-lg font-bold tracking-wide uppercase transition-colors ${isActive ? "text-brand-orange" : "text-gray-500 hover:text-gray-900"}`
+                  `text-lg font-bold p-1.5 transition-colors ${isActive ? "text-brand-orange" : "text-gray-500 hover:text-gray-900"}`
                 }
+                title="Search"
               >
                 <FaSearch />
               </NavLink>
@@ -200,7 +203,8 @@ const Topbar = () => {
               <div className="relative" ref={desktopNotifRef}>
                 <button
                   onClick={toggleNotificationDropdown}
-                  className={`relative text-lg p-1 transition-colors ${isNotifOpen ? "text-brand-orange" : "text-gray-500 hover:text-gray-900"}`}
+                  className={`relative text-lg p-1.5 transition-colors ${isNotifOpen ? "text-brand-orange" : "text-gray-500 hover:text-gray-900"}`}
+                  title="Notifications"
                 >
                   <FaBell />
                   {unreadCount > 0 && (
@@ -257,7 +261,7 @@ const Topbar = () => {
                       )}
                     </div>
 
-                    {/* 3. View All Notifications Footer Tab */}
+                    {/* Footer Tab */}
                     <div className="p-3 bg-gray-50 border-t border-gray-100 text-center sticky bottom-0">
                       <button
                         onClick={() => {
@@ -276,8 +280,9 @@ const Topbar = () => {
               <NavLink
                 to="/profile"
                 className={({ isActive }) =>
-                  `text-lg font-bold tracking-wide uppercase transition-colors ${isActive ? "text-brand-orange" : "text-gray-500 hover:text-gray-900"}`
+                  `text-lg font-bold p-1.5 transition-colors ${isActive ? "text-brand-orange" : "text-gray-500 hover:text-gray-900"}`
                 }
+                title="Profile"
               >
                 <FaRegUserCircle />
               </NavLink>
@@ -294,14 +299,14 @@ const Topbar = () => {
           )}
         </div>
 
-        {/* MOBILE VIEW CONTROLS */}
-        <div className="flex md:hidden items-center gap-3">
+        {/* MOBILE & TABLET VIEW CONTROLS (< lg screens) */}
+        <div className="flex lg:hidden items-center gap-3 flex-shrink-0">
           {isAuthenticated ? (
             <>
               <NavLink
                 to="/search"
                 className={({ isActive }) =>
-                  `text-lg font-bold tracking-wide uppercase transition-colors ${isActive ? "text-brand-orange" : "text-gray-500 hover:text-gray-900"}`
+                  `text-lg font-bold tracking-wide uppercase p-1 transition-colors ${isActive ? "text-brand-orange" : "text-gray-500 hover:text-gray-900"}`
                 }
               >
                 <FaSearch />
@@ -375,6 +380,7 @@ const Topbar = () => {
               <button
                 onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
                 className="text-2xl text-gray-700 focus:outline-none p-1 ml-1"
+                aria-label="Toggle menu"
               >
                 {isMobileMenuOpen ? "✕" : "☰"}
               </button>
@@ -392,14 +398,24 @@ const Topbar = () => {
         </div>
       </div>
 
-      {/* Mobile Side Menu */}
+      {/* Mobile / Tablet Side Menu */}
       {isAuthenticated && isMobileMenuOpen && (
-        <div className="md:hidden border-t border-gray-100 bg-white shadow-inner animate-fade-in-down">
+        <div className="lg:hidden border-t border-gray-100 bg-white shadow-inner animate-fade-in-down max-h-[85vh] overflow-y-auto">
           <div className="px-4 py-3 border-b border-gray-50 bg-brand-light-bg/30">
-            <span className="text-xs font-bold text-gray-400 uppercase tracking-widest">
-              App Links
-            </span>
-            <div className="grid grid-cols-2 gap-2 mt-2">
+            <div className="flex justify-between items-center mb-2">
+              <span className="text-xs font-bold text-gray-400 uppercase tracking-widest">
+                App Links
+              </span>
+              <NavLink
+                to="/upload"
+                onClick={() => setIsMobileMenuOpen(false)}
+                className="flex items-center gap-1 bg-orange-100 text-brand-orange text-xs font-bold px-3 py-1 rounded-full"
+              >
+                <span>Upload reels</span>
+                <MdCamera className="text-sm" />
+              </NavLink>
+            </div>
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
               {navLinks.map((link, i) => (
                 <button
                   key={i}
@@ -407,7 +423,7 @@ const Topbar = () => {
                     navigate(link.path);
                     setIsMobileMenuOpen(false);
                   }}
-                  className="text-left py-2 px-3 bg-white border border-gray-100 rounded-lg text-xs font-bold text-gray-700 hover:text-brand-orange"
+                  className="text-left py-2 px-3 bg-white border border-gray-100 rounded-lg text-xs font-bold text-gray-700 hover:text-brand-orange hover:bg-orange-50 transition"
                 >
                   {link.name}
                 </button>
@@ -426,7 +442,7 @@ const Topbar = () => {
                   navigate(link.path);
                   setIsMobileMenuOpen(false);
                 }}
-                className="w-full text-left py-2.5 px-2 text-sm font-semibold text-gray-600 hover:bg-brand-light-bg/50 hover:text-brand-orange rounded-lg block"
+                className="w-full text-left py-2.5 px-2 text-sm font-semibold text-gray-600 hover:bg-brand-light-bg/50 hover:text-brand-orange rounded-lg block transition"
               >
                 {link.name}
               </button>

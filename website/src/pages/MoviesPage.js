@@ -68,7 +68,7 @@ const MoviesPage = () => {
 
   if (isLoading) {
     return (
-      <div className="space-y-10 max-w-7xl mx-auto w-full px-1 animate-pulse">
+      <div className="space-y-10 max-w-[1600px] mx-auto w-full px-1 animate-pulse">
         {/* Cinematic Spotlight Banner Loading Skeleton */}
         <div className="relative w-full rounded-3xl bg-neutral-900/10 aspect-[16/8] md:aspect-[21/8] overflow-hidden shadow-sm border border-neutral-200/50 flex items-center justify-center">
           <div className="w-10 h-10 border-4 border-brand-orange border-t-transparent rounded-full animate-spin"></div>
@@ -103,7 +103,7 @@ const MoviesPage = () => {
 
   if (error) {
     return (
-      <div className="max-w-7xl mx-auto w-full px-4 py-20 flex flex-col items-center justify-center space-y-6 text-center">
+      <div className="max-w-[1600px] mx-auto w-full px-4 py-20 flex flex-col items-center justify-center space-y-6 text-center">
         <div className="w-16 h-16 bg-red-100 text-red-500 rounded-full flex items-center justify-center text-3xl shadow-sm">
           ⚠️
         </div>
@@ -122,7 +122,7 @@ const MoviesPage = () => {
   }
 
   return (
-    <div className="space-y-10 max-w-7xl mx-auto w-full px-1">
+    <div className="space-y-10 max-w-[1600px] mx-auto w-full px-1">
       {/* 1. CINEMATIC FEATURE SPOTLIGHT WINDOW PANEL */}
       {/* {featuredMovie && (
         <div className="relative w-full rounded-3xl bg-neutral-950 aspect-[16/8] md:aspect-[21/8] overflow-hidden shadow-xl border border-neutral-900 group">

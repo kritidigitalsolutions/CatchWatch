@@ -145,7 +145,7 @@ const UserProfilePage = () => {
   const initial = user.name ? user.name.charAt(0).toUpperCase() : "U";
 
   return (
-    <div className="max-w-7xl mx-auto py-6 px-4 sm:px-6 lg:px-8">
+    <div className="max-w-[1600px] mx-auto py-6 px-4 sm:px-6 lg:px-8">
       {/* Top Grid: Profile + Reels (Left) & Verification Section (Right) */}
       <div className={`grid grid-cols-1 ${profileData.isSelf ? 'lg:grid-cols-12' : ''} gap-6 items-start`}>
         
