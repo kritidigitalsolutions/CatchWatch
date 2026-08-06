@@ -6,6 +6,10 @@ const {
   isAuth,
 } = require("../../middlewares/auth.middleware");
 
+const {
+  requireVipVerification,
+} = require("../../middlewares/vip.middleware");
+
 const upload = require("../../middlewares/upload.middleware");
 
 const {
@@ -14,11 +18,60 @@ const {
   getSingleTicket,
   replyToTicket,
   getTicketConversation,
+  checkVipAccess,
+  createVipTicket,
+  getMyVipTickets,
 } = require("../../controllers/support.controller");
 
 
 // ========================================
-// CREATE TICKET
+// VIP SUPPORT ROUTES (BLUETICK RESTRICTED)
+// ========================================
+
+// Check VIP access status (returns verification status)
+router.get(
+  "/vip/access-check",
+  isAuth,
+  checkVipAccess
+);
+
+// Create VIP Ticket (strictly protected by blue-tick verification)
+router.post(
+  "/vip",
+  isAuth,
+  requireVipVerification,
+  upload.array("attachments", 5),
+  createVipTicket
+);
+
+// Get My VIP Tickets (strictly protected by blue-tick verification)
+router.get(
+  "/vip",
+  isAuth,
+  requireVipVerification,
+  getMyVipTickets
+);
+
+// Get Single VIP Ticket Conversation (strictly protected by blue-tick verification)
+router.get(
+  "/vip/:id",
+  isAuth,
+  requireVipVerification,
+  getSingleTicket
+);
+
+// Reply to VIP Ticket (strictly protected by blue-tick verification)
+router.post(
+  "/vip/reply/:id",
+  isAuth,
+  requireVipVerification,
+  upload.array("attachments", 5),
+  replyToTicket
+);
+
+
+// ========================================
+// GENERAL SUPPORT ROUTES
 // ========================================
 router.post(
   "/",
@@ -27,30 +80,18 @@ router.post(
   createTicket
 );
 
-
-// ========================================
-// GET MY TICKETS
-// ========================================
 router.get(
   "/",
   isAuth,
   getMyTickets
 );
 
-
-// ========================================
-// GET SINGLE TICKET
-// ========================================
 router.get(
   "/:id",
   isAuth,
   getSingleTicket
 );
 
-
-// ========================================
-// REPLY TO TICKET
-// ========================================
 router.post(
   "/reply/:id",
   isAuth,
@@ -58,14 +99,10 @@ router.post(
   replyToTicket
 );
 
-// ========================================
-// GET TICKET CONVERSATION
-// ========================================
 router.get(
   "/conversation/:id",
   isAuth,
   getTicketConversation
 );
-
 
 module.exports = router;

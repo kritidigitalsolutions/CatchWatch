@@ -1,0 +1,330 @@
+{
+	"info": {
+		"_postman_id": "catchwatch-user-vip-support-api-collection",
+		"name": "Catch & Watch - Creator & VIP Support User APIs",
+		"description": "Postman Collection for Catch & Watch User-Facing Creator & VIP Support APIs. Strictly enforces Blue-Tick verification access control on VIP endpoints.",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"item": [
+		{
+			"name": "👑 Creator & VIP Support APIs (Blue-Tick Verified)",
+			"item": [
+				{
+					"name": "1. Check VIP Access & Verification Status",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{userToken}}",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/support/vip/access-check",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"support",
+								"vip",
+								"access-check"
+							]
+						},
+						"description": "Checks if the logged-in user is Blue Tick verified and returns VIP access status."
+					},
+					"response": []
+				},
+				{
+					"name": "2. Create VIP Support Ticket (Blue-Tick Restricted)",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{userToken}}",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "formdata",
+							"formdata": [
+								{
+									"key": "subject",
+									"value": "Live Broadcast & Playback Glitch",
+									"type": "text"
+								},
+								{
+									"key": "category",
+									"value": "TECHNICAL_GLITCH",
+									"description": "Options: TECHNICAL_GLITCH, BROADCAST, COPYRIGHT, ACCOUNT_RECOVERY, TECHNICAL, ACCOUNT, OTHER",
+									"type": "text"
+								},
+								{
+									"key": "priority",
+									"value": "URGENT",
+									"description": "Options: URGENT, HIGH, MEDIUM, LOW",
+									"type": "text"
+								},
+								{
+									"key": "message",
+									"value": "Video player stream encoding failed during live broadcast session. Please review priority queue.",
+									"type": "text"
+								},
+								{
+									"key": "attachments",
+									"type": "file",
+									"src": [],
+									"description": "Optional attachment screenshot/video (Max 5 files)"
+								}
+							]
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/support/vip",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"support",
+								"vip"
+							]
+						},
+						"description": "Creates an URGENT priority VIP Support ticket. Returns 403 Forbidden if user is not Blue Tick verified."
+					},
+					"response": []
+				},
+				{
+					"name": "3. Get My VIP Support Tickets",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{userToken}}",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/support/vip",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"support",
+								"vip"
+							]
+						},
+						"description": "Retrieves all VIP Support tickets submitted by the logged-in user."
+					},
+					"response": []
+				},
+				{
+					"name": "4. Get Single VIP Ticket Conversation Chat",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{userToken}}",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/support/vip/:ticketId",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"support",
+								"vip",
+								":ticketId"
+							],
+							"variable": [
+								{
+									"key": "ticketId",
+									"value": "67b9f812e92c4210a12401bc",
+									"description": "ID of the VIP ticket"
+								}
+							]
+						},
+						"description": "Fetches ticket metadata and full message history between user and support desk agents."
+					},
+					"response": []
+				},
+				{
+					"name": "5. Reply to VIP Ticket Chat",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{userToken}}",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "formdata",
+							"formdata": [
+								{
+									"key": "message",
+									"value": "Thank you for the quick resolution! The stream is now running smoothly.",
+									"type": "text"
+								},
+								{
+									"key": "attachments",
+									"type": "file",
+									"src": [],
+									"description": "Optional reply screenshots"
+								}
+							]
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/support/vip/reply/:ticketId",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"support",
+								"vip",
+								"reply",
+								":ticketId"
+							],
+							"variable": [
+								{
+									"key": "ticketId",
+									"value": "67b9f812e92c4210a12401bc",
+									"description": "ID of the VIP ticket"
+								}
+							]
+						},
+						"description": "Sends a reply message to the support desk agent."
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "🎧 General Support Desk User APIs",
+			"item": [
+				{
+					"name": "1. Create General Support Ticket",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{userToken}}",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "formdata",
+							"formdata": [
+								{
+									"key": "subject",
+									"value": "Billing & Subscription Issue",
+									"type": "text"
+								},
+								{
+									"key": "category",
+									"value": "BILLING",
+									"description": "TECHNICAL, BILLING, ACCOUNT, OTHER",
+									"type": "text"
+								},
+								{
+									"key": "message",
+									"value": "Payment was deducted but plan not active.",
+									"type": "text"
+								}
+							]
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/support",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"support"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "2. Get My General Tickets",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{userToken}}",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/support",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"support"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "3. Get General Ticket Conversation",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{userToken}}",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/support/conversation/:ticketId",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"support",
+								"conversation",
+								":ticketId"
+							],
+							"variable": [
+								{
+									"key": "ticketId",
+									"value": "67b9f812e92c4210a12401bc"
+								}
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		}
+	],
+	"variable": [
+		{
+			"key": "baseUrl",
+			"value": "http://localhost:5000",
+			"type": "string"
+		},
+		{
+			"key": "userToken",
+			"value": "YOUR_USER_JWT_TOKEN_HERE",
+			"type": "string"
+		}
+	]
+}

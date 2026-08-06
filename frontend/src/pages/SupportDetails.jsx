@@ -17,6 +17,10 @@ import {
   Paperclip,
   FileText,
   Download,
+  Crown,
+  BadgeCheck,
+  ShieldCheck,
+  Zap,
 } from "lucide-react";
 import API from "../api/axios";
 import "./SupportDetails.css";
@@ -79,6 +83,7 @@ export default function SupportDetails({ ticketId }) {
   const [error, setError] = useState("");
   const [ticketsLoading, setTicketsLoading] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
+  const [filterTab, setFilterTab] = useState("ALL"); // ALL or VIP
   const [replyFiles, setReplyFiles] = useState([]);
 
   const threadEndRef = useRef(null);
@@ -93,9 +98,6 @@ export default function SupportDetails({ ticketId }) {
   const handleKeyDown = (event) => {
     if (event.key === "Enter" && (event.ctrlKey || event.metaKey)) {
       event.preventDefault();
-      // We need to trigger the form submit or call handleReply directly.
-      // To ensure that the submit event is properly passed and handled,
-      // we'll programmatically dispatch it or trigger a synthetic submit event.
       const submitBtn = document.getElementById("sendReplySubmitBtn");
       if (submitBtn) {
         submitBtn.click();
@@ -106,11 +108,16 @@ export default function SupportDetails({ ticketId }) {
   const activeTicketId = routeTicketId || selectedTicketId;
   const showTicketList = !routeTicketId;
 
-  // Filter tickets reactively based on subject, user details, category, or status
+  // Filter tickets reactively based on filter tab, subject, user details, category, or status
   const filteredTickets = useMemo(() => {
-    if (!searchQuery.trim()) return tickets;
+    let list = tickets;
+    if (filterTab === "VIP") {
+      list = list.filter((item) => item.isVip);
+    }
+    if (!searchQuery.trim()) return list;
+
     const query = searchQuery.toLowerCase().trim();
-    return tickets.filter((item) => {
+    return list.filter((item) => {
       const subject = (item.subject || "").toLowerCase();
       const userName = (item.user?.name || "").toLowerCase();
       const userEmail = (item.user?.email || "").toLowerCase();
@@ -126,7 +133,7 @@ export default function SupportDetails({ ticketId }) {
         ticketIdStr.includes(query)
       );
     });
-  }, [tickets, searchQuery]);
+  }, [tickets, searchQuery, filterTab]);
 
   const user = ticket?.user || {};
   const userName = user.name || "Unknown User";
@@ -270,6 +277,8 @@ export default function SupportDetails({ ticketId }) {
     }
   };
 
+  const vipTicketCount = useMemo(() => tickets.filter(t => t.isVip).length, [tickets]);
+
   const ticketList = showTicketList ? (
     <div className="support-ticket-list">
       <div className="support-ticket-list-head">
@@ -278,10 +287,57 @@ export default function SupportDetails({ ticketId }) {
           <p>
             {searchQuery.trim()
               ? `${filteredTickets.length} found`
-              : `${tickets.length} total`}
+              : `${tickets.length} total (${vipTicketCount} VIP)`}
           </p>
         </div>
         {ticketsLoading && <Loader2 className="spin" size={18} />}
+      </div>
+
+      {/* FILTER TABS: ALL vs VIP */}
+      <div className="support-filter-tabs" style={{ display: "flex", gap: 6, padding: "4px 12px 10px 12px" }}>
+        <button
+          type="button"
+          className={`support-tab-btn ${filterTab === "ALL" ? "active" : ""}`}
+          onClick={() => setFilterTab("ALL")}
+          style={{
+            flex: 1,
+            padding: "6px 10px",
+            fontSize: "0.75rem",
+            fontWeight: 700,
+            borderRadius: 8,
+            border: "1px solid var(--border, #e2e8f0)",
+            background: filterTab === "ALL" ? "#3b82f6" : "transparent",
+            color: filterTab === "ALL" ? "#fff" : "inherit",
+            cursor: "pointer",
+            transition: "all 0.2s"
+          }}
+        >
+          All ({tickets.length})
+        </button>
+        <button
+          type="button"
+          className={`support-tab-btn ${filterTab === "VIP" ? "active" : ""}`}
+          onClick={() => setFilterTab("VIP")}
+          style={{
+            flex: 1,
+            padding: "6px 10px",
+            fontSize: "0.75rem",
+            fontWeight: 700,
+            borderRadius: 8,
+            border: "1px solid var(--border, #e2e8f0)",
+            background: filterTab === "VIP" ? "linear-gradient(135deg, #f59e0b, #ea580c)" : "transparent",
+            color: filterTab === "VIP" ? "#fff" : "#f59e0b",
+            cursor: "pointer",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            gap: 4,
+            transition: "all 0.2s"
+          }}
+        >
+          <Crown size={13} />
+          VIP ({vipTicketCount})
+        </button>
       </div>
 
       {/* SEARCH BAR */}
@@ -312,6 +368,8 @@ export default function SupportDetails({ ticketId }) {
           <p>
             {searchQuery.trim()
               ? "No matching tickets found."
+              : filterTab === "VIP"
+              ? "No VIP Support tickets found."
               : "No support tickets found."}
           </p>
         </div>
@@ -321,21 +379,64 @@ export default function SupportDetails({ ticketId }) {
             <button
               className={`support-ticket-item ${
                 item._id === activeTicketId ? "active" : ""
-              }`}
+              } ${item.isVip ? "vip-ticket-item" : ""}`}
               type="button"
               key={item._id}
               onClick={() => setSelectedTicketId(item._id)}
+              style={item.isVip ? { borderLeft: "3px solid #f59e0b" } : undefined}
             >
-              <span
-                className={`support-status ${(
-                  item.status || "OPEN"
-                ).toLowerCase()}`}
-              >
-                {item.status || "OPEN"}
-              </span>
-              <strong>{item.subject}</strong>
+              <div style={{ display: "flex", alignItems: "center", justifyBetween: "space-between", width: "100%", gap: 6 }}>
+                <span
+                  className={`support-status ${(
+                    item.status || "OPEN"
+                  ).toLowerCase()}`}
+                >
+                  {item.status || "OPEN"}
+                </span>
+                {item.isVip && (
+                  <span
+                    style={{
+                      background: "linear-gradient(135deg, #f59e0b, #d97706)",
+                      color: "#fff",
+                      fontSize: "0.65rem",
+                      fontWeight: 800,
+                      padding: "2px 6px",
+                      borderRadius: 4,
+                      display: "inline-flex",
+                      alignItems: "center",
+                      gap: 3,
+                      marginLeft: "auto"
+                    }}
+                  >
+                    <Crown size={10} /> VIP
+                  </span>
+                )}
+                {item.priority === "URGENT" && (
+                  <span
+                    style={{
+                      background: "#ef4444",
+                      color: "#fff",
+                      fontSize: "0.65rem",
+                      fontWeight: 800,
+                      padding: "2px 6px",
+                      borderRadius: 4,
+                      marginLeft: item.isVip ? 0 : "auto"
+                    }}
+                  >
+                    URGENT
+                  </span>
+                )}
+              </div>
+              <strong style={{ display: "flex", alignItems: "center", gap: 6, marginTop: 4 }}>
+                {item.subject}
+              </strong>
               <small>
-                {item.user?.name || "Unknown User"} ·{" "}
+                {item.user?.name || "Unknown User"}
+                {item.user?.isVerified && (
+                  <span title="Verified Blue Tick Creator" style={{ color: "#3b82f6", marginLeft: 4, display: "inline-flex", alignItems: "center" }}>
+                    ✓
+                  </span>
+                )} ·{" "}
                 {formatDate(item.createdAt)}
               </small>
             </button>

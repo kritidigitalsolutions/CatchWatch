@@ -33,6 +33,10 @@ const supportTicketSchema = new mongoose.Schema(
         "OTHER",
         "BILLING",
         "CONTENT",
+        "TECHNICAL_GLITCH",
+        "BROADCAST",
+        "COPYRIGHT",
+        "ACCOUNT_RECOVERY",
       ],
       default: "OTHER",
     },
@@ -42,8 +46,21 @@ const supportTicketSchema = new mongoose.Schema(
     // ========================================
     priority: {
       type: String,
-      enum: ["LOW", "MEDIUM", "HIGH"],
+      enum: ["LOW", "MEDIUM", "HIGH", "URGENT"],
       default: "MEDIUM",
+    },
+
+    // ========================================
+    // VIP SUPPORT
+    // ========================================
+    isVip: {
+      type: Boolean,
+      default: false,
+    },
+
+    vipAssignedTo: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Admin",
     },
 
     // ========================================

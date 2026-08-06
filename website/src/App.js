@@ -35,6 +35,7 @@ import CompleteProfilePage from './pages/CompleteProfilePage';
 import CreatorDashboard from './pages/CreatorDashboard';
 import VerificationPage from './pages/VerificationPage';
 import LeaderboardPage from './pages/LeaderboardPage';
+import VipSupportPage from './pages/VipSupportPage';
 
 // Helper to check if JWT token is actually expired
 const isTokenExpired = (token) => {
@@ -160,6 +161,7 @@ const App = () => {
             <Route path="/leaderboard" element={<LeaderboardPage />} />
             <Route path="/profile/verification" element={<VerificationPage />} />
             <Route path="/verification" element={<VerificationPage />} />
+            <Route path="/vip-support" element={<VipSupportPage />} />
           </Route>
         </Routes>
       </Layout>

@@ -34,3 +34,31 @@ export const getTicketConversation = async (id) => {
   const response = await axiosInstance.get(`/support/conversation/${id}`);
   return response.data;
 };
+
+// ========================================
+// VIP SUPPORT API (BLUETICK RESTRICTED)
+// ========================================
+export const checkVipAccess = async () => {
+  const response = await axiosInstance.get("/support/vip/access-check");
+  return response.data;
+};
+
+export const createVipSupportTicket = async (data) => {
+  const response = await axiosInstance.post("/support/vip", data);
+  return response.data;
+};
+
+export const getVipSupportTickets = async () => {
+  const response = await axiosInstance.get("/support/vip");
+  return response.data;
+};
+
+export const getVipTicketById = async (id) => {
+  const response = await axiosInstance.get(`/support/vip/${id}`);
+  return response.data;
+};
+
+export const replyToVipTicket = async (id, data) => {
+  const response = await axiosInstance.post(`/support/vip/reply/${id}`, data);
+  return response.data;
+};

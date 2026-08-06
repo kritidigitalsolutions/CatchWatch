@@ -14,6 +14,7 @@ import {
   FaExclamationCircle,
   FaStar,
   FaTrophy,
+  FaCrown,
 } from "react-icons/fa";
 import {
   MdWorkspacePremium,
@@ -295,6 +296,7 @@ const ProfileMenuPage = () => {
     { label: "Privacy Regulations", route: "/legal/privacy-policy", icon: <MdPrivacyTip /> },
     { label: "Terms & Conditions", route: "/legal/terms-conditions", icon: <FaFileAlt /> },
     { label: "Refund Policy guidelines", route: "/legal/refund-policy", icon: <HiReceiptRefund /> },
+    { label: "Dedicated Creator & VIP Support", route: "/vip-support", icon: <FaCrown className="text-amber-500" /> },
     { label: "Help & Support Desk", route: "/support", icon: <MdHelpCenter /> },
     { label: "Delete Account", route: "/delete-account", icon: <FaTrashAlt />, isDanger: true },
     { label: "Log Out Session", route: "/login", icon: <IoLogOut />, isLogout: true },

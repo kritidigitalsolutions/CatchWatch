@@ -20,11 +20,31 @@ exports.getAllTickets = async (
   res
 ) => {
   try {
+    const { isVip, category, status, priority } = req.query;
+
+    let filter = {};
+
+    if (isVip !== undefined) {
+      filter.isVip = isVip === "true";
+    }
+
+    if (category && category !== "ALL") {
+      filter.category = category;
+    }
+
+    if (status && status !== "ALL") {
+      filter.status = status;
+    }
+
+    if (priority && priority !== "ALL") {
+      filter.priority = priority;
+    }
+
     const tickets =
-      await SupportTicket.find()
+      await SupportTicket.find(filter)
         .populate(
           "user",
-          "name phone email"
+          "name phone email profileImage isVerified verification username"
         )
         .sort({
           updatedAt: -1,
@@ -61,7 +81,7 @@ exports.getAdminSingleTicket =
           req.params.id
         ).populate(
           "user",
-          "name phone email"
+          "name phone email profileImage isVerified verification username"
         );
 
       if (!ticket) {

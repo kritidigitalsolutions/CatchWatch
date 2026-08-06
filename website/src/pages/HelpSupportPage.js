@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { FaArrowLeft, FaHeadset, FaEnvelope, FaPhoneAlt, FaQuestionCircle } from 'react-icons/fa';
+import { FaArrowLeft, FaHeadset, FaEnvelope, FaPhoneAlt, FaQuestionCircle, FaCrown } from 'react-icons/fa';
 
 import { getHelpCategories, createSupportTicket } from '../api/supportApi';
 
@@ -121,13 +121,47 @@ const HelpSupportPage = () => {
   return (
     <div className="max-w-5xl mx-auto w-full space-y-6 px-4 sm:px-6 py-8">
       {/* Page Header */}
-      <div className="bg-brand-orange text-white p-5 sm:p-6 rounded-2xl flex items-center gap-4 shadow-md">
-        <button onClick={() => navigate(-1)} className="text-xl hover:scale-110 transition">
-          <FaArrowLeft />
+      <div className="bg-brand-orange text-white p-5 sm:p-6 rounded-2xl flex items-center justify-between shadow-md">
+        <div className="flex items-center gap-4">
+          <button onClick={() => navigate(-1)} className="text-xl hover:scale-110 transition">
+            <FaArrowLeft />
+          </button>
+          <h1 className="text-lg sm:text-2xl font-black tracking-tight flex items-center gap-2">
+            <FaHeadset /> Help & Support Desk
+          </h1>
+        </div>
+        <button
+          onClick={() => navigate("/vip-support")}
+          className="bg-neutral-900 hover:bg-black text-amber-400 font-extrabold text-xs px-4 py-2.5 rounded-xl shadow-md transition flex items-center gap-2 border border-amber-500/40"
+        >
+          <FaCrown /> Dedicated VIP Support
         </button>
-        <h1 className="text-lg sm:text-2xl font-black tracking-tight flex items-center gap-2">
-          <FaHeadset /> Help & Support Desk
-        </h1>
+      </div>
+
+      {/* VIP SUPPORT PROMO BANNER */}
+      <div
+        onClick={() => navigate("/vip-support")}
+        className="bg-gradient-to-r from-neutral-900 via-neutral-800 to-black text-white p-6 rounded-2xl shadow-lg border border-amber-500/30 cursor-pointer transition hover:border-amber-400 flex flex-col sm:flex-row items-center justify-between gap-4"
+      >
+        <div className="flex items-center gap-4">
+          <div className="w-12 h-12 rounded-2xl bg-amber-500 text-white flex items-center justify-center text-2xl flex-shrink-0 shadow-md">
+            <FaCrown />
+          </div>
+          <div>
+            <span className="text-[10px] font-extrabold uppercase tracking-widest text-amber-400 block">
+              Catch & Watch VIP Desk
+            </span>
+            <h3 className="text-base font-black text-white">
+              Dedicated Creator & VIP Support
+            </h3>
+            <p className="text-xs text-neutral-300 font-medium mt-0.5">
+              Direct Human Assistance: Bypass automated queues for technical glitches, broadcast questions, copyright inquiries & account recovery with priority response times.
+            </p>
+          </div>
+        </div>
+        <button className="px-5 py-2.5 bg-gradient-to-r from-amber-500 to-orange-500 text-white text-xs font-black rounded-xl shadow-md flex-shrink-0">
+          Access VIP Desk ➔
+        </button>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
