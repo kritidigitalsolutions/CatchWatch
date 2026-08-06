@@ -128,16 +128,16 @@ const Topbar = () => {
     { name: "Short Films", path: "/shorts" },
     { name: "TV Shows", path: "/tvshows" },
     { name: "Reels", path: "/reels-feed" },
-    { name: "VIP Support", path: "/vip-support" },
-    { name: "Creator Studio", path: "/creator/dashboard" },
-    { name: "Leaderboard", path: "/leaderboard" },
+    // { name: "VIP Support", path: "/vip-support" },
+    // { name: "Creator Studio", path: "/creator/dashboard" },
+    // { name: "Leaderboard", path: "/leaderboard" },
   ];
 
   const profileLinks = [
     { name: "My Profile", path: "/profile" },
-    { name: "VIP Support Desk 👑", path: "/vip-support" },
-    { name: "Creator Studio", path: "/creator/dashboard" },
-    { name: "Leaderboard", path: "/leaderboard" },
+    // { name: "VIP Support Desk 👑", path: "/vip-support" },
+    // { name: "Creator Studio", path: "/creator/dashboard" },
+    // { name: "Leaderboard", path: "/leaderboard" },
     { name: "Edit Profile", path: "/profile/edit" },
     { name: "Subscription Plans", path: "/subscription" },
     { name: "Downloads", path: "/downloads" },
