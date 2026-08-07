@@ -123,56 +123,6 @@ const MoviesPage = () => {
 
   return (
     <div className="space-y-10 max-w-[1600px] mx-auto w-full px-1">
-      {/* 1. CINEMATIC FEATURE SPOTLIGHT WINDOW PANEL */}
-      {/* {featuredMovie && (
-        <div className="relative w-full rounded-3xl bg-neutral-950 aspect-[16/8] md:aspect-[21/8] overflow-hidden shadow-xl border border-neutral-900 group">
-          <div
-            className="absolute inset-0 bg-cover bg-center opacity-40 group-hover:scale-105 transition-transform duration-1000 ease-out"
-            style={{ backgroundImage: `url(${featuredMovie?.banner})` }}
-          />
-          <div className="absolute inset-0 bg-gradient-to-r from-neutral-950 via-neutral-950/70 to-transparent z-10" />
-
-          <div className="absolute inset-0 z-20 p-6 sm:p-10 md:p-14 flex flex-col justify-center max-w-xl text-white space-y-3 select-none">
-            <span className="bg-brand-orange text-[9px] sm:text-[10px] font-black tracking-widest px-3 py-1 rounded-xl w-max uppercase shadow-md shadow-brand-orange/10">
-              Featured Blockbuster
-            </span>
-            <h2 className="text-2xl sm:text-4xl lg:text-5xl font-black mb-1 tracking-tight drop-shadow-md group-hover:text-brand-orange transition-colors duration-300">
-              {featuredMovie?.title}
-            </h2>
-            <div className="flex flex-wrap items-center gap-2 text-xs text-gray-300 font-bold">
-              <span>{featuredMovie?.releaseYear}</span>
-              <span>•</span>
-              <span>{featuredMovie?.duration}</span>
-              <span>•</span>
-              <span className="text-brand-orange">
-                {featuredMovie?.genre?.join(" / ")}
-              </span>
-            </div>
-            <p className="text-xs text-neutral-300 hidden sm:line-clamp-3 leading-relaxed font-medium">
-              {featuredMovie?.description}
-            </p>
-            <div className="flex gap-3 pt-2">
-              <button
-                onClick={() => {
-                  if (isComingSoon(featuredMovie)) {
-                    alert("This content is coming soon! 🎬 Please check back shortly.");
-                    return;
-                  }
-                  navigate(`/watch/${featuredMovie?.slug}`);
-                }}
-                className="bg-brand-orange hover:bg-brand-orange/90 text-white font-black text-xs px-6 py-3 rounded-xl transition shadow transform active:scale-95 flex items-center justify-center"
-              >
-                <span className="flex items-center gap-2">
-                  <FaPlay /> Play Content
-                </span>
-              </button>
-              <button className="bg-white/10 hover:bg-white/20 text-white font-bold text-xs px-5 py-3 rounded-xl backdrop-blur transition transform active:scale-95">
-                Add to Wishlist
-              </button>
-            </div>
-          </div>
-        </div>
-      )} */}
 
       {/* 2. ADVANCED CONTROL CONSOLE FILTER PANEL */}
       <div className="bg-white border border-gray-200/80 rounded-2xl p-4 shadow-sm flex flex-col md:flex-row gap-4 justify-between md:items-center">

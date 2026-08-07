@@ -23,3 +23,9 @@ export const searchContent = async (params = {}) => {
   const response = await axiosInstance.get("/content/search", { params });
   return response.data;
 };
+
+// Search reels API
+export const searchReelsApi = async (params = {}) => {
+  const response = await axiosInstance.get("/reels/search", { params });
+  return response.data;
+};

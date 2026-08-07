@@ -748,8 +748,20 @@ exports.searchUsers = async (req, res) => {
     );
 
     decoratedUsers.sort((a, b) => {
-      const aVerified = a.verification?.isVerified || a.verification?.status === "VERIFIED" ? 1 : 0;
-      const bVerified = b.verification?.isVerified || b.verification?.status === "VERIFIED" ? 1 : 0;
+      const aVerified =
+        a.isVerified ||
+        a.verification?.isVerified ||
+        a.verification?.status === "VERIFIED" ||
+        a.verification?.status === "APPROVED"
+          ? 1
+          : 0;
+      const bVerified =
+        b.isVerified ||
+        b.verification?.isVerified ||
+        b.verification?.status === "VERIFIED" ||
+        b.verification?.status === "APPROVED"
+          ? 1
+          : 0;
       if (aVerified !== bVerified) return bVerified - aVerified;
 
       const aPremium = a.isPremium ? 1 : 0;

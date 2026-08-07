@@ -13,6 +13,7 @@ const {
   removeVerification,
   manuallyVerifyUser,
   deleteVerificationRequest,
+  getUsersForSelection,
 } = require("../../controllers/verification.controller");
 
 router.use(isAdmin);
@@ -20,6 +21,7 @@ router.use(isAdmin);
 router.get("/", getAllVerificationRequests);
 router.get("/pending", getPendingVerificationRequests);
 router.get("/stats", getVerificationStats);
+router.get("/users-select", getUsersForSelection);
 router.get("/:id", getVerificationRequestById);
 
 router.delete("/:id", deleteVerificationRequest);

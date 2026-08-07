@@ -513,3 +513,42 @@ exports.deleteSupportTicket = async (req, res) => {
     });
   }
 };
+
+// ========================================
+// DELETE SINGLE SUPPORT MESSAGE
+// ========================================
+exports.deleteSupportMessage = async (req, res) => {
+  try {
+    const { messageId } = req.params;
+
+    const message = await SupportMessage.findById(messageId);
+    if (!message) {
+      return res.status(404).json({
+        success: false,
+        message: "Message not found"
+      });
+    }
+
+    const ticketId = message.ticket;
+    await SupportMessage.findByIdAndDelete(messageId);
+
+    // Update ticket's lastMessage if needed
+    const lastRemainingMessage = await SupportMessage.findOne({ ticket: ticketId }).sort({ createdAt: -1 });
+    if (lastRemainingMessage) {
+      await SupportTicket.findByIdAndUpdate(ticketId, { lastMessage: lastRemainingMessage.message });
+    } else {
+      await SupportTicket.findByIdAndUpdate(ticketId, { lastMessage: "No messages." });
+    }
+
+    res.status(200).json({
+      success: true,
+      message: "Message deleted successfully"
+    });
+  } catch (error) {
+    console.error("Delete Support Message Error:", error);
+    res.status(500).json({
+      success: false,
+      message: "Server error"
+    });
+  }
+};

@@ -1,10 +1,11 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { IoSearch } from "react-icons/io5";
-import { FaUser } from "react-icons/fa";
+import { FaUser, FaPlay, FaVideo } from "react-icons/fa";
 import VerifiedBadge from "../components/VerifiedBadge";
-import { searchContent, getAllContent } from "../api/contentApi";
+import { searchContent, getAllContent, searchReelsApi } from "../api/contentApi";
 import { searchUsers } from "../api/userApi";
+import { BiMoviePlay } from "react-icons/bi";
 
 const SearchMoviesPage = () => {
   const navigate = useNavigate();
@@ -16,19 +17,20 @@ const SearchMoviesPage = () => {
   const [queryState, setQueryState] = useState("");
   const [debouncedQuery, setDebouncedQuery] = useState("");
 
-  const [searchTab, setSearchTab] = useState("content"); // 'content' | 'users'
+  const [searchTab, setSearchTab] = useState("content"); // 'content' | 'reels' | 'users'
   const [searchResults, setSearchResults] = useState([]);
+  const [reelResults, setReelResults] = useState([]);
   const [userResults, setUserResults] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
 
   const FALLBACK_IMAGE = "https://images.unsplash.com/photo-1536440136628-849c177e76a1?q=80&w=200&auto=format&fit=crop";
 
-  // Debounce (Wait 400ms after user stops typing to hit API)
+  // Live Instant Debounce (100ms delay for letter-by-letter live search)
   useEffect(() => {
     const handler = setTimeout(() => {
       setDebouncedQuery(queryState);
-    }, 400);
+    }, 100);
     return () => clearTimeout(handler);
   }, [queryState]);
 
@@ -47,6 +49,14 @@ const SearchMoviesPage = () => {
             setUserResults(uRes.users || []);
           } else {
             setUserResults([]);
+          }
+        } else if (searchTab === "reels") {
+          if (query.length > 0) {
+            const rRes = await searchReelsApi({ q: query });
+            setReelResults(rRes.reels || []);
+          } else {
+            const rRes = await searchReelsApi({ q: "a" });
+            setReelResults(rRes.reels || []);
           }
         } else {
           let response;
@@ -81,7 +91,9 @@ const SearchMoviesPage = () => {
 
     if (!identifier) return;
 
-    if (type.toLowerCase() === "series" || type.toLowerCase() === "tv") {
+    if (type.toLowerCase() === "reel") {
+      navigate(`/reels/${identifier}`);
+    } else if (type.toLowerCase() === "series" || type.toLowerCase() === "tv") {
       navigate(`/tv-shows-episodes/${identifier}`);
     } else if (type.toLowerCase() === "short") {
       navigate("/shorts");
@@ -115,7 +127,7 @@ const SearchMoviesPage = () => {
         </span>
         <input
           type="text"
-          placeholder="Search for Movies, TV Shows, Creators & Users..."
+          placeholder="Search for Movies, TV Shows, Reels, Creators & Users (letter-by-letter)..."
           value={queryState}
           onChange={(e) => setQueryState(e.target.value)}
           className="w-full border-none text-base outline-none text-gray-800 font-bold placeholder-gray-400 bg-transparent"
@@ -131,20 +143,30 @@ const SearchMoviesPage = () => {
       </div>
 
       {/* Tabs Header */}
-      <div className="flex gap-3 border-b border-gray-200 pb-2">
+      <div className="flex gap-2 sm:gap-3 border-b border-gray-200 pb-2 flex-wrap">
         <button
           onClick={() => setSearchTab("content")}
-          className={`px-5 py-2.5 rounded-xl font-extrabold text-sm transition ${
+          className={`px-4 sm:px-5 py-2.5 rounded-xl flex items-center gap-2 font-extrabold text-xs sm:text-sm transition ${
             searchTab === "content"
               ? "bg-brand-orange text-white shadow-sm"
               : "bg-gray-100 text-gray-600 hover:bg-gray-200"
           }`}
         >
-          🎬 Movies & TV Shows
+          <BiMoviePlay /> <span>Movies & TV Shows</span>
+        </button>
+        <button
+          onClick={() => setSearchTab("reels")}
+          className={`px-4 sm:px-5 py-2.5 rounded-xl font-extrabold text-xs sm:text-sm transition flex items-center gap-2 ${
+            searchTab === "reels"
+              ? "bg-brand-orange text-white shadow-sm"
+              : "bg-gray-100 text-gray-600 hover:bg-gray-200"
+          }`}
+        >
+          <FaVideo />  Short Reels
         </button>
         <button
           onClick={() => setSearchTab("users")}
-          className={`px-5 py-2.5 rounded-xl font-extrabold text-sm transition flex items-center gap-2 ${
+          className={`px-4 sm:px-5 py-2.5 rounded-xl font-extrabold text-xs sm:text-sm transition flex items-center gap-2 ${
             searchTab === "users"
               ? "bg-brand-orange text-white shadow-sm"
               : "bg-gray-100 text-gray-600 hover:bg-gray-200"
@@ -160,6 +182,8 @@ const SearchMoviesPage = () => {
           <h3 className="text-sm font-extrabold text-gray-500 uppercase tracking-wider">
             {searchTab === "users"
               ? `User Matches (${userResults.length})`
+              : searchTab === "reels"
+              ? `Reels Matches (${reelResults.length})`
               : debouncedQuery.length > 0
               ? `Search Matches (${searchResults.length})`
               : "Recommended for You"}
@@ -210,6 +234,67 @@ const SearchMoviesPage = () => {
                   {debouncedQuery.length > 0
                     ? `No users matching "${debouncedQuery}"`
                     : "Type a username or creator name to search users."}
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+
+        {!isLoading && !error && searchTab === "reels" && (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+            {reelResults.map((reel) => (
+              <div
+                key={reel._id}
+                onClick={() => navigate(`/reels-feed`)}
+                className="bg-gray-50/70 hover:bg-orange-50/50 rounded-2xl border border-gray-100 hover:border-brand-orange/30 overflow-hidden group cursor-pointer transition-all duration-300 shadow-sm hover:shadow"
+              >
+                <div className="h-44 bg-neutral-900 relative overflow-hidden flex items-center justify-center">
+                  {reel.thumbnailUrl || reel.thumbnail ? (
+                    <img
+                      src={reel.thumbnailUrl || reel.thumbnail}
+                      alt={reel.caption || "Reel"}
+                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                    />
+                  ) : (
+                    <div className="text-white text-3xl opacity-40">
+                      <FaPlay />
+                    </div>
+                  )}
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent flex items-end p-3">
+                    <div className="text-white text-xs font-bold line-clamp-2">
+                      {reel.caption || "Reel Short"}
+                    </div>
+                  </div>
+                </div>
+
+                <div className="p-3 flex items-center justify-between">
+                  <div className="flex items-center gap-2 min-w-0">
+                    <div className="w-7 h-7 rounded-full bg-brand-orange text-white font-black text-xs flex items-center justify-center overflow-hidden flex-shrink-0">
+                      {reel.user?.profileImage ? (
+                        <img src={reel.user.profileImage} alt={reel.user?.name} className="w-full h-full object-cover" />
+                      ) : (
+                        reel.user?.name ? reel.user.name.charAt(0).toUpperCase() : "U"
+                      )}
+                    </div>
+                    <div className="text-xs font-extrabold text-gray-800 truncate flex items-center gap-1">
+                      <span>{reel.user?.name || "Creator"}</span>
+                      <VerifiedBadge user={reel.user} size="sm" />
+                    </div>
+                  </div>
+                  <span className="text-[10px] flex items-center gap-1 font-bold bg-orange-100 text-brand-orange px-2 py-0.5 rounded-full flex-shrink-0">
+                    <FaPlay /> {reel.viewsCount || 0} views
+                  </span>
+                </div>
+              </div>
+            ))}
+
+            {reelResults.length === 0 && (
+              <div className="col-span-full text-center py-16 flex flex-col items-center justify-center">
+                <span className="text-4xl mb-3 opacity-20"><FaVideo /></span>
+                <div className="text-sm text-gray-400 font-bold">
+                  {debouncedQuery.length > 0
+                    ? `No reels matching "${debouncedQuery}"`
+                    : "Search short reels by caption, hashtag or creator name."}
                 </div>
               </div>
             )}

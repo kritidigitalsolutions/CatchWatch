@@ -130,12 +130,6 @@ const HelpSupportPage = () => {
             <FaHeadset /> Help & Support Desk
           </h1>
         </div>
-        <button
-          onClick={() => navigate("/vip-support")}
-          className="bg-neutral-900 hover:bg-black text-amber-400 font-extrabold text-xs px-4 py-2.5 rounded-xl shadow-md transition flex items-center gap-2 border border-amber-500/40"
-        >
-          <FaCrown /> Dedicated VIP Support
-        </button>
       </div>
 
       {/* VIP SUPPORT PROMO BANNER */}

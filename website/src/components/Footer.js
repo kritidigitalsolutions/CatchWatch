@@ -1,8 +1,25 @@
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
+import { getLegalDocs } from "../api/legalApi";
 
 const Footer = () => {
   const navigate = useNavigate();
   const currentYear = new Date().getFullYear();
+  const [legalDocs, setLegalDocs] = useState([]);
+
+  useEffect(() => {
+    const fetchDocs = async () => {
+      try {
+        const res = await getLegalDocs();
+        if (res?.documents && res.documents.length > 0) {
+          setLegalDocs(res.documents);
+        }
+      } catch (err) {
+        console.error("Footer legal docs fetch error:", err);
+      }
+    };
+    fetchDocs();
+  }, []);
 
   return (
     <footer className="w-full bg-neutral-900 text-gray-400 border-t border-neutral-800 mt-auto">
@@ -92,8 +109,6 @@ const Footer = () => {
                 Local Storage Downloads
               </button>
             </li>
-            
-           
           </ul>
         </div>
 
@@ -103,30 +118,45 @@ const Footer = () => {
             Legal Compliance
           </h4>
           <ul className="space-y-2.5 text-xs font-medium">
-            <li>
-              <button
-                onClick={() => navigate("/terms-conditions")}
-                className="hover:text-white transition"
-              >
-                Terms & Conditions
-              </button>
-            </li>
-            <li>
-              <button
-                onClick={() => navigate("/refund-policy")}
-                className="hover:text-white transition"
-              >
-                Refund Policy Guidelines
-              </button>
-            </li>
-            <li>
-              <button
-                onClick={() => navigate("/privacy-policy")}
-                className="hover:text-white transition"
-              >
-                Privacy Regulation Matrix
-              </button>
-            </li>
+            {legalDocs.length > 0 ? (
+              legalDocs.map((doc) => (
+                <li key={doc._id}>
+                  <button
+                    onClick={() => navigate(`/${doc.type}`)}
+                    className="hover:text-white transition"
+                  >
+                    {doc.title}
+                  </button>
+                </li>
+              ))
+            ) : (
+              <>
+                <li>
+                  <button
+                    onClick={() => navigate("/terms-conditions")}
+                    className="hover:text-white transition"
+                  >
+                    Terms & Conditions
+                  </button>
+                </li>
+                <li>
+                  <button
+                    onClick={() => navigate("/refund-policy")}
+                    className="hover:text-white transition"
+                  >
+                    Refund Policy Guidelines
+                  </button>
+                </li>
+                <li>
+                  <button
+                    onClick={() => navigate("/privacy-policy")}
+                    className="hover:text-white transition"
+                  >
+                    Privacy Regulation Matrix
+                  </button>
+                </li>
+              </>
+            )}
             <li>
               <button
                 onClick={() => navigate("/support")}

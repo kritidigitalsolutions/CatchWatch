@@ -631,18 +631,49 @@ exports.removeVerification = async (req, res) => {
 };
 
 // ========================================
+// ADMIN: GET USERS FOR VERIFICATION SELECTION
+// ========================================
+exports.getUsersForSelection = async (req, res) => {
+  try {
+    const { search } = req.query;
+    let query = { status: "Active" };
+    if (search && search.trim()) {
+      const searchRegex = new RegExp(search.trim().replace(/^@/, ""), "i");
+      query.$or = [{ name: searchRegex }, { username: searchRegex }];
+    }
+    const users = await User.find(query)
+      .select("_id name username profileImage bio verification isVerified createdAt")
+      .sort({ createdAt: -1 })
+      .limit(100)
+      .lean();
+
+    return res.status(200).json({
+      success: true,
+      users,
+    });
+  } catch (error) {
+    console.error("GET USERS FOR SELECTION ERROR:", error);
+    return res.status(500).json({ success: false, message: "Server error" });
+  }
+};
+
+// ========================================
 // ADMIN: MANUALLY VERIFY USER
 // ========================================
 exports.manuallyVerifyUser = async (req, res) => {
   try {
-    const { userId } = req.body;
-    if (!userId || !mongoose.Types.ObjectId.isValid(userId)) {
-      return res.status(400).json({ success: false, message: "Valid User ID is required" });
+    const { userId, username } = req.body;
+    let user;
+
+    if (userId && mongoose.Types.ObjectId.isValid(userId)) {
+      user = await User.findById(userId);
+    } else if (username || userId) {
+      const targetStr = (username || userId).toString().trim().replace(/^@/, "");
+      user = await User.findOne({ username: new RegExp(`^${targetStr}$`, "i") });
     }
 
-    const user = await User.findById(userId);
     if (!user) {
-      return res.status(404).json({ success: false, message: "User not found" });
+      return res.status(404).json({ success: false, message: "User not found. Please select a valid user." });
     }
 
     user.verification = {
@@ -654,6 +685,7 @@ exports.manuallyVerifyUser = async (req, res) => {
       rejectionReason: "",
       suspensionReason: "",
     };
+    user.isVerified = true;
     await user.save();
 
     // Create Notification
@@ -667,7 +699,7 @@ exports.manuallyVerifyUser = async (req, res) => {
 
     return res.status(200).json({
       success: true,
-      message: "User verified manually by admin",
+      message: `Blue Tick granted successfully to ${user.name} (@${user.username})!`,
       user,
     });
   } catch (error) {

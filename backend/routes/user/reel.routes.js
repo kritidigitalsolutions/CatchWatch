@@ -20,7 +20,14 @@ const {
   unsaveReel,
   getMyReels,
   getUserReels,
+  searchReels,
 } = require("../../controllers/reel.controller");
+
+// Search Reels API (Letter-by-letter case-insensitive)
+router.get(
+  "/search",
+  searchReels
+);
 
 // Upload Reel
 router.post(

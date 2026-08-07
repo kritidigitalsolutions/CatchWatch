@@ -205,6 +205,27 @@ exports.getReelsFeed = async (req, res) => {
       });
     }
 
+    // ── VERIFIED CREATOR ALGORITHMIC RECOMMENDATION BOOST ──
+    // Verified (Blue Tick) creators get higher recommendation priority in the feed
+    reels.sort((a, b) => {
+      const aVerified =
+        a.user?.isVerified ||
+        a.user?.verification?.isVerified ||
+        a.user?.verification?.status === "VERIFIED" ||
+        a.user?.verification?.status === "APPROVED"
+          ? 1
+          : 0;
+      const bVerified =
+        b.user?.isVerified ||
+        b.user?.verification?.isVerified ||
+        b.user?.verification?.status === "VERIFIED" ||
+        b.user?.verification?.status === "APPROVED"
+          ? 1
+          : 0;
+      if (aVerified !== bVerified) return bVerified - aVerified;
+      return new Date(b.createdAt) - new Date(a.createdAt);
+    });
+
     // AD INSERTION ENGINE (Only if user is UNVERIFIED & Ads are enabled)
     let finalFeed = reels;
 
@@ -940,6 +961,103 @@ exports.getUserReels = async (req, res) => {
     return res.status(500).json({
       success: false,
       message: "Server error",
+    });
+  }
+};
+
+// ========================================
+// SEARCH REELS (CASE-INSENSITIVE / LETTER-BY-LETTER)
+// ========================================
+exports.searchReels = async (req, res) => {
+  try {
+    const { q, query, search, limit = 50, page = 1 } = req.query;
+    const searchTerm = (q || query || search || "").trim();
+
+    if (!searchTerm) {
+      return res.status(200).json({
+        success: true,
+        count: 0,
+        reels: [],
+      });
+    }
+
+    const escapeRegex = (text) => text.replace(/[-[\]{}()*+?.,\\^$|#\s]/g, "\\$&");
+    const searchRegex = new RegExp(escapeRegex(searchTerm), "i");
+
+    // 1. Find users matching name or username
+    const matchingUsers = await User.find({
+      $or: [
+        { name: searchRegex },
+        { username: searchRegex },
+      ],
+    }).select("_id").lean();
+
+    const matchingUserIds = matchingUsers.map((u) => u._id);
+
+    // 2. Find Reels matching caption, hashtags, or creator user ID
+    const filter = {
+      status: "ACTIVE",
+      $or: [
+        { caption: searchRegex },
+        { hashtags: searchRegex },
+        { user: { $in: matchingUserIds } },
+      ],
+    };
+
+    const parsedLimit = parseInt(limit, 10) || 50;
+    const parsedPage = parseInt(page, 10) || 1;
+    const skip = (parsedPage - 1) * parsedLimit;
+
+    const [total, reels] = await Promise.all([
+      Reel.countDocuments(filter),
+      Reel.find(filter)
+        .populate("user", "name username profileImage bio verification isVerified")
+        .sort({ createdAt: -1 })
+        .skip(skip)
+        .limit(parsedLimit)
+        .lean(),
+    ]);
+
+    // Format thumbnails & apply Verified Creator Search Ranking Boost
+    reels.forEach((r) => {
+      const thumb = r.thumbnailUrl || r.thumbnail || "";
+      r.thumbnailUrl = thumb;
+      r.thumbnail = thumb;
+    });
+
+    // ── HIGHER SEARCH RANKING FOR VERIFIED CREATORS ──
+    reels.sort((a, b) => {
+      const aVerified =
+        a.user?.isVerified ||
+        a.user?.verification?.isVerified ||
+        a.user?.verification?.status === "VERIFIED" ||
+        a.user?.verification?.status === "APPROVED"
+          ? 1
+          : 0;
+      const bVerified =
+        b.user?.isVerified ||
+        b.user?.verification?.isVerified ||
+        b.user?.verification?.status === "VERIFIED" ||
+        b.user?.verification?.status === "APPROVED"
+          ? 1
+          : 0;
+      if (aVerified !== bVerified) return bVerified - aVerified;
+      return new Date(b.createdAt) - new Date(a.createdAt);
+    });
+
+    return res.status(200).json({
+      success: true,
+      count: reels.length,
+      total,
+      page: parsedPage,
+      limit: parsedLimit,
+      reels,
+    });
+  } catch (error) {
+    console.error("SEARCH REELS ERROR:", error);
+    return res.status(500).json({
+      success: false,
+      message: "Server error during reels search",
     });
   }
 };

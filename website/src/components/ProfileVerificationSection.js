@@ -472,41 +472,74 @@ const ProfileVerificationSection = ({ userProfile }) => {
 
       {/* Verification Benefits Grid */}
       <div className="mt-8 pt-6 border-t border-gray-100">
-        <h3 className="text-xs font-extrabold text-gray-400 uppercase tracking-wider mb-4">
+        <h3 className="text-xs font-black text-gray-400 uppercase tracking-wider mb-4">
           Verification Benefits
         </h3>
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-          <div className="bg-gray-50 border border-gray-100 p-4 rounded-2xl">
-            <div className="w-8 h-8 rounded-lg bg-blue-100 text-blue-600 flex items-center justify-center font-bold text-sm mb-2">
-              ✔
+        <div className="grid grid-cols-1 sm:grid-cols-1 lg:grid-cols-1 gap-3.5">
+          {[
+            {
+              title: "Official Verified Badge",
+              desc: "Blue Tick displayed everywhere across CatchWatch.",
+              icon: "🔵",
+            },
+            {
+              title: "Advanced Account Protection",
+              desc: "Enhanced multi-layer security for authenticated profiles.",
+              icon: "🔒",
+            },
+            {
+              title: "Fake Account Protection",
+              desc: "Proactive detection & removal of impersonating accounts.",
+              icon: "🛡️",
+            },
+            {
+              title: "Priority Customer Support",
+              desc: "Dedicated priority queue & fast resolution for support tickets.",
+              icon: "🎧",
+            },
+            {
+              title: "Higher Search Ranking",
+              desc: "Verified creators appear higher in search & discover feeds.",
+              icon: "⚡",
+            },
+            {
+              title: "Better Content Recommendations",
+              desc: "Algorithmic boost to feature your reels & videos to a broader audience.",
+              icon: "🌟",
+            },
+            {
+              title: "Highlighted Comments",
+              desc: "Your comments stand out with a blue tick badge and top placement.",
+              icon: "💬",
+            },
+            {
+              title: "Exclusive Creator Tools",
+              desc: "Access special creator analytics, monetization tools & badges.",
+              icon: "🛠️",
+            },
+            {
+              title: "Early Access to New Features",
+              desc: "Try new platform features & experimental tools before everyone else.",
+              icon: "🚀",
+            },
+          ].map((item, index) => (
+            <div
+              key={index}
+              className="bg-gray-50/80 hover:bg-orange-50/40 border border-gray-100 hover:border-orange-200/80 p-4 rounded-2xl transition flex items-start gap-3 group shadow-xs"
+            >
+              {/* <div className="w-8 h-8 rounded-xl bg-orange-100/70 text-brand-orange flex items-center justify-center font-black text-sm flex-shrink-0 group-hover:bg-brand-orange group-hover:text-white transition">
+                {item.icon}
+              </div> */}
+              <div>
+                <h4 className="text-xs font-black text-gray-900 flex items-center gap-1.5">
+                  <span>{item.title}</span>
+                </h4>
+                <p className="text-[11px] text-gray-500 font-medium mt-1 leading-relaxed">
+                  {item.desc}
+                </p>
+              </div>
             </div>
-            <h4 className="text-sm font-extrabold text-gray-900">Official Verified Badge</h4>
-            <p className="text-xs text-gray-500 font-medium mt-1">Blue Tick displayed everywhere across CatchWatch.</p>
-          </div>
-
-          <div className="bg-gray-50 border border-gray-100 p-4 rounded-2xl">
-            <div className="w-8 h-8 rounded-lg bg-orange-100 text-brand-orange flex items-center justify-center font-bold text-sm mb-2">
-              ⚡
-            </div>
-            <h4 className="text-sm font-extrabold text-gray-900">Better Search Ranking</h4>
-            <p className="text-xs text-gray-500 font-medium mt-1">Verified creators appear higher in search results.</p>
-          </div>
-
-          <div className="bg-gray-50 border border-gray-100 p-4 rounded-2xl">
-            <div className="w-8 h-8 rounded-lg bg-emerald-100 text-emerald-600 flex items-center justify-center font-bold text-sm mb-2">
-              🌟
-            </div>
-            <h4 className="text-sm font-extrabold text-gray-900">Creator Priority</h4>
-            <p className="text-xs text-gray-500 font-medium mt-1">Receive enhanced visibility across feeds and recommendations.</p>
-          </div>
-
-          <div className="bg-gray-50 border border-gray-100 p-4 rounded-2xl">
-            <div className="w-8 h-8 rounded-lg bg-purple-100 text-purple-600 flex items-center justify-center font-bold text-sm mb-2">
-              💬
-            </div>
-            <h4 className="text-sm font-extrabold text-gray-900">Highlighted Comments</h4>
-            <p className="text-xs text-gray-500 font-medium mt-1">Your comments are highlighted and pinned higher.</p>
-          </div>
+          ))}
         </div>
       </div>
 

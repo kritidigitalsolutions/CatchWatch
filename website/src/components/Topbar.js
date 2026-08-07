@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from "react";
 import { NavLink, useNavigate, useLocation } from "react-router-dom";
-import { FaSearch } from "react-icons/fa";
+import { FaSearch, FaCaretDown } from "react-icons/fa";
 import { FaBell } from "react-icons/fa6";
 import { FaRegUserCircle } from "react-icons/fa";
 import { MdCamera } from "react-icons/md";
@@ -12,6 +12,7 @@ import {
   markAllAsRead as markAllAsReadApi,
   markAsRead as markSingleAsReadApi
 } from '../api/notificationApi';
+import { getUserProfile } from '../api/userApi';
 
 const Topbar = () => {
   const navigate = useNavigate();
@@ -28,10 +29,11 @@ const Topbar = () => {
   const mobileNotifRef = useRef(null);
   const [notifications, setNotifications] = useState([]);
   const [unreadCount, setUnreadCount] = useState(0);
+  const [userProfile, setUserProfile] = useState(null);
 
-  // Background polling for unread count every 60 seconds
+  // Background polling for unread count & profile fetch
   useEffect(() => {
-    const fetchCount = async () => {
+    const fetchCountAndProfile = async () => {
       const token = localStorage.getItem("authToken") || localStorage.getItem("token");
       if (token) {
         try {
@@ -40,11 +42,20 @@ const Topbar = () => {
         } catch (error) {
           console.error("Failed to fetch unread count:", error);
         }
+        try {
+          const profileRes = await getUserProfile();
+          const userObj = profileRes?.user || profileRes?.data || profileRes;
+          if (userObj) {
+            setUserProfile(userObj);
+          }
+        } catch (pErr) {
+          console.error("Failed to fetch topbar user profile:", pErr);
+        }
       }
     };
 
-    fetchCount();
-    const interval = setInterval(fetchCount, 60000);
+    fetchCountAndProfile();
+    const interval = setInterval(fetchCountAndProfile, 60000);
     return () => clearInterval(interval);
   }, []);
 
@@ -133,15 +144,6 @@ const Topbar = () => {
     // { name: "Leaderboard", path: "/leaderboard" },
   ];
 
-  const profileLinks = [
-    { name: "My Profile", path: "/profile" },
-    // { name: "VIP Support Desk 👑", path: "/vip-support" },
-    // { name: "Creator Studio", path: "/creator/dashboard" },
-    // { name: "Leaderboard", path: "/leaderboard" },
-    { name: "Edit Profile", path: "/profile/edit" },
-    { name: "Subscription Plans", path: "/subscription" },
-    { name: "Downloads", path: "/downloads" },
-  ];
 
   return (
     <header className="sticky top-0 w-full bg-white border-b border-gray-200 z-50 shadow-sm">
@@ -279,12 +281,19 @@ const Topbar = () => {
 
               <NavLink
                 to="/profile"
-                className={({ isActive }) =>
-                  `text-lg font-bold p-1.5 transition-colors ${isActive ? "text-brand-orange" : "text-gray-500 hover:text-gray-900"}`
-                }
+                className="flex items-center gap-1.5 p-1 transition-transform hover:scale-105"
                 title="Profile"
               >
-                <FaRegUserCircle />
+                <div className="w-8 h-8 rounded-full border-2 border-orange-200 overflow-hidden bg-brand-orange text-white flex items-center justify-center text-xs font-black shadow-sm shrink-0">
+                  {userProfile?.profileImage ? (
+                    <img src={userProfile.profileImage} alt={userProfile.name || "User"} className="w-full h-full object-cover" />
+                  ) : userProfile?.name ? (
+                    userProfile.name.charAt(0).toUpperCase()
+                  ) : (
+                    <FaRegUserCircle className="text-base" />
+                  )}
+                </div>
+                <FaCaretDown className="text-gray-600 text-xs" />
               </NavLink>
             </>
           ) : (
@@ -432,21 +441,6 @@ const Topbar = () => {
           </div>
 
           <div className="px-4 py-3 space-y-1">
-            <span className="text-xs font-bold text-gray-400 uppercase tracking-widest block mb-1">
-              Account & Settings
-            </span>
-            {profileLinks.map((link, i) => (
-              <button
-                key={i}
-                onClick={() => {
-                  navigate(link.path);
-                  setIsMobileMenuOpen(false);
-                }}
-                className="w-full text-left py-2.5 px-2 text-sm font-semibold text-gray-600 hover:bg-brand-light-bg/50 hover:text-brand-orange rounded-lg block transition"
-              >
-                {link.name}
-              </button>
-            ))}
             <div className="pt-2 border-t border-gray-100 mt-2 pb-2">
               <button
                 onClick={() => {

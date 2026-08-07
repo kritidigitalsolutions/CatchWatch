@@ -7,6 +7,7 @@ import {
   FaVolumeUp, FaVolumeMute, FaCog,
   FaRegBookmark, FaBookmark
 } from "react-icons/fa";
+import { BiMoviePlay } from "react-icons/bi";
 
 // APIs Import
 import { getMovieBySlug } from '../api/movieApi';
@@ -783,7 +784,8 @@ const VideoPlayerPage = () => {
     return (
       <div className="max-w-md mx-auto w-full py-20 px-6 flex flex-col items-center justify-center text-center space-y-6">
         <div className="w-24 h-24 bg-amber-100 text-amber-500 rounded-full flex items-center justify-center text-5xl shadow-sm animate-bounce">
-          🎬
+          <BiMoviePlay />
+
         </div>
         <div className="space-y-3">
           <h2 className="text-3xl font-black text-gray-900 tracking-tight">Coming Soon!</h2>

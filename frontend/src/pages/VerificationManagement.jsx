@@ -49,6 +49,12 @@ export default function VerificationManagement() {
   const [imagePreview, setImagePreview] = useState(null);
   const [manualVerifyUserId, setManualVerifyUserId] = useState("");
 
+  // User Selection for Manual Verification
+  const [usersList, setUsersList] = useState([]);
+  const [userSearchQuery, setUserSearchQuery] = useState("");
+  const [selectedUser, setSelectedUser] = useState(null);
+  const [isFetchingUsers, setIsFetchingUsers] = useState(false);
+
   // Redeem Modals state
   const [approveRedeemModal, setApproveRedeemModal] = useState(null);
   const [approveRupeesInput, setApproveRupeesInput] = useState("");
@@ -71,6 +77,33 @@ export default function VerificationManagement() {
   useEffect(() => {
     fetchRequests();
   }, [activeTab, page, search]);
+
+  useEffect(() => {
+    if (activeTab === "SETTINGS") {
+      fetchUsersForSelection(userSearchQuery);
+    }
+  }, [activeTab, userSearchQuery]);
+
+  const fetchUsersForSelection = async (searchQuery = "") => {
+    setIsFetchingUsers(true);
+    try {
+      const res = await API.get("/admin/verification/users-select", {
+        params: { search: searchQuery },
+      });
+      if (res.data?.success) {
+        const fetched = res.data.users || [];
+        setUsersList(fetched);
+        if (fetched.length > 0 && !selectedUser) {
+          setSelectedUser(fetched[0]);
+          setManualVerifyUserId(fetched[0]._id);
+        }
+      }
+    } catch (err) {
+      console.error("Failed to fetch users for selection:", err);
+    } finally {
+      setIsFetchingUsers(false);
+    }
+  };
 
   const fetchStats = async () => {
     try {
@@ -258,26 +291,128 @@ export default function VerificationManagement() {
     }
   };
 
+  // Toast Notification state
+  const [toast, setToast] = useState({ show: false, message: "", type: "success" });
+
+  const showToast = (message, type = "success") => {
+    setToast({ show: true, message, type });
+    setTimeout(() => {
+      setToast({ show: false, message: "", type: "success" });
+    }, 4500);
+  };
+
   const handleManualVerify = async (e) => {
-    e.preventDefault();
-    if (!manualVerifyUserId.trim()) return;
+    if (e && e.preventDefault) e.preventDefault();
+    const targetId = manualVerifyUserId || selectedUser?._id;
+    if (!targetId) {
+      showToast("Please select a user to verify.", "error");
+      return;
+    }
+
     try {
       const res = await API.patch("/admin/verification/user/verify", {
-        userId: manualVerifyUserId.trim(),
+        userId: targetId,
       });
+
       if (res.data?.success) {
-        alert("User verified manually by admin!");
-        setManualVerifyUserId("");
+        const successMsg = res.data.message || `🎉 Blue Tick granted successfully to ${selectedUser?.name || 'User'}!`;
+        
+        // 1. Show Toast Notification instantly
+        showToast(successMsg, "success");
+
+        // 2. Automatically update selected user state without page refresh
+        setSelectedUser((prev) =>
+          prev
+            ? {
+                ...prev,
+                isVerified: true,
+                verification: {
+                  ...prev.verification,
+                  status: "VERIFIED",
+                  isVerified: true,
+                },
+              }
+            : null
+        );
+
+        // 3. Update users list in memory so dropdown updates instantly
+        setUsersList((prevList) =>
+          prevList.map((u) =>
+            u._id === targetId
+              ? {
+                  ...u,
+                  isVerified: true,
+                  verification: {
+                    ...u.verification,
+                    status: "VERIFIED",
+                    isVerified: true,
+                  },
+                }
+              : u
+          )
+        );
+
+        // 4. Background re-fetch stats, requests & dropdown list without page refresh
         fetchStats();
         fetchRequests();
+        fetchUsersForSelection(userSearchQuery);
+      } else {
+        showToast(res.data?.message || "Failed to grant Blue Tick.", "error");
       }
     } catch (err) {
-      alert(err.response?.data?.message || "Failed to manually verify user.");
+      console.error("Manual verify error:", err);
+      showToast(err.response?.data?.message || "Failed to manually verify user.", "error");
     }
   };
 
   return (
     <div className="verification-management">
+      {/* ── TOASTER NOTIFICATION ── */}
+      {toast.show && (
+        <div
+          style={{
+            position: "fixed",
+            top: "24px",
+            right: "24px",
+            zIndex: 9999,
+            display: "flex",
+            alignItems: "center",
+            gap: "12px",
+            padding: "14px 20px",
+            borderRadius: "12px",
+            background: toast.type === "success" ? "#064e3b" : "#7f1d1d",
+            color: "#ffffff",
+            border: toast.type === "success" ? "1px solid #059669" : "1px solid #dc2626",
+            boxShadow: "0 10px 25px -5px rgba(0, 0, 0, 0.5), 0 8px 10px -6px rgba(0, 0, 0, 0.5)",
+            fontSize: "0.9rem",
+            fontWeight: 700,
+            maxWidth: "450px",
+            transition: "all 0.3s ease",
+          }}
+        >
+          {toast.type === "success" ? (
+            <BadgeCheck size={22} color="#34d399" />
+          ) : (
+            <AlertTriangle size={22} color="#fca5a5" />
+          )}
+          <span style={{ flex: 1, lineHeight: "1.4" }}>{toast.message}</span>
+          <button
+            onClick={() => setToast({ show: false, message: "", type: "success" })}
+            style={{
+              background: "transparent",
+              border: "none",
+              color: "#cbd5e1",
+              cursor: "pointer",
+              padding: "2px",
+              display: "flex",
+              alignItems: "center",
+            }}
+          >
+            <X size={18} />
+          </button>
+        </div>
+      )}
+
       {/* ── Page Header ── */}
       <div className="verif-header">
         <div className="verif-header-title">
@@ -411,27 +546,193 @@ export default function VerificationManagement() {
       </div>
 
       {activeTab === "SETTINGS" ? (
-        <div style={{ background: "#1e293b", padding: "24px", borderRadius: "14px", border: "1px solid rgba(255,255,255,0.08)" }}>
-          <h2 style={{ fontSize: "1.2rem", margin: "0 0 16px", color: "#fff" }}>Manually Verify User</h2>
-          <form onSubmit={handleManualVerify} style={{ display: "flex", gap: "12px", maxWidth: "500px" }}>
-            <input
-              type="text"
-              placeholder="Enter User ID to verify..."
-              value={manualVerifyUserId}
-              onChange={(e) => setManualVerifyUserId(e.target.value)}
+        <div style={{ background: "#1e293b", padding: "28px", borderRadius: "16px", border: "1px solid rgba(255,255,255,0.08)", color: "#fff" }}>
+          <div style={{ display: "flex", alignItems: "center", gap: "10px", marginBottom: "8px" }}>
+            <UserCheck size={26} color="#3b82f6" />
+            <h2 style={{ fontSize: "1.3rem", margin: 0, fontWeight: 800 }}>Manually Verify User</h2>
+          </div>
+          <p style={{ color: "#94a3b8", fontSize: "0.88rem", margin: "0 0 24px" }}>
+            Search and select any registered user by their Name or Username to grant official Blue Tick verification status directly.
+          </p>
+
+          <div style={{ display: "grid", gridTemplateColumns: "1.2fr 0.8fr", gap: "24px", alignItems: "start" }}>
+            {/* Left Column: Search & Select Dropdown Menu */}
+            <div style={{ background: "#0f172a", padding: "20px", borderRadius: "14px", border: "1px solid rgba(255,255,255,0.08)" }}>
+              <label style={{ display: "block", fontSize: "0.85rem", fontWeight: 700, marginBottom: "8px", color: "#38bdf8" }}>
+                1. Search Registered Users (By Name or @username)
+              </label>
+              <div style={{ position: "relative", marginBottom: "16px" }}>
+                <input
+                  type="text"
+                  placeholder="Type to search user name or username..."
+                  value={userSearchQuery}
+                  onChange={(e) => setUserSearchQuery(e.target.value)}
+                  style={{
+                    width: "100%",
+                    padding: "11px 14px",
+                    borderRadius: "10px",
+                    background: "#1e293b",
+                    border: "1px solid rgba(255,255,255,0.15)",
+                    color: "#fff",
+                    fontSize: "0.9rem",
+                    fontWeight: 600,
+                  }}
+                />
+                {isFetchingUsers && (
+                  <RefreshCw
+                    className="animate-spin"
+                    size={16}
+                    style={{ position: "absolute", right: "12px", top: "12px", color: "#94a3b8" }}
+                  />
+                )}
+              </div>
+
+              <label style={{ display: "block", fontSize: "0.85rem", fontWeight: 700, marginBottom: "8px", color: "#38bdf8" }}>
+                2. Select User from Dropdown ({usersList.length} users listed)
+              </label>
+              <select
+                size={8}
+                value={selectedUser?._id || ""}
+                onChange={(e) => {
+                  const u = usersList.find((usr) => usr._id === e.target.value);
+                  if (u) {
+                    setSelectedUser(u);
+                    setManualVerifyUserId(u._id);
+                  }
+                }}
+                style={{
+                  width: "100%",
+                  padding: "8px",
+                  borderRadius: "10px",
+                  background: "#1e293b",
+                  border: "1px solid rgba(255,255,255,0.15)",
+                  color: "#fff",
+                  fontSize: "0.88rem",
+                  minHeight: "200px",
+                  cursor: "pointer",
+                }}
+              >
+                {usersList.length === 0 ? (
+                  <option disabled style={{ padding: "10px", color: "#94a3b8" }}>
+                    No matching active users found.
+                  </option>
+                ) : (
+                  usersList.map((u) => {
+                    const isVer = u.isVerified || u.verification?.isVerified || u.verification?.status === "VERIFIED";
+                    return (
+                      <option
+                        key={u._id}
+                        value={u._id}
+                        style={{
+                          padding: "10px 12px",
+                          margin: "2px 0",
+                          borderRadius: "6px",
+                          background: selectedUser?._id === u._id ? "#3b82f6" : "transparent",
+                          color: selectedUser?._id === u._id ? "#fff" : "#cbd5e1",
+                          fontWeight: 600,
+                        }}
+                      >
+                        {u.name} (@{u.username || "user"}) {isVer ? "✔️ [VERIFIED]" : "— Unverified"}
+                      </option>
+                    );
+                  })
+                )}
+              </select>
+            </div>
+
+            {/* Right Column: Selected User Card & Grant Action */}
+            <div
               style={{
-                flex: 1,
-                padding: "10px 14px",
-                borderRadius: "8px",
                 background: "#0f172a",
-                border: "1px solid rgba(255,255,255,0.1)",
-                color: "#fff",
+                padding: "20px",
+                borderRadius: "14px",
+                border: "1px solid rgba(255,255,255,0.08)",
+                minHeight: "310px",
+                display: "flex",
+                flexDirection: "column",
+                justify: "space-between",
               }}
-            />
-            <button className="verif-btn approve" type="submit">
-              <UserCheck size={16} /> Grant Blue Tick
-            </button>
-          </form>
+            >
+              {selectedUser ? (
+                <div>
+                  <h3 style={{ fontSize: "0.85rem", color: "#94a3b8", textTransform: "uppercase", margin: "0 0 16px", fontWeight: 800, tracking: "wider" }}>
+                    Selected User Details
+                  </h3>
+
+                  <div
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      gap: "14px",
+                      padding: "16px",
+                      background: "#1e293b",
+                      borderRadius: "12px",
+                      border: "1px solid rgba(255,255,255,0.1)",
+                    }}
+                  >
+                    <img
+                      src={getMediaUrl(selectedUser.profileImage)}
+                      alt={selectedUser.name}
+                      style={{
+                        width: "56px",
+                        height: "56px",
+                        borderRadius: "50%",
+                        objectFit: "cover",
+                        border: "2px solid #3b82f6",
+                      }}
+                    />
+                    <div>
+                      <div style={{ fontSize: "1.05rem", fontWeight: 800, color: "#fff", display: "flex", alignItems: "center", gap: "6px" }}>
+                        <span>{selectedUser.name}</span>
+                        {(selectedUser.isVerified || selectedUser.verification?.isVerified || selectedUser.verification?.status === "VERIFIED") && (
+                          <BadgeCheck size={20} color="#3b82f6" />
+                        )}
+                      </div>
+                      <div style={{ fontSize: "0.85rem", color: "#38bdf8", fontWeight: 700, marginTop: "2px" }}>
+                        {selectedUser.username ? (selectedUser.username.startsWith("@") ? selectedUser.username : `@${selectedUser.username}`) : "@user"}
+                      </div>
+                      <div style={{ fontSize: "0.75rem", color: "#94a3b8", marginTop: "4px" }}>
+                        ID: {selectedUser._id}
+                      </div>
+                    </div>
+                  </div>
+
+                  <div style={{ marginTop: "16px", padding: "12px 14px", background: "rgba(255,255,255,0.03)", borderRadius: "8px", fontSize: "0.85rem" }}>
+                    <div style={{ color: "#94a3b8", marginBottom: "4px" }}>Current Verification Status:</div>
+                    <strong style={{ color: selectedUser.isVerified || selectedUser.verification?.isVerified || selectedUser.verification?.status === "VERIFIED" ? "#10b981" : "#f59e0b" }}>
+                      {selectedUser.isVerified || selectedUser.verification?.isVerified || selectedUser.verification?.status === "VERIFIED"
+                        ? "✔️ Official Blue Tick Active"
+                        : "⚠️ Unverified User"}
+                    </strong>
+                  </div>
+                </div>
+              ) : (
+                <div style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", height: "100%", textAlign: "center", color: "#64748b", padding: "40px 20px" }}>
+                  <UserCheck size={48} style={{ opacity: 0.3, marginBottom: "12px" }} />
+                  <p style={{ margin: 0, fontWeight: 700, fontSize: "0.9rem" }}>Select a user from the dropdown list on the left to verify.</p>
+                </div>
+              )}
+
+              {selectedUser && (
+                <button
+                  className="verif-btn approve"
+                  onClick={handleManualVerify}
+                  style={{
+                    width: "100%",
+                    padding: "13px",
+                    fontSize: "0.95rem",
+                    fontWeight: 800,
+                    borderRadius: "10px",
+                    justifyContent: "center",
+                    marginTop: "20px",
+                    background: "#3b82f6",
+                  }}
+                >
+                  <BadgeCheck size={20} /> Grant Blue Tick to {selectedUser.name}
+                </button>
+              )}
+            </div>
+          </div>
         </div>
       ) : activeTab === "REDEEM" ? (
         <div className="verif-table-wrapper" style={{ marginTop: "20px" }}>

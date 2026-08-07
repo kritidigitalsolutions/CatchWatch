@@ -16,6 +16,7 @@ const {
   getAdminTicketConversation,
   createAdminSupportTicket,
   deleteSupportTicket,
+  deleteSupportMessage,
 } = require("../../controllers/admin/support.controller");
 
 
@@ -84,6 +85,15 @@ router.delete(
   "/:id",
   isAdmin,
   deleteSupportTicket
+);
+
+// ========================================
+// DELETE MESSAGE
+// ========================================
+router.delete(
+  "/message/:messageId",
+  isAdmin,
+  deleteSupportMessage
 );
 
 module.exports = router;

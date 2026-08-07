@@ -10,9 +10,9 @@ const {
   getLegalDocuments,
   getLegalByType,
   addOrUpdateLegalDocument,
-  togglePublish
+  togglePublish,
+  deleteLegalDocument
 } = require("../../controllers/admin/legal.controller");
-
 
 // ========================================
 // ADMIN LEGAL ROUTES
@@ -23,6 +23,13 @@ router.get(
   "/",
   isAdmin,
   getLegalDocuments
+);
+
+// Create legal doc
+router.post(
+  "/",
+  isAdmin,
+  addOrUpdateLegalDocument
 );
 
 // Get legal doc by type
@@ -44,6 +51,13 @@ router.patch(
   "/:type/toggle",
   isAdmin,
   togglePublish
+);
+
+// Delete legal doc
+router.delete(
+  "/:type",
+  isAdmin,
+  deleteLegalDocument
 );
 
 module.exports = router;

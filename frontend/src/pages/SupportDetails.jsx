@@ -21,6 +21,7 @@ import {
   BadgeCheck,
   ShieldCheck,
   Zap,
+  Trash2,
 } from "lucide-react";
 import API from "../api/axios";
 import "./SupportDetails.css";
@@ -218,6 +219,38 @@ export default function SupportDetails({ ticketId }) {
       (a, b) => new Date(a.createdAt) - new Date(b.createdAt)
     );
   }, [messages]);
+
+  const handleDeleteTicket = async () => {
+    if (!activeTicketId) return;
+    if (!window.confirm("Are you sure you want to delete this ticket and all its messages? This action cannot be undone.")) return;
+
+    try {
+      await API.delete(`/admin/support/${activeTicketId}`);
+      alert("Ticket deleted successfully.");
+      setTicket(null);
+      setSelectedTicketId("");
+      fetchTickets();
+      if (!showTicketList) {
+        navigate(-1);
+      }
+    } catch (err) {
+      console.error("Delete ticket error:", err);
+      alert(err.response?.data?.message || "Failed to delete ticket.");
+    }
+  };
+
+  const handleDeleteMessage = async (messageId) => {
+    if (!messageId) return;
+    if (!window.confirm("Are you sure you want to delete this message?")) return;
+
+    try {
+      await API.delete(`/admin/support/message/${messageId}`);
+      fetchTicket();
+    } catch (err) {
+      console.error("Delete message error:", err);
+      alert(err.response?.data?.message || "Failed to delete message.");
+    }
+  };
 
   const handleStatusChange = async (nextStatus) => {
     if (!activeTicketId || nextStatus === status) return;
@@ -526,6 +559,17 @@ export default function SupportDetails({ ticketId }) {
             Refresh
           </button>
 
+          <button
+            className="support-btn ghost"
+            type="button"
+            onClick={handleDeleteTicket}
+            style={{ color: "#ef4444", borderColor: "#fca5a5" }}
+            title="Delete Entire Ticket & Chat History"
+          >
+            <Trash2 size={16} />
+            Delete Ticket
+          </button>
+
           {status !== "CLOSED" && (
             <div className="support-quick-status-actions">
               {status === "OPEN" && (
@@ -627,9 +671,27 @@ export default function SupportDetails({ ticketId }) {
                       {isAdmin ? "A" : getInitials(userName)}
                     </div>
                     <div className="support-message-body">
-                      <div className="support-message-meta">
-                        <span>{isAdmin ? "Admin" : userName}</span>
-                        <time>{formatDate(message.createdAt)}</time>
+                      <div className="support-message-meta" style={{ display: "flex", alignItems: "center", justifyBetween: "space-between", width: "100%", gap: 12 }}>
+                        <div>
+                          <span>{isAdmin ? "Admin" : userName}</span>
+                          <time style={{ marginLeft: 8 }}>{formatDate(message.createdAt)}</time>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => handleDeleteMessage(message._id)}
+                          title="Delete message"
+                          style={{
+                            background: "transparent",
+                            border: "none",
+                            color: "#ef4444",
+                            cursor: "pointer",
+                            padding: "2px 4px",
+                            opacity: 0.7,
+                            marginLeft: "auto"
+                          }}
+                        >
+                          <Trash2 size={13} />
+                        </button>
                       </div>
                       <p>{message.message}</p>
                       {message.attachments && message.attachments.length > 0 && (
