@@ -1,9 +1,10 @@
 import React, { useState, useRef, useEffect } from "react";
 import { NavLink, useNavigate, useLocation } from "react-router-dom";
-import { FaSearch, FaCaretDown } from "react-icons/fa";
+import { FaSearch, FaCaretDown, FaComments } from "react-icons/fa";
 import { FaBell } from "react-icons/fa6";
 import { FaRegUserCircle } from "react-icons/fa";
 import { MdCamera } from "react-icons/md";
+import { useSocket } from "../context/SocketContext";
 
 // Ensure your api imports are correct based on your file structure
 import {
@@ -17,6 +18,7 @@ import { getUserProfile } from '../api/userApi';
 const Topbar = () => {
   const navigate = useNavigate();
   const location = useLocation();
+  const { unreadChatCount } = useSocket() || {};
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
   const isLoginPage = location.pathname === "/login";
@@ -201,6 +203,22 @@ const Topbar = () => {
                 <FaSearch />
               </NavLink>
 
+              {/* DESKTOP CHAT ICON */}
+              <NavLink
+                to="/chat"
+                className={({ isActive }) =>
+                  `relative text-lg p-1.5 transition-colors ${isActive ? "text-brand-orange" : "text-gray-500 hover:text-gray-900"}`
+                }
+                title="Chats"
+              >
+                <FaComments />
+                {unreadChatCount > 0 && (
+                  <span className="absolute top-0 right-0 bg-brand-orange text-white text-[9px] font-bold w-4 h-4 flex items-center justify-center rounded-full border-2 border-white transform translate-x-1/4 -translate-y-1/4">
+                    {unreadChatCount > 99 ? '99+' : unreadChatCount}
+                  </span>
+                )}
+              </NavLink>
+
               {/* DESKTOP NOTIFICATION DROPDOWN */}
               <div className="relative" ref={desktopNotifRef}>
                 <button
@@ -319,6 +337,22 @@ const Topbar = () => {
                 }
               >
                 <FaSearch />
+              </NavLink>
+
+              {/* MOBILE CHAT ICON */}
+              <NavLink
+                to="/chat"
+                className={({ isActive }) =>
+                  `relative text-xl p-1 transition-colors ${isActive ? "text-brand-orange" : "text-gray-500 hover:text-gray-900"}`
+                }
+                title="Chats"
+              >
+                <FaComments />
+                {unreadChatCount > 0 && (
+                  <span className="absolute top-0 right-0 bg-brand-orange text-white text-[9px] font-bold w-4 h-4 flex items-center justify-center rounded-full border-2 border-white transform translate-x-1/4 -translate-y-1/4">
+                    {unreadChatCount > 99 ? '99+' : unreadChatCount}
+                  </span>
+                )}
               </NavLink>
 
               {/* MOBILE NOTIFICATION DROPDOWN */}

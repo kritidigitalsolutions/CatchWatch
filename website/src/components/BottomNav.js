@@ -5,13 +5,17 @@ import { TfiVideoClapper } from "react-icons/tfi";
 import { IoSearchSharp } from "react-icons/io5";
 import { CgProfile } from "react-icons/cg";
 import { MdCamera } from "react-icons/md";
-
+import { FaComments } from "react-icons/fa";
+import { useSocket } from "../context/SocketContext";
 
 const BottomNav = () => {
+  const { unreadChatCount } = useSocket() || {};
+
   const navItems = [
     { name: 'Home', path: '/', icon: <IoMdHome />  },
     { name: 'REELS', path: '/reels-feed', icon: <TfiVideoClapper /> },
     { name: 'Add', path: '/upload', icon: <MdCamera />, isAdd: true },
+    { name: 'Chat', path: '/chat', icon: <FaComments />, badge: unreadChatCount },
     { name: 'Search', path: '/search', icon: <IoSearchSharp /> },
     { name: 'Profile', path: '/profile', icon: <CgProfile /> }
   ];
@@ -40,7 +44,14 @@ const BottomNav = () => {
               </div>
             ) : (
               <>
-                <span className="text-xl md:text-2xl mb-0.5">{item.icon}</span>
+                <span className="relative text-xl md:text-2xl mb-0.5">
+                  {item.icon}
+                  {item.badge > 0 && (
+                    <span className="absolute -top-1 -right-2 bg-brand-orange text-white text-[8px] font-black w-3.5 h-3.5 flex items-center justify-center rounded-full border border-white">
+                      {item.badge > 99 ? '99+' : item.badge}
+                    </span>
+                  )}
+                </span>
                 <span className="text-[10px] md:text-xs uppercase tracking-wider">{item.name}</span>
               </>
             )}

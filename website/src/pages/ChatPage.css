@@ -1,0 +1,82 @@
+/* Chat Page Custom Styles */
+.chat-container {
+  height: calc(100vh - 80px);
+  max-height: calc(100vh - 80px);
+  overflow-x: hidden;
+  width: 100%;
+}
+
+@media (max-width: 768px) {
+  .chat-container {
+    height: calc(100vh - 128px);
+    max-height: calc(100vh - 128px);
+    overflow-x: hidden;
+  }
+}
+
+.chat-sidebar {
+  transition: all 0.3s ease;
+  overflow-x: hidden;
+}
+
+.chat-bubble-sent {
+  background: linear-gradient(135deg, #ff6b00 0%, #e05500 100%);
+  color: #ffffff;
+  border-radius: 18px 18px 4px 18px;
+  word-break: break-word;
+  overflow-wrap: anywhere;
+}
+
+.chat-bubble-received {
+  background: #f3f4f6;
+  color: #1f2937;
+  border-radius: 18px 18px 18px 4px;
+  word-break: break-word;
+  overflow-wrap: anywhere;
+}
+
+.dark .chat-bubble-received {
+  background: #1f2937;
+  color: #f9fafb;
+}
+
+.reaction-pill {
+  transition: transform 0.15s ease, background-color 0.15s ease;
+}
+
+.reaction-pill:hover {
+  transform: scale(1.15);
+}
+
+.animate-pop-in {
+  animation: popIn 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+@keyframes popIn {
+  from {
+    opacity: 0;
+    transform: scale(0.85);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+/* Custom scrollbars */
+.chat-scroll {
+  overflow-x: hidden !important;
+}
+.chat-scroll::-webkit-scrollbar {
+  width: 6px;
+}
+.chat-scroll::-webkit-scrollbar-track {
+  background: transparent;
+}
+.chat-scroll::-webkit-scrollbar-thumb {
+  background: rgba(156, 163, 175, 0.4);
+  border-radius: 10px;
+}
+.chat-scroll::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 107, 0, 0.6);
+}
