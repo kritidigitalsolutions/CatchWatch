@@ -235,7 +235,7 @@ export default function AdminAnalytics() {
       <h3 style={{ fontSize: "1.1rem", marginBottom: "16px", color: "#e2e8f0", display: "flex", alignItems: "center", gap: "8px" }}>
         <Crown size={20} color="#facc15" /> Top Platform Creators Leaderboard
       </h3>
-      <div className="table-card">
+      <div className="table-card" style={{overflow: "auto"}}>
         <table className="ad-table">
           <thead>
             <tr>

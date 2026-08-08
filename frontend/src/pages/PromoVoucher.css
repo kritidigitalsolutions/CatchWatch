@@ -63,4 +63,14 @@
   .view-grid {
     grid-template-columns: 1fr;
   }
+
+  .pv-container {
+    padding: 12px;
+  }
+
+  .pv-table-container,
+  .table-responsive {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
 }

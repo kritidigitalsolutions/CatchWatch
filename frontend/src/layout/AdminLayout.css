@@ -25,6 +25,33 @@
   transition: padding var(--transition);
 }
 
+/* ── Sidebar Overlay Backdrop for Mobile ── */
+.sidebar-overlay {
+  display: none;
+}
+
+@media (max-width: 1024px) {
+  .sidebar-overlay {
+    display: block;
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.6);
+    backdrop-filter: blur(4px);
+    z-index: 999;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  .sidebar-overlay.show {
+    opacity: 1;
+    pointer-events: auto;
+  }
+}
+
 /* ── Responsive ── */
 @media (max-width: 1024px) {
   .page-body {
@@ -34,7 +61,13 @@
 
 @media (max-width: 768px) {
   .page-body {
-    padding: 18px 16px;
+    padding: 16px 14px;
+  }
+}
+
+@media (max-width: 480px) {
+  .page-body {
+    padding: 12px 10px;
   }
 }
 

@@ -449,3 +449,31 @@
 .verif-btn.secondary:hover {
   background: rgba(255, 255, 255, 0.15);
 }
+
+/* ---------- Responsive Enhancements for Verification Management ---------- */
+@media (max-width: 768px) {
+  .verif-filters {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 10px;
+  }
+
+  .verif-grid-cards,
+  .doc-comparison-grid {
+    grid-template-columns: 1fr !important;
+  }
+
+  .verif-table-wrapper {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .verif-modal-actions {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .verif-btn {
+    justify-content: center;
+  }
+}

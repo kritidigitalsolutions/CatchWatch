@@ -280,7 +280,7 @@ body.light .password-toggle:hover {
 /* 🔥 BIGGER CARDS */
 .form-card-container .form-card {
   flex: 1;
-  min-width: 420px;
+  min-width: 0;
   max-width: 500px;
   padding: 32px;
   /* increased padding */

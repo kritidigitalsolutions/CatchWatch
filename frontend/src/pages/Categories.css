@@ -542,3 +542,42 @@
   opacity: 0.6;
   cursor: not-allowed;
 }
+
+/* ---------- Responsive Enhancements for Categories Page ---------- */
+@media (max-width: 768px) {
+  .cat-header,
+  .cat-controls {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 10px;
+  }
+
+  .cat-stats-row {
+    grid-template-columns: repeat(2, 1fr) !important;
+  }
+
+  .filter-tabs {
+    overflow-x: auto;
+    white-space: nowrap;
+    padding-bottom: 6px;
+  }
+
+  .table-responsive {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .form-row {
+    grid-template-columns: 1fr !important;
+  }
+
+  .modal-footer {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .btn-cancel,
+  .btn-submit {
+    width: 100%;
+  }
+}

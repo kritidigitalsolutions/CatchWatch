@@ -8,13 +8,9 @@ import {
   Pause,
   Copy,
   CheckCircle,
-  XCircle,
   Eye,
   TrendingUp,
-  DollarSign,
-  Users,
   Target,
-  RefreshCw,
   Upload,
   Link,
   FileVideo,
@@ -222,7 +218,7 @@ export default function AdManagement() {
       </div>
 
       {/* Tabs */}
-      <div className="tab-navigation" style={{ display: "flex", gap: "8px", marginBottom: "20px" }}>
+      <div className="tab-navigation" style={{ display: "flex", gap: "8px", marginBottom: "20px", overflowX: "scroll" }}>
         {["ALL", "ACTIVE", "PENDING", "PAUSED", "COMPLETED"].map((tab) => (
           <button
             key={tab}
@@ -245,7 +241,7 @@ export default function AdManagement() {
       </div>
 
       {/* Table */}
-      <div className="table-card">
+      <div className="table-card" style={{ overflow: "scroll" }}>
         {loading ? (
           <div className="loading-state">Loading campaigns...</div>
         ) : campaigns.length === 0 ? (

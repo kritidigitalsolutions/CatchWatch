@@ -92,6 +92,16 @@ const userSchema = new mongoose.Schema(
       type: Date,
     },
 
+    isOnline: {
+      type: Boolean,
+      default: false,
+    },
+
+    lastSeen: {
+      type: Date,
+      default: Date.now,
+    },
+
     verification: {
       status: {
         type: String,

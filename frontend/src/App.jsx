@@ -19,7 +19,7 @@ const VerificationManagement = lazy(() => import("./pages/VerificationManagement
 const CategoriesPage = lazy(() => import("./pages/Categories"));
 const AddContent = lazy(() => import("./pages/AddContent"));
 const Content = lazy(() => import("./pages/Content"));
-const RatingsPage = lazy(() => import("./pages/Ratings"));
+// const RatingsPage = lazy(() => import("./pages/Ratings"));
 const PlansPage = lazy(() => import("./pages/Plans"));
 const PromoVoucher = lazy(() => import("./pages/PromoVoucher"));
 const SubscriptionPage = lazy(() => import("./pages/Subscriptions"));
@@ -220,14 +220,14 @@ function App() {
                 </PermissionGuard>
               }
             />
-            <Route
+            {/* <Route
               path="ratings"
               element={
                 <PermissionGuard pageKey="ratings">
                   <RatingsPage />
                 </PermissionGuard>
               }
-            />
+            /> */}
             <Route
               path="plans"
               element={

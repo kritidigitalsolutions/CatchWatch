@@ -23,6 +23,12 @@ export default function AdminLayout() {
 
   return (
     <div className={`app-shell ${theme}`}>
+      {/* Mobile Drawer Backdrop Overlay */}
+      <div
+        className={`sidebar-overlay ${showSidebar ? "show" : ""}`}
+        onClick={() => setShowSidebar(false)}
+      />
+
       <Sidebar
         theme={theme}
         showSidebar={showSidebar}

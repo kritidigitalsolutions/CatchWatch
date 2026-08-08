@@ -15,7 +15,6 @@ const NAV = [
   { id: "categories", label: "Categories", icon: Layers, color: "#a855f7" },
   { id: "add-content", label: "Add Content", icon: Plus, color: "#10b981" },
   { id: "content", label: "Content Library", icon: Film, color: "#f59e0b" },
-  { id: "ratings", label: "Ratings", icon: Star, color: "#facc15" },
   { id: "plans", label: "Subscription Plans", icon: CreditCard, color: "#ec4899" },
   { id: "promo", label: "Promo & Voucher", icon: CreditCard, color: "#ec4899" },
   { id: "pricing", label: "User Plan", icon: CreditCard, color: "#ec4899" },

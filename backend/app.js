@@ -178,10 +178,12 @@ app.use("/api/tv-shows-episodes", tvShowsEpisodeUserRoutes);
 const authRoutes = require("./routes/user/auth.routes");
 
 const userRoutes = require("./routes/user/user.routes");
+const chatRoutes = require("./routes/user/chat.routes");
 
 app.use("/api/auth", authRoutes);
 
 app.use("/api/user", userRoutes);
+app.use("/api/chat", chatRoutes);
 
 app.use("/api/movies", updateUpcomingStatus, movieUserRoutes);
 

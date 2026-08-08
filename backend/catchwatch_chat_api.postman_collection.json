@@ -1,0 +1,679 @@
+{
+	"info": {
+		"_postman_id": "catchwatch-chat-api-v1",
+		"name": "CatchWatch Chat API Collection",
+		"description": "Complete Postman collection for CatchWatch One-to-One Real-time Chat System covering text, image, video, audio, gif, replies, reactions, read receipts, editing, unsending, pinning, blocking, searching, and FCM notifications.",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"variable": [
+		{
+			"key": "baseUrl",
+			"value": "http://localhost:5000/api",
+			"type": "string"
+		},
+		{
+			"key": "token",
+			"value": "YOUR_JWT_BEARER_TOKEN_HERE",
+			"type": "string"
+		},
+		{
+			"key": "conversationId",
+			"value": "CONVERSATION_ID_HERE",
+			"type": "string"
+		},
+		{
+			"key": "messageId",
+			"value": "MESSAGE_ID_HERE",
+			"type": "string"
+		},
+		{
+			"key": "userId",
+			"value": "TARGET_USER_ID_HERE",
+			"type": "string"
+		}
+	],
+	"item": [
+		{
+			"name": "Conversations",
+			"item": [
+				{
+					"name": "Get All Conversations",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/chat/conversations",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"chat",
+								"conversations"
+							]
+						},
+						"description": "Fetch all chat threads for the logged in user with partner details, last message, unread count, pinned status, and online/lastSeen status."
+					}
+				},
+				{
+					"name": "Start or Get Conversation",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"recipientId\": \"{{userId}}\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/chat/conversations",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"chat",
+								"conversations"
+							]
+						},
+						"description": "Initiate a 1-on-1 chat thread with a target user ID or retrieve an existing conversation."
+					}
+				},
+				{
+					"name": "Mark Messages as Read",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/chat/conversations/{{conversationId}}/read",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"chat",
+								"conversations",
+								"{{conversationId}}",
+								"read"
+							]
+						},
+						"description": "Mark all unread messages in the specified conversation as READ."
+					}
+				},
+				{
+					"name": "Pin / Unpin Conversation",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/chat/conversations/{{conversationId}}/pin",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"chat",
+								"conversations",
+								"{{conversationId}}",
+								"pin"
+							]
+						},
+						"description": "Toggle pin/unpin status for a conversation."
+					}
+				},
+				{
+					"name": "Clear Conversation History",
+					"request": {
+						"method": "DELETE",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/chat/conversations/{{conversationId}}",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"chat",
+								"conversations",
+								"{{conversationId}}"
+							]
+						},
+						"description": "Clear or delete chat history for the logged in user."
+					}
+				}
+			]
+		},
+		{
+			"name": "Messages",
+			"item": [
+				{
+					"name": "Get Paginated Messages",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/chat/conversations/{{conversationId}}/messages?page=1&limit=50",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"chat",
+								"conversations",
+								"{{conversationId}}",
+								"messages"
+							],
+							"query": [
+								{
+									"key": "page",
+									"value": "1"
+								},
+								{
+									"key": "limit",
+									"value": "50"
+								}
+							]
+						},
+						"description": "Fetch messages for a conversation."
+					}
+				},
+				{
+					"name": "Send Text Message",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"conversationId\": \"{{conversationId}}\",\n  \"messageType\": \"text\",\n  \"text\": \"Hello! How are you doing?\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/chat/messages",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"chat",
+								"messages"
+							]
+						},
+						"description": "Send a plain text message."
+					}
+				},
+				{
+					"name": "Send GIF Message",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"conversationId\": \"{{conversationId}}\",\n  \"messageType\": \"gif\",\n  \"mediaUrl\": \"https://media.giphy.com/media/v1.Y2lkPTc5MGI3NjEx.../giphy.gif\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/chat/messages",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"chat",
+								"messages"
+							]
+						},
+						"description": "Send a GIF message."
+					}
+				},
+				{
+					"name": "Send Reply Message",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"conversationId\": \"{{conversationId}}\",\n  \"messageType\": \"text\",\n  \"text\": \"I agree with your point!\",\n  \"replyTo\": \"{{messageId}}\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/chat/messages",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"chat",
+								"messages"
+							]
+						},
+						"description": "Send a message quoting/replying to an earlier message."
+					}
+				},
+				{
+					"name": "Forward Message",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"recipientId\": \"{{userId}}\",\n  \"messageType\": \"text\",\n  \"text\": \"Forwarded message content\",\n  \"isForwarded\": true\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/chat/messages",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"chat",
+								"messages"
+							]
+						},
+						"description": "Forward a message to another user or chat."
+					}
+				},
+				{
+					"name": "Upload Chat Media Attachment",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}"
+							}
+						],
+						"body": {
+							"mode": "formdata",
+							"formdata": [
+								{
+									"key": "attachment",
+									"type": "file",
+									"src": ""
+								}
+							]
+						},
+						"url": {
+							"raw": "{{baseUrl}}/chat/messages/upload",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"chat",
+								"messages",
+								"upload"
+							]
+						},
+						"description": "Upload image, video, or audio attachment for sending in chat."
+					}
+				},
+				{
+					"name": "Edit Message",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"text\": \"This text was edited\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/chat/messages/{{messageId}}",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"chat",
+								"messages",
+								"{{messageId}}"
+							]
+						},
+						"description": "Edit the content of a previously sent text message."
+					}
+				},
+				{
+					"name": "Unsend Message (For Everyone)",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/chat/messages/{{messageId}}/unsend",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"chat",
+								"messages",
+								"{{messageId}}",
+								"unsend"
+							]
+						},
+						"description": "Unsend message for everyone in the conversation."
+					}
+				},
+				{
+					"name": "Delete Message (For Me)",
+					"request": {
+						"method": "DELETE",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/chat/messages/{{messageId}}",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"chat",
+								"messages",
+								"{{messageId}}"
+							]
+						},
+						"description": "Delete message for the current user only."
+					}
+				},
+				{
+					"name": "Toggle Message Reaction",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"emoji\": \"❤️\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/chat/messages/{{messageId}}/react",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"chat",
+								"messages",
+								"{{messageId}}",
+								"react"
+							]
+						},
+						"description": "Add or toggle an emoji reaction on a message."
+					}
+				},
+				{
+					"name": "Search Messages",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/chat/messages/search?q=hello",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"chat",
+								"messages",
+								"search"
+							],
+							"query": [
+								{
+									"key": "q",
+									"value": "hello"
+								},
+								{
+									"key": "conversationId",
+									"value": "{{conversationId}}",
+									"disabled": true
+								}
+							]
+						},
+						"description": "Search text in chat messages."
+					}
+				}
+			]
+		},
+		{
+			"name": "User Management & Status",
+			"item": [
+				{
+					"name": "Search Users to Chat",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/chat/users/search?q=john",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"chat",
+								"users",
+								"search"
+							],
+							"query": [
+								{
+									"key": "q",
+									"value": "john"
+								}
+							]
+						},
+						"description": "Search users on platform by name, username or phone."
+					}
+				},
+				{
+					"name": "Get User Status & Last Seen",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/chat/users/{{userId}}/status",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"chat",
+								"users",
+								"{{userId}}",
+								"status"
+							]
+						},
+						"description": "Get real-time online status and last seen timestamp of a user."
+					}
+				},
+				{
+					"name": "Block User",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/chat/block/{{userId}}",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"chat",
+								"block",
+								"{{userId}}"
+							]
+						},
+						"description": "Block a user from messaging you."
+					}
+				},
+				{
+					"name": "Unblock User",
+					"request": {
+						"method": "DELETE",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/chat/block/{{userId}}",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"chat",
+								"block",
+								"{{userId}}"
+							]
+						},
+						"description": "Unblock a previously blocked user."
+					}
+				},
+				{
+					"name": "Get Blocked Users List",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/chat/blocked-users",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"chat",
+								"blocked-users"
+							]
+						},
+						"description": "Get list of users blocked by logged in user."
+					}
+				},
+				{
+					"name": "Update FCM Token (Push Notifications)",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"fcmToken\": \"SAMPLE_FCM_DEVICE_REGISTRATION_TOKEN\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/chat/fcm-token",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"chat",
+								"fcm-token"
+							]
+						},
+						"description": "Register FCM device token for receiving offline push notifications."
+					}
+				}
+			]
+		}
+	]
+}

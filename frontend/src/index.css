@@ -223,3 +223,27 @@ button {
 .text-info    { color: var(--blue) !important; }
 .text-gold    { color: #fbbf24 !important; }
 .mono         { font-family: 'Courier New', Courier, monospace; }
+
+/* ---- Global Table & Modal Responsiveness ---- */
+.table-wrapper,
+.table-container,
+.responsive-table-container {
+  width: 100%;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+.table-wrapper table,
+.table-container table,
+.responsive-table-container table {
+  min-width: 600px;
+}
+
+@media (max-width: 768px) {
+  .global-toast {
+    min-width: 280px;
+    right: 12px;
+    bottom: 12px;
+    left: 12px;
+  }
+}

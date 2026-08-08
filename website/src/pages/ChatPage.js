@@ -4,12 +4,12 @@ import {
   FaPaperPlane,
   FaPaperclip,
   FaSmile,
-  FaMicrophone,
   FaTimes,
   FaCheck,
   FaCheckDouble,
   FaThumbtack,
   FaBan,
+  FaUnlock,
   FaTrash,
   FaReply,
   FaShare,
@@ -17,7 +17,6 @@ import {
   FaUndo,
   FaUserPlus,
   FaEllipsisV,
-  FaStop,
   FaArrowLeft,
   FaPlus
 } from "react-icons/fa";
@@ -38,6 +37,7 @@ import {
   pinConversation,
   clearConversation,
   blockUser,
+  unblockUser,
   searchChatUsers,
 } from "../api/chatApi";
 import { BiMessageRoundedDots } from "react-icons/bi";
@@ -84,11 +84,10 @@ const ChatPage = () => {
   const [fullViewImage, setFullViewImage] = useState(null);
 
   // Audio Recording State
-  const [isRecording, setIsRecording] = useState(false);
-  const [recordingTime, setRecordingTime] = useState(0);
-  const mediaRecorderRef = useRef(null);
-  const audioChunksRef = useRef([]);
-  const timerRef = useRef(null);
+  // const [isRecording, setIsRecording] = useState(false);
+  // const mediaRecorderRef = useRef(null);
+  // const audioChunksRef = useRef([]);
+  // const timerRef = useRef(null);
 
   // Refs
   const messagesEndRef = useRef(null);
@@ -252,6 +251,56 @@ const ChatPage = () => {
       }
     };
 
+    const handleUserBlocked = ({ blockerId, blockedId }) => {
+      setConversations((prev) =>
+        prev.map((c) => {
+          if (c.partner?._id === blockedId && blockerId === currentUserId) {
+            return { ...c, isBlockedByMe: true, isBlocked: true };
+          }
+          if (c.partner?._id === blockerId && blockedId === currentUserId) {
+            return { ...c, isBlockedByPartner: true, isBlocked: true };
+          }
+          return c;
+        })
+      );
+      if (activeConv?.partner?._id === blockedId && blockerId === currentUserId) {
+        setActiveConv((prev) => ({ ...prev, isBlockedByMe: true, isBlocked: true }));
+      }
+      if (activeConv?.partner?._id === blockerId && blockedId === currentUserId) {
+        setActiveConv((prev) => ({ ...prev, isBlockedByPartner: true, isBlocked: true }));
+      }
+    };
+
+    const handleUserUnblocked = ({ unblockerId, unblockedId }) => {
+      setConversations((prev) =>
+        prev.map((c) => {
+          if (c.partner?._id === unblockedId && unblockerId === currentUserId) {
+            const isBlockedByPartner = c.isBlockedByPartner || false;
+            return { ...c, isBlockedByMe: false, isBlocked: isBlockedByPartner };
+          }
+          if (c.partner?._id === unblockerId && unblockedId === currentUserId) {
+            const isBlockedByMe = c.isBlockedByMe || false;
+            return { ...c, isBlockedByPartner: false, isBlocked: isBlockedByMe };
+          }
+          return c;
+        })
+      );
+      if (activeConv?.partner?._id === unblockedId && unblockerId === currentUserId) {
+        setActiveConv((prev) => ({
+          ...prev,
+          isBlockedByMe: false,
+          isBlocked: prev?.isBlockedByPartner || false,
+        }));
+      }
+      if (activeConv?.partner?._id === unblockerId && unblockedId === currentUserId) {
+        setActiveConv((prev) => ({
+          ...prev,
+          isBlockedByPartner: false,
+          isBlocked: prev?.isBlockedByMe || false,
+        }));
+      }
+    };
+
     socket.on("new_message", handleNewMessage);
     socket.on("message_sent", handleMessageSent);
     socket.on("message_edited", handleMessageEdited);
@@ -262,6 +311,8 @@ const ChatPage = () => {
     socket.on("user_typing_stop", handleUserTypingStop);
     socket.on("user_online", handleUserOnline);
     socket.on("user_offline", handleUserOffline);
+    socket.on("user_blocked", handleUserBlocked);
+    socket.on("user_unblocked", handleUserUnblocked);
 
     return () => {
       socket.off("new_message", handleNewMessage);
@@ -274,6 +325,8 @@ const ChatPage = () => {
       socket.off("user_typing_stop", handleUserTypingStop);
       socket.off("user_online", handleUserOnline);
       socket.off("user_offline", handleUserOffline);
+      socket.off("user_blocked", handleUserBlocked);
+      socket.off("user_unblocked", handleUserUnblocked);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [socket, activeConv?._id]);
@@ -396,46 +449,16 @@ const ChatPage = () => {
     setSelectedMediaPreview({ file, previewUrl, type, name: file.name });
   };
 
-  // 8. Voice Audio Recording
-  const startRecording = async () => {
-    try {
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      mediaRecorderRef.current = new MediaRecorder(stream);
-      audioChunksRef.current = [];
 
-      mediaRecorderRef.current.ondataavailable = (event) => {
-        if (event.data.size > 0) audioChunksRef.current.push(event.data);
-      };
 
-      mediaRecorderRef.current.onstop = () => {
-        const audioBlob = new Blob(audioChunksRef.current, { type: "audio/webm" });
-        const audioFile = new File([audioBlob], `voice-note-${Date.now()}.webm`, {
-          type: "audio/webm",
-        });
-        const previewUrl = URL.createObjectURL(audioBlob);
-        setSelectedMediaPreview({ file: audioFile, previewUrl, type: "audio", name: "Voice Note" });
-      };
-
-      mediaRecorderRef.current.start();
-      setIsRecording(true);
-      setRecordingTime(0);
-
-      timerRef.current = setInterval(() => {
-        setRecordingTime((prev) => prev + 1);
-      }, 1000);
-    } catch (err) {
-      toast.error("Microphone access denied or unsupported");
-    }
-  };
-
-  const stopRecording = () => {
-    if (mediaRecorderRef.current && isRecording) {
-      mediaRecorderRef.current.stop();
-      mediaRecorderRef.current.stream.getTracks().forEach((track) => track.stop());
-      setIsRecording(false);
-      clearInterval(timerRef.current);
-    }
-  };
+  // const stopRecording = () => {
+  //   if (mediaRecorderRef.current && isRecording) {
+  //     mediaRecorderRef.current.stop();
+  //     mediaRecorderRef.current.stream.getTracks().forEach((track) => track.stop());
+  //     setIsRecording(false);
+  //     clearInterval(timerRef.current);
+  //   }
+  // };
 
   // 9. Actions: Reaction, Unsend, Delete, Pin, Block, Clear
   const handleReaction = async (msgId, emoji) => {
@@ -501,15 +524,43 @@ const ChatPage = () => {
     }
   };
 
-  const handleBlock = async () => {
-    if (!activeConv?.partner || !window.confirm(`Block ${activeConv.partner.name}?`)) return;
+  const handleToggleBlock = async () => {
+    if (!activeConv?.partner) return;
+    const isCurrentlyBlocked = !!activeConv.isBlockedByMe;
+    const partnerName = activeConv.partner.name || "User";
+    const actionText = isCurrentlyBlocked ? "unblock" : "block";
+
+    if (!window.confirm(`Are you sure you want to ${actionText} ${partnerName}?`)) return;
+
     try {
-      await blockUser(activeConv.partner._id);
-      toast.warn(`Blocked ${activeConv.partner.name}`);
-      setActiveConv(null);
+      if (isCurrentlyBlocked) {
+        await unblockUser(activeConv.partner._id);
+        toast.success(`Unblocked ${partnerName}`);
+        setActiveConv((prev) =>
+          prev
+            ? {
+                ...prev,
+                isBlockedByMe: false,
+                isBlocked: prev.isBlockedByPartner || false,
+              }
+            : null
+        );
+      } else {
+        await blockUser(activeConv.partner._id);
+        toast.warn(`Blocked ${partnerName}`);
+        setActiveConv((prev) =>
+          prev
+            ? {
+                ...prev,
+                isBlockedByMe: true,
+                isBlocked: true,
+              }
+            : null
+        );
+      }
       loadConversations();
     } catch (err) {
-      toast.error("Failed to block user");
+      toast.error(err.response?.data?.message || `Failed to ${actionText} user`);
     }
   };
 
@@ -727,11 +778,25 @@ const ChatPage = () => {
                 </button>
 
                 <button
-                  onClick={handleBlock}
-                  className="p-2 text-gray-400 hover:text-red-600 rounded-xl text-xs transition"
-                  title="Block User"
+                  onClick={handleToggleBlock}
+                  className={`px-3 py-1.5 rounded-xl text-xs font-extrabold flex items-center gap-1.5 transition shadow-sm ${
+                    activeConv.isBlockedByMe
+                      ? "bg-emerald-100 hover:bg-emerald-200 text-emerald-700 dark:bg-emerald-950/60 dark:hover:bg-emerald-900/80 dark:text-emerald-300 border border-emerald-300/50"
+                      : "bg-red-50 hover:bg-red-100 text-red-600 dark:bg-red-950/50 dark:hover:bg-red-900/60 dark:text-red-400 border border-red-200/50"
+                  }`}
+                  title={activeConv.isBlockedByMe ? "Unblock User" : "Block User"}
                 >
-                  <FaBan />
+                  {activeConv.isBlockedByMe ? (
+                    <>
+                      <FaUnlock className="text-sm text-emerald-600 dark:text-emerald-400" />
+                      <span>Unblock</span>
+                    </>
+                  ) : (
+                    <>
+                      <FaBan className="text-sm text-red-600 dark:text-red-400" />
+                      <span>Block</span>
+                    </>
+                  )}
                 </button>
               </div>
             </div>
@@ -823,198 +888,184 @@ const ChatPage = () => {
               </div>
             )}
 
-            {/* Input Bar */}
-            <div className="p-3 bg-white dark:bg-gray-900 border-t border-gray-200 dark:border-gray-800 relative z-20 flex-shrink-0">
-              {/* Emoji Picker Popover */}
-              {showEmojiPicker && (
-                <div className="absolute bottom-16 left-4 z-50 shadow-2xl">
-                  <EmojiPicker
-                    onEmojiClick={(emojiData) => {
-                      setMessageText((prev) => prev + emojiData.emoji);
-                    }}
-                  />
+            {/* Input Bar or Blocked Notification Banner */}
+            {activeConv.isBlockedByMe ? (
+              <div className="p-4 bg-red-50 dark:bg-red-950/40 border-t border-red-200 dark:border-red-900/50 flex flex-col sm:flex-row items-center justify-between gap-3 text-center sm:text-left flex-shrink-0 z-20">
+                <div className="flex items-center gap-2 text-red-600 dark:text-red-400 text-xs font-bold">
+                  <FaBan className="text-base shrink-0" />
+                  <span>You have blocked this user. Unblock to send messages.</span>
                 </div>
-              )}
-
-              {/* GIF Picker Popover */}
-              {showGifPicker && (
-                <div className="absolute bottom-16 left-12 z-50 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 p-3 rounded-2xl shadow-2xl w-72">
-                  <div className="flex justify-between items-center mb-2">
-                    <span className="font-bold text-xs text-gray-700 dark:text-gray-200">
-                      Select GIF
-                    </span>
-                    <button
-                      onClick={() => setShowGifPicker(false)}
-                      className="text-gray-400 hover:text-gray-600"
-                    >
-                      <FaTimes />
-                    </button>
-                  </div>
-                  <div className="grid grid-cols-2 gap-2 max-h-48 overflow-y-auto">
-                    {sampleGifs.map((gif, i) => (
-                      <img
-                        key={i}
-                        src={gif}
-                        alt="gif"
-                        onClick={() => handleSendGif(gif)}
-                        className="w-full h-20 object-cover rounded-lg cursor-pointer hover:opacity-80 transition"
-                      />
-                    ))}
-                  </div>
-                </div>
-              )}
-
-              <div className="flex items-center gap-1.5 sm:gap-2 w-full">
-                <input
-                  type="file"
-                  ref={fileInputRef}
-                  onChange={handleFileSelect}
-                  className="hidden"
-                  accept="image/*,video/*,audio/*"
-                />
-
-                {/* MOBILE ATTACHMENT PLUS BUTTON (< sm screens) */}
                 <button
-                  type="button"
-                  onClick={() => setShowMobileDropup(!showMobileDropup)}
-                  className="sm:hidden p-2 text-gray-500 hover:text-brand-orange text-base transition shrink-0"
-                  title="Add Attachment"
+                  onClick={handleToggleBlock}
+                  className="px-4 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-extrabold shadow transition flex items-center gap-1.5 shrink-0"
                 >
-                  <FaPlus className={`transition-transform duration-200 ${showMobileDropup ? "rotate-45 text-brand-orange" : ""}`} />
+                  <FaUnlock /> Unblock User
                 </button>
-
-                {/* MOBILE DROP-UP POPOVER MENU (< sm screens) */}
-                {showMobileDropup && (
-                  <div className="sm:hidden absolute bottom-16 left-2 z-40 bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 rounded-2xl shadow-2xl p-3 flex gap-4 items-center animate-pop-in">
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setShowMobileDropup(false);
-                        setShowEmojiPicker(!showEmojiPicker);
+              </div>
+            ) : activeConv.isBlockedByPartner ? (
+              <div className="p-4 bg-gray-100 dark:bg-gray-800/80 border-t border-gray-200 dark:border-gray-700 flex items-center justify-center gap-2 text-gray-500 dark:text-gray-400 text-xs font-bold text-center flex-shrink-0 z-20">
+                <FaBan className="text-base shrink-0 text-gray-400" />
+                <span>You cannot send messages to this conversation because you have been blocked.</span>
+              </div>
+            ) : (
+              <div className="p-3 bg-white dark:bg-gray-900 border-t border-gray-200 dark:border-gray-800 relative z-20 flex-shrink-0">
+                {/* Emoji Picker Popover */}
+                {showEmojiPicker && (
+                  <div className="absolute bottom-16 left-4 z-50 shadow-2xl">
+                    <EmojiPicker
+                      onEmojiClick={(emojiData) => {
+                        setMessageText((prev) => prev + emojiData.emoji);
                       }}
-                      className="flex flex-col items-center gap-1 text-gray-700 dark:text-gray-200 hover:text-brand-orange text-[10px] font-bold"
-                    >
-                      <div className="w-10 h-10 rounded-full bg-orange-100 dark:bg-orange-950/40 text-brand-orange flex items-center justify-center text-lg shadow-sm">
-                        <FaSmile />
-                      </div>
-                      <span>Emoji</span>
-                    </button>
-
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setShowMobileDropup(false);
-                        setShowGifPicker(!showGifPicker);
-                      }}
-                      className="flex flex-col items-center gap-1 text-gray-700 dark:text-gray-200 hover:text-brand-orange text-[10px] font-bold"
-                    >
-                      <div className="w-10 h-10 rounded-full bg-purple-100 dark:bg-purple-950/40 text-purple-600 flex items-center justify-center text-xs font-black shadow-sm">
-                        GIF
-                      </div>
-                      <span>GIF</span>
-                    </button>
-
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setShowMobileDropup(false);
-                        fileInputRef.current?.click();
-                      }}
-                      className="flex flex-col items-center gap-1 text-gray-700 dark:text-gray-200 hover:text-brand-orange text-[10px] font-bold"
-                    >
-                      <div className="w-10 h-10 rounded-full bg-blue-100 dark:bg-blue-950/40 text-blue-600 flex items-center justify-center text-lg shadow-sm">
-                        <FaPaperclip />
-                      </div>
-                      <span>Attach</span>
-                    </button>
-
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setShowMobileDropup(false);
-                        if (isRecording) stopRecording();
-                        else startRecording();
-                      }}
-                      className="flex flex-col items-center gap-1 text-gray-700 dark:text-gray-200 hover:text-brand-orange text-[10px] font-bold"
-                    >
-                      <div className="w-10 h-10 rounded-full bg-red-100 dark:bg-red-950/40 text-red-600 flex items-center justify-center text-lg shadow-sm">
-                        <FaMicrophone />
-                      </div>
-                      <span>Voice</span>
-                    </button>
+                    />
                   </div>
                 )}
 
-                {/* DESKTOP INLINE ACTION BUTTONS (>= sm screens) */}
-                <div className="hidden sm:flex items-center gap-1 shrink-0">
+                {/* GIF Picker Popover */}
+                {showGifPicker && (
+                  <div className="absolute bottom-16 left-12 z-50 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 p-3 rounded-2xl shadow-2xl w-72">
+                    <div className="flex justify-between items-center mb-2">
+                      <span className="font-bold text-xs text-gray-700 dark:text-gray-200">
+                        Select GIF
+                      </span>
+                      <button
+                        onClick={() => setShowGifPicker(false)}
+                        className="text-gray-400 hover:text-gray-600"
+                      >
+                        <FaTimes />
+                      </button>
+                    </div>
+                    <div className="grid grid-cols-2 gap-2 max-h-48 overflow-y-auto">
+                      {sampleGifs.map((gif, i) => (
+                        <img
+                          key={i}
+                          src={gif}
+                          alt="gif"
+                          onClick={() => handleSendGif(gif)}
+                          className="w-full h-20 object-cover rounded-lg cursor-pointer hover:opacity-80 transition"
+                        />
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                <div className="flex items-center gap-1.5 sm:gap-2 w-full">
+                  <input
+                    type="file"
+                    ref={fileInputRef}
+                    onChange={handleFileSelect}
+                    className="hidden"
+                    accept="image/*,video/*,audio/*"
+                  />
+
+                  {/* MOBILE ATTACHMENT PLUS BUTTON (< sm screens) */}
                   <button
                     type="button"
-                    onClick={() => setShowEmojiPicker(!showEmojiPicker)}
-                    className="p-2 text-gray-500 hover:text-brand-orange text-lg transition"
+                    onClick={() => setShowMobileDropup(!showMobileDropup)}
+                    className="sm:hidden p-2 text-gray-500 hover:text-brand-orange text-base transition shrink-0"
+                    title="Add Attachment"
                   >
-                    <FaSmile />
+                    <FaPlus className={`transition-transform duration-200 ${showMobileDropup ? "rotate-45 text-brand-orange" : ""}`} />
                   </button>
 
-                  <button
-                    type="button"
-                    onClick={() => setShowGifPicker(!showGifPicker)}
-                    className="px-2 py-1 bg-gray-100 dark:bg-gray-800 hover:bg-orange-100 text-gray-600 dark:text-gray-300 text-xs font-black rounded-lg transition"
-                  >
-                    GIF
-                  </button>
+                  {/* MOBILE DROP-UP POPOVER MENU (< sm screens) */}
+                  {showMobileDropup && (
+                    <div className="sm:hidden absolute bottom-16 left-2 z-40 bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 rounded-2xl shadow-2xl p-3 flex gap-4 items-center animate-pop-in">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setShowMobileDropup(false);
+                          setShowEmojiPicker(!showEmojiPicker);
+                        }}
+                        className="flex flex-col items-center gap-1 text-gray-700 dark:text-gray-200 hover:text-brand-orange text-[10px] font-bold"
+                      >
+                        <div className="w-10 h-10 rounded-full bg-orange-100 dark:bg-orange-950/40 text-brand-orange flex items-center justify-center text-lg shadow-sm">
+                          <FaSmile />
+                        </div>
+                        <span>Emoji</span>
+                      </button>
 
-                  <button
-                    type="button"
-                    onClick={() => fileInputRef.current?.click()}
-                    className="p-2 text-gray-500 hover:text-brand-orange text-lg transition"
-                    title="Attach file"
-                  >
-                    <FaPaperclip />
-                  </button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setShowMobileDropup(false);
+                          setShowGifPicker(!showGifPicker);
+                        }}
+                        className="flex flex-col items-center gap-1 text-gray-700 dark:text-gray-200 hover:text-brand-orange text-[10px] font-bold"
+                      >
+                        <div className="w-10 h-10 rounded-full bg-purple-100 dark:bg-purple-950/40 text-purple-600 flex items-center justify-center text-xs font-black shadow-sm">
+                          GIF
+                        </div>
+                        <span>GIF</span>
+                      </button>
 
-                  {!isRecording ? (
-                    <button
-                      type="button"
-                      onClick={startRecording}
-                      className="p-2 text-gray-500 hover:text-red-500 text-lg transition"
-                      title="Record voice note"
-                    >
-                      <FaMicrophone />
-                    </button>
-                  ) : (
-                    <button
-                      type="button"
-                      onClick={stopRecording}
-                      className="flex items-center gap-1 px-3 py-1 bg-red-500 text-white text-xs font-bold rounded-full animate-pulse"
-                    >
-                      <FaStop /> {recordingTime}s
-                    </button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setShowMobileDropup(false);
+                          fileInputRef.current?.click();
+                        }}
+                        className="flex flex-col items-center gap-1 text-gray-700 dark:text-gray-200 hover:text-brand-orange text-[10px] font-bold"
+                      >
+                        <div className="w-10 h-10 rounded-full bg-blue-100 dark:bg-blue-950/40 text-blue-600 flex items-center justify-center text-lg shadow-sm">
+                          <FaPaperclip />
+                        </div>
+                        <span>Attach</span>
+                      </button>
+                    </div>
                   )}
+
+                  {/* DESKTOP INLINE ACTION BUTTONS (>= sm screens) */}
+                  <div className="hidden sm:flex items-center gap-1 shrink-0">
+                    <button
+                      type="button"
+                      onClick={() => setShowEmojiPicker(!showEmojiPicker)}
+                      className="p-2 text-gray-500 hover:text-brand-orange text-lg transition"
+                    >
+                      <FaSmile />
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => setShowGifPicker(!showGifPicker)}
+                      className="px-2 py-1 bg-gray-100 dark:bg-gray-800 hover:bg-orange-100 text-gray-600 dark:text-gray-300 text-xs font-black rounded-lg transition"
+                    >
+                      GIF
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => fileInputRef.current?.click()}
+                      className="p-2 text-gray-500 hover:text-brand-orange text-lg transition"
+                      title="Attach file"
+                    >
+                      <FaPaperclip />
+                    </button>
+                  </div>
+
+                  <input
+                    type="text"
+                    placeholder="Type a message..."
+                    value={messageText}
+                    onChange={handleTextInputChange}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter" && !e.shiftKey) {
+                        e.preventDefault();
+                        handleSendMessage();
+                      }
+                    }}
+                    className="flex-1 min-w-0 px-3 sm:px-4 py-2.5 bg-gray-100 dark:bg-gray-800 border-none rounded-xl text-xs text-gray-800 dark:text-white focus:ring-2 focus:ring-brand-orange outline-none"
+                  />
+
+                  <button
+                    onClick={handleSendMessage}
+                    disabled={uploadingMedia}
+                    className="p-2.5 bg-brand-orange hover:bg-orange-600 text-white rounded-xl text-sm font-bold shadow-md transition disabled:opacity-50 shrink-0"
+                  >
+                    <FaPaperPlane />
+                  </button>
                 </div>
-
-                <input
-                  type="text"
-                  placeholder="Type a message..."
-                  value={messageText}
-                  onChange={handleTextInputChange}
-                  onKeyDown={(e) => {
-                    if (e.key === "Enter" && !e.shiftKey) {
-                      e.preventDefault();
-                      handleSendMessage();
-                    }
-                  }}
-                  className="flex-1 min-w-0 px-3 sm:px-4 py-2.5 bg-gray-100 dark:bg-gray-800 border-none rounded-xl text-xs text-gray-800 dark:text-white focus:ring-2 focus:ring-brand-orange outline-none"
-                />
-
-                <button
-                  onClick={handleSendMessage}
-                  disabled={uploadingMedia}
-                  className="p-2.5 bg-brand-orange hover:bg-orange-600 text-white rounded-xl text-sm font-bold shadow-md transition disabled:opacity-50 shrink-0"
-                >
-                  <FaPaperPlane />
-                </button>
               </div>
-            </div>
+            )}
           </>
         ) : (
           <div className="flex-1 flex flex-col justify-center items-center p-8 text-center">
@@ -1141,11 +1192,18 @@ const ConversationItem = ({ conv, isActive, onClick }) => {
 
       <div className="flex-1 min-w-0">
         <div className="flex justify-between items-center mb-0.5">
-          <h4 className="font-extrabold text-xs text-gray-800 dark:text-white truncate">
-            {partner?.name || "User"}
-          </h4>
+          <div className="flex items-center gap-1.5 min-w-0">
+            <h4 className="font-extrabold text-xs text-gray-800 dark:text-white truncate">
+              {partner?.name || "User"}
+            </h4>
+            {conv.isBlockedByMe && (
+              <span className="bg-red-100 text-red-600 dark:bg-red-950/70 dark:text-red-400 text-[9px] font-black px-1.5 py-0.5 rounded-full flex items-center gap-0.5 shrink-0 border border-red-200 dark:border-red-800">
+                <FaBan className="text-[8px]" /> Blocked
+              </span>
+            )}
+          </div>
           {conv.lastMessageAt && (
-            <span className="text-[10px] text-gray-400 font-semibold">
+            <span className="text-[10px] text-gray-400 font-semibold shrink-0">
               {new Date(conv.lastMessageAt).toLocaleTimeString([], {
                 hour: "2-digit",
                 minute: "2-digit",

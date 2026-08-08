@@ -1762,3 +1762,38 @@ body.light .add-form-card {
   align-items: center;
   gap: 15px;
 }
+
+/* ---------- Responsive Enhancements for Content Page & Tables ---------- */
+@media (max-width: 768px) {
+  .ctrl-bar,
+  .filters-row,
+  .action-bar {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 12px;
+  }
+
+  .ctrl-search input,
+  .search-box input {
+    width: 100% !important;
+  }
+
+  .content-table-container,
+  .table-responsive {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .modal-overlay {
+    padding: 12px;
+  }
+
+  .modal-box {
+    max-width: 100% !important;
+    margin: 0;
+  }
+
+  .form-grid {
+    grid-template-columns: 1fr !important;
+  }
+}

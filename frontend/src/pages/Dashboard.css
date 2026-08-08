@@ -288,6 +288,7 @@ body.light .search-field {
 /* ---------- Table ---------- */
 .tbl-wrap {
   overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
   border-radius: var(--radius-sm);
 }
 
@@ -1908,6 +1909,49 @@ body.light .checkbox-row:has(input[name="isPremium"]) span {
   width: 100%;
   height: 100%;
   object-fit: contain;
+}
+
+/* ---------- Responsive Enhancements for Dashboard & Shared Pages ---------- */
+@media (max-width: 768px) {
+  .pg-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 10px;
+  }
+
+  .stat-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 12px;
+  }
+
+  .stat-card {
+    padding: 16px;
+  }
+
+  .stat-value {
+    font-size: 1.5rem;
+  }
+
+  .content-box {
+    padding: 16px;
+  }
+
+  .floating-preview-player {
+    width: calc(100vw - 32px);
+    height: 70vh;
+    bottom: 16px;
+    right: 16px;
+  }
+}
+
+@media (max-width: 480px) {
+  .stat-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .pg-title {
+    font-size: 1.4rem;
+  }
 }
 
 

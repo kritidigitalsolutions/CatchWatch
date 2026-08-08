@@ -174,8 +174,8 @@ export default function RedeemRequests() {
       </div>
 
       {/* Tabs & Search */}
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: "16px", marginBottom: "20px" }}>
-        <div style={{ display: "flex", gap: "10px" }}>
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", overflow: "scroll", padding: "5px", gap: "16px", marginBottom: "20px" }}>
+        <div style={{ display: "flex", gap: "10px", }}>
           {["ALL", "PENDING", "APPROVED", "REJECTED"].map((tab) => (
             <button
               key={tab}
@@ -212,8 +212,8 @@ export default function RedeemRequests() {
       </div>
 
       {/* Requests Table */}
-      <div style={{ background: "#1e293b", borderRadius: "16px", border: "1px solid rgba(255,255,255,0.08)", overflow: "hidden" }}>
-        <table style={{ width: "100%", borderCollapse: "collapse", textAlign: "left", fontSize: "0.88rem" }}>
+      <div style={{ background: "#1e293b", borderRadius: "16px", border: "1px solid rgba(255,255,255,0.08)", overflow: "auto" }}>
+        <table style={{ width: "100%", borderCollapse: "collapse", textAlign: "left", fontSize: "0.88rem", overflowX: "auto", scrollbarWidth: "thin" }}>
           <thead>
             <tr style={{ background: "rgba(255, 255, 255, 0.05)", color: "#94a3b8" }}>
               <th style={{ padding: "16px 20px" }}>Creator Details</th>

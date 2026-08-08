@@ -463,3 +463,26 @@ body.light .notif-input {
   color: var(--text-muted);
   white-space: nowrap;
 }
+
+/* ---------- Responsive Enhancements for Notifications Page ---------- */
+@media (max-width: 768px) {
+  .notif-layout-grid {
+    grid-template-columns: 1fr !important;
+  }
+
+  .notif-table-container {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .notif-btn-row {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .notif-submit-btn,
+  .notif-clear-btn {
+    width: 100%;
+    justify-content: center;
+  }
+}

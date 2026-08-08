@@ -119,8 +119,8 @@ export default function FraudMonitoring() {
       </div>
 
       {/* Filter Tabs & Search */}
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "16px" }}>
-        <div className="tab-navigation" style={{ marginBottom: 0 }}>
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "16px", overflow: "auto" }}>
+        <div className="tab-navigation" style={{ marginBottom: 0, whiteSpace: "nowrap" }}>
           {["ALL", "BOT_VIEW", "DUPLICATE_DEVICE", "DUPLICATE_IP", "RAPID_REFRESH", "CLICK_FARM", "AUTO_REFRESH"].map((t) => (
             <button
               key={t}
@@ -154,7 +154,7 @@ export default function FraudMonitoring() {
       </div>
 
       {/* Table */}
-      <div className="table-card">
+      <div className="table-card" style={{overflow: "auto"}}>
         {loading ? (
           <div className="loading-state">Scanning fraud logs...</div>
         ) : logs.length === 0 ? (

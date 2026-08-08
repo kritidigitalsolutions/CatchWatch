@@ -86,6 +86,12 @@
   margin-bottom: 12px;
 }
 
+@media (max-width: 640px) {
+  .cast-row-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
 .cast-row-grid input {
   height: 40px;
   width: 100%;

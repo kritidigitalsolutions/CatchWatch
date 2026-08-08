@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import Hls from 'hls.js';
-import { MdDownloadForOffline, MdSubtitles, MdAudiotrack } from "react-icons/md";
+import {  MdSubtitles, MdAudiotrack } from "react-icons/md";
 import {
   FaPlay, FaPause, FaExpand, FaCompress,
   FaVolumeUp, FaVolumeMute, FaCog,
@@ -113,7 +113,6 @@ const VideoPlayerPage = () => {
 
   // Interaction States
   const [isWishlisted, setIsWishlisted] = useState(false);
-  const [isDownloading, setIsDownloading] = useState(false);
   const [isDescriptionExpanded, setIsDescriptionExpanded] = useState(false);
 
   // Player States
@@ -224,49 +223,7 @@ const VideoPlayerPage = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [mediaData]);
 
-  // --- DOWNLOAD LOGIC ---
-  const handleDownload = () => {
-    if (!mediaData || !mediaData.videoUrl) {
-      alert("Video URL not available for download.");
-      return;
-    }
 
-    setIsDownloading(true);
-
-    try {
-      const downloadItem = {
-        id: mediaData._id || mediaData.id || new Date().getTime(),
-        slug: mediaData.slug,
-        title: mediaData.title,
-        videoUrl: mediaData.videoUrl,
-        thumbnail: mediaData.thumbnail || mediaData.poster || FALLBACK_AVATAR,
-        duration: mediaData.duration,
-        downloadedAt: new Date().toISOString()
-      };
-
-      const existingDownloads = JSON.parse(localStorage.getItem('offlineDownloads') || '[]');
-      
-      if (!existingDownloads.some(item => item.id === downloadItem.id)) {
-        localStorage.setItem('offlineDownloads', JSON.stringify([downloadItem, ...existingDownloads]));
-      }
-
-      // Trigger download
-      const a = document.createElement('a');
-      a.href = mediaData.videoUrl;
-      a.download = `${mediaData.title.replace(/\s+/g, '_')}.mp4`; 
-      a.target = '_blank';
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-
-      alert("Download initiated! You can view this file in your Offline Vault.");
-    } catch (err) {
-      console.error("Download failed:", err);
-      alert("Failed to initiate download.");
-    } finally {
-      setIsDownloading(false);
-    }
-  };
 
   // --- WISHLIST / BOOKMARK LOGIC ---
   const handleWishlistToggle = async () => {
@@ -1211,18 +1168,8 @@ const VideoPlayerPage = () => {
 
             <div className="flex gap-3">
               <button 
-                onClick={handleDownload}
-                disabled={isDownloading}
-                className="flex-1 sm:flex-none flex flex-col items-center justify-center bg-gray-50 hover:bg-orange-50 hover:text-orange-600 border border-gray-200/60 rounded-xl py-2 px-4 transition text-gray-500 font-bold text-xs gap-1 disabled:opacity-50"
-              >
-                <span className="text-base">
-                  {isDownloading ? <div className="w-4 h-4 border-2 border-gray-300 border-t-orange-600 rounded-full animate-spin"></div> : <MdDownloadForOffline />}
-                </span>
-                <span>{isDownloading ? 'Saving...' : 'Download'}</span>
-              </button>
-              <button 
                 onClick={handleWishlistToggle} 
-                className={`flex-1 sm:flex-none flex flex-col items-center justify-center border rounded-xl py-2 px-4 transition font-bold text-xs gap-1 ${isWishlisted ? 'bg-orange-50 border-orange-200 text-orange-600' : 'bg-gray-50 border-gray-200 text-gray-500 hover:bg-gray-100'}`}
+                className={`flex-1 sm:flex-none flex flex-col items-center justify-center rounded-xl py-2 px-4 transition font-bold text-xs gap-1 ${isWishlisted ? 'text-orange-600' : 'text-gray-500'}`}
               >
                 <span className="text-base">{isWishlisted ? <FaBookmark />  : <FaRegBookmark />}</span>
                 <span>Wishlist</span>

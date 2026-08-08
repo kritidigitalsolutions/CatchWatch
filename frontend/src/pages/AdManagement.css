@@ -300,3 +300,36 @@
   font-weight: 600;
   cursor: pointer;
 }
+
+/* ---------- Responsive Enhancements for Ad Management ---------- */
+@media (max-width: 768px) {
+  .ad-stats-grid {
+    grid-template-columns: repeat(2, 1fr) !important;
+    gap: 10px;
+  }
+
+  .ad-table-container {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .form-row {
+    grid-template-columns: 1fr !important;
+  }
+
+  .modal-backdrop {
+    padding: 12px;
+  }
+
+  .modal-content {
+    padding: 16px;
+    max-height: 90vh;
+    overflow-y: auto;
+  }
+}
+
+@media (max-width: 480px) {
+  .ad-stats-grid {
+    grid-template-columns: 1fr !important;
+  }
+}

@@ -1094,7 +1094,7 @@ export default function Content() {
       <div className="content-box">
         {/* Type Selector + Search */}
         <div className="filter-row" style={{ display: "flex", gap: 12, marginBottom: 32, flexWrap: "wrap", alignItems: "center", borderBottom: "1px solid var(--border)", paddingBottom: "20px" }}>
-          <div className="tab-group" style={{ display: "flex", background: "var(--bg3)", padding: "4px", borderRadius: "12px", gap: "4px" }}>
+          <div className="tab-group" style={{ display: "flex", overflow:"auto", background: "var(--bg3)", padding: "4px", borderRadius: "12px", gap: "4px" }}>
             <button
               className={`btn ${contentType === "movies" ? "btn-primary" : "btn-ghost"}`}
               onClick={() => { setContentType("movies"); setCurrentPage(1); }}
