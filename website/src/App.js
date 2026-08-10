@@ -24,7 +24,7 @@ import WishlistPage from './pages/WishlistPage';
 import LoginPage from './pages/LoginPage';
 import ProtectedRoute from './components/ProtectedRoute';
 import RecommendedPage from './pages/RecommendedPage';
-import TvShowEpisodesPage from './pages/TvShowEpisodesPage'; // Apna path check kar lein
+import TvShowEpisodesPage from './pages/TvShowEpisodesPage';
 import LegalPage from './pages/LegalPage';
 import NotificationsPage from './pages/NotificationsPage';
 import MyVideosPage from './pages/MyVideosPage';
@@ -38,6 +38,8 @@ import LeaderboardPage from './pages/LeaderboardPage';
 import VipSupportPage from './pages/VipSupportPage';
 import ChatPage from './pages/ChatPage';
 import { SocketProvider } from './context/SocketContext';
+import { CallProvider } from './context/CallContext';
+import { CallModal } from './components/CallModal';
 
 // Helper to check if JWT token is actually expired
 const isTokenExpired = (token) => {
@@ -54,7 +56,7 @@ const isTokenExpired = (token) => {
     );
     const decoded = JSON.parse(jsonPayload);
     if (decoded.exp) {
-      return Date.now() >= decoded.exp * 1000 - 10000; // expired if exp is in the past
+      return Date.now() >= decoded.exp * 1000 - 10000;
     }
     return false;
   } catch (e) {
@@ -127,48 +129,50 @@ const App = () => {
   return (
     <Router>
       <SocketProvider>
-        <Layout>
-          <Routes>
-            <Route path="/login" element={<LoginPage />} />
-            <Route path="/:type" element={<LegalPage />} />
-            <Route element={<ProtectedRoute />}>
-              <Route path="/" element={<HomePage />} />
-              <Route path="/shorts" element={<ShortFilmsPage />} />
-              <Route path="/reels-feed" element={<ShortsPage />} />
-              <Route path="/upload" element={<SelectVideoPage />} />
-              <Route path="/search" element={<SearchMoviesPage />} />
-              <Route path="/profile" element={<ProfileMenuPage />} />
-              <Route path="/profile/edit" element={<EditProfilePage />} />
-              <Route path="/complete-profile" element={<CompleteProfilePage />} />
-              <Route path="/delete-account" element={<DeleteAccountPage />} />
-              <Route path="/profile/delete" element={<DeleteAccountPage />} />
-              <Route path="/downloads" element={<DownloadsPage />} />
-              <Route path="/subscription" element={<ChoosePlanPage />} />
-              <Route path="/explore" element={<ContentExplorerPage />} />
-              <Route path="/recommended" element={<RecommendedPage />} />
-              <Route path="/charts" element={<TopChartPage />} />
-              <Route path='/movies' element={<MoviePage />} />
-              <Route path="/wishlist" element={<WishlistPage />} />
-              <Route path="/support" element={<HelpSupportPage />} />
-              <Route path="/tvshows" element={<TVShowsPage />} />
-              <Route path="/watch/:slug" element={<VideoPlayerPage />} /> 
-              <Route path="/watch-episode/:id" element={<VideoPlayerPage />} /> 
-              <Route path="/notifications" element={<NotificationsPage />} />
-              <Route path="/chat" element={<ChatPage />} />
-              {/* Add new routes here */}
-              <Route path="/tv-shows-episodes/:id" element={<TvShowEpisodesPage />} /> 
-              <Route path="/my-videos" element={<MyVideosPage />} />
-              <Route path="/reels/:id" element={<SingleReelPage />} />
-              <Route path="/user/:identifier" element={<UserProfilePage />} />
-              <Route path="/@:username" element={<UserProfilePage />} />
-              <Route path="/creator/dashboard" element={<CreatorDashboard />} />
-              <Route path="/leaderboard" element={<LeaderboardPage />} />
-              <Route path="/profile/verification" element={<VerificationPage />} />
-              <Route path="/verification" element={<VerificationPage />} />
-              <Route path="/vip-support" element={<VipSupportPage />} />
-            </Route>
-          </Routes>
-        </Layout>
+        <CallProvider>
+          <Layout>
+            <Routes>
+              <Route path="/login" element={<LoginPage />} />
+              <Route path="/:type" element={<LegalPage />} />
+              <Route element={<ProtectedRoute />}>
+                <Route path="/" element={<HomePage />} />
+                <Route path="/shorts" element={<ShortFilmsPage />} />
+                <Route path="/reels-feed" element={<ShortsPage />} />
+                <Route path="/upload" element={<SelectVideoPage />} />
+                <Route path="/search" element={<SearchMoviesPage />} />
+                <Route path="/profile" element={<ProfileMenuPage />} />
+                <Route path="/profile/edit" element={<EditProfilePage />} />
+                <Route path="/complete-profile" element={<CompleteProfilePage />} />
+                <Route path="/delete-account" element={<DeleteAccountPage />} />
+                <Route path="/profile/delete" element={<DeleteAccountPage />} />
+                <Route path="/downloads" element={<DownloadsPage />} />
+                <Route path="/subscription" element={<ChoosePlanPage />} />
+                <Route path="/explore" element={<ContentExplorerPage />} />
+                <Route path="/recommended" element={<RecommendedPage />} />
+                <Route path="/charts" element={<TopChartPage />} />
+                <Route path='/movies' element={<MoviePage />} />
+                <Route path="/wishlist" element={<WishlistPage />} />
+                <Route path="/support" element={<HelpSupportPage />} />
+                <Route path="/tvshows" element={<TVShowsPage />} />
+                <Route path="/watch/:slug" element={<VideoPlayerPage />} /> 
+                <Route path="/watch-episode/:id" element={<VideoPlayerPage />} /> 
+                <Route path="/notifications" element={<NotificationsPage />} />
+                <Route path="/chat" element={<ChatPage />} />
+                <Route path="/tv-shows-episodes/:id" element={<TvShowEpisodesPage />} /> 
+                <Route path="/my-videos" element={<MyVideosPage />} />
+                <Route path="/reels/:id" element={<SingleReelPage />} />
+                <Route path="/user/:identifier" element={<UserProfilePage />} />
+                <Route path="/@:username" element={<UserProfilePage />} />
+                <Route path="/creator/dashboard" element={<CreatorDashboard />} />
+                <Route path="/leaderboard" element={<LeaderboardPage />} />
+                <Route path="/profile/verification" element={<VerificationPage />} />
+                <Route path="/verification" element={<VerificationPage />} />
+                <Route path="/vip-support" element={<VipSupportPage />} />
+              </Route>
+            </Routes>
+          </Layout>
+          <CallModal />
+        </CallProvider>
       </SocketProvider>
       <ToastContainer position="top-right" autoClose={3000} theme="dark" />
     </Router>

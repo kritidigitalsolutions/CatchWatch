@@ -29,8 +29,8 @@ app.use(
 
 const frontendUrls = process.env.FRONTEND_URL
   ? process.env.FRONTEND_URL.split(",").map((url) =>
-      url.trim().replace(/\/$/, ""),
-    )
+    url.trim().replace(/\/$/, ""),
+  )
   : [];
 const adminUrls = process.env.ADMIN_URL
   ? process.env.ADMIN_URL.split(",").map((url) => url.trim().replace(/\/$/, ""))
@@ -45,6 +45,7 @@ const defaultAllowed = [
   "http://localhost:5173",
   "http://localhost:3000",
   "http://localhost:3001",
+  "http://192.168.1.16:3000"
 ];
 
 const allowedOrigins = [
@@ -179,11 +180,13 @@ const authRoutes = require("./routes/user/auth.routes");
 
 const userRoutes = require("./routes/user/user.routes");
 const chatRoutes = require("./routes/user/chat.routes");
+const callRoutes = require("./routes/user/call.routes");
 
 app.use("/api/auth", authRoutes);
 
 app.use("/api/user", userRoutes);
 app.use("/api/chat", chatRoutes);
+app.use("/api/calls", callRoutes);
 
 app.use("/api/movies", updateUpcomingStatus, movieUserRoutes);
 

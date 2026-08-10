@@ -33,7 +33,7 @@ const initSocket = (server, allowedOrigins) => {
       }
 
       const decoded = jwt.verify(token, process.env.JWT_SECRET);
-      socket.userId = decoded.id;
+      socket.userId = (decoded.id || decoded._id || decoded.userId).toString();
       return next();
     } catch (err) {
       console.error("Socket authentication error:", err.message);
@@ -51,7 +51,7 @@ const initSocket = (server, allowedOrigins) => {
     }
     userSocketsMap.get(userId).add(socket.id);
 
-    // Join personal room for targeted messaging
+    // Join personal room for targeted messaging & calling
     socket.join(`user_${userId}`);
 
     // Update user status in DB
@@ -115,6 +115,18 @@ const initSocket = (server, allowedOrigins) => {
         io.to(`user_${recipientId}`).emit("user_typing_stop", {
           conversationId,
           userId,
+        });
+      }
+    });
+
+    // Event: Call Media State Change (e.g. mic mute/unmute, video on/off)
+    socket.on("call_media_toggle", ({ targetUserId, callId, isMuted, isVideoOff }) => {
+      if (targetUserId) {
+        io.to(`user_${targetUserId}`).emit("call_media_toggled", {
+          callId,
+          userId,
+          isMuted,
+          isVideoOff,
         });
       }
     });

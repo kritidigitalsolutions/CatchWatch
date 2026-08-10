@@ -40,10 +40,18 @@ export const SocketProvider = ({ children }) => {
     const newSocket = io(socketUrl, {
       auth: { token },
       transports: ["websocket", "polling"],
+      reconnection: true,
+      reconnectionAttempts: 10,
+      reconnectionDelay: 1000,
+      autoConnect: true,
     });
 
     newSocket.on("connect", () => {
       console.log("🟢 Connected to Chat Socket server");
+    });
+
+    newSocket.on("connect_error", (err) => {
+      console.warn("⚠️ Socket Connection Warning:", err.message);
     });
 
     newSocket.on("new_message", (msg) => {
@@ -58,6 +66,10 @@ export const SocketProvider = ({ children }) => {
     fetchUnreadChatCount();
 
     return () => {
+      newSocket.off("connect");
+      newSocket.off("connect_error");
+      newSocket.off("new_message");
+      newSocket.off("messages_read");
       newSocket.disconnect();
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps

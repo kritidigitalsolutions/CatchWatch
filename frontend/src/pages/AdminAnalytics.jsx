@@ -140,7 +140,7 @@ export default function AdminAnalytics() {
       </div>
 
       {/* Simulator Section */}
-      <div style={{ marginTop: "32px", marginBottom: "32px" }}>
+      {/* <div style={{ marginTop: "32px", marginBottom: "32px" }}>
         <h3 style={{ fontSize: "1.1rem", marginBottom: "16px", color: "#e2e8f0", display: "flex", alignItems: "center", gap: "8px" }}>
           <Calculator size={20} color="#ec4899" /> Monthly Creator Reward Simulator
         </h3>
@@ -229,7 +229,7 @@ export default function AdminAnalytics() {
             </div>
           )}
         </div>
-      </div>
+      </div> */}
 
       {/* Leaderboards */}
       <h3 style={{ fontSize: "1.1rem", marginBottom: "16px", color: "#e2e8f0", display: "flex", alignItems: "center", gap: "8px" }}>

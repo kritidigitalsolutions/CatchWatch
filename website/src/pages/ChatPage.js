@@ -18,10 +18,12 @@ import {
   FaEllipsisV,
   FaArrowLeft,
   FaPlus,
-  FaUsers
+  FaUsers,
+  FaHistory
 } from "react-icons/fa";
 import EmojiPicker from "emoji-picker-react";
 import { useSocket } from "../context/SocketContext";
+import { useCall } from "../context/CallContext";
 import ForwardModal from "../components/ForwardModal";
 import {
   getConversations,
@@ -40,7 +42,7 @@ import {
   unblockUser,
 } from "../api/chatApi";
 import { getUserFollowers, getUserFollowing } from "../api/userApi";
-import { BiMessageRoundedDots } from "react-icons/bi";
+import { BiMessageRoundedDots, BiPhoneCall, BiVideo } from "react-icons/bi";
 import { toast } from "react-toastify";
 import "./ChatPage.css";
 
@@ -48,6 +50,7 @@ const QUICK_EMOJIS = ["❤️", "👍", "😂", "😮", "😢", "🔥"];
 
 const ChatPage = () => {
   const { socket, fetchUnreadChatCount } = useSocket();
+  const { initiateCall, setShowCallHistoryModal } = useCall();
   const currentUser = JSON.parse(localStorage.getItem("user") || "{}");
   const currentUserId = currentUser._id || currentUser.id;
 
@@ -560,10 +563,10 @@ const ChatPage = () => {
         setActiveConv((prev) =>
           prev
             ? {
-                ...prev,
-                isBlockedByMe: false,
-                isBlocked: prev.isBlockedByPartner || false,
-              }
+              ...prev,
+              isBlockedByMe: false,
+              isBlocked: prev.isBlockedByPartner || false,
+            }
             : null
         );
       } else {
@@ -572,10 +575,10 @@ const ChatPage = () => {
         setActiveConv((prev) =>
           prev
             ? {
-                ...prev,
-                isBlockedByMe: true,
-                isBlocked: true,
-              }
+              ...prev,
+              isBlockedByMe: true,
+              isBlocked: true,
+            }
             : null
         );
       }
@@ -682,9 +685,8 @@ const ChatPage = () => {
       {/* SIDEBAR: CONVERSATIONS LIST                                 */}
       {/* ========================================================= */}
       <div
-        className={`chat-sidebar w-full md:w-80 lg:w-96 bg-white dark:bg-gray-900 border-r border-gray-200 dark:border-gray-800 flex flex-col flex-shrink-0 ${
-          activeConv ? "hidden md:flex" : "flex"
-        }`}
+        className={`chat-sidebar w-full md:w-80 lg:w-96 bg-white dark:bg-gray-900 border-r border-gray-200 dark:border-gray-800 flex flex-col flex-shrink-0 ${activeConv ? "hidden md:flex" : "flex"
+          }`}
       >
         {/* Sidebar Header */}
         <div className="p-4 border-b border-gray-100 dark:border-gray-800 flex justify-between items-center bg-gray-50/50 dark:bg-gray-900/50">
@@ -763,9 +765,8 @@ const ChatPage = () => {
       {/* CHAT MAIN WINDOW                                           */}
       {/* ========================================================= */}
       <div
-        className={`flex-1 flex flex-col h-full overflow-hidden bg-gray-100 dark:bg-gray-950 ${
-          !activeConv ? "hidden md:flex" : "flex"
-        }`}
+        className={`flex-1 flex flex-col h-full overflow-hidden bg-gray-100 dark:bg-gray-950 ${!activeConv ? "hidden md:flex" : "flex"
+          }`}
       >
         {activeConv ? (
           <>
@@ -809,14 +810,40 @@ const ChatPage = () => {
               </div>
 
               {/* Action Buttons Header */}
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-1.5 sm:gap-2">
+                {/* Voice Call Button */}
+                <button
+                  onClick={() => initiateCall(activeConv.partner, "audio")}
+                  className="p-2 bg-orange-50 dark:bg-orange-950/40 text-brand-orange hover:bg-orange-100 rounded-xl text-sm transition"
+                  title="Voice Call"
+                >
+                  <BiPhoneCall />
+                </button>
+
+                {/* Video Call Button */}
+                <button
+                  onClick={() => initiateCall(activeConv.partner, "video")}
+                  className="p-2 bg-blue-50 dark:bg-blue-950/40 text-blue-600 hover:bg-blue-100 rounded-xl text-sm transition"
+                  title="Video Call"
+                >
+                  <BiVideo />
+                </button>
+
+                {/* Call History Log Button */}
+                <button
+                  onClick={() => setShowCallHistoryModal(true)}
+                  className="p-2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 rounded-xl text-xs transition"
+                  title="Call History"
+                >
+                  <FaHistory />
+                </button>
+
                 <button
                   onClick={handlePin}
-                  className={`p-2 rounded-xl text-xs transition ${
-                    activeConv.isPinned
+                  className={`p-2 rounded-xl text-xs transition ${activeConv.isPinned
                       ? "text-brand-orange bg-orange-50 dark:bg-orange-950/40"
                       : "text-gray-400 hover:text-gray-600 dark:hover:text-gray-200"
-                  }`}
+                    }`}
                   title={activeConv.isPinned ? "Unpin Chat" : "Pin Chat"}
                 >
                   <FaThumbtack className={activeConv.isPinned ? "rotate-45" : ""} />
@@ -832,11 +859,10 @@ const ChatPage = () => {
 
                 <button
                   onClick={handleToggleBlock}
-                  className={`px-3 py-1.5 rounded-xl text-xs font-extrabold flex items-center gap-1.5 transition shadow-sm ${
-                    activeConv.isBlockedByMe
+                  className={`px-3 py-1.5 rounded-xl text-xs font-extrabold flex items-center gap-1.5 transition shadow-sm ${activeConv.isBlockedByMe
                       ? "bg-emerald-100 hover:bg-emerald-200 text-emerald-700 dark:bg-emerald-950/60 dark:hover:bg-emerald-900/80 dark:text-emerald-300 border border-emerald-300/50"
                       : "bg-red-50 hover:bg-red-100 text-red-600 dark:bg-red-950/50 dark:hover:bg-red-900/60 dark:text-red-400 border border-red-200/50"
-                  }`}
+                    }`}
                   title={activeConv.isBlockedByMe ? "Unblock User" : "Block User"}
                 >
                   {activeConv.isBlockedByMe ? (
@@ -1184,21 +1210,19 @@ const ChatPage = () => {
             <div className="flex border-b border-gray-100 dark:border-gray-800 bg-gray-50/50 dark:bg-gray-900/50">
               <button
                 onClick={() => handleSwitchFollowsTab("followers")}
-                className={`flex-1 py-2.5 text-xs font-bold text-center border-b-2 transition ${
-                  followsTab === "followers"
+                className={`flex-1 py-2.5 text-xs font-bold text-center border-b-2 transition ${followsTab === "followers"
                     ? "border-brand-orange text-brand-orange"
                     : "border-transparent text-gray-500 hover:text-gray-700 dark:hover:text-gray-300"
-                }`}
+                  }`}
               >
                 Followers
               </button>
               <button
                 onClick={() => handleSwitchFollowsTab("following")}
-                className={`flex-1 py-2.5 text-xs font-bold text-center border-b-2 transition ${
-                  followsTab === "following"
+                className={`flex-1 py-2.5 text-xs font-bold text-center border-b-2 transition ${followsTab === "following"
                     ? "border-brand-orange text-brand-orange"
                     : "border-transparent text-gray-500 hover:text-gray-700 dark:hover:text-gray-300"
-                }`}
+                  }`}
               >
                 Following
               </button>
@@ -1275,11 +1299,10 @@ const ConversationItem = ({ conv, isActive, onClick }) => {
   return (
     <div
       onClick={onClick}
-      className={`flex items-center gap-3 p-3.5 mx-2 rounded-2xl cursor-pointer transition ${
-        isActive
+      className={`flex items-center gap-3 p-3.5 mx-2 rounded-2xl cursor-pointer transition ${isActive
           ? "bg-brand-orange/10 dark:bg-brand-orange/20 border border-brand-orange/20"
           : "hover:bg-gray-100 dark:hover:bg-gray-800/60"
-      }`}
+        }`}
     >
       <div className="relative flex-shrink-0">
         <img
@@ -1381,9 +1404,8 @@ const MessageBubble = ({
           {/* Context Action Menu Dropdown */}
           {isMenuOpen && (
             <div
-              className={`absolute z-40 bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 rounded-2xl shadow-xl py-2 px-1 min-w-[150px] ${
-                openDownwards ? "top-full mt-1" : "bottom-full mb-1"
-              } ${isMe ? "right-0" : "left-0"}`}
+              className={`absolute z-40 bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 rounded-2xl shadow-xl py-2 px-1 min-w-[150px] ${openDownwards ? "top-full mt-1" : "bottom-full mb-1"
+                } ${isMe ? "right-0" : "left-0"}`}
             >
               {/* Quick Reactions Row */}
               <div className="flex justify-around border-b border-gray-100 dark:border-gray-800 pb-2 mb-1 px-1">
@@ -1451,13 +1473,12 @@ const MessageBubble = ({
 
         {/* Bubble Content */}
         <div
-          className={`p-3 text-xs shadow-sm relative ${
-            msg.isUnsent
+          className={`p-3 text-xs shadow-sm relative ${msg.isUnsent
               ? "bg-gray-200 dark:bg-gray-800 text-gray-500 italic rounded-2xl"
               : isMe
-              ? "chat-bubble-sent"
-              : "chat-bubble-received"
-          }`}
+                ? "chat-bubble-sent"
+                : "chat-bubble-received"
+            }`}
         >
           {/* Forwarded Header */}
           {msg.isForwarded && (
