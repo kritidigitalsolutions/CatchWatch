@@ -5,17 +5,17 @@ import { TfiVideoClapper } from "react-icons/tfi";
 import { IoSearchSharp } from "react-icons/io5";
 import { CgProfile } from "react-icons/cg";
 import { MdCamera } from "react-icons/md";
-import { FaComments } from "react-icons/fa";
-import { useSocket } from "../context/SocketContext";
+// import { FaComments } from "react-icons/fa";
+// import { useSocket } from "../context/SocketContext";
 
 const BottomNav = () => {
-  const { unreadChatCount } = useSocket() || {};
+  // const { unreadChatCount } = useSocket() || {};
 
   const navItems = [
     { name: 'Home', path: '/', icon: <IoMdHome />  },
     { name: 'REELS', path: '/reels-feed', icon: <TfiVideoClapper /> },
     { name: 'Add', path: '/upload', icon: <MdCamera />, isAdd: true },
-    { name: 'Chat', path: '/chat', icon: <FaComments />, badge: unreadChatCount },
+    // { name: 'Chat', path: '/chat', icon: <FaComments />, badge: unreadChatCount },
     { name: 'Search', path: '/search', icon: <IoSearchSharp /> },
     { name: 'Profile', path: '/profile', icon: <CgProfile /> }
   ];

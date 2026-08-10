@@ -150,7 +150,11 @@ exports.toggleFollow = async (req, res) => {
 // ========================================
 exports.getFollowers = async (req, res) => {
   try {
-    const { userId } = req.params;
+    let { userId } = req.params;
+    if ((userId === "me" || !userId) && req.user) {
+      userId = req.user.id;
+    }
+
     const page = parseInt(req.query.page) || 1;
     const limit = parseInt(req.query.limit) || 20;
     const skip = (page - 1) * limit;
@@ -164,7 +168,7 @@ exports.getFollowers = async (req, res) => {
 
     const totalCount = await Follow.countDocuments({ following: userId });
     const follows = await Follow.find({ following: userId })
-      .populate("follower", "_id name username profileImage bio role status verification")
+      .populate("follower", "_id name username profileImage bio role status verification phone")
       .sort({ createdAt: -1 })
       .skip(skip)
       .limit(limit)
@@ -193,7 +197,11 @@ exports.getFollowers = async (req, res) => {
 // ========================================
 exports.getFollowing = async (req, res) => {
   try {
-    const { userId } = req.params;
+    let { userId } = req.params;
+    if ((userId === "me" || !userId) && req.user) {
+      userId = req.user.id;
+    }
+
     const page = parseInt(req.query.page) || 1;
     const limit = parseInt(req.query.limit) || 20;
     const skip = (page - 1) * limit;
@@ -207,7 +215,7 @@ exports.getFollowing = async (req, res) => {
 
     const totalCount = await Follow.countDocuments({ follower: userId });
     const follows = await Follow.find({ follower: userId })
-      .populate("following", "_id name username profileImage bio role status verification")
+      .populate("following", "_id name username profileImage bio role status verification phone")
       .sort({ createdAt: -1 })
       .skip(skip)
       .limit(limit)

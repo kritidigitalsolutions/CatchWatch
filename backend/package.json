@@ -5,6 +5,7 @@
     "node": ">=18.0.0"
   },
   "dependencies": {
+    "agora-token": "^2.0.5",
     "axios": "^1.16.1",
     "bcryptjs": "^3.0.3",
     "cors": "^2.8.6",

@@ -15,10 +15,10 @@ import {
   FaShare,
   FaPencilAlt,
   FaUndo,
-  FaUserPlus,
   FaEllipsisV,
   FaArrowLeft,
-  FaPlus
+  FaPlus,
+  FaUsers
 } from "react-icons/fa";
 import EmojiPicker from "emoji-picker-react";
 import { useSocket } from "../context/SocketContext";
@@ -38,8 +38,8 @@ import {
   clearConversation,
   blockUser,
   unblockUser,
-  searchChatUsers,
 } from "../api/chatApi";
+import { getUserFollowers, getUserFollowing } from "../api/userApi";
 import { BiMessageRoundedDots } from "react-icons/bi";
 import { toast } from "react-toastify";
 import "./ChatPage.css";
@@ -61,11 +61,13 @@ const ChatPage = () => {
   const [messageText, setMessageText] = useState("");
   const [loadingMessages, setLoadingMessages] = useState(false);
 
-  // New Chat Modal Search
-  const [showNewChatModal, setShowNewChatModal] = useState(false);
-  const [userQuery, setUserQuery] = useState("");
-  const [userSearchResults, setUserSearchResults] = useState([]);
-  const [searchingUsers, setSearchingUsers] = useState(false);
+
+  // Followers & Following Modal States
+  const [showFollowsModal, setShowFollowsModal] = useState(false);
+  const [followsTab, setFollowsTab] = useState("followers"); // "followers" | "following"
+  const [followsList, setFollowsList] = useState([]);
+  const [loadingFollows, setLoadingFollows] = useState(false);
+  const [followsQuery, setFollowsQuery] = useState("");
 
 
   // Feature Action States
@@ -83,11 +85,6 @@ const ChatPage = () => {
   const [activeActionMenuId, setActiveActionMenuId] = useState(null);
   const [fullViewImage, setFullViewImage] = useState(null);
 
-  // Audio Recording State
-  // const [isRecording, setIsRecording] = useState(false);
-  // const mediaRecorderRef = useRef(null);
-  // const audioChunksRef = useRef([]);
-  // const timerRef = useRef(null);
 
   // Refs
   const messagesEndRef = useRef(null);
@@ -110,8 +107,32 @@ const ChatPage = () => {
     }
   };
 
-  // 2. Load Messages when Active Conversation Changes
+  // Close menu dropdowns on outside touch/click
   useEffect(() => {
+    const handleOutsideClick = (e) => {
+      if (activeActionMenuId && !e.target.closest(".chat-dropdown-container")) {
+        setActiveActionMenuId(null);
+      }
+    };
+    window.addEventListener("mousedown", handleOutsideClick);
+    window.addEventListener("touchstart", handleOutsideClick);
+    return () => {
+      window.removeEventListener("mousedown", handleOutsideClick);
+      window.removeEventListener("touchstart", handleOutsideClick);
+    };
+  }, [activeActionMenuId]);
+
+  // 2. Load Messages & Reset Drafts when Active Conversation Changes
+  useEffect(() => {
+    // Reset all edit/reply/input states when switching user chat
+    setReplyingTo(null);
+    setEditingMsg(null);
+    setMessageText("");
+    setSelectedMediaPreview(null);
+    setActiveActionMenuId(null);
+    setShowEmojiPicker(false);
+    setShowGifPicker(false);
+
     if (!activeConv) return;
 
     const fetchConvMessages = async () => {
@@ -566,7 +587,6 @@ const ChatPage = () => {
 
   // 10. Start Chat with User Search Result
   const handleSelectUserToChat = async (user) => {
-    setShowNewChatModal(false);
     try {
       const res = await startConversation(user._id);
       if (res && res.data) {
@@ -578,24 +598,61 @@ const ChatPage = () => {
     }
   };
 
-  const handleSearchUsers = async (q) => {
-    setUserQuery(q);
-    if (!q.trim()) {
-      setUserSearchResults([]);
-      return;
-    }
-    setSearchingUsers(true);
+  // 11. Followers & Following Network Handlers
+  const handleOpenFollowsModal = (tab = "followers") => {
+    setFollowsTab(tab);
+    setShowFollowsModal(true);
+    setFollowsQuery("");
+    fetchFollowsData(tab);
+  };
+
+  const fetchFollowsData = async (tab) => {
+    setLoadingFollows(true);
     try {
-      const res = await searchChatUsers(q);
-      if (res && res.data) {
-        setUserSearchResults(res.data);
+      if (tab === "followers") {
+        const res = await getUserFollowers("me");
+        if (res && res.followers) {
+          setFollowsList(res.followers);
+        } else if (res && res.data) {
+          setFollowsList(res.data);
+        } else {
+          setFollowsList([]);
+        }
+      } else {
+        const res = await getUserFollowing("me");
+        if (res && res.following) {
+          setFollowsList(res.following);
+        } else if (res && res.data) {
+          setFollowsList(res.data);
+        } else {
+          setFollowsList([]);
+        }
       }
     } catch (err) {
-      console.error(err);
+      console.error("Failed to fetch network list:", err);
+      toast.error("Failed to load list");
+      setFollowsList([]);
     } finally {
-      setSearchingUsers(false);
+      setLoadingFollows(false);
     }
   };
+
+  const handleSwitchFollowsTab = (tab) => {
+    setFollowsTab(tab);
+    setFollowsQuery("");
+    fetchFollowsData(tab);
+  };
+
+  const filteredFollowsList = followsList.filter((u) => {
+    if (!u) return false;
+    const q = followsQuery.toLowerCase().trim();
+    if (!q) return true;
+    return (
+      (u.name && u.name.toLowerCase().includes(q)) ||
+      (u.username && u.username.toLowerCase().includes(q)) ||
+      (u.phone && u.phone.includes(q))
+    );
+  });
 
   // Sample GIFs list for demonstration
   const sampleGifs = [
@@ -635,13 +692,15 @@ const ChatPage = () => {
             <h2 className="font-extrabold text-lg text-gray-800 dark:text-white">Chats</h2>
           </div>
 
-          <button
-            onClick={() => setShowNewChatModal(true)}
-            className="flex items-center gap-1 px-3 py-1.5 bg-brand-orange hover:bg-orange-600 text-white rounded-xl text-xs font-bold shadow-sm transition"
-            title="Start New Chat"
-          >
-            <FaUserPlus /> New Chat
-          </button>
+          <div className="flex items-center gap-1.5">
+            <button
+              onClick={() => handleOpenFollowsModal("followers")}
+              className="flex items-center gap-1 px-2.5 py-1.5 bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-200 rounded-xl text-xs font-bold transition shadow-sm"
+              title="Followers & Following List"
+            >
+              <FaUsers className="text-brand-orange" /> Follows
+            </button>
+          </div>
         </div>
 
         {/* Search Bar */}
@@ -694,12 +753,6 @@ const ChatPage = () => {
             ) : pinnedConvs.length === 0 ? (
               <div className="text-center py-12 px-4">
                 <p className="text-xs text-gray-400 font-medium">No conversations yet</p>
-                <button
-                  onClick={() => setShowNewChatModal(true)}
-                  className="mt-3 text-xs text-brand-orange font-bold hover:underline"
-                >
-                  Start a new conversation
-                </button>
               </div>
             ) : null}
           </div>
@@ -817,6 +870,7 @@ const ChatPage = () => {
                       key={msg._id ? `${msg._id}-${index}` : index}
                       msg={msg}
                       isMe={isMe}
+                      index={index}
                       onReply={(m) => setReplyingTo(m)}
                       onForward={(m) => setForwardingMsg(m)}
                       onReaction={(id, emoji) => handleReaction(id, emoji)}
@@ -1093,60 +1147,7 @@ const ChatPage = () => {
         messageToForward={forwardingMsg}
       />
 
-      {/* 2. New Chat User Search Modal */}
-      {showNewChatModal && (
-        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="bg-white dark:bg-gray-900 rounded-2xl w-full max-w-md overflow-hidden shadow-2xl border border-gray-100 dark:border-gray-800">
-            <div className="p-4 border-b border-gray-100 dark:border-gray-800 flex justify-between items-center bg-gray-50 dark:bg-gray-800/50">
-              <h3 className="font-extrabold text-sm text-gray-800 dark:text-white">
-                Start New Chat
-              </h3>
-              <button
-                onClick={() => setShowNewChatModal(false)}
-                className="text-gray-400 hover:text-gray-600"
-              >
-                <FaTimes />
-              </button>
-            </div>
-            <div className="p-4">
-              <input
-                type="text"
-                placeholder="Search user by name, username or phone..."
-                value={userQuery}
-                onChange={(e) => handleSearchUsers(e.target.value)}
-                className="w-full px-4 py-2.5 bg-gray-100 dark:bg-gray-800 border-none rounded-xl text-xs text-gray-800 dark:text-white focus:ring-2 focus:ring-brand-orange outline-none"
-              />
-            </div>
-            <div className="max-h-60 overflow-y-auto px-4 pb-4">
-              {searchingUsers ? (
-                <p className="text-center text-xs text-gray-400 py-4">Searching...</p>
-              ) : userSearchResults.length > 0 ? (
-                userSearchResults.map((u) => (
-                  <div
-                    key={u._id}
-                    onClick={() => handleSelectUserToChat(u)}
-                    className="flex items-center gap-3 p-3 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-xl cursor-pointer transition"
-                  >
-                    <img
-                      src={u.profileImage || "/logo192.png"}
-                      alt={u.name}
-                      className="w-9 h-9 rounded-full object-cover border border-gray-200 dark:border-gray-700"
-                    />
-                    <div>
-                      <h4 className="font-bold text-xs text-gray-800 dark:text-white">
-                        {u.name}
-                      </h4>
-                      <p className="text-[11px] text-gray-400">{u.username || u.phone}</p>
-                    </div>
-                  </div>
-                ))
-              ) : userQuery.trim() ? (
-                <p className="text-center text-xs text-gray-400 py-4">No users found</p>
-              ) : null}
-            </div>
-          </div>
-        </div>
-      )}
+
 
       {/* 3. Full Image Viewer Modal */}
       {fullViewImage && (
@@ -1159,6 +1160,107 @@ const ChatPage = () => {
             alt="Full view"
             className="max-w-full max-h-full rounded-lg object-contain"
           />
+        </div>
+      )}
+
+      {/* 4. Followers & Following Network Modal */}
+      {showFollowsModal && (
+        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="bg-white dark:bg-gray-900 rounded-2xl w-full max-w-md overflow-hidden shadow-2xl border border-gray-100 dark:border-gray-800 flex flex-col max-h-[85vh]">
+            <div className="p-4 border-b border-gray-100 dark:border-gray-800 flex justify-between items-center bg-gray-50 dark:bg-gray-800/50">
+              <h3 className="font-extrabold text-sm text-gray-800 dark:text-white flex items-center gap-2">
+                <FaUsers className="text-brand-orange" />
+                Network (Followers & Following)
+              </h3>
+              <button
+                onClick={() => setShowFollowsModal(false)}
+                className="text-gray-400 hover:text-gray-600"
+              >
+                <FaTimes />
+              </button>
+            </div>
+
+            {/* Tab switch buttons */}
+            <div className="flex border-b border-gray-100 dark:border-gray-800 bg-gray-50/50 dark:bg-gray-900/50">
+              <button
+                onClick={() => handleSwitchFollowsTab("followers")}
+                className={`flex-1 py-2.5 text-xs font-bold text-center border-b-2 transition ${
+                  followsTab === "followers"
+                    ? "border-brand-orange text-brand-orange"
+                    : "border-transparent text-gray-500 hover:text-gray-700 dark:hover:text-gray-300"
+                }`}
+              >
+                Followers
+              </button>
+              <button
+                onClick={() => handleSwitchFollowsTab("following")}
+                className={`flex-1 py-2.5 text-xs font-bold text-center border-b-2 transition ${
+                  followsTab === "following"
+                    ? "border-brand-orange text-brand-orange"
+                    : "border-transparent text-gray-500 hover:text-gray-700 dark:hover:text-gray-300"
+                }`}
+              >
+                Following
+              </button>
+            </div>
+
+            {/* Search Input */}
+            <div className="p-3 border-b border-gray-100 dark:border-gray-800">
+              <input
+                type="text"
+                placeholder={`Search ${followsTab}...`}
+                value={followsQuery}
+                onChange={(e) => setFollowsQuery(e.target.value)}
+                className="w-full px-3.5 py-2 bg-gray-100 dark:bg-gray-800 border-none rounded-xl text-xs text-gray-800 dark:text-white focus:ring-2 focus:ring-brand-orange outline-none"
+              />
+            </div>
+
+            {/* List Content */}
+            <div className="flex-1 overflow-y-auto p-3 space-y-2">
+              {loadingFollows ? (
+                <div className="flex justify-center items-center py-8">
+                  <div className="w-6 h-6 border-2 border-brand-orange border-t-transparent rounded-full animate-spin"></div>
+                </div>
+              ) : filteredFollowsList.length > 0 ? (
+                filteredFollowsList.map((u) => (
+                  <div
+                    key={u._id}
+                    className="flex items-center justify-between p-2.5 hover:bg-gray-50 dark:hover:bg-gray-800/60 rounded-xl transition border border-gray-50 dark:border-gray-800/40"
+                  >
+                    <div className="flex items-center gap-3 min-w-0 flex-1 pr-2">
+                      <img
+                        src={u.profileImage || "/logo192.png"}
+                        alt={u.name}
+                        className="w-10 h-10 rounded-full object-cover border border-gray-200 dark:border-gray-700 shrink-0"
+                      />
+                      <div className="min-w-0">
+                        <h4 className="font-bold text-xs text-gray-800 dark:text-white truncate">
+                          {u.name}
+                        </h4>
+                        <p className="text-[11px] text-gray-400 truncate">
+                          @{u.username || u.phone || "user"}
+                        </p>
+                      </div>
+                    </div>
+
+                    <button
+                      onClick={() => {
+                        setShowFollowsModal(false);
+                        handleSelectUserToChat(u);
+                      }}
+                      className="px-3 py-1.5 bg-brand-orange hover:bg-orange-600 text-white rounded-xl text-xs font-bold transition flex items-center gap-1 shrink-0 shadow-sm"
+                    >
+                      <BiMessageRoundedDots className="text-sm" /> Message
+                    </button>
+                  </div>
+                ))
+              ) : (
+                <div className="text-center py-8 text-xs text-gray-400 font-medium">
+                  {followsQuery ? `No ${followsTab} matching "${followsQuery}"` : `No ${followsTab} found`}
+                </div>
+              )}
+            </div>
+          </div>
         </div>
       )}
     </div>
@@ -1240,6 +1342,7 @@ const ConversationItem = ({ conv, isActive, onClick }) => {
 const MessageBubble = ({
   msg,
   isMe,
+  index,
   onReply,
   onForward,
   onReaction,
@@ -1251,6 +1354,7 @@ const MessageBubble = ({
   setActiveMenuId,
 }) => {
   const isMenuOpen = activeMenuId === msg._id;
+  const openDownwards = index < 2;
 
   return (
     <div className={`flex flex-col ${isMe ? "items-end" : "items-start"} group relative mb-2`}>
@@ -1266,7 +1370,7 @@ const MessageBubble = ({
 
       <div className="flex items-center gap-1.5 max-w-[88%] sm:max-w-[80%]">
         {/* Quick Action Button for Me/Other */}
-        <div className="relative">
+        <div className="relative chat-dropdown-container">
           <button
             onClick={() => setActiveMenuId(isMenuOpen ? null : msg._id)}
             className="opacity-0 group-hover:opacity-100 p-1 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 text-xs transition"
@@ -1277,9 +1381,9 @@ const MessageBubble = ({
           {/* Context Action Menu Dropdown */}
           {isMenuOpen && (
             <div
-              className={`absolute bottom-full mb-1 z-30 bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 rounded-2xl shadow-xl py-2 px-1 min-w-[150px] ${
-                isMe ? "right-0" : "left-0"
-              }`}
+              className={`absolute z-40 bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 rounded-2xl shadow-xl py-2 px-1 min-w-[150px] ${
+                openDownwards ? "top-full mt-1" : "bottom-full mb-1"
+              } ${isMe ? "right-0" : "left-0"}`}
             >
               {/* Quick Reactions Row */}
               <div className="flex justify-around border-b border-gray-100 dark:border-gray-800 pb-2 mb-1 px-1">
