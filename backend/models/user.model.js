@@ -92,6 +92,11 @@ const userSchema = new mongoose.Schema(
       type: Date,
     },
 
+    publicKey: {
+      type: String,
+      default: "",
+    },
+
     isOnline: {
       type: Boolean,
       default: false,

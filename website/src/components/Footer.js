@@ -101,14 +101,14 @@ const Footer = () => {
                 Subscription Plans
               </button>
             </li>
-            <li>
+            {/* <li>
               <button
                 onClick={() => navigate("/downloads")}
                 className="hover:text-white transition"
               >
                 Local Storage Downloads
               </button>
-            </li>
+            </li> */}
           </ul>
         </div>
 
@@ -118,8 +118,8 @@ const Footer = () => {
             Legal Compliance
           </h4>
           <ul className="space-y-2.5 text-xs font-medium">
-            {legalDocs.length > 0 ? (
-              legalDocs.map((doc) => (
+            {legalDocs.length > 3 ? (
+              legalDocs.slice(1, 5).map((doc) => (
                 <li key={doc._id}>
                   <button
                     onClick={() => navigate(`/${doc.type}`)}

@@ -19,12 +19,20 @@ import {
   FaArrowLeft,
   FaPlus,
   FaUsers,
-  FaHistory
+  FaHistory,
+  FaLock
 } from "react-icons/fa";
 import EmojiPicker from "emoji-picker-react";
 import { useSocket } from "../context/SocketContext";
 import { useCall } from "../context/CallContext";
 import ForwardModal from "../components/ForwardModal";
+import {
+  initUserE2EE,
+  deriveSharedKey,
+  importPublicKey,
+  encryptText,
+  decryptText,
+} from "../utils/e2ee";
 import {
   getConversations,
   startConversation,
@@ -40,6 +48,8 @@ import {
   clearConversation,
   blockUser,
   unblockUser,
+  savePublicKey,
+  getUserPublicKey,
 } from "../api/chatApi";
 import { getUserFollowers, getUserFollowing } from "../api/userApi";
 import { BiMessageRoundedDots, BiPhoneCall, BiVideo } from "react-icons/bi";
@@ -87,12 +97,78 @@ const ChatPage = () => {
   const [uploadingMedia, setUploadingMedia] = useState(false);
   const [activeActionMenuId, setActiveActionMenuId] = useState(null);
   const [fullViewImage, setFullViewImage] = useState(null);
-
+  const [showHeaderMenu, setShowHeaderMenu] = useState(false);
 
   // Refs
   const messagesEndRef = useRef(null);
   const fileInputRef = useRef(null);
   const typingTimeoutRef = useRef(null);
+
+  // E2EE Key Management States & Refs
+  const [e2eeKeys, setE2eeKeys] = useState(null);
+  const partnerSharedKeysRef = useRef({});
+
+  // Initialize E2EE Keypair for current user
+  useEffect(() => {
+    if (!currentUserId) return;
+    initUserE2EE(currentUserId, savePublicKey).then((keys) => {
+      if (keys) setE2eeKeys(keys);
+    });
+  }, [currentUserId]);
+
+  // Derive and cache shared key for partner
+  const getSharedKeyForPartner = async (partner) => {
+    if (!e2eeKeys || !partner || (!partner._id && !partner.id)) return null;
+    const partnerId = (partner._id || partner.id).toString();
+
+    if (partnerSharedKeysRef.current[partnerId]) {
+      return partnerSharedKeysRef.current[partnerId];
+    }
+
+    try {
+      let partnerPubKeyStr = partner.publicKey;
+      if (!partnerPubKeyStr) {
+        const keyRes = await getUserPublicKey(partnerId);
+        if (keyRes && keyRes.data) {
+          partnerPubKeyStr = keyRes.data.publicKey;
+        }
+      }
+
+      if (!partnerPubKeyStr) return null;
+
+      const partnerPubKey = await importPublicKey(partnerPubKeyStr);
+      const sharedKey = await deriveSharedKey(e2eeKeys.privateKey, partnerPubKey);
+      partnerSharedKeysRef.current[partnerId] = sharedKey;
+      return sharedKey;
+    } catch (err) {
+      console.error("Failed to derive shared key for partner:", err);
+      return null;
+    }
+  };
+
+  // Helper to decrypt message if encrypted
+  const processDecryptMessage = async (msg, sharedKey = null) => {
+    if (!msg || !msg.isEncrypted || !msg.iv || !msg.text) return msg;
+    if (msg.isDecrypted) return msg;
+
+    try {
+      let keyToUse = sharedKey;
+      if (!keyToUse) {
+        const partner = (msg.sender?._id || msg.sender?.id)?.toString() === currentUserId.toString()
+          ? msg.recipient
+          : msg.sender;
+        keyToUse = await getSharedKeyForPartner(partner);
+      }
+
+      if (!keyToUse) return msg;
+
+      const plainText = await decryptText(msg.text, msg.iv, keyToUse);
+      return { ...msg, text: plainText, isDecrypted: true };
+    } catch (err) {
+      console.error("Failed to decrypt message:", err);
+      return msg;
+    }
+  };
 
   // 1. Initial Load of Conversations
   useEffect(() => {
@@ -116,6 +192,9 @@ const ChatPage = () => {
       if (activeActionMenuId && !e.target.closest(".chat-dropdown-container")) {
         setActiveActionMenuId(null);
       }
+      if (showHeaderMenu && !e.target.closest(".header-menu-container")) {
+        setShowHeaderMenu(false);
+      }
     };
     window.addEventListener("mousedown", handleOutsideClick);
     window.addEventListener("touchstart", handleOutsideClick);
@@ -123,7 +202,7 @@ const ChatPage = () => {
       window.removeEventListener("mousedown", handleOutsideClick);
       window.removeEventListener("touchstart", handleOutsideClick);
     };
-  }, [activeActionMenuId]);
+  }, [activeActionMenuId, showHeaderMenu]);
 
   // 2. Load Messages & Reset Drafts when Active Conversation Changes
   useEffect(() => {
@@ -133,6 +212,7 @@ const ChatPage = () => {
     setMessageText("");
     setSelectedMediaPreview(null);
     setActiveActionMenuId(null);
+    setShowHeaderMenu(false);
     setShowEmojiPicker(false);
     setShowGifPicker(false);
 
@@ -143,7 +223,11 @@ const ChatPage = () => {
       try {
         const res = await getMessages(activeConv._id);
         if (res && res.data) {
-          setMessages(res.data);
+          const partnerKey = await getSharedKeyForPartner(activeConv.partner);
+          const decryptedMessages = await Promise.all(
+            res.data.map((m) => processDecryptMessage(m, partnerKey))
+          );
+          setMessages(decryptedMessages);
         }
         // Mark as read
         await markAsRead(activeConv._id);
@@ -190,17 +274,21 @@ const ChatPage = () => {
   useEffect(() => {
     if (!socket) return;
 
-    const handleNewMessage = (newMsg) => {
+    const handleNewMessage = async (newMsg) => {
       if (activeConv && newMsg.conversationId.toString() === activeConv._id.toString()) {
-        setMessages((prev) => addUniqueMessage(prev, newMsg));
+        const partnerKey = await getSharedKeyForPartner(activeConv.partner);
+        const decryptedMsg = await processDecryptMessage(newMsg, partnerKey);
+        setMessages((prev) => addUniqueMessage(prev, decryptedMsg));
         markAsRead(activeConv._id);
       }
       loadConversations();
     };
 
-    const handleMessageSent = (sentMsg) => {
+    const handleMessageSent = async (sentMsg) => {
       if (activeConv && sentMsg.conversationId.toString() === activeConv._id.toString()) {
-        setMessages((prev) => addUniqueMessage(prev, sentMsg));
+        const partnerKey = await getSharedKeyForPartner(activeConv.partner);
+        const decryptedMsg = await processDecryptMessage(sentMsg, partnerKey);
+        setMessages((prev) => addUniqueMessage(prev, decryptedMsg));
       }
       loadConversations();
     };
@@ -417,10 +505,26 @@ const ChatPage = () => {
     }
 
     try {
+      let textToSend = messageText.trim();
+      let isEncrypted = false;
+      let iv = "";
+
+      if (activeConv?.partner && textToSend) {
+        const sharedKey = await getSharedKeyForPartner(activeConv.partner);
+        if (sharedKey) {
+          const encrypted = await encryptText(textToSend, sharedKey);
+          textToSend = encrypted.ciphertext;
+          iv = encrypted.iv;
+          isEncrypted = true;
+        }
+      }
+
       const payload = {
         conversationId: activeConv._id,
         recipientId: activeConv.partner._id,
-        text: messageText,
+        text: textToSend,
+        isEncrypted,
+        iv,
         messageType: selectedMediaPreview ? messageType : "text",
         mediaUrl,
         mediaMeta,
@@ -429,7 +533,12 @@ const ChatPage = () => {
 
       const res = await sendMessage(payload);
       if (res && res.data) {
-        setMessages((prev) => addUniqueMessage(prev, res.data));
+        const decryptedMsg = {
+          ...res.data,
+          text: messageText.trim(),
+          isDecrypted: true,
+        };
+        setMessages((prev) => addUniqueMessage(prev, decryptedMsg));
         setMessageText("");
         setSelectedMediaPreview(null);
         setReplyingTo(null);
@@ -700,7 +809,7 @@ const ChatPage = () => {
               className="flex items-center gap-1 px-2.5 py-1.5 bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-200 rounded-xl text-xs font-bold transition shadow-sm"
               title="Followers & Following List"
             >
-              <FaUsers className="text-brand-orange" /> Follows
+              <FaUsers className="text-brand-orange text-lg" />
             </button>
           </div>
         </div>
@@ -795,7 +904,7 @@ const ChatPage = () => {
                   <h3 className="font-extrabold text-sm text-gray-800 dark:text-white leading-tight">
                     {activeConv.partner?.name || "User"}
                   </h3>
-                  <p className="text-[11px] text-gray-500 dark:text-gray-400">
+                  <p className="text-[11px] text-gray-500 dark:text-gray-400 flex items-center gap-1.5">
                     {typingPartner ? (
                       <span className="text-brand-orange font-bold animate-pulse">
                         typing...
@@ -805,6 +914,9 @@ const ChatPage = () => {
                     ) : (
                       formatLastSeen(activeConv.partner?.lastSeen)
                     )}
+                    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-emerald-50 dark:bg-emerald-950/40 text-emerald-600 dark:text-emerald-400 border border-emerald-200/40 ml-1">
+                      <FaLock className="text-[8px]" /> Encrypted
+                    </span>
                   </p>
                 </div>
               </div>
@@ -814,69 +926,94 @@ const ChatPage = () => {
                 {/* Voice Call Button */}
                 <button
                   onClick={() => initiateCall(activeConv.partner, "audio")}
-                  className="p-2 bg-orange-50 dark:bg-orange-950/40 text-brand-orange hover:bg-orange-100 rounded-xl text-sm transition"
+                  className="p-2.5 bg-orange-50 dark:bg-orange-950/40 text-brand-orange hover:bg-orange-100 rounded-xl text-sm transition shadow-sm"
                   title="Voice Call"
                 >
-                  <BiPhoneCall />
+                  <BiPhoneCall className="text-base" />
                 </button>
 
                 {/* Video Call Button */}
                 <button
                   onClick={() => initiateCall(activeConv.partner, "video")}
-                  className="p-2 bg-blue-50 dark:bg-blue-950/40 text-blue-600 hover:bg-blue-100 rounded-xl text-sm transition"
+                  className="p-2.5 bg-blue-50 dark:bg-blue-950/40 text-blue-600 hover:bg-blue-100 rounded-xl text-sm transition shadow-sm"
                   title="Video Call"
                 >
-                  <BiVideo />
+                  <BiVideo className="text-base" />
                 </button>
 
-                {/* Call History Log Button */}
-                <button
-                  onClick={() => setShowCallHistoryModal(true)}
-                  className="p-2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 rounded-xl text-xs transition"
-                  title="Call History"
-                >
-                  <FaHistory />
-                </button>
+                {/* Three Dot Options Dropdown Menu */}
+                <div className="relative header-menu-container">
+                  <button
+                    onClick={() => setShowHeaderMenu(!showHeaderMenu)}
+                    className="p-2.5 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 rounded-xl text-sm transition shadow-sm"
+                    title="More Options"
+                  >
+                    <FaEllipsisV />
+                  </button>
 
-                <button
-                  onClick={handlePin}
-                  className={`p-2 rounded-xl text-xs transition ${activeConv.isPinned
-                      ? "text-brand-orange bg-orange-50 dark:bg-orange-950/40"
-                      : "text-gray-400 hover:text-gray-600 dark:hover:text-gray-200"
-                    }`}
-                  title={activeConv.isPinned ? "Unpin Chat" : "Pin Chat"}
-                >
-                  <FaThumbtack className={activeConv.isPinned ? "rotate-45" : ""} />
-                </button>
+                  {showHeaderMenu && (
+                    <div className="absolute right-0 top-12 w-48 bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 rounded-2xl shadow-xl p-1.5 z-50 animate-pop-in">
+                      <button
+                        onClick={() => {
+                          setShowHeaderMenu(false);
+                          setShowCallHistoryModal(true);
+                        }}
+                        className="w-full flex items-center gap-2.5 px-3 py-2 text-xs font-bold text-gray-700 dark:text-gray-200 hover:bg-orange-50 dark:hover:bg-gray-800 hover:text-brand-orange rounded-xl transition"
+                      >
+                        <FaHistory className="text-gray-400 text-sm" />
+                        <span>Call History</span>
+                      </button>
 
-                <button
-                  onClick={handleClearChat}
-                  className="p-2 text-gray-400 hover:text-red-500 rounded-xl text-xs transition"
-                  title="Clear Chat History"
-                >
-                  <FaTrash />
-                </button>
+                      <button
+                        onClick={() => {
+                          setShowHeaderMenu(false);
+                          handlePin();
+                        }}
+                        className="w-full flex items-center gap-2.5 px-3 py-2 text-xs font-bold text-gray-700 dark:text-gray-200 hover:bg-orange-50 dark:hover:bg-gray-800 hover:text-brand-orange rounded-xl transition"
+                      >
+                        <FaThumbtack className={`text-gray-400 text-sm ${activeConv.isPinned ? "rotate-45 text-brand-orange" : ""}`} />
+                        <span>{activeConv.isPinned ? "Unpin Chat" : "Pin Chat"}</span>
+                      </button>
 
-                <button
-                  onClick={handleToggleBlock}
-                  className={`px-3 py-1.5 rounded-xl text-xs font-extrabold flex items-center gap-1.5 transition shadow-sm ${activeConv.isBlockedByMe
-                      ? "bg-emerald-100 hover:bg-emerald-200 text-emerald-700 dark:bg-emerald-950/60 dark:hover:bg-emerald-900/80 dark:text-emerald-300 border border-emerald-300/50"
-                      : "bg-red-50 hover:bg-red-100 text-red-600 dark:bg-red-950/50 dark:hover:bg-red-900/60 dark:text-red-400 border border-red-200/50"
-                    }`}
-                  title={activeConv.isBlockedByMe ? "Unblock User" : "Block User"}
-                >
-                  {activeConv.isBlockedByMe ? (
-                    <>
-                      <FaUnlock className="text-sm text-emerald-600 dark:text-emerald-400" />
-                      <span>Unblock</span>
-                    </>
-                  ) : (
-                    <>
-                      <FaBan className="text-sm text-red-600 dark:text-red-400" />
-                      <span>Block</span>
-                    </>
+                      <button
+                        onClick={() => {
+                          setShowHeaderMenu(false);
+                          handleClearChat();
+                        }}
+                        className="w-full flex items-center gap-2.5 px-3 py-2 text-xs font-bold text-gray-700 dark:text-gray-200 hover:bg-red-50 dark:hover:bg-red-950/40 hover:text-red-600 rounded-xl transition"
+                      >
+                        <FaTrash className="text-red-400 text-sm" />
+                        <span>Clear Chat</span>
+                      </button>
+
+                      <div className="my-1 border-t border-gray-100 dark:border-gray-800"></div>
+
+                      <button
+                        onClick={() => {
+                          setShowHeaderMenu(false);
+                          handleToggleBlock();
+                        }}
+                        className={`w-full flex items-center gap-2.5 px-3 py-2 text-xs font-bold rounded-xl transition ${
+                          activeConv.isBlockedByMe
+                            ? "text-emerald-600 dark:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-950/40"
+                            : "text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/40"
+                        }`}
+                      >
+                        {activeConv.isBlockedByMe ? (
+                          <>
+                            <FaUnlock className="text-emerald-500 text-sm" />
+                            <span>Unblock User</span>
+                          </>
+                        ) : (
+                          <>
+                            <FaBan className="text-red-500 text-sm" />
+                            <span>Block User</span>
+                          </>
+                        )}
+                      </button>
+                    </div>
                   )}
-                </button>
+                </div>
               </div>
             </div>
 
@@ -1342,6 +1479,10 @@ const ConversationItem = ({ conv, isActive, onClick }) => {
             {lastMsg ? (
               lastMsg.isUnsent ? (
                 <span className="italic">Message unsent</span>
+              ) : lastMsg.isEncrypted ? (
+                <span className="inline-flex items-center gap-1 font-semibold text-emerald-600 dark:text-emerald-400">
+                  <FaLock className="text-[9px]" /> Encrypted Message
+                </span>
               ) : (
                 lastMsg.text || `[${lastMsg.messageType}]`
               )

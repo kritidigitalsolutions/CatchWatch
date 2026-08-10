@@ -33,11 +33,13 @@
   border-radius: 18px 18px 18px 4px;
   word-break: break-word;
   overflow-wrap: anywhere;
+  border-left: 4px solid #ff6b00;
 }
 
 .dark .chat-bubble-received {
   background: #1f2937;
   color: #f9fafb;
+  border-left: 4px solid #ff6b00;
 }
 
 .reaction-pill {

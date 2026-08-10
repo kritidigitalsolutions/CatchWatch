@@ -17,7 +17,6 @@ import {
 } from "react-icons/fa";
 import {
   MdWorkspacePremium,
-  MdDownload,
   MdPrivacyTip,
   MdHelpCenter,
 } from "react-icons/md";
@@ -325,7 +324,7 @@ const ProfileMenuPage = () => {
         { label: "Creator Leaderboard", route: "/leaderboard", icon: <FaTrophy /> },
         { label: "Subscription Plans", route: "/subscription", icon: <MdWorkspacePremium /> },
         { label: "My Videos", route: "/my-videos", icon: <BiSolidVideos /> },
-        { label: "My Downloads", route: "/downloads", icon: <MdDownload /> },
+        // { label: "My Downloads", route: "/downloads", icon: <MdDownload /> },
         { label: "Personal Wish List", route: "/wishlist", icon: <FaBookmark /> },
       ],
     },

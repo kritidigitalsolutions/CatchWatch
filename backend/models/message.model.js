@@ -49,6 +49,14 @@ const messageSchema = new mongoose.Schema(
       type: String,
       default: "",
     },
+    isEncrypted: {
+      type: Boolean,
+      default: false,
+    },
+    iv: {
+      type: String,
+      default: "",
+    },
     mediaUrl: {
       type: String,
       default: "",

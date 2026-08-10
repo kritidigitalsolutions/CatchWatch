@@ -38,4 +38,8 @@ router.get("/users/:userId/status", chatController.getUserStatus);
 // FCM Token registration
 router.post("/fcm-token", chatController.updateFcmToken);
 
+// E2EE Key Management
+router.post("/keys", chatController.setPublicKey);
+router.get("/keys/:userId", chatController.getPublicKey);
+
 module.exports = router;

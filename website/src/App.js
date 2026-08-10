@@ -9,7 +9,6 @@ import SelectVideoPage from './pages/SelectVideoPage';
 import SearchMoviesPage from './pages/SearchMoviesPage';
 import ProfileMenuPage from './pages/ProfileMenuPage';
 import EditProfilePage from './pages/EditProfilePage';
-import DownloadsPage from './pages/DownloadsPage';
 import ChoosePlanPage from './pages/ChoosePlanPage';
 import ContentExplorerPage from './pages/ContentExplorePage';
 import TopChartPage from './pages/TopChartPage';
@@ -145,7 +144,7 @@ const App = () => {
                 <Route path="/complete-profile" element={<CompleteProfilePage />} />
                 <Route path="/delete-account" element={<DeleteAccountPage />} />
                 <Route path="/profile/delete" element={<DeleteAccountPage />} />
-                <Route path="/downloads" element={<DownloadsPage />} />
+                {/* <Route path="/downloads" element={<DownloadsPage />} /> */}
                 <Route path="/subscription" element={<ChoosePlanPage />} />
                 <Route path="/explore" element={<ContentExplorerPage />} />
                 <Route path="/recommended" element={<RecommendedPage />} />

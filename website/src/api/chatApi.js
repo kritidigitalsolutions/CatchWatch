@@ -104,3 +104,13 @@ export const updateFcmToken = async (fcmToken) => {
   const res = await axiosInstance.post("/chat/fcm-token", { fcmToken });
   return res.data;
 };
+
+export const savePublicKey = async (publicKey) => {
+  const res = await axiosInstance.post("/chat/keys", { publicKey });
+  return res.data;
+};
+
+export const getUserPublicKey = async (userId) => {
+  const res = await axiosInstance.get(`/chat/keys/${userId}`);
+  return res.data;
+};

@@ -43,7 +43,7 @@ exports.getConversations = async (req, res) => {
     })
       .populate({
         path: "participants",
-        select: "name username profileImage isOnline lastSeen phone bio role verification",
+        select: "name username profileImage isOnline lastSeen phone bio role verification publicKey",
       })
       .populate({
         path: "lastMessage",
@@ -126,7 +126,7 @@ exports.startConversation = async (req, res) => {
       participants: { $all: [currentUserId, recipientId] },
     }).populate({
       path: "participants",
-      select: "name username profileImage isOnline lastSeen phone bio role verification",
+      select: "name username profileImage isOnline lastSeen phone bio role verification publicKey",
     }).populate("lastMessage");
 
     if (conversation) {
@@ -148,7 +148,7 @@ exports.startConversation = async (req, res) => {
 
       conversation = await Conversation.findById(conversation._id).populate({
         path: "participants",
-        select: "name username profileImage isOnline lastSeen phone bio role verification",
+        select: "name username profileImage isOnline lastSeen phone bio role verification publicKey",
       });
     }
 
@@ -270,6 +270,8 @@ exports.sendMessage = async (req, res) => {
       mediaMeta,
       replyTo,
       isForwarded = false,
+      isEncrypted = false,
+      iv = "",
     } = req.body;
 
     let targetConvId = conversationId;
@@ -316,6 +318,8 @@ exports.sendMessage = async (req, res) => {
       recipient: targetRecipientId,
       messageType,
       text: text || "",
+      isEncrypted: !!isEncrypted,
+      iv: iv || "",
       mediaUrl: mediaUrl || "",
       mediaMeta: mediaMeta || {},
       replyTo: replyTo || null,
@@ -357,11 +361,13 @@ exports.sendMessage = async (req, res) => {
       const recipientUser = await User.findById(targetRecipientId).select("fcmToken name");
       const senderUser = await User.findById(senderId).select("name username");
       if (recipientUser && recipientUser.fcmToken) {
-        let notificationBody = text || "Sent a media message";
-        if (messageType === "image") notificationBody = "📷 Sent an image";
-        if (messageType === "video") notificationBody = "🎥 Sent a video";
-        if (messageType === "audio") notificationBody = "🎵 Sent a voice message";
-        if (messageType === "gif") notificationBody = "🖼️ Sent a GIF";
+        let notificationBody = isEncrypted ? "🔒 End-to-End Encrypted Message" : (text || "Sent a media message");
+        if (!isEncrypted) {
+          if (messageType === "image") notificationBody = "📷 Sent an image";
+          if (messageType === "video") notificationBody = "🎥 Sent a video";
+          if (messageType === "audio") notificationBody = "🎵 Sent a voice message";
+          if (messageType === "gif") notificationBody = "🖼️ Sent a GIF";
+        }
 
         sendPushNotification({
           token: recipientUser.fcmToken,
@@ -1007,6 +1013,59 @@ exports.uploadChatMedia = async (req, res) => {
     return res.status(500).json({
       success: false,
       message: "Failed to upload media file",
+      error: error.message,
+    });
+  }
+};
+
+// 18. Set User Public Key (E2EE)
+exports.setPublicKey = async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const { publicKey } = req.body;
+
+    if (!publicKey || typeof publicKey !== "string") {
+      return res.status(400).json({ success: false, message: "publicKey is required" });
+    }
+
+    await User.findByIdAndUpdate(userId, { publicKey });
+
+    return res.status(200).json({
+      success: true,
+      message: "Public key updated successfully",
+    });
+  } catch (error) {
+    console.error("Set Public Key Error:", error);
+    return res.status(500).json({
+      success: false,
+      message: "Failed to update public key",
+      error: error.message,
+    });
+  }
+};
+
+// 19. Get User Public Key (E2EE)
+exports.getPublicKey = async (req, res) => {
+  try {
+    const { userId } = req.params;
+
+    const user = await User.findById(userId).select("name username publicKey");
+    if (!user) {
+      return res.status(404).json({ success: false, message: "User not found" });
+    }
+
+    return res.status(200).json({
+      success: true,
+      data: {
+        userId: user._id,
+        publicKey: user.publicKey || "",
+      },
+    });
+  } catch (error) {
+    console.error("Get Public Key Error:", error);
+    return res.status(500).json({
+      success: false,
+      message: "Failed to fetch public key",
       error: error.message,
     });
   }
