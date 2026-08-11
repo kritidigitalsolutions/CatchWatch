@@ -2,7 +2,6 @@ import React, { useState, useEffect } from "react";
 import API from "../api/axios";
 import { useToast } from "../App";
 import {
-  Settings,
   Save,
   Sliders,
   Shield,

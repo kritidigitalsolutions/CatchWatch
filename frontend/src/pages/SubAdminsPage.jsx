@@ -12,8 +12,6 @@ import {
   X,
   Eye,
   EyeOff,
-  ShieldCheck,
-  Check,
 } from "lucide-react";
 import "./SubAdminsPage.css";
 

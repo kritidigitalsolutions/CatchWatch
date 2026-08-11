@@ -185,7 +185,7 @@ const Topbar = () => {
                 <NavLink
                   to="/upload"
                   className={({ isActive }) =>
-                    `flex flex-row bg-orange-100 hover:bg-orange-200 px-3 py-1.5 rounded-2xl items-center gap-1.5 text-xs font-bold tracking-wide whitespace-nowrap transition-colors ${isActive ? "text-brand-orange" : "text-gray-700 hover:text-gray-900"}`
+                    `flex flex-row bg-gray-100 hover:bg-orange-200 shadow-md uppercase px-3 py-1.5 rounded-2xl items-center gap-1.5 text-xs font-bold tracking-wide whitespace-nowrap transition-colors ${isActive ? "text-brand-orange" : "text-gray-700 hover:text-gray-900"}`
                   }
                 >
                   <span>Upload reels</span>

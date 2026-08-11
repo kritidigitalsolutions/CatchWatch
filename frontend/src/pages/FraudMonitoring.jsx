@@ -7,8 +7,6 @@ import {
   Smartphone,
   Globe,
   Zap,
-  Activity,
-  AlertTriangle,
   RefreshCw,
   Search,
 } from "lucide-react";

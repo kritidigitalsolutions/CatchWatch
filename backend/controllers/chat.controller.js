@@ -206,6 +206,7 @@ exports.getMessages = async (req, res) => {
     })
       .populate("sender", "name username profileImage")
       .populate("recipient", "name username profileImage")
+      .populate("pinnedBy", "name username")
       .populate({
         path: "replyTo",
         populate: { path: "sender", select: "name username" },
@@ -1070,3 +1071,104 @@ exports.getPublicKey = async (req, res) => {
     });
   }
 };
+
+// 20. Toggle Pin Message
+exports.togglePinMessage = async (req, res) => {
+  try {
+    const currentUserId = req.user.id;
+    const { messageId } = req.params;
+
+    const message = await Message.findById(messageId);
+    if (!message) {
+      return res.status(404).json({ success: false, message: "Message not found" });
+    }
+
+    const conversation = await Conversation.findOne({
+      _id: message.conversationId,
+      participants: currentUserId,
+    });
+    if (!conversation) {
+      return res.status(403).json({ success: false, message: "Unauthorized to pin message in this conversation" });
+    }
+
+    if (message.isUnsent) {
+      return res.status(400).json({ success: false, message: "Cannot pin an unsent message" });
+    }
+
+    const nextPinState = !message.isPinned;
+    message.isPinned = nextPinState;
+    message.pinnedBy = nextPinState ? currentUserId : null;
+    message.pinnedAt = nextPinState ? new Date() : null;
+
+    await message.save();
+
+    const updatedMessage = await Message.findById(message._id)
+      .populate("sender", "name username profileImage")
+      .populate("recipient", "name username profileImage")
+      .populate("pinnedBy", "name username")
+      .populate({
+        path: "replyTo",
+        populate: { path: "sender", select: "name username" },
+      });
+
+    // Notify sockets
+    const io = getIO();
+    if (io) {
+      io.to(`user_${message.recipient}`).emit("message_pinned", updatedMessage);
+      io.to(`user_${message.sender}`).emit("message_pinned", updatedMessage);
+    }
+
+    return res.status(200).json({
+      success: true,
+      message: nextPinState ? "Message pinned successfully" : "Message unpinned successfully",
+      data: updatedMessage,
+    });
+  } catch (error) {
+    console.error("Toggle Pin Message Error:", error);
+    return res.status(500).json({
+      success: false,
+      message: "Failed to toggle message pin status",
+      error: error.message,
+    });
+  }
+};
+
+// 21. Get Pinned Messages for Conversation
+exports.getPinnedMessages = async (req, res) => {
+  try {
+    const currentUserId = req.user.id;
+    const { conversationId } = req.params;
+
+    const conversation = await Conversation.findOne({
+      _id: conversationId,
+      participants: currentUserId,
+    });
+
+    if (!conversation) {
+      return res.status(404).json({ success: false, message: "Conversation not found" });
+    }
+
+    const pinnedMessages = await Message.find({
+      conversationId,
+      isPinned: true,
+      deletedFor: { $ne: currentUserId },
+    })
+      .populate("sender", "name username profileImage")
+      .populate("recipient", "name username profileImage")
+      .populate("pinnedBy", "name username")
+      .sort({ pinnedAt: -1, createdAt: -1 });
+
+    return res.status(200).json({
+      success: true,
+      data: pinnedMessages,
+    });
+  } catch (error) {
+    console.error("Get Pinned Messages Error:", error);
+    return res.status(500).json({
+      success: false,
+      message: "Failed to fetch pinned messages",
+      error: error.message,
+    });
+  }
+};
+

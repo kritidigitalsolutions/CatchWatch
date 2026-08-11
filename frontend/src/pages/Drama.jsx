@@ -4,7 +4,7 @@ import { uploadToBunny } from "../features/services/bunnyUpload";
 import "./Content.css";
 import {
   Eye, Edit2, Trash2, X, Play, Film,
-  Search, Plus, User, Video, ChevronDown, ChevronRight,
+  Search, Plus, User, Video, ChevronRight,
   Upload, Image, Lock, Globe, Tag, Layers, Star,
 } from "lucide-react";
 

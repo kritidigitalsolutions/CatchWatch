@@ -18,9 +18,6 @@ import {
   FileText,
   Download,
   Crown,
-  BadgeCheck,
-  ShieldCheck,
-  Zap,
   Trash2,
 } from "lucide-react";
 import API from "../api/axios";

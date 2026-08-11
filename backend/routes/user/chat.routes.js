@@ -16,11 +16,13 @@ router.delete("/conversations/:conversationId", chatController.clearConversation
 
 // Messages management
 router.get("/conversations/:conversationId/messages", chatController.getMessages);
+router.get("/conversations/:conversationId/pinned-messages", chatController.getPinnedMessages);
 router.post("/messages", chatController.sendMessage);
 router.put("/messages/:messageId", chatController.editMessage);
 router.post("/messages/:messageId/unsend", chatController.unsendMessage);
 router.delete("/messages/:messageId", chatController.deleteMessageForMe);
 router.post("/messages/:messageId/react", chatController.toggleReaction);
+router.post("/messages/:messageId/pin", chatController.togglePinMessage);
 router.get("/messages/search", chatController.searchMessages);
 
 // // Media upload for chat

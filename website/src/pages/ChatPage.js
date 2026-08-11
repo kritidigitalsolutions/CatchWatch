@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from "react";
+import { useNavigate } from "react-router-dom";
 import {
   FaSearch,
   FaPaperPlane,
@@ -20,7 +21,9 @@ import {
   FaPlus,
   FaUsers,
   FaHistory,
-  FaLock
+  FaLock,
+  FaDownload,
+  FaUser
 } from "react-icons/fa";
 import EmojiPicker from "emoji-picker-react";
 import { useSocket } from "../context/SocketContext";
@@ -43,6 +46,7 @@ import {
   unsendMessage,
   deleteMessageForMe,
   toggleReaction,
+  togglePinMessage,
   markAsRead,
   pinConversation,
   clearConversation,
@@ -57,12 +61,27 @@ import { toast } from "react-toastify";
 import "./ChatPage.css";
 
 const QUICK_EMOJIS = ["❤️", "👍", "😂", "😮", "😢", "🔥"];
+const MORE_EMOJIS = [
+  "❤️", "👍", "😂", "😮", "😢", "🔥", "🎉", "💯", "👏", "🙏",
+  "🤩", "🥳", "🤣", "😍", "💩", "✨", "💡", "💔", "⚡", "🏆",
+  "👌", "😎", "😭", "🙄", "😬", "🫡", "🫣", "🚀", "🍿", "🙌",
+  "💖", "🥰", "🎯", "👑", "⭐", "💪"
+];
 
 const ChatPage = () => {
+  const navigate = useNavigate();
   const { socket, fetchUnreadChatCount } = useSocket();
   const { initiateCall, setShowCallHistoryModal } = useCall();
   const currentUser = JSON.parse(localStorage.getItem("user") || "{}");
   const currentUserId = currentUser._id || currentUser.id;
+
+  const handleOpenPartnerProfile = (partner) => {
+    if (!partner) return;
+    const identifier = partner._id || partner.id || partner.username;
+    if (identifier) {
+      navigate(`/user/${identifier}`);
+    }
+  };
 
   // Conversations & Search States
   const [conversations, setConversations] = useState([]);
@@ -96,6 +115,8 @@ const ChatPage = () => {
   const [selectedMediaPreview, setSelectedMediaPreview] = useState(null);
   const [uploadingMedia, setUploadingMedia] = useState(false);
   const [activeActionMenuId, setActiveActionMenuId] = useState(null);
+  const [showMoreEmojisMsgId, setShowMoreEmojisMsgId] = useState(null);
+  const [currentPinnedIndex, setCurrentPinnedIndex] = useState(0);
   const [fullViewImage, setFullViewImage] = useState(null);
   const [showHeaderMenu, setShowHeaderMenu] = useState(false);
 
@@ -191,6 +212,7 @@ const ChatPage = () => {
     const handleOutsideClick = (e) => {
       if (activeActionMenuId && !e.target.closest(".chat-dropdown-container")) {
         setActiveActionMenuId(null);
+        setShowMoreEmojisMsgId(null);
       }
       if (showHeaderMenu && !e.target.closest(".header-menu-container")) {
         setShowHeaderMenu(false);
@@ -212,6 +234,8 @@ const ChatPage = () => {
     setMessageText("");
     setSelectedMediaPreview(null);
     setActiveActionMenuId(null);
+    setShowMoreEmojisMsgId(null);
+    setCurrentPinnedIndex(0);
     setShowHeaderMenu(false);
     setShowEmojiPicker(false);
     setShowGifPicker(false);
@@ -413,11 +437,18 @@ const ChatPage = () => {
       }
     };
 
+    const handleMessagePinned = (pinnedMsg) => {
+      setMessages((prev) =>
+        prev.map((m) => (m._id === pinnedMsg._id ? pinnedMsg : m))
+      );
+    };
+
     socket.on("new_message", handleNewMessage);
     socket.on("message_sent", handleMessageSent);
     socket.on("message_edited", handleMessageEdited);
     socket.on("message_unsent", handleMessageUnsent);
     socket.on("message_reaction", handleMessageReaction);
+    socket.on("message_pinned", handleMessagePinned);
     socket.on("messages_read", handleMessagesRead);
     socket.on("user_typing_start", handleUserTypingStart);
     socket.on("user_typing_stop", handleUserTypingStop);
@@ -432,6 +463,7 @@ const ChatPage = () => {
       socket.off("message_edited", handleMessageEdited);
       socket.off("message_unsent", handleMessageUnsent);
       socket.off("message_reaction", handleMessageReaction);
+      socket.off("message_pinned", handleMessagePinned);
       socket.off("messages_read", handleMessagesRead);
       socket.off("user_typing_start", handleUserTypingStart);
       socket.off("user_typing_stop", handleUserTypingStop);
@@ -631,6 +663,86 @@ const ChatPage = () => {
       toast.info("Message deleted for you");
     } catch (err) {
       toast.error("Failed to delete message");
+    }
+  };
+
+  const pinnedMessagesList = messages.filter((m) => m.isPinned && !m.isUnsent);
+
+  const handleTogglePin = async (messageId) => {
+    try {
+      const res = await togglePinMessage(messageId);
+      if (res && res.success && res.data) {
+        const updatedMsg = res.data;
+        setMessages((prev) =>
+          prev.map((m) =>
+            m._id === updatedMsg._id
+              ? {
+                  ...m,
+                  isPinned: updatedMsg.isPinned,
+                  pinnedBy: updatedMsg.pinnedBy,
+                  pinnedAt: updatedMsg.pinnedAt,
+                }
+              : m
+          )
+        );
+        toast.success(
+          res.message || (updatedMsg.isPinned ? "Message pinned" : "Message unpinned")
+        );
+      }
+    } catch (err) {
+      console.error("Pin message error:", err);
+      toast.error(err.response?.data?.message || "Failed to pin message");
+    }
+  };
+
+  const handleDownloadMedia = async (mediaUrl, defaultFileName = "chat_media") => {
+    if (!mediaUrl) return;
+    try {
+      const toastId = toast.loading("Downloading media...");
+      const response = await fetch(mediaUrl);
+      const blob = await response.blob();
+      const blobUrl = window.URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.style.display = "none";
+      a.href = blobUrl;
+
+      let ext = "";
+      if (mediaUrl.includes(".")) {
+        const parts = mediaUrl.split("?")[0].split(".");
+        ext = parts[parts.length - 1];
+        if (ext.length > 5) ext = "";
+      }
+      const fileName = ext ? `${defaultFileName}.${ext}` : defaultFileName;
+      a.download = fileName;
+
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(blobUrl);
+      document.body.removeChild(a);
+      toast.update(toastId, {
+        render: "Media downloaded successfully!",
+        type: "success",
+        isLoading: false,
+        autoClose: 2000,
+      });
+    } catch (error) {
+      console.error("Download media error:", error);
+      const a = document.createElement("a");
+      a.href = mediaUrl;
+      a.target = "_blank";
+      a.download = defaultFileName;
+      a.click();
+    }
+  };
+
+  const scrollToMessage = (msgId) => {
+    const elem = document.getElementById(`msg-${msgId}`);
+    if (elem) {
+      elem.scrollIntoView({ behavior: "smooth", block: "center" });
+      elem.classList.add("ring-2", "ring-brand-orange", "rounded-2xl", "transition-all");
+      setTimeout(() => {
+        elem.classList.remove("ring-2", "ring-brand-orange", "rounded-2xl");
+      }, 2000);
     }
   };
 
@@ -880,7 +992,7 @@ const ChatPage = () => {
         {activeConv ? (
           <>
             {/* Active Header */}
-            <div className="px-4 py-3 bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-800 flex justify-between items-center shadow-sm flex-shrink-0 z-10">
+            <div className="px-4 py-3 bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-800 flex justify-between items-center shadow-sm flex-shrink-0 relative z-30">
               <div className="flex items-center gap-3">
                 <button
                   onClick={() => setActiveConv(null)}
@@ -889,35 +1001,41 @@ const ChatPage = () => {
                   <FaArrowLeft />
                 </button>
 
-                <div className="relative">
-                  <img
-                    src={activeConv.partner?.profileImage || "/logo192.png"}
-                    alt={activeConv.partner?.name}
-                    className="w-10 h-10 rounded-full object-cover border border-gray-200 dark:border-gray-700"
-                  />
-                  {activeConv.partner?.isOnline && (
-                    <span className="absolute bottom-0 right-0 w-3 h-3 bg-green-500 rounded-full border-2 border-white dark:border-gray-900"></span>
-                  )}
-                </div>
-
-                <div>
-                  <h3 className="font-extrabold text-sm text-gray-800 dark:text-white leading-tight">
-                    {activeConv.partner?.name || "User"}
-                  </h3>
-                  <p className="text-[11px] text-gray-500 dark:text-gray-400 flex items-center gap-1.5">
-                    {typingPartner ? (
-                      <span className="text-brand-orange font-bold animate-pulse">
-                        typing...
-                      </span>
-                    ) : activeConv.partner?.isOnline ? (
-                      <span className="text-green-500 font-bold">Online</span>
-                    ) : (
-                      formatLastSeen(activeConv.partner?.lastSeen)
+                <div
+                  className="flex items-center gap-3 cursor-pointer group"
+                  onClick={() => handleOpenPartnerProfile(activeConv.partner)}
+                  title="View User Profile"
+                >
+                  <div className="relative">
+                    <img
+                      src={activeConv.partner?.profileImage || "/logo192.png"}
+                      alt={activeConv.partner?.name}
+                      className="w-10 h-10 rounded-full object-cover border border-gray-200 dark:border-gray-700 group-hover:border-brand-orange transition"
+                    />
+                    {activeConv.partner?.isOnline && (
+                      <span className="absolute bottom-0 right-0 w-3 h-3 bg-green-500 rounded-full border-2 border-white dark:border-gray-900"></span>
                     )}
-                    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-emerald-50 dark:bg-emerald-950/40 text-emerald-600 dark:text-emerald-400 border border-emerald-200/40 ml-1">
-                      <FaLock className="text-[8px]" /> Encrypted
-                    </span>
-                  </p>
+                  </div>
+
+                  <div>
+                    <h3 className="font-extrabold text-sm text-gray-800 dark:text-white leading-tight group-hover:text-brand-orange transition flex items-center gap-1">
+                      {activeConv.partner?.name || "User"}
+                    </h3>
+                    <p className="text-[11px] text-gray-500 dark:text-gray-400 flex items-center gap-1.5">
+                      {typingPartner ? (
+                        <span className="text-brand-orange font-bold animate-pulse">
+                          typing...
+                        </span>
+                      ) : activeConv.partner?.isOnline ? (
+                        <span className="text-green-500 font-bold">Online</span>
+                      ) : (
+                        formatLastSeen(activeConv.partner?.lastSeen)
+                      )}
+                      <span className="inline-flex items-center gap-1 px-2 py-0.5 text-[10px] font-semibold text-emerald-600 dark:text-emerald-400 ml-1">
+                        | <FaLock className="text-[8px]" /> Encrypted
+                      </span>
+                    </p>
+                  </div>
                 </div>
               </div>
 
@@ -953,6 +1071,17 @@ const ChatPage = () => {
 
                   {showHeaderMenu && (
                     <div className="absolute right-0 top-12 w-48 bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 rounded-2xl shadow-xl p-1.5 z-50 animate-pop-in">
+                      <button
+                        onClick={() => {
+                          setShowHeaderMenu(false);
+                          handleOpenPartnerProfile(activeConv.partner);
+                        }}
+                        className="w-full flex items-center gap-2.5 px-3 py-2 text-xs font-bold text-gray-700 dark:text-gray-200 hover:bg-orange-50 dark:hover:bg-gray-800 hover:text-brand-orange rounded-xl transition"
+                      >
+                        <FaUser className="text-gray-400 text-sm" />
+                        <span>View Profile</span>
+                      </button>
+
                       <button
                         onClick={() => {
                           setShowHeaderMenu(false);
@@ -1017,6 +1146,59 @@ const ChatPage = () => {
               </div>
             </div>
 
+            {/* Pinned Messages Banner Bar */}
+            {pinnedMessagesList.length > 0 && (
+              <div className="bg-amber-50 dark:bg-amber-950/40 border-b border-amber-200 dark:border-amber-900/60 px-4 py-2 flex items-center justify-between text-xs shadow-xs flex-shrink-0 relative z-10 transition-all">
+                <div
+                  className="flex items-center gap-2.5 cursor-pointer flex-1 min-w-0"
+                  onClick={() => scrollToMessage(pinnedMessagesList[currentPinnedIndex]._id)}
+                >
+                  <div className="p-1.5 bg-brand-orange/15 text-brand-orange rounded-xl shadow-xs">
+                    <FaThumbtack className="text-xs" />
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <div className="flex items-center gap-2">
+                      <span className="font-extrabold text-[11px] text-amber-900 dark:text-amber-300 leading-tight">
+                        Pinned Message
+                      </span>
+                      {pinnedMessagesList.length > 1 && (
+                        <span className="text-[10px] bg-amber-200/70 dark:bg-amber-900/80 text-amber-900 dark:text-amber-200 px-1.5 py-0.2 rounded-full font-bold">
+                          {currentPinnedIndex + 1}/{pinnedMessagesList.length}
+                        </span>
+                      )}
+                    </div>
+                    <p className="text-[11px] text-gray-600 dark:text-gray-300 truncate">
+                      {pinnedMessagesList[currentPinnedIndex]?.messageType === "image"
+                        ? "Image attachment"
+                        : pinnedMessagesList[currentPinnedIndex]?.messageType === "video"
+                        ? "Video attachment"
+                        : pinnedMessagesList[currentPinnedIndex]?.messageType === "audio"
+                        ? "Voice message"
+                        : pinnedMessagesList[currentPinnedIndex]?.text}
+                    </p>
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-1.5 ml-2">
+                  {pinnedMessagesList.length > 1 && (
+                    <button
+                      onClick={() => setCurrentPinnedIndex((prev) => (prev + 1) % pinnedMessagesList.length)}
+                      className="px-2 py-1 bg-amber-200/80 dark:bg-amber-900/80 hover:bg-amber-300 text-amber-900 dark:text-amber-100 rounded-lg text-[10px] font-extrabold transition"
+                    >
+                      Next
+                    </button>
+                  )}
+                  <button
+                    onClick={() => handleTogglePin(pinnedMessagesList[currentPinnedIndex]._id)}
+                    className="p-1.5 text-amber-700 dark:text-amber-400 hover:text-red-600 rounded-lg transition"
+                    title="Unpin message"
+                  >
+                    <FaTimes className="text-xs" />
+                  </button>
+                </div>
+              </div>
+            )}
+
             {/* Messages Feed */}
             <div className="flex-1 overflow-y-auto p-4 chat-scroll space-y-4">
               {loadingMessages ? (
@@ -1037,6 +1219,8 @@ const ChatPage = () => {
                       onReply={(m) => setReplyingTo(m)}
                       onForward={(m) => setForwardingMsg(m)}
                       onReaction={(id, emoji) => handleReaction(id, emoji)}
+                      onPin={(id) => handleTogglePin(id)}
+                      onDownloadMedia={(url, filename) => handleDownloadMedia(url, filename)}
                       onEdit={(m) => {
                         setEditingMsg(m);
                         setMessageText(m.text);
@@ -1046,6 +1230,8 @@ const ChatPage = () => {
                       onImageClick={(url) => setFullViewImage(url)}
                       activeMenuId={activeActionMenuId}
                       setActiveMenuId={setActiveActionMenuId}
+                      showMoreEmojisMsgId={showMoreEmojisMsgId}
+                      setShowMoreEmojisMsgId={setShowMoreEmojisMsgId}
                     />
                   );
                 })
@@ -1388,14 +1574,21 @@ const ChatPage = () => {
                     key={u._id}
                     className="flex items-center justify-between p-2.5 hover:bg-gray-50 dark:hover:bg-gray-800/60 rounded-xl transition border border-gray-50 dark:border-gray-800/40"
                   >
-                    <div className="flex items-center gap-3 min-w-0 flex-1 pr-2">
+                    <div
+                      onClick={() => {
+                        setShowFollowsModal(false);
+                        handleOpenPartnerProfile(u);
+                      }}
+                      className="flex items-center gap-3 min-w-0 flex-1 pr-2 cursor-pointer group"
+                      title="View User Profile"
+                    >
                       <img
                         src={u.profileImage || "/logo192.png"}
                         alt={u.name}
-                        className="w-10 h-10 rounded-full object-cover border border-gray-200 dark:border-gray-700 shrink-0"
+                        className="w-10 h-10 rounded-full object-cover border border-gray-200 dark:border-gray-700 shrink-0 group-hover:border-brand-orange transition"
                       />
                       <div className="min-w-0">
-                        <h4 className="font-bold text-xs text-gray-800 dark:text-white truncate">
+                        <h4 className="font-bold text-xs text-gray-800 dark:text-white truncate group-hover:text-brand-orange transition">
                           {u.name}
                         </h4>
                         <p className="text-[11px] text-gray-400 truncate">
@@ -1510,18 +1703,25 @@ const MessageBubble = ({
   onReply,
   onForward,
   onReaction,
+  onPin,
+  onDownloadMedia,
   onEdit,
   onUnsend,
   onDelete,
   onImageClick,
   activeMenuId,
   setActiveMenuId,
+  showMoreEmojisMsgId,
+  setShowMoreEmojisMsgId,
 }) => {
   const isMenuOpen = activeMenuId === msg._id;
   const openDownwards = index < 2;
 
   return (
-    <div className={`flex flex-col ${isMe ? "items-end" : "items-start"} group relative mb-2`}>
+    <div
+      id={`msg-${msg._id}`}
+      className={`flex flex-col ${isMe ? "items-end" : "items-start"} group relative mb-2 transition-all duration-300`}
+    >
       {/* Quoted Parent Reply Snippet */}
       {msg.replyTo && (
         <div className="mb-1 text-[10px] bg-gray-200 dark:bg-gray-800 text-gray-600 dark:text-gray-300 px-3 py-1.5 rounded-xl border-l-4 border-brand-orange max-w-xs truncate">
@@ -1536,7 +1736,10 @@ const MessageBubble = ({
         {/* Quick Action Button for Me/Other */}
         <div className="relative chat-dropdown-container">
           <button
-            onClick={() => setActiveMenuId(isMenuOpen ? null : msg._id)}
+            onClick={() => {
+              setActiveMenuId(isMenuOpen ? null : msg._id);
+              if (setShowMoreEmojisMsgId) setShowMoreEmojisMsgId(null);
+            }}
             className="opacity-0 group-hover:opacity-100 p-1 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 text-xs transition"
           >
             <FaEllipsisV />
@@ -1545,22 +1748,64 @@ const MessageBubble = ({
           {/* Context Action Menu Dropdown */}
           {isMenuOpen && (
             <div
-              className={`absolute z-40 bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 rounded-2xl shadow-xl py-2 px-1 min-w-[150px] ${openDownwards ? "top-full mt-1" : "bottom-full mb-1"
-                } ${isMe ? "right-0" : "left-0"}`}
+              className={`absolute z-40 bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 rounded-2xl shadow-xl py-2 px-1 min-w-[170px] ${
+                openDownwards ? "top-full mt-1" : "bottom-full mb-1"
+              } ${isMe ? "right-0" : "left-0"}`}
             >
-              {/* Quick Reactions Row */}
-              <div className="flex justify-around border-b border-gray-100 dark:border-gray-800 pb-2 mb-1 px-1">
-                {QUICK_EMOJIS.map((emoji) => (
-                  <button
-                    key={emoji}
-                    onClick={() => onReaction(msg._id, emoji)}
-                    className="text-sm hover:scale-125 transition"
-                  >
-                    {emoji}
-                  </button>
-                ))}
+              {/* Quick Reactions Row with '+' Plus icon */}
+              <div className="flex items-center justify-between gap-1 border-b border-gray-100 dark:border-gray-800 pb-2 mb-1 px-1">
+                <div className="flex items-center justify-around flex-1">
+                  {QUICK_EMOJIS.map((emoji) => (
+                    <button
+                      key={emoji}
+                      onClick={() => {
+                        onReaction(msg._id, emoji);
+                        setActiveMenuId(null);
+                      }}
+                      className="text-sm hover:scale-125 transition p-0.5"
+                    >
+                      {emoji}
+                    </button>
+                  ))}
+                </div>
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    if (setShowMoreEmojisMsgId) {
+                      setShowMoreEmojisMsgId(showMoreEmojisMsgId === msg._id ? null : msg._id);
+                    }
+                  }}
+                  className={`p-1 rounded-full text-[11px] transition flex items-center justify-center ${
+                    showMoreEmojisMsgId === msg._id
+                      ? "bg-brand-orange text-white"
+                      : "bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700"
+                  }`}
+                  title="More Reactions (+)"
+                >
+                  <FaPlus className="text-[10px]" />
+                </button>
               </div>
 
+              {/* Expanded Emojis Palette Section if '+' clicked */}
+              {showMoreEmojisMsgId === msg._id && (
+                <div className="grid grid-cols-6 gap-1 p-2 mb-2 bg-gray-50 dark:bg-gray-800/80 rounded-xl max-h-44 overflow-y-auto custom-scrollbar border border-gray-200 dark:border-gray-700">
+                  {MORE_EMOJIS.map((emoji) => (
+                    <button
+                      key={emoji}
+                      onClick={() => {
+                        onReaction(msg._id, emoji);
+                        if (setShowMoreEmojisMsgId) setShowMoreEmojisMsgId(null);
+                        setActiveMenuId(null);
+                      }}
+                      className="text-base hover:scale-125 hover:bg-white dark:hover:bg-gray-700 rounded p-1 transition flex items-center justify-center"
+                    >
+                      {emoji}
+                    </button>
+                  ))}
+                </div>
+              )}
+
+              {/* Reply */}
               <button
                 onClick={() => {
                   setActiveMenuId(null);
@@ -1571,6 +1816,7 @@ const MessageBubble = ({
                 <FaReply /> Reply
               </button>
 
+              {/* Forward */}
               <button
                 onClick={() => {
                   setActiveMenuId(null);
@@ -1581,6 +1827,46 @@ const MessageBubble = ({
                 <FaShare /> Forward
               </button>
 
+              {/* Pin / Unpin Message */}
+              {!msg.isUnsent && (
+                <button
+                  onClick={() => {
+                    setActiveMenuId(null);
+                    onPin(msg._id);
+                  }}
+                  className={`w-full text-left px-3 py-1.5 text-xs flex items-center gap-2 ${
+                    msg.isPinned
+                      ? "text-brand-orange font-bold hover:bg-orange-50 dark:hover:bg-gray-800"
+                      : "text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800"
+                  }`}
+                >
+                  <FaThumbtack className={msg.isPinned ? "text-brand-orange rotate-45" : ""} />
+                  {msg.isPinned ? "Unpin Message" : "Pin Message"}
+                </button>
+              )}
+
+              {/* Download Image / Video / Attachment */}
+              {msg.mediaUrl && !msg.isUnsent && (
+                <button
+                  onClick={() => {
+                    setActiveMenuId(null);
+                    onDownloadMedia(
+                      msg.mediaUrl,
+                      `${msg.messageType || "media"}_${msg._id}`
+                    );
+                  }}
+                  className="w-full text-left px-3 py-1.5 text-xs text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800 flex items-center gap-2"
+                >
+                  <FaDownload className="text-gray-500" />
+                  {msg.messageType === "image"
+                    ? "Download Image"
+                    : msg.messageType === "video"
+                    ? "Download Video"
+                    : "Download File"}
+                </button>
+              )}
+
+              {/* Edit */}
               {isMe && !msg.isUnsent && msg.messageType === "text" && (
                 <button
                   onClick={() => {
@@ -1593,6 +1879,7 @@ const MessageBubble = ({
                 </button>
               )}
 
+              {/* Unsend for everyone */}
               {isMe && !msg.isUnsent && (
                 <button
                   onClick={() => onUnsend(msg._id)}
@@ -1602,6 +1889,7 @@ const MessageBubble = ({
                 </button>
               )}
 
+              {/* Delete for me */}
               <button
                 onClick={() => onDelete(msg._id)}
                 className="w-full text-left px-3 py-1.5 text-xs text-red-500 hover:bg-red-50 dark:hover:bg-gray-800 flex items-center gap-2"
@@ -1614,13 +1902,21 @@ const MessageBubble = ({
 
         {/* Bubble Content */}
         <div
-          className={`p-3 text-xs shadow-sm relative ${msg.isUnsent
+          className={`p-3 text-xs shadow-sm relative ${
+            msg.isUnsent
               ? "bg-gray-200 dark:bg-gray-800 text-gray-500 italic rounded-2xl"
               : isMe
-                ? "chat-bubble-sent"
-                : "chat-bubble-received"
-            }`}
+              ? "chat-bubble-sent"
+              : "chat-bubble-received"
+          }`}
         >
+          {/* Pinned Badge on Top Right of Bubble */}
+          {msg.isPinned && !msg.isUnsent && (
+            <div className="flex items-center gap-1 text-[10px] font-bold text-amber-700 dark:text-amber-300 bg-amber-100/90 dark:bg-amber-900/60 px-2 py-0.5 rounded-full mb-1.5 w-fit border border-amber-200/50">
+              <FaThumbtack className="text-[9px] text-brand-orange" /> Pinned Message
+            </div>
+          )}
+
           {/* Forwarded Header */}
           {msg.isForwarded && (
             <span className="text-[10px] opacity-75 font-semibold block mb-1 flex items-center gap-1">

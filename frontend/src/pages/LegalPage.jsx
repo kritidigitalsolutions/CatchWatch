@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import API from "../api/axios";
-import { FileText, Eye, Edit2, X, Save, Plus, Trash2, Layers, Globe, AlignLeft } from "lucide-react";
+import { FileText, Eye, Edit2, X, Save, Plus, Trash2, Layers, AlignLeft } from "lucide-react";
 import "./Dashboard.css";
 
 export default function LegalPage() {

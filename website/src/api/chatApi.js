@@ -51,6 +51,16 @@ export const toggleReaction = async (messageId, emoji) => {
   return res.data;
 };
 
+export const togglePinMessage = async (messageId) => {
+  const res = await axiosInstance.post(`/chat/messages/${messageId}/pin`, {});
+  return res.data;
+};
+
+export const getPinnedMessages = async (conversationId) => {
+  const res = await axiosInstance.get(`/chat/conversations/${conversationId}/pinned-messages`);
+  return res.data;
+};
+
 export const markAsRead = async (conversationId) => {
   const res = await axiosInstance.post(`/chat/conversations/${conversationId}/read`, {});
   return res.data;

@@ -63,9 +63,30 @@ exports.getSingleUser = async (
             });
         }
 
+        const Follow = require("../../models/follow.model");
+        const Reel = require("../../models/reel.model");
+        const Subscription = require("../../models/subscription.model");
+
+        const [followersCount, followingCount, reelsCount, activeSub] = await Promise.all([
+            Follow.countDocuments({ following: user._id }),
+            Follow.countDocuments({ follower: user._id }),
+            Reel.countDocuments({ user: user._id }),
+            Subscription.findOne({ user: user._id, status: "active" }).populate("plan"),
+        ]);
+
+        const userDetails = {
+            ...user.toObject(),
+            isBlocked: user.status === "Blocked",
+            followersCount: followersCount || user.totalCreatorFollowers || 0,
+            followingCount: followingCount || 0,
+            reelsCount: reelsCount || 0,
+            subscription: activeSub || null,
+            plan: activeSub && activeSub.plan ? activeSub.plan.name : "Free",
+        };
+
         res.status(200).json({
             success: true,
-            user,
+            user: userDetails,
         });
 
     } catch (error) {

@@ -7,7 +7,6 @@ import {
   Tag, 
   Ticket, 
   X, 
-  Search,
   Activity,
   Layers,
   Calendar,
