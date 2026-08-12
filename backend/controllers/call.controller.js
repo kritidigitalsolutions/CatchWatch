@@ -83,6 +83,18 @@ exports.startCall = async (req, res) => {
       }
     );
 
+    // Auto-expire stale accepted calls older than 4 hours
+    const staleAcceptedTime = new Date(Date.now() - 4 * 60 * 60 * 1000);
+    await Call.updateMany(
+      {
+        status: "accepted",
+        updatedAt: { $lt: staleAcceptedTime },
+      },
+      {
+        $set: { status: "ended", endedAt: new Date() },
+      }
+    );
+
     // Check if receiver is already in an active call
     const activeCall = await Call.findOne({
       $or: [{ caller: receiverId }, { receiver: receiverId }],

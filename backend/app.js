@@ -51,6 +51,7 @@ const defaultAllowed = [
 const allowedOrigins = [
   ...new Set([...frontendUrls, ...adminUrls, ...defaultAllowed]),
 ];
+app.allowedOrigins = allowedOrigins;
 
 const corsOptions = {
   origin: (origin, callback) => {

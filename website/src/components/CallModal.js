@@ -41,16 +41,24 @@ export const CallModal = () => {
   // Play local video track in PIP container
   useEffect(() => {
     if (localVideoTrack && localVideoRef.current && !isVideoOff) {
-      localVideoTrack.play(localVideoRef.current);
+      try {
+        localVideoTrack.play(localVideoRef.current, { fit: "cover" });
+      } catch (e) {
+        console.warn("Local video track play error:", e);
+      }
     }
   }, [localVideoTrack, isVideoOff, callState]);
 
   // Play remote video track in main container
   useEffect(() => {
     if (remoteUser?.videoTrack && remoteVideoRef.current) {
-      remoteUser.videoTrack.play(remoteVideoRef.current);
+      try {
+        remoteUser.videoTrack.play(remoteVideoRef.current, { fit: "cover" });
+      } catch (e) {
+        console.warn("Remote video track play error:", e);
+      }
     }
-  }, [remoteUser, callState]);
+  }, [remoteUser, remoteUser?.videoTrack, remoteUser?._ts, callState]);
 
   const formatDuration = (seconds) => {
     const mins = Math.floor(seconds / 60);
@@ -189,15 +197,16 @@ export const CallModal = () => {
             {activeCall.type === "video" ? (
               <>
                 {/* Main Remote Video Stream */}
-                <div ref={remoteVideoRef} className="w-full h-full object-cover">
+                <div className="relative w-full h-full">
+                  <div ref={remoteVideoRef} className="w-full h-full object-cover" />
                   {!remoteUser?.videoTrack && (
-                    <div className="w-full h-full flex flex-col justify-center items-center gap-3 bg-gray-900 text-gray-400">
+                    <div className="absolute inset-0 flex flex-col justify-center items-center gap-3 bg-gray-900 text-gray-400 z-10">
                       <img
                         src={partnerUser?.profileImage || "/logo192.png"}
                         alt={partnerUser?.name}
                         className="w-20 h-20 rounded-full object-cover opacity-60 border-2 border-white/10"
                       />
-                      <p className="text-xs font-bold">Waiting for remote video track...</p>
+                      <p className="text-xs font-bold">Connecting video stream...</p>
                     </div>
                   )}
                 </div>

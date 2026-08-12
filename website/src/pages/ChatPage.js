@@ -182,13 +182,13 @@ const ChatPage = () => {
   // Helper to decrypt message if encrypted
   const processDecryptMessage = async (msg, sharedKey = null) => {
     if (!msg || !msg.text) return msg;
-    if (!msg.isEncrypted || !msg.iv) return msg;
+    if (!msg.isEncrypted || !msg.iv) return { ...msg, isDecrypted: true };
     if (msg.isDecrypted) return msg;
 
     try {
       let keyToUse = sharedKey;
       if (!keyToUse) {
-        const partner = (msg.sender?._id || msg.sender?.id || msg.sender)?.toString() === currentUserId.toString()
+        const partner = (msg.sender?._id || msg.sender?.id || msg.sender)?.toString() === currentUserId?.toString()
           ? (msg.recipient?._id || msg.recipient?.id || msg.recipient)
           : (msg.sender?._id || msg.sender?.id || msg.sender);
         keyToUse = await getSharedKeyForPartner(partner);
@@ -198,15 +198,50 @@ const ChatPage = () => {
         if (typeof msg.text === "string" && (msg.text.includes(" ") || !/^[A-Za-z0-9+/=]+$/.test(msg.text.trim()))) {
           return { ...msg, isDecrypted: true };
         }
-        return { ...msg, text: "🔒 [Encrypted Message]", isDecrypted: true };
+        return { ...msg, isDecrypted: false };
       }
 
       const plainText = await decryptText(msg.text, msg.iv, keyToUse);
+      if (plainText === null) {
+        return { ...msg, isDecrypted: false };
+      }
       return { ...msg, text: plainText, isDecrypted: true };
     } catch (err) {
-      return { ...msg, text: "🔒 [Encrypted Message]", isDecrypted: true };
+      return { ...msg, isDecrypted: false };
     }
   };
+
+  // Auto-retry decryption whenever e2eeKeys or activeConv changes
+  useEffect(() => {
+    if (!e2eeKeys || !activeConv || messages.length === 0) return;
+
+    const hasUndecrypted = messages.some((m) => m.isEncrypted && m.iv && !m.isDecrypted);
+    if (!hasUndecrypted) return;
+
+    let isMounted = true;
+    (async () => {
+      const partnerKey = await getSharedKeyForPartner(activeConv.partner);
+      if (!partnerKey || !isMounted) return;
+
+      const updated = await Promise.all(
+        messages.map(async (msg) => {
+          if (msg.isEncrypted && msg.iv && !msg.isDecrypted) {
+            return await processDecryptMessage(msg, partnerKey);
+          }
+          return msg;
+        })
+      );
+
+      if (isMounted) {
+        setMessages(updated);
+      }
+    })();
+
+    return () => {
+      isMounted = false;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [e2eeKeys, activeConv?._id]);
 
   // 1. Initial Load of Conversations
   useEffect(() => {

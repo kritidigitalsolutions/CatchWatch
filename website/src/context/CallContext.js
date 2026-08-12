@@ -1,4 +1,5 @@
 import React, { createContext, useContext, useState, useEffect, useRef } from "react";
+import { useLocation } from "react-router-dom";
 import AgoraRTC from "agora-rtc-sdk-ng";
 import { useSocket } from "./SocketContext";
 import {
@@ -98,12 +99,64 @@ export const CallProvider = ({ children }) => {
     }
   };
 
+  const location = useLocation();
+  const previousPathRef = useRef(location.pathname);
+
+  // Auto-end call when user navigates to another page / route
+  useEffect(() => {
+    if (previousPathRef.current !== location.pathname) {
+      if (activeCallRef.current && callState !== "idle") {
+        console.log("Navigation detected during active call. Ending call.");
+        leaveAndEndCall();
+      }
+      previousPathRef.current = location.pathname;
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [location.pathname]);
+
+  // Auto-end call on window close, refresh, or browser back button (popstate)
+  useEffect(() => {
+    const handleBeforeUnload = () => {
+      if (activeCallRef.current && callState !== "idle") {
+        const callId = activeCallRef.current._id;
+        if (callId) {
+          endCall(callId).catch(() => {});
+        }
+        cleanupAndResetCall();
+      }
+    };
+
+    const handlePopState = () => {
+      if (activeCallRef.current && callState !== "idle") {
+        console.log("Browser back button pressed during call. Hanging up.");
+        leaveAndEndCall();
+      }
+    };
+
+    window.addEventListener("beforeunload", handleBeforeUnload);
+    window.addEventListener("pagehide", handleBeforeUnload);
+    window.addEventListener("popstate", handlePopState);
+
+    return () => {
+      window.removeEventListener("beforeunload", handleBeforeUnload);
+      window.removeEventListener("pagehide", handleBeforeUnload);
+      window.removeEventListener("popstate", handlePopState);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [callState]);
+
   // 2. Agora RTC Event Subscriptions
   useEffect(() => {
     const handleUserPublished = async (user, mediaType) => {
       console.log(`📡 Agora Remote User Published: ${user.uid}, mediaType: ${mediaType}`);
       await agoraClient.subscribe(user, mediaType);
-      setRemoteUser(user);
+      
+      setRemoteUser({
+        uid: user.uid,
+        audioTrack: user.audioTrack,
+        videoTrack: user.videoTrack,
+        _ts: Date.now(),
+      });
 
       if (mediaType === "audio") {
         user.audioTrack?.play();
@@ -113,7 +166,7 @@ export const CallProvider = ({ children }) => {
     const handleUserUnpublished = (user, mediaType) => {
       console.log(`📡 Agora Remote User Unpublished: ${user.uid}, mediaType: ${mediaType}`);
       if (mediaType === "video") {
-        setRemoteUser((prev) => (prev?.uid === user.uid ? { ...prev, videoTrack: null } : prev));
+        setRemoteUser((prev) => (prev?.uid === user.uid ? { ...prev, videoTrack: null, _ts: Date.now() } : prev));
       }
     };
 

@@ -1,0 +1,5125 @@
+{
+  "info": {
+    "name": "CatchWatch API - User Collection",
+    "description": "Postman Collection for CatchWatch User & Mobile App Backend Endpoints.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "Auth",
+      "item": [
+        {
+          "name": "POST - Auth (send-otp)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{userToken}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/send-otp",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "send-otp"
+              ]
+            },
+            "description": "Endpoint in routes/user/auth.routes.js",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"user@example.com\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "POST - Auth (verify-otp)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{userToken}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/verify-otp",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "verify-otp"
+              ]
+            },
+            "description": "Endpoint in routes/user/auth.routes.js",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"user@example.com\",\n  \"otp\": \"123456\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "POST - Auth (logout)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{userToken}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/logout",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "logout"
+              ]
+            },
+            "description": "Endpoint in routes/user/auth.routes.js",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"sampleKey\": \"sampleValue\",\n  \"timestamp\": \"2026-08-12T08:12:42.824Z\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "POST - Auth (refresh-token)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{userToken}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/refresh-token",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "refresh-token"
+              ]
+            },
+            "description": "Endpoint in routes/user/auth.routes.js",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"sampleKey\": \"sampleValue\",\n  \"timestamp\": \"2026-08-12T08:12:42.824Z\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "User Profile",
+      "item": [
+        {
+          "name": "GET - User Profile",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{userToken}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/user",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "user"
+              ]
+            },
+            "description": "Endpoint in routes/user/user.routes.js"
+          },
+          "response": []
+        },
+        {
+          "name": "GET - User Profile (profile)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{userToken}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/user/profile",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "user",
+                "profile"
+              ]
+            },
+            "description": "Endpoint in routes/user/user.routes.js"
+          },
+          "response": []
+        },
+        {
+          "name": "GET - User Profile (profile-details :identifier)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{userToken}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/user/profile-details/{{identifier}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "user",
+                "profile-details",
+                "{{identifier}}"
+              ]
+            },
+            "description": "Endpoint in routes/user/user.routes.js"
+          },
+          "response": []
+        },
+        {
+          "name": "GET - User Profile (posts :userId)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{userToken}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/user/posts/{{userId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "user",
+                "posts",
+                "{{userId}}"
+              ]
+            },
+            "description": "Endpoint in routes/user/user.routes.js"
+          },
+          "response": []
+        },
+        {
+          "name": "POST - User Profile (follow :id)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{userToken}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/user/follow/{{id}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "user",
+                "follow",
+                "{{id}}"
+              ]
+            },
+            "description": "Endpoint in routes/user/user.routes.js",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"sampleKey\": \"sampleValue\",\n  \"timestamp\": \"2026-08-12T08:12:42.824Z\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "POST - User Profile (unfollow :id)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{userToken}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/user/unfollow/{{id}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "user",
+                "unfollow",
+                "{{id}}"
+              ]
+            },
+            "description": "Endpoint in routes/user/user.routes.js",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"sampleKey\": \"sampleValue\",\n  \"timestamp\": \"2026-08-12T08:12:42.824Z\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "POST - User Profile (toggle-follow :id)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{userToken}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/user/toggle-follow/{{id}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "user",
+                "toggle-follow",
+                "{{id}}"
+              ]
+            },
+            "description": "Endpoint in routes/user/user.routes.js",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"sampleKey\": \"sampleValue\",\n  \"timestamp\": \"2026-08-12T08:12:42.824Z\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "GET - User Profile (follow-status :id)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{userToken}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/user/follow-status/{{id}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "user",
+                "follow-status",
+                "{{id}}"
+              ]
+            },
+            "description": "Endpoint in routes/user/user.routes.js"
+          },
+          "response": []
+        },
+        {
+          "name": "GET - User Profile (followers :userId)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{userToken}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/user/followers/{{userId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "user",
+                "followers",
+                "{{userId}}"
+              ]
+            },
+            "description": "Endpoint in routes/user/user.routes.js"
+          },
+          "response": []
+        },
+        {
+          "name": "GET - User Profile (following :userId)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{userToken}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/user/following/{{userId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "user",
+                "following",
+                "{{userId}}"
+              ]
+            },
+            "description": "Endpoint in routes/user/user.routes.js"
+          },
+          "response": []
+        },
+        {
+          "name": "POST - User Profile (complete-profile)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{userToken}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/user/complete-profile",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "user",
+                "complete-profile"
+              ]
+            },
+            "description": "Endpoint in routes/user/user.routes.js",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"sampleKey\": \"sampleValue\",\n  \"timestamp\": \"2026-08-12T08:12:42.824Z\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "PATCH - User Profile (update-profile)",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{userToken}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/user/update-profile",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "user",
+                "update-profile"
+              ]
+            },
+            "description": "Endpoint in routes/user/user.routes.js",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"sampleKey\": \"sampleValue\",\n  \"timestamp\": \"2026-08-12T08:12:42.824Z\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "PATCH - User Profile (fcm-token)",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{userToken}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/user/fcm-token",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "user",
+                "fcm-token"
+              ]
+            },
+            "description": "Endpoint in routes/user/user.routes.js",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"sampleKey\": \"sampleValue\",\n  \"timestamp\": \"2026-08-12T08:12:42.824Z\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "GET - User Profile (profile-stats :userId)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{userToken}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/user/profile-stats/{{userId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "user",
+                "profile-stats",
+                "{{userId}}"
+              ]
+            },
+            "description": "Endpoint in routes/user/user.routes.js"
+          },
+          "response": []
+        },
+        {
+          "name": "GET - User Profile (search)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{userToken}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/user/search",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "user",
+                "search"
+              ]
+            },
+            "description": "Endpoint in routes/user/user.routes.js"
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Chat & Messaging",
+      "item": [
+        {
+          "name": "GET - Chat & Messaging (conversations)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{userToken}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/chat/conversations",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "chat",
+                "conversations"
+              ]
+            },
+            "description": "Endpoint in routes/user/chat.routes.js"
+          },
+          "response": []
+        },
+        {
+          "name": "POST - Chat & Messaging (conversations)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{userToken}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/chat/conversations",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "chat",
+                "conversations"
+              ]
+            },
+            "description": "Endpoint in routes/user/chat.routes.js",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"receiverId\": \"60d0fe4f5311236168a109cc\",\n  \"message\": \"Hello! Checking in regarding content update.\",\n  \"mediaType\": \"text\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "POST - Chat & Messaging (conversations :conversationId read)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{userToken}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/chat/conversations/{{conversationId}}/read",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "chat",
+                "conversations",
+                "{{conversationId}}",
+                "read"
+              ]
+            },
+            "description": "Endpoint in routes/user/chat.routes.js",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"receiverId\": \"60d0fe4f5311236168a109cc\",\n  \"message\": \"Hello! Checking in regarding content update.\",\n  \"mediaType\": \"text\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "POST - Chat & Messaging (conversations :conversationId pin)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{userToken}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/chat/conversations/{{conversationId}}/pin",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "chat",
+                "conversations",
+                "{{conversationId}}",
+                "pin"
+              ]
+            },
+            "description": "Endpoint in routes/user/chat.routes.js",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"receiverId\": \"60d0fe4f5311236168a109cc\",\n  \"message\": \"Hello! Checking in regarding content update.\",\n  \"mediaType\": \"text\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "DELETE - Chat & Messaging (conversations :conversationId)",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{userToken}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/chat/conversations/{{conversationId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "chat",
+                "conversations",
+                "{{conversationId}}"
+              ]
+            },
+            "description": "Endpoint in routes/user/chat.routes.js"
+          },
+          "response": []
+        },
+        {
+          "name": "GET - Chat & Messaging (conversations :conversationId messages)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{userToken}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/chat/conversations/{{conversationId}}/messages",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "chat",
+                "conversations",
+                "{{conversationId}}",
+                "messages"
+              ]
+            },
+            "description": "Endpoint in routes/user/chat.routes.js"
+          },
+          "response": []
+        },
+        {
+          "name": "GET - Chat & Messaging (conversations :conversationId pinned-messages)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{userToken}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/chat/conversations/{{conversationId}}/pinned-messages",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "chat",
+                "conversations",
+                "{{conversationId}}",
+                "pinned-messages"
+              ]
+            },
+            "description": "Endpoint in routes/user/chat.routes.js"
+          },
+          "response": []
+        },
+        {
+          "name": "POST - Chat & Messaging (messages)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{userToken}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/chat/messages",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "chat",
+                "messages"
+              ]
+            },
+            "description": "Endpoint in routes/user/chat.routes.js",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"receiverId\": \"60d0fe4f5311236168a109cc\",\n  \"message\": \"Hello! Checking in regarding content update.\",\n  \"mediaType\": \"text\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "PUT - Chat & Messaging (messages :messageId)",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{userToken}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/chat/messages/{{messageId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "chat",
+                "messages",
+                "{{messageId}}"
+              ]
+            },
+            "description": "Endpoint in routes/user/chat.routes.js",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"receiverId\": \"60d0fe4f5311236168a109cc\",\n  \"message\": \"Hello! Checking in regarding content update.\",\n  \"mediaType\": \"text\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "POST - Chat & Messaging (messages :messageId unsend)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{userToken}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/chat/messages/{{messageId}}/unsend",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "chat",
+                "messages",
+                "{{messageId}}",
+                "unsend"
+              ]
+            },
+            "description": "Endpoint in routes/user/chat.routes.js",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"receiverId\": \"60d0fe4f5311236168a109cc\",\n  \"message\": \"Hello! Checking in regarding content update.\",\n  \"mediaType\": \"text\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "DELETE - Chat & Messaging (messages :messageId)",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{userToken}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/chat/messages/{{messageId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "chat",
+                "messages",
+                "{{messageId}}"
+              ]
+            },
+            "description": "Endpoint in routes/user/chat.routes.js"
+          },
+          "response": []
+        },
+        {
+          "name": "POST - Chat & Messaging (messages :messageId react)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{userToken}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/chat/messages/{{messageId}}/react",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "chat",
+                "messages",
+                "{{messageId}}",
+                "react"
+              ]
+            },
+            "description": "Endpoint in routes/user/chat.routes.js",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"receiverId\": \"60d0fe4f5311236168a109cc\",\n  \"message\": \"Hello! Checking in regarding content update.\",\n  \"mediaType\": \"text\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "POST - Chat & Messaging (messages :messageId pin)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{userToken}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/chat/messages/{{messageId}}/pin",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "chat",
+                "messages",
+                "{{messageId}}",
+                "pin"
+              ]
+            },
+            "description": "Endpoint in routes/user/chat.routes.js",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"receiverId\": \"60d0fe4f5311236168a109cc\",\n  \"message\": \"Hello! Checking in regarding content update.\",\n  \"mediaType\": \"text\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "GET - Chat & Messaging (messages search)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{userToken}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/chat/messages/search",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "chat",
+                "messages",
+                "search"
+              ]
+            },
+            "description": "Endpoint in routes/user/chat.routes.js"
+          },
+          "response": []
+        },
+        {
+          "name": "POST - Chat & Messaging (messages upload)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{userToken}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/chat/messages/upload",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "chat",
+                "messages",
+                "upload"
+              ]
+            },
+            "description": "Endpoint in routes/user/chat.routes.js",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"receiverId\": \"60d0fe4f5311236168a109cc\",\n  \"message\": \"Hello! Checking in regarding content update.\",\n  \"mediaType\": \"text\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "POST - Chat & Messaging (block :userId)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{userToken}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/chat/block/{{userId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "chat",
+                "block",
+                "{{userId}}"
+              ]
+            },
+            "description": "Endpoint in routes/user/chat.routes.js",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"receiverId\": \"60d0fe4f5311236168a109cc\",\n  \"message\": \"Hello! Checking in regarding content update.\",\n  \"mediaType\": \"text\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "DELETE - Chat & Messaging (block :userId)",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{userToken}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/chat/block/{{userId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "chat",
+                "block",
+                "{{userId}}"
+              ]
+            },
+            "description": "Endpoint in routes/user/chat.routes.js"
+          },
+          "response": []
+        },
+        {
+          "name": "GET - Chat & Messaging (blocked-users)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{userToken}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/chat/blocked-users",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "chat",
+                "blocked-users"
+              ]
+            },
+            "description": "Endpoint in routes/user/chat.routes.js"
+          },
+          "response": []
+        },
+        {
+          "name": "GET - Chat & Messaging (users search)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{userToken}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/chat/users/search",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "chat",
+                "users",
+                "search"
+              ]
+            },
+            "description": "Endpoint in routes/user/chat.routes.js"
+          },
+          "response": []
+        },
+        {
+          "name": "GET - Chat & Messaging (users :userId status)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{userToken}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/chat/users/{{userId}}/status",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "chat",
+                "users",
+                "{{userId}}",
+                "status"
+              ]
+            },
+            "description": "Endpoint in routes/user/chat.routes.js"
+          },
+          "response": []
+        },
+        {
+          "name": "POST - Chat & Messaging (fcm-token)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{userToken}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/chat/fcm-token",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "chat",
+                "fcm-token"
+              ]
+            },
+            "description": "Endpoint in routes/user/chat.routes.js",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"receiverId\": \"60d0fe4f5311236168a109cc\",\n  \"message\": \"Hello! Checking in regarding content update.\",\n  \"mediaType\": \"text\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "POST - Chat & Messaging (keys)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{userToken}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/chat/keys",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "chat",
+                "keys"
+              ]
+            },
+            "description": "Endpoint in routes/user/chat.routes.js",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"receiverId\": \"60d0fe4f5311236168a109cc\",\n  \"message\": \"Hello! Checking in regarding content update.\",\n  \"mediaType\": \"text\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "GET - Chat & Messaging (keys :userId)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{userToken}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/chat/keys/{{userId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "chat",
+                "keys",
+                "{{userId}}"
+              ]
+            },
+            "description": "Endpoint in routes/user/chat.routes.js"
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Audio & Video Calls",
+      "item": [
+        {
+          "name": "POST - Audio & Video Calls",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{userToken}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/calls",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "calls"
+              ]
+            },
+            "description": "Endpoint in routes/user/call.routes.js",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"receiverId\": \"60d0fe4f5311236168a109cc\",\n  \"callType\": \"video\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "GET - Audio & Video Calls (history)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{userToken}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/calls/history",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "calls",
+                "history"
+              ]
+            },
+            "description": "Endpoint in routes/user/call.routes.js"
+          },
+          "response": []
+        },
+        {
+          "name": "GET - Audio & Video Calls (:callId)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{userToken}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/calls/{{callId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "calls",
+                "{{callId}}"
+              ]
+            },
+            "description": "Endpoint in routes/user/call.routes.js"
+          },
+          "response": []
+        },
+        {
+          "name": "POST - Audio & Video Calls (:callId token)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{userToken}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/calls/{{callId}}/token",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "calls",
+                "{{callId}}",
+                "token"
+              ]
+            },
+            "description": "Endpoint in routes/user/call.routes.js",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"receiverId\": \"60d0fe4f5311236168a109cc\",\n  \"callType\": \"video\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "POST - Audio & Video Calls (:callId accept)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{userToken}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/calls/{{callId}}/accept",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "calls",
+                "{{callId}}",
+                "accept"
+              ]
+            },
+            "description": "Endpoint in routes/user/call.routes.js",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"receiverId\": \"60d0fe4f5311236168a109cc\",\n  \"callType\": \"video\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "POST - Audio & Video Calls (:callId reject)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{userToken}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/calls/{{callId}}/reject",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "calls",
+                "{{callId}}",
+                "reject"
+              ]
+            },
+            "description": "Endpoint in routes/user/call.routes.js",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"receiverId\": \"60d0fe4f5311236168a109cc\",\n  \"callType\": \"video\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "POST - Audio & Video Calls (:callId busy)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{userToken}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/calls/{{callId}}/busy",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "calls",
+                "{{callId}}",
+                "busy"
+              ]
+            },
+            "description": "Endpoint in routes/user/call.routes.js",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"receiverId\": \"60d0fe4f5311236168a109cc\",\n  \"callType\": \"video\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "POST - Audio & Video Calls (:callId cancel)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{userToken}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/calls/{{callId}}/cancel",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "calls",
+                "{{callId}}",
+                "cancel"
+              ]
+            },
+            "description": "Endpoint in routes/user/call.routes.js",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"receiverId\": \"60d0fe4f5311236168a109cc\",\n  \"callType\": \"video\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "POST - Audio & Video Calls (:callId missed)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{userToken}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/calls/{{callId}}/missed",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "calls",
+                "{{callId}}",
+                "missed"
+              ]
+            },
+            "description": "Endpoint in routes/user/call.routes.js",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"receiverId\": \"60d0fe4f5311236168a109cc\",\n  \"callType\": \"video\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "POST - Audio & Video Calls (:callId end)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{userToken}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/calls/{{callId}}/end",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "calls",
+                "{{callId}}",
+                "end"
+              ]
+            },
+            "description": "Endpoint in routes/user/call.routes.js",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"receiverId\": \"60d0fe4f5311236168a109cc\",\n  \"callType\": \"video\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Movies",
+      "item": [
+        {
+          "name": "GET - Movies",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{userToken}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/movies",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "movies"
+              ]
+            },
+            "description": "Endpoint in routes/user/movie.routes.js"
+          },
+          "response": []
+        },
+        {
+          "name": "GET - Movies (slug :slug)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{userToken}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/movies/slug/{{slug}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "movies",
+                "slug",
+                "{{slug}}"
+              ]
+            },
+            "description": "Endpoint in routes/user/movie.routes.js"
+          },
+          "response": []
+        },
+        {
+          "name": "GET - Movies (id :id)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{userToken}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/movies/id/{{id}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "movies",
+                "id",
+                "{{id}}"
+              ]
+            },
+            "description": "Endpoint in routes/user/movie.routes.js"
+          },
+          "response": []
+        },
+        {
+          "name": "GET - Movies (:id)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{userToken}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/movies/{{id}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "movies",
+                "{{id}}"
+              ]
+            },
+            "description": "Endpoint in routes/user/movie.routes.js"
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Series",
+      "item": [
+        {
+          "name": "GET - Series",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{userToken}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/series",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "series"
+              ]
+            },
+            "description": "Endpoint in routes/user/series.routes.js"
+          },
+          "response": []
+        },
+        {
+          "name": "GET - Series (slug :slug)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{userToken}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/series/slug/{{slug}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "series",
+                "slug",
+                "{{slug}}"
+              ]
+            },
+            "description": "Endpoint in routes/user/series.routes.js"
+          },
+          "response": []
+        },
+        {
+          "name": "GET - Series (:id)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{userToken}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/series/{{id}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "series",
+                "{{id}}"
+              ]
+            },
+            "description": "Endpoint in routes/user/series.routes.js"
+          },
+          "response": []
+        },
+        {
+          "name": "GET - Series (episodes :seriesId)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{userToken}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/series/episodes/{{seriesId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "series",
+                "episodes",
+                "{{seriesId}}"
+              ]
+            },
+            "description": "Endpoint in routes/user/series.routes.js"
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Content Explore",
+      "item": [
+        {
+          "name": "GET - Content Explore",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{userToken}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/content",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "content"
+              ]
+            },
+            "description": "Endpoint in routes/user/content.routes.js"
+          },
+          "response": []
+        },
+        {
+          "name": "GET - Content Explore (search)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{userToken}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/content/search",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "content",
+                "search"
+              ]
+            },
+            "description": "Endpoint in routes/user/content.routes.js"
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Short Films",
+      "item": [
+        {
+          "name": "GET - Short Films",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{userToken}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/short-films",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "short-films"
+              ]
+            },
+            "description": "Endpoint in routes/user/shortFilm.routes.js"
+          },
+          "response": []
+        },
+        {
+          "name": "GET - Short Films (slug :slug)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{userToken}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/short-films/slug/{{slug}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "short-films",
+                "slug",
+                "{{slug}}"
+              ]
+            },
+            "description": "Endpoint in routes/user/shortFilm.routes.js"
+          },
+          "response": []
+        },
+        {
+          "name": "GET - Short Films (id :id)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{userToken}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/short-films/id/{{id}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "short-films",
+                "id",
+                "{{id}}"
+              ]
+            },
+            "description": "Endpoint in routes/user/shortFilm.routes.js"
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "TV Shows",
+      "item": [
+        {
+          "name": "GET - TV Shows",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{userToken}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/tv-shows",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "tv-shows"
+              ]
+            },
+            "description": "Endpoint in routes/user/tvShow.routes.js"
+          },
+          "response": []
+        },
+        {
+          "name": "GET - TV Shows (search)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{userToken}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/tv-shows/search",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "tv-shows",
+                "search"
+              ]
+            },
+            "description": "Endpoint in routes/user/tvShow.routes.js"
+          },
+          "response": []
+        },
+        {
+          "name": "GET - TV Shows (:id)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{userToken}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/tv-shows/{{id}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "tv-shows",
+                "{{id}}"
+              ]
+            },
+            "description": "Endpoint in routes/user/tvShow.routes.js"
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "TV Shows Episodes",
+      "item": [
+        {
+          "name": "GET - TV Shows Episodes (:tvShowId)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{userToken}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/tv-shows-episodes/{{tvShowId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "tv-shows-episodes",
+                "{{tvShowId}}"
+              ]
+            },
+            "description": "Endpoint in routes/user/tvShowsEpisode.routes.js"
+          },
+          "response": []
+        },
+        {
+          "name": "GET - TV Shows Episodes (single :id)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{userToken}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/tv-shows-episodes/single/{{id}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "tv-shows-episodes",
+                "single",
+                "{{id}}"
+              ]
+            },
+            "description": "Endpoint in routes/user/tvShowsEpisode.routes.js"
+          },
+          "response": []
+        },
+        {
+          "name": "GET - TV Shows Episodes (search)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{userToken}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/tv-shows-episodes/search",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "tv-shows-episodes",
+                "search"
+              ]
+            },
+            "description": "Endpoint in routes/user/tvShowsEpisode.routes.js"
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Categories",
+      "item": [
+        {
+          "name": "GET - Categories",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{userToken}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/categories",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "categories"
+              ]
+            },
+            "description": "Endpoint in routes/user/category.routes.js"
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Verification",
+      "item": [
+        {
+          "name": "POST - Verification (apply)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{userToken}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/verification/apply",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "verification",
+                "apply"
+              ]
+            },
+            "description": "Endpoint in routes/user/verification.routes.js",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"sampleKey\": \"sampleValue\",\n  \"timestamp\": \"2026-08-12T08:12:42.825Z\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "GET - Verification (status)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{userToken}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/verification/status",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "verification",
+                "status"
+              ]
+            },
+            "description": "Endpoint in routes/user/verification.routes.js"
+          },
+          "response": []
+        },
+        {
+          "name": "PUT - Verification (cancel)",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{userToken}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/verification/cancel",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "verification",
+                "cancel"
+              ]
+            },
+            "description": "Endpoint in routes/user/verification.routes.js",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"sampleKey\": \"sampleValue\",\n  \"timestamp\": \"2026-08-12T08:12:42.825Z\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "PUT - Verification (update)",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{userToken}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/verification/update",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "verification",
+                "update"
+              ]
+            },
+            "description": "Endpoint in routes/user/verification.routes.js",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"sampleKey\": \"sampleValue\",\n  \"timestamp\": \"2026-08-12T08:12:42.825Z\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Legal",
+      "item": [
+        {
+          "name": "GET - Legal",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{userToken}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/legal",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "legal"
+              ]
+            },
+            "description": "Endpoint in routes/user/legal.routes.js"
+          },
+          "response": []
+        },
+        {
+          "name": "GET - Legal (:type)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{userToken}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/legal/{{type}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "legal",
+                "{{type}}"
+              ]
+            },
+            "description": "Endpoint in routes/user/legal.routes.js"
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Help Center",
+      "item": [
+        {
+          "name": "GET - Help Center",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{userToken}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/help",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "help"
+              ]
+            },
+            "description": "Endpoint in routes/user/help.routes.js"
+          },
+          "response": []
+        },
+        {
+          "name": "GET - Help Center (:category)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{userToken}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/help/{{category}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "help",
+                "{{category}}"
+              ]
+            },
+            "description": "Endpoint in routes/user/help.routes.js"
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Ratings & Reviews",
+      "item": [
+        {
+          "name": "POST - Ratings & Reviews (rate)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{userToken}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/rating/rate",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "rating",
+                "rate"
+              ]
+            },
+            "description": "Endpoint in routes/user/rating.routes.js",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"contentId\": \"60d0fe4f5311236168a109cd\",\n  \"rating\": 5,\n  \"review\": \"Fantastic watch!\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "GET - Ratings & Reviews (all)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{userToken}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/rating/all",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "rating",
+                "all"
+              ]
+            },
+            "description": "Endpoint in routes/user/rating.routes.js"
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Plans",
+      "item": [
+        {
+          "name": "GET - Plans",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{userToken}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/plan",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "plan"
+              ]
+            },
+            "description": "Endpoint in routes/user/plan.routes.js"
+          },
+          "response": []
+        },
+        {
+          "name": "GET - Plans (bluetick)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{userToken}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/plan/bluetick",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "plan",
+                "bluetick"
+              ]
+            },
+            "description": "Endpoint in routes/user/plan.routes.js"
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Promo Codes",
+      "item": [
+        {
+          "name": "POST - Promo Codes (apply)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{userToken}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/promo/apply",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "promo",
+                "apply"
+              ]
+            },
+            "description": "Endpoint in routes/user/promo.routes.js",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"code\": \"WELCOME50\",\n  \"discountPercent\": 50,\n  \"maxUses\": 100,\n  \"expiryDate\": \"2026-12-31\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Vouchers",
+      "item": [
+        {
+          "name": "POST - Vouchers (redeem)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{userToken}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/voucher/redeem",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "voucher",
+                "redeem"
+              ]
+            },
+            "description": "Endpoint in routes/user/voucher.routes.js",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"voucherCode\": \"VIPGIFT2026\",\n  \"planId\": \"60d0fe4f5311236168a109ce\",\n  \"validityDays\": 30\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Subscriptions",
+      "item": [
+        {
+          "name": "POST - Subscriptions (create-plan)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{userToken}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/subscription/create-plan",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "subscription",
+                "create-plan"
+              ]
+            },
+            "description": "Endpoint in routes/user/subscription.routes.js",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"planId\": \"60d0fe4f5311236168a109ce\",\n  \"paymentMethod\": \"Razorpay\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "POST - Subscriptions (create-subscription)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{userToken}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/subscription/create-subscription",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "subscription",
+                "create-subscription"
+              ]
+            },
+            "description": "Endpoint in routes/user/subscription.routes.js",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"planId\": \"60d0fe4f5311236168a109ce\",\n  \"paymentMethod\": \"Razorpay\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "POST - Subscriptions (subscribe)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{userToken}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/subscription/subscribe",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "subscription",
+                "subscribe"
+              ]
+            },
+            "description": "Endpoint in routes/user/subscription.routes.js",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"planId\": \"60d0fe4f5311236168a109ce\",\n  \"paymentMethod\": \"Razorpay\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "GET - Subscriptions (status)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{userToken}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/subscription/status",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "subscription",
+                "status"
+              ]
+            },
+            "description": "Endpoint in routes/user/subscription.routes.js"
+          },
+          "response": []
+        },
+        {
+          "name": "DELETE - Subscriptions (cancel)",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{userToken}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/subscription/cancel",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "subscription",
+                "cancel"
+              ]
+            },
+            "description": "Endpoint in routes/user/subscription.routes.js"
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Watchlist",
+      "item": [
+        {
+          "name": "POST - Watchlist",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{userToken}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/watchlist",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "watchlist"
+              ]
+            },
+            "description": "Endpoint in routes/user/watchlist.routes.js",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"contentId\": \"60d0fe4f5311236168a109cd\",\n  \"contentType\": \"movie\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "GET - Watchlist",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{userToken}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/watchlist",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "watchlist"
+              ]
+            },
+            "description": "Endpoint in routes/user/watchlist.routes.js"
+          },
+          "response": []
+        },
+        {
+          "name": "DELETE - Watchlist (:id)",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{userToken}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/watchlist/{{id}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "watchlist",
+                "{{id}}"
+              ]
+            },
+            "description": "Endpoint in routes/user/watchlist.routes.js"
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Notifications",
+      "item": [
+        {
+          "name": "POST - Notifications (fcm-token)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{userToken}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/notifications/fcm-token",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "notifications",
+                "fcm-token"
+              ]
+            },
+            "description": "Endpoint in routes/user/notification.routes.js",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"New Release Alert\",\n  \"message\": \"Check out the newly released season 2!\",\n  \"targetUser\": \"all\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "GET - Notifications",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{userToken}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/notifications",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "notifications"
+              ]
+            },
+            "description": "Endpoint in routes/user/notification.routes.js"
+          },
+          "response": []
+        },
+        {
+          "name": "GET - Notifications (unread-count)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{userToken}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/notifications/unread-count",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "notifications",
+                "unread-count"
+              ]
+            },
+            "description": "Endpoint in routes/user/notification.routes.js"
+          },
+          "response": []
+        },
+        {
+          "name": "PATCH - Notifications (read-all)",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{userToken}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/notifications/read-all",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "notifications",
+                "read-all"
+              ]
+            },
+            "description": "Endpoint in routes/user/notification.routes.js",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"New Release Alert\",\n  \"message\": \"Check out the newly released season 2!\",\n  \"targetUser\": \"all\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "PATCH - Notifications (:id read)",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{userToken}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/notifications/{{id}}/read",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "notifications",
+                "{{id}}",
+                "read"
+              ]
+            },
+            "description": "Endpoint in routes/user/notification.routes.js",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"New Release Alert\",\n  \"message\": \"Check out the newly released season 2!\",\n  \"targetUser\": \"all\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "DELETE - Notifications (:id)",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{userToken}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/notifications/{{id}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "notifications",
+                "{{id}}"
+              ]
+            },
+            "description": "Endpoint in routes/user/notification.routes.js"
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Interactions",
+      "item": [
+        {
+          "name": "POST - Interactions (toggle like :contentId)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{userToken}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/interaction/toggle/like/{{contentId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "interaction",
+                "toggle",
+                "like",
+                "{{contentId}}"
+              ]
+            },
+            "description": "Endpoint in routes/user/interation.routes.js",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"targetId\": \"60d0fe4f5311236168a109cd\",\n  \"type\": \"like\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "POST - Interactions (toggle dislike :contentId)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{userToken}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/interaction/toggle/dislike/{{contentId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "interaction",
+                "toggle",
+                "dislike",
+                "{{contentId}}"
+              ]
+            },
+            "description": "Endpoint in routes/user/interation.routes.js",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"targetId\": \"60d0fe4f5311236168a109cd\",\n  \"type\": \"like\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "POST - Interactions (toggle like :contentType :contentId)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{userToken}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/interaction/toggle/like/{{contentType}}/{{contentId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "interaction",
+                "toggle",
+                "like",
+                "{{contentType}}",
+                "{{contentId}}"
+              ]
+            },
+            "description": "Endpoint in routes/user/interation.routes.js",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"targetId\": \"60d0fe4f5311236168a109cd\",\n  \"type\": \"like\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "POST - Interactions (toggle dislike :contentType :contentId)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{userToken}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/interaction/toggle/dislike/{{contentType}}/{{contentId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "interaction",
+                "toggle",
+                "dislike",
+                "{{contentType}}",
+                "{{contentId}}"
+              ]
+            },
+            "description": "Endpoint in routes/user/interation.routes.js",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"targetId\": \"60d0fe4f5311236168a109cd\",\n  \"type\": \"like\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "POST - Interactions (toggle like :reelId)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{userToken}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/interaction/toggle/like/{{reelId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "interaction",
+                "toggle",
+                "like",
+                "{{reelId}}"
+              ]
+            },
+            "description": "Endpoint in routes/user/interation.routes.js",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"targetId\": \"60d0fe4f5311236168a109cd\",\n  \"type\": \"like\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "POST - Interactions (toggle dislike :reelId)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{userToken}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/interaction/toggle/dislike/{{reelId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "interaction",
+                "toggle",
+                "dislike",
+                "{{reelId}}"
+              ]
+            },
+            "description": "Endpoint in routes/user/interation.routes.js",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"targetId\": \"60d0fe4f5311236168a109cd\",\n  \"type\": \"like\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "POST - Interactions (toggle follow :userId)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{userToken}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/interaction/toggle/follow/{{userId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "interaction",
+                "toggle",
+                "follow",
+                "{{userId}}"
+              ]
+            },
+            "description": "Endpoint in routes/user/interation.routes.js",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"targetId\": \"60d0fe4f5311236168a109cd\",\n  \"type\": \"like\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "GET - Interactions (stats :contentId)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{userToken}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/interaction/stats/{{contentId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "interaction",
+                "stats",
+                "{{contentId}}"
+              ]
+            },
+            "description": "Endpoint in routes/user/interation.routes.js"
+          },
+          "response": []
+        },
+        {
+          "name": "GET - Interactions (stats :contentType :contentId)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{userToken}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/interaction/stats/{{contentType}}/{{contentId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "interaction",
+                "stats",
+                "{{contentType}}",
+                "{{contentId}}"
+              ]
+            },
+            "description": "Endpoint in routes/user/interation.routes.js"
+          },
+          "response": []
+        },
+        {
+          "name": "GET - Interactions (reel :reelId)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{userToken}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/interaction/reel/{{reelId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "interaction",
+                "reel",
+                "{{reelId}}"
+              ]
+            },
+            "description": "Endpoint in routes/user/interation.routes.js"
+          },
+          "response": []
+        },
+        {
+          "name": "GET - Interactions (follow :userId)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{userToken}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/interaction/follow/{{userId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "interaction",
+                "follow",
+                "{{userId}}"
+              ]
+            },
+            "description": "Endpoint in routes/user/interation.routes.js"
+          },
+          "response": []
+        },
+        {
+          "name": "POST - Interactions (toggle bookmark :contentId)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{userToken}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/interaction/toggle/bookmark/{{contentId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "interaction",
+                "toggle",
+                "bookmark",
+                "{{contentId}}"
+              ]
+            },
+            "description": "Endpoint in routes/user/interation.routes.js",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"targetId\": \"60d0fe4f5311236168a109cd\",\n  \"type\": \"like\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "POST - Interactions (toggle bookmark :contentType :contentId)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{userToken}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/interaction/toggle/bookmark/{{contentType}}/{{contentId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "interaction",
+                "toggle",
+                "bookmark",
+                "{{contentType}}",
+                "{{contentId}}"
+              ]
+            },
+            "description": "Endpoint in routes/user/interation.routes.js",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"targetId\": \"60d0fe4f5311236168a109cd\",\n  \"type\": \"like\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "GET - Interactions (bookmarks)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{userToken}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/interaction/bookmarks",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "interaction",
+                "bookmarks"
+              ]
+            },
+            "description": "Endpoint in routes/user/interation.routes.js"
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Payment (Razorpay)",
+      "item": [
+        {
+          "name": "POST - Payment (Razorpay) (create-order)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{userToken}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/payment/create-order",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "payment",
+                "create-order"
+              ]
+            },
+            "description": "Endpoint in routes/user/payment.routes.js",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"planId\": \"60d0fe4f5311236168a109ce\",\n  \"amount\": 199,\n  \"currency\": \"INR\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "POST - Payment (Razorpay) (verify)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{userToken}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/payment/verify",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "payment",
+                "verify"
+              ]
+            },
+            "description": "Endpoint in routes/user/payment.routes.js",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"razorpay_order_id\": \"order_K12345678\",\n  \"razorpay_payment_id\": \"pay_K87654321\",\n  \"razorpay_signature\": \"signature_hash_here\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Support Tickets",
+      "item": [
+        {
+          "name": "GET - Support Tickets (vip access-check)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{userToken}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/support/vip/access-check",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "support",
+                "vip",
+                "access-check"
+              ]
+            },
+            "description": "Endpoint in routes/user/support.routes.js"
+          },
+          "response": []
+        },
+        {
+          "name": "POST - Support Tickets (vip)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{userToken}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/support/vip",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "support",
+                "vip"
+              ]
+            },
+            "description": "Endpoint in routes/user/support.routes.js",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"subject\": \"Account Issue\",\n  \"message\": \"Unable to stream full HD on device.\",\n  \"category\": \"Technical\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "GET - Support Tickets (vip)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{userToken}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/support/vip",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "support",
+                "vip"
+              ]
+            },
+            "description": "Endpoint in routes/user/support.routes.js"
+          },
+          "response": []
+        },
+        {
+          "name": "GET - Support Tickets (vip :id)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{userToken}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/support/vip/{{id}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "support",
+                "vip",
+                "{{id}}"
+              ]
+            },
+            "description": "Endpoint in routes/user/support.routes.js"
+          },
+          "response": []
+        },
+        {
+          "name": "POST - Support Tickets (vip reply :id)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{userToken}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/support/vip/reply/{{id}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "support",
+                "vip",
+                "reply",
+                "{{id}}"
+              ]
+            },
+            "description": "Endpoint in routes/user/support.routes.js",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"subject\": \"Account Issue\",\n  \"message\": \"Unable to stream full HD on device.\",\n  \"category\": \"Technical\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "POST - Support Tickets",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{userToken}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/support",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "support"
+              ]
+            },
+            "description": "Endpoint in routes/user/support.routes.js",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"subject\": \"Account Issue\",\n  \"message\": \"Unable to stream full HD on device.\",\n  \"category\": \"Technical\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "GET - Support Tickets",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{userToken}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/support",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "support"
+              ]
+            },
+            "description": "Endpoint in routes/user/support.routes.js"
+          },
+          "response": []
+        },
+        {
+          "name": "GET - Support Tickets (:id)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{userToken}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/support/{{id}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "support",
+                "{{id}}"
+              ]
+            },
+            "description": "Endpoint in routes/user/support.routes.js"
+          },
+          "response": []
+        },
+        {
+          "name": "POST - Support Tickets (reply :id)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{userToken}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/support/reply/{{id}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "support",
+                "reply",
+                "{{id}}"
+              ]
+            },
+            "description": "Endpoint in routes/user/support.routes.js",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"subject\": \"Account Issue\",\n  \"message\": \"Unable to stream full HD on device.\",\n  \"category\": \"Technical\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "GET - Support Tickets (conversation :id)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{userToken}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/support/conversation/{{id}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "support",
+                "conversation",
+                "{{id}}"
+              ]
+            },
+            "description": "Endpoint in routes/user/support.routes.js"
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Reels",
+      "item": [
+        {
+          "name": "GET - Reels (search)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{userToken}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/reels/search",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "reels",
+                "search"
+              ]
+            },
+            "description": "Endpoint in routes/user/reel.routes.js"
+          },
+          "response": []
+        },
+        {
+          "name": "POST - Reels (upload)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{userToken}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/reels/upload",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "reels",
+                "upload"
+              ]
+            },
+            "description": "Endpoint in routes/user/reel.routes.js",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"caption\": \"Exclusive highlight snippet! #CatchWatch\",\n  \"videoUrl\": \"https://cdn.catchwatch.com/reels/reel1.mp4\",\n  \"tags\": [\n    \"trending\",\n    \"viral\"\n  ]\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "GET - Reels (feed)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{userToken}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/reels/feed",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "reels",
+                "feed"
+              ]
+            },
+            "description": "Endpoint in routes/user/reel.routes.js"
+          },
+          "response": []
+        },
+        {
+          "name": "GET - Reels (my-reels)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{userToken}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/reels/my-reels",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "reels",
+                "my-reels"
+              ]
+            },
+            "description": "Endpoint in routes/user/reel.routes.js"
+          },
+          "response": []
+        },
+        {
+          "name": "GET - Reels (user :userId)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{userToken}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/reels/user/{{userId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "reels",
+                "user",
+                "{{userId}}"
+              ]
+            },
+            "description": "Endpoint in routes/user/reel.routes.js"
+          },
+          "response": []
+        },
+        {
+          "name": "GET - Reels (:id)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{userToken}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/reels/{{id}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "reels",
+                "{{id}}"
+              ]
+            },
+            "description": "Endpoint in routes/user/reel.routes.js"
+          },
+          "response": []
+        },
+        {
+          "name": "DELETE - Reels (:id)",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{userToken}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/reels/{{id}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "reels",
+                "{{id}}"
+              ]
+            },
+            "description": "Endpoint in routes/user/reel.routes.js"
+          },
+          "response": []
+        },
+        {
+          "name": "POST - Reels (:id view)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{userToken}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/reels/{{id}}/view",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "reels",
+                "{{id}}",
+                "view"
+              ]
+            },
+            "description": "Endpoint in routes/user/reel.routes.js",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"caption\": \"Exclusive highlight snippet! #CatchWatch\",\n  \"videoUrl\": \"https://cdn.catchwatch.com/reels/reel1.mp4\",\n  \"tags\": [\n    \"trending\",\n    \"viral\"\n  ]\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "GET - Reels (:id comment-count)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{userToken}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/reels/{{id}}/comment-count",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "reels",
+                "{{id}}",
+                "comment-count"
+              ]
+            },
+            "description": "Endpoint in routes/user/reel.routes.js"
+          },
+          "response": []
+        },
+        {
+          "name": "POST - Reels (:id share)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{userToken}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/reels/{{id}}/share",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "reels",
+                "{{id}}",
+                "share"
+              ]
+            },
+            "description": "Endpoint in routes/user/reel.routes.js",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"caption\": \"Exclusive highlight snippet! #CatchWatch\",\n  \"videoUrl\": \"https://cdn.catchwatch.com/reels/reel1.mp4\",\n  \"tags\": [\n    \"trending\",\n    \"viral\"\n  ]\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "POST - Reels (:id save)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{userToken}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/reels/{{id}}/save",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "reels",
+                "{{id}}",
+                "save"
+              ]
+            },
+            "description": "Endpoint in routes/user/reel.routes.js",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"caption\": \"Exclusive highlight snippet! #CatchWatch\",\n  \"videoUrl\": \"https://cdn.catchwatch.com/reels/reel1.mp4\",\n  \"tags\": [\n    \"trending\",\n    \"viral\"\n  ]\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "POST - Reels (:id unsave)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{userToken}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/reels/{{id}}/unsave",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "reels",
+                "{{id}}",
+                "unsave"
+              ]
+            },
+            "description": "Endpoint in routes/user/reel.routes.js",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"caption\": \"Exclusive highlight snippet! #CatchWatch\",\n  \"videoUrl\": \"https://cdn.catchwatch.com/reels/reel1.mp4\",\n  \"tags\": [\n    \"trending\",\n    \"viral\"\n  ]\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "DELETE - Reels (:id save)",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{userToken}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/reels/{{id}}/save",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "reels",
+                "{{id}}",
+                "save"
+              ]
+            },
+            "description": "Endpoint in routes/user/reel.routes.js"
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Comments",
+      "item": [
+        {
+          "name": "POST - Comments (:reelId)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{userToken}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/comments/{{reelId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "comments",
+                "{{reelId}}"
+              ]
+            },
+            "description": "Endpoint in routes/user/comment.routes.js",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"contentId\": \"60d0fe4f5311236168a109cd\",\n  \"text\": \"Great storyline and acting!\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "GET - Comments (:reelId)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{userToken}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/comments/{{reelId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "comments",
+                "{{reelId}}"
+              ]
+            },
+            "description": "Endpoint in routes/user/comment.routes.js"
+          },
+          "response": []
+        },
+        {
+          "name": "DELETE - Comments (:commentId)",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{userToken}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/comments/{{commentId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "comments",
+                "{{commentId}}"
+              ]
+            },
+            "description": "Endpoint in routes/user/comment.routes.js"
+          },
+          "response": []
+        },
+        {
+          "name": "POST - Comments (pin :commentId)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{userToken}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/comments/pin/{{commentId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "comments",
+                "pin",
+                "{{commentId}}"
+              ]
+            },
+            "description": "Endpoint in routes/user/comment.routes.js",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"contentId\": \"60d0fe4f5311236168a109cd\",\n  \"text\": \"Great storyline and acting!\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Creator Studio",
+      "item": [
+        {
+          "name": "GET - Creator Studio (wallet)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{userToken}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/creator/wallet",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "creator",
+                "wallet"
+              ]
+            },
+            "description": "Endpoint in routes/user/creator.routes.js"
+          },
+          "response": []
+        },
+        {
+          "name": "POST - Creator Studio (redeem)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{userToken}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/creator/redeem",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "creator",
+                "redeem"
+              ]
+            },
+            "description": "Endpoint in routes/user/creator.routes.js",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"sampleKey\": \"sampleValue\",\n  \"timestamp\": \"2026-08-12T08:12:42.831Z\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "GET - Creator Studio (redeem history)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{userToken}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/creator/redeem/history",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "creator",
+                "redeem",
+                "history"
+              ]
+            },
+            "description": "Endpoint in routes/user/creator.routes.js"
+          },
+          "response": []
+        },
+        {
+          "name": "GET - Creator Studio (points)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{userToken}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/creator/points",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "creator",
+                "points"
+              ]
+            },
+            "description": "Endpoint in routes/user/creator.routes.js"
+          },
+          "response": []
+        },
+        {
+          "name": "GET - Creator Studio (point-history)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{userToken}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/creator/point-history",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "creator",
+                "point-history"
+              ]
+            },
+            "description": "Endpoint in routes/user/creator.routes.js"
+          },
+          "response": []
+        },
+        {
+          "name": "GET - Creator Studio (dashboard)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{userToken}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/creator/dashboard",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "creator",
+                "dashboard"
+              ]
+            },
+            "description": "Endpoint in routes/user/creator.routes.js"
+          },
+          "response": []
+        },
+        {
+          "name": "GET - Creator Studio (leaderboard)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{userToken}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/creator/leaderboard",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "creator",
+                "leaderboard"
+              ]
+            },
+            "description": "Endpoint in routes/user/creator.routes.js"
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Ads Engine",
+      "item": [
+        {
+          "name": "GET - Ads Engine (reel-feed)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{userToken}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/ads/reel-feed",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "ads",
+                "reel-feed"
+              ]
+            },
+            "description": "Endpoint in routes/user/ad.routes.js"
+          },
+          "response": []
+        },
+        {
+          "name": "POST - Ads Engine (event)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{userToken}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/ads/event",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "ads",
+                "event"
+              ]
+            },
+            "description": "Endpoint in routes/user/ad.routes.js",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"sampleKey\": \"sampleValue\",\n  \"timestamp\": \"2026-08-12T08:12:42.831Z\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        }
+      ]
+    }
+  ],
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:5000",
+      "type": "string"
+    },
+    {
+      "key": "userToken",
+      "value": "YOUR_USER_JWT_TOKEN",
+      "type": "string"
+    }
+  ]
+}

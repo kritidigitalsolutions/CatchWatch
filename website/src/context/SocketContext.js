@@ -37,24 +37,35 @@ export const SocketProvider = ({ children }) => {
 
     const rawUrl = process.env.REACT_APP_SOCKET_URL || process.env.REACT_APP_API_URL || "http://localhost:5000";
     const socketUrl = rawUrl.replace(/\/api\/?$/, "").replace(/\/$/, "");
+
     const newSocket = io(socketUrl, {
       auth: { token },
+      withCredentials: true,
       transports: ["websocket", "polling"],
       reconnection: true,
-      reconnectionAttempts: 10,
+      reconnectionAttempts: Infinity,
       reconnectionDelay: 1000,
+      reconnectionDelayMax: 5000,
+      randomizationFactor: 0.5,
       autoConnect: true,
     });
 
     newSocket.on("connect", () => {
-      console.log("🟢 Connected to Chat Socket server");
+      console.log("🟢 Connected to Chat Socket server (ID: " + newSocket.id + ")");
+    });
+
+    newSocket.on("disconnect", (reason) => {
+      console.warn("⚠️ Chat Socket disconnected:", reason);
+      if (reason === "io server disconnect") {
+        newSocket.connect();
+      }
     });
 
     newSocket.on("connect_error", (err) => {
-      console.warn("⚠️ Socket Connection Warning:", err.message);
+      console.warn("⚠️ Socket Connection Error:", err.message);
     });
 
-    newSocket.on("new_message", (msg) => {
+    newSocket.on("new_message", () => {
       fetchUnreadChatCount();
     });
 
@@ -67,6 +78,7 @@ export const SocketProvider = ({ children }) => {
 
     return () => {
       newSocket.off("connect");
+      newSocket.off("disconnect");
       newSocket.off("connect_error");
       newSocket.off("new_message");
       newSocket.off("messages_read");

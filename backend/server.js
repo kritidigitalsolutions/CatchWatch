@@ -20,8 +20,8 @@ const startServer = async () => {
     // Create HTTP Server
     const server = http.createServer(app);
 
-    // Initialize Socket.IO
-    initSocket(server);
+    // Initialize Socket.IO with CORS origins
+    initSocket(server, app.allowedOrigins);
 
     // Support large file uploads by increasing timeouts to 20 minutes
     server.timeout = 20 * 60 * 1000;

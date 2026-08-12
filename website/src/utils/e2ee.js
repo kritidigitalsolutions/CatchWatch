@@ -169,7 +169,8 @@ export async function encryptText(plainText, sharedKey) {
  */
 export async function decryptText(ciphertextBase64, ivBase64, sharedKey) {
   if (!ciphertextBase64) return "";
-  if (!ivBase64 || !sharedKey) return ciphertextBase64;
+  if (!sharedKey) return null; // Signal that shared key is missing and decryption should be retried
+  if (!ivBase64) return ciphertextBase64;
 
   // Check if text contains spaces or non-base64 characters (plain text message)
   if (
@@ -199,7 +200,7 @@ export async function decryptText(ciphertextBase64, ivBase64, sharedKey) {
     if (typeof ciphertextBase64 === "string" && ciphertextBase64.length < 50 && !ciphertextBase64.endsWith("=")) {
       return ciphertextBase64;
     }
-    return "🔒 [Encrypted Message]";
+    return null;
   }
 }
 

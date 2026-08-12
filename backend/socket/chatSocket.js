@@ -2,6 +2,7 @@ const socketIO = require("socket.io");
 const jwt = require("jsonwebtoken");
 const User = require("../models/user.model");
 const Message = require("../models/message.model");
+const Call = require("../models/call.model");
 
 let io = null;
 const userSocketsMap = new Map(); // userId -> Set<socketId>
@@ -9,11 +10,30 @@ const userSocketsMap = new Map(); // userId -> Set<socketId>
 const initSocket = (server, allowedOrigins) => {
   io = socketIO(server, {
     cors: {
-      origin: allowedOrigins || "*",
-      methods: ["GET", "POST"],
+      origin: (origin, callback) => {
+        if (!origin) return callback(null, true);
+        if (Array.isArray(allowedOrigins) && allowedOrigins.length > 0) {
+          if (allowedOrigins.includes(origin) || allowedOrigins.includes("*")) {
+            return callback(null, true);
+          }
+        }
+        const isCatchWatch = /^(https?:\/\/)?([a-z0-9-]+\.)*catchandwatch\.com$/i.test(origin);
+        const isLocalhost =
+          origin.startsWith("http://localhost:") ||
+          origin.startsWith("http://127.0.0.1:");
+        if (isCatchWatch || isLocalhost) {
+          return callback(null, true);
+        }
+        return callback(null, true);
+      },
+      methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
       credentials: true,
     },
-    pingTimeout: 60000,
+    pingInterval: 10000,
+    pingTimeout: 30000,
+    connectTimeout: 45000,
+    transports: ["websocket", "polling"],
+    allowEIO3: true,
   });
 
   // JWT Middleware for socket authentication
@@ -132,8 +152,8 @@ const initSocket = (server, allowedOrigins) => {
     });
 
     // Event: Disconnect
-    socket.on("disconnect", async () => {
-      console.log(`❌ Socket disconnected: User ${userId} (Socket ID: ${socket.id})`);
+    socket.on("disconnect", async (reason) => {
+      console.log(`❌ Socket disconnected: User ${userId} (Socket ID: ${socket.id}, Reason: ${reason})`);
       const userSet = userSocketsMap.get(userId);
       if (userSet) {
         userSet.delete(socket.id);
@@ -148,6 +168,34 @@ const initSocket = (server, allowedOrigins) => {
             io.emit("user_offline", { userId, lastSeen });
           } catch (err) {
             console.error("Error updating offline status:", err);
+          }
+
+          // Clean up any active calls if user disconnected unexpectedly
+          try {
+            const activeCall = await Call.findOne({
+              $or: [{ caller: userId }, { receiver: userId }],
+              status: { $in: ["calling", "ringing", "accepted"] },
+            });
+
+            if (activeCall) {
+              activeCall.status = "ended";
+              activeCall.endedAt = new Date();
+              await activeCall.save();
+
+              const otherUser =
+                activeCall.caller.toString() === userId
+                  ? activeCall.receiver
+                  : activeCall.caller;
+
+              if (otherUser) {
+                io.to(`user_${otherUser}`).emit("call_ended", {
+                  callId: activeCall._id,
+                  reason: "peer_disconnected",
+                });
+              }
+            }
+          } catch (callErr) {
+            console.error("Error cleaning up call on disconnect:", callErr);
           }
         }
       }
