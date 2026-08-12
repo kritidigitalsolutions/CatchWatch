@@ -139,55 +139,72 @@ const ChatPage = () => {
 
   // Derive and cache shared key for partner
   const getSharedKeyForPartner = async (partner) => {
-    if (!e2eeKeys || !partner || (!partner._id && !partner.id)) return null;
-    const partnerId = (partner._id || partner.id).toString();
+    if (!e2eeKeys || !partner) return null;
+    const partnerId = typeof partner === "string" ? partner : (partner._id || partner.id)?.toString();
+    if (!partnerId) return null;
 
-    if (partnerSharedKeysRef.current[partnerId]) {
-      return partnerSharedKeysRef.current[partnerId];
+    let partnerPubKeyStr = typeof partner === "object" ? partner.publicKey : null;
+    if (!partnerPubKeyStr) {
+      try {
+        const keyRes = await getUserPublicKey(partnerId);
+        if (keyRes && keyRes.data && keyRes.data.publicKey) {
+          partnerPubKeyStr = keyRes.data.publicKey;
+        }
+      } catch (err) {
+        console.warn("Could not fetch partner public key:", err);
+      }
+    }
+
+    if (!partnerPubKeyStr || typeof partnerPubKeyStr !== "string" || !partnerPubKeyStr.trim()) {
+      return null;
+    }
+
+    const cacheKey = `${partnerId}_${partnerPubKeyStr.slice(0, 30)}`;
+    if (partnerSharedKeysRef.current[cacheKey]) {
+      return partnerSharedKeysRef.current[cacheKey];
     }
 
     try {
-      let partnerPubKeyStr = partner.publicKey;
-      if (!partnerPubKeyStr) {
-        const keyRes = await getUserPublicKey(partnerId);
-        if (keyRes && keyRes.data) {
-          partnerPubKeyStr = keyRes.data.publicKey;
-        }
-      }
-
-      if (!partnerPubKeyStr) return null;
-
       const partnerPubKey = await importPublicKey(partnerPubKeyStr);
+      if (!partnerPubKey) return null;
+
       const sharedKey = await deriveSharedKey(e2eeKeys.privateKey, partnerPubKey);
-      partnerSharedKeysRef.current[partnerId] = sharedKey;
+      if (sharedKey) {
+        partnerSharedKeysRef.current[cacheKey] = sharedKey;
+      }
       return sharedKey;
     } catch (err) {
-      console.error("Failed to derive shared key for partner:", err);
+      console.warn("Failed to derive shared key for partner:", err);
       return null;
     }
   };
 
   // Helper to decrypt message if encrypted
   const processDecryptMessage = async (msg, sharedKey = null) => {
-    if (!msg || !msg.isEncrypted || !msg.iv || !msg.text) return msg;
+    if (!msg || !msg.text) return msg;
+    if (!msg.isEncrypted || !msg.iv) return msg;
     if (msg.isDecrypted) return msg;
 
     try {
       let keyToUse = sharedKey;
       if (!keyToUse) {
-        const partner = (msg.sender?._id || msg.sender?.id)?.toString() === currentUserId.toString()
-          ? msg.recipient
-          : msg.sender;
+        const partner = (msg.sender?._id || msg.sender?.id || msg.sender)?.toString() === currentUserId.toString()
+          ? (msg.recipient?._id || msg.recipient?.id || msg.recipient)
+          : (msg.sender?._id || msg.sender?.id || msg.sender);
         keyToUse = await getSharedKeyForPartner(partner);
       }
 
-      if (!keyToUse) return msg;
+      if (!keyToUse) {
+        if (typeof msg.text === "string" && (msg.text.includes(" ") || !/^[A-Za-z0-9+/=]+$/.test(msg.text.trim()))) {
+          return { ...msg, isDecrypted: true };
+        }
+        return { ...msg, text: "🔒 [Encrypted Message]", isDecrypted: true };
+      }
 
       const plainText = await decryptText(msg.text, msg.iv, keyToUse);
       return { ...msg, text: plainText, isDecrypted: true };
     } catch (err) {
-      console.error("Failed to decrypt message:", err);
-      return msg;
+      return { ...msg, text: "🔒 [Encrypted Message]", isDecrypted: true };
     }
   };
 

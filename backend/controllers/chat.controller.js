@@ -111,7 +111,7 @@ exports.startConversation = async (req, res) => {
       return res.status(400).json({ success: false, message: "Cannot chat with yourself" });
     }
 
-    const recipient = await User.findById(recipientId).select("name username profileImage isOnline lastSeen phone bio");
+    const recipient = await User.findById(recipientId).select("name username profileImage isOnline lastSeen phone bio publicKey");
     if (!recipient) {
       return res.status(404).json({ success: false, message: "Recipient user not found" });
     }
@@ -204,8 +204,8 @@ exports.getMessages = async (req, res) => {
       conversationId,
       deletedFor: { $ne: currentUserId },
     })
-      .populate("sender", "name username profileImage")
-      .populate("recipient", "name username profileImage")
+      .populate("sender", "name username profileImage publicKey")
+      .populate("recipient", "name username profileImage publicKey")
       .populate("pinnedBy", "name username")
       .populate({
         path: "replyTo",
@@ -330,8 +330,8 @@ exports.sendMessage = async (req, res) => {
     });
 
     const populatedMessage = await Message.findById(newMessage._id)
-      .populate("sender", "name username profileImage")
-      .populate("recipient", "name username profileImage")
+      .populate("sender", "name username profileImage publicKey")
+      .populate("recipient", "name username profileImage publicKey")
       .populate({
         path: "replyTo",
         populate: { path: "sender", select: "name username" },
@@ -428,8 +428,8 @@ exports.editMessage = async (req, res) => {
     await message.save();
 
     const updatedMessage = await Message.findById(message._id)
-      .populate("sender", "name username profileImage")
-      .populate("recipient", "name username profileImage")
+      .populate("sender", "name username profileImage publicKey")
+      .populate("recipient", "name username profileImage publicKey")
       .populate({
         path: "replyTo",
         populate: { path: "sender", select: "name username" },
@@ -475,8 +475,8 @@ exports.unsendMessage = async (req, res) => {
     await message.save();
 
     const updatedMessage = await Message.findById(message._id)
-      .populate("sender", "name username profileImage")
-      .populate("recipient", "name username profileImage");
+      .populate("sender", "name username profileImage publicKey")
+      .populate("recipient", "name username profileImage publicKey");
 
     // Notify sockets
     const io = getIO();
@@ -571,8 +571,8 @@ exports.toggleReaction = async (req, res) => {
     await message.save();
 
     const updatedMessage = await Message.findById(message._id)
-      .populate("sender", "name username profileImage")
-      .populate("recipient", "name username profileImage")
+      .populate("sender", "name username profileImage publicKey")
+      .populate("recipient", "name username profileImage publicKey")
       .populate("reactions.user", "name username");
 
     // Notify sockets
@@ -765,8 +765,8 @@ exports.searchMessages = async (req, res) => {
     }
 
     const messages = await Message.find(filter)
-      .populate("sender", "name username profileImage")
-      .populate("recipient", "name username profileImage")
+      .populate("sender", "name username profileImage publicKey")
+      .populate("recipient", "name username profileImage publicKey")
       .sort({ createdAt: -1 })
       .limit(50);
 
@@ -1103,8 +1103,8 @@ exports.togglePinMessage = async (req, res) => {
     await message.save();
 
     const updatedMessage = await Message.findById(message._id)
-      .populate("sender", "name username profileImage")
-      .populate("recipient", "name username profileImage")
+      .populate("sender", "name username profileImage publicKey")
+      .populate("recipient", "name username profileImage publicKey")
       .populate("pinnedBy", "name username")
       .populate({
         path: "replyTo",
@@ -1153,8 +1153,8 @@ exports.getPinnedMessages = async (req, res) => {
       isPinned: true,
       deletedFor: { $ne: currentUserId },
     })
-      .populate("sender", "name username profileImage")
-      .populate("recipient", "name username profileImage")
+      .populate("sender", "name username profileImage publicKey")
+      .populate("recipient", "name username profileImage publicKey")
       .populate("pinnedBy", "name username")
       .sort({ pinnedAt: -1, createdAt: -1 });
 

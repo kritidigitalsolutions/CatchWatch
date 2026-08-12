@@ -61,59 +61,81 @@ export async function generateKeyPair() {
  * Import Public Key from JWK String or Object
  */
 export async function importPublicKey(publicKeyJwkOrString) {
-  const jwk = typeof publicKeyJwkOrString === "string"
-    ? JSON.parse(publicKeyJwkOrString)
-    : publicKeyJwkOrString;
+  if (!publicKeyJwkOrString) return null;
+  try {
+    const jwk = typeof publicKeyJwkOrString === "string"
+      ? JSON.parse(publicKeyJwkOrString)
+      : publicKeyJwkOrString;
 
-  return await window.crypto.subtle.importKey(
-    "jwk",
-    jwk,
-    {
-      name: "ECDH",
-      namedCurve: "P-256",
-    },
-    true,
-    []
-  );
+    if (!jwk || typeof jwk !== "object" || !jwk.kty) return null;
+
+    return await window.crypto.subtle.importKey(
+      "jwk",
+      jwk,
+      {
+        name: "ECDH",
+        namedCurve: "P-256",
+      },
+      true,
+      []
+    );
+  } catch (err) {
+    console.warn("Failed to import public key:", err);
+    return null;
+  }
 }
 
 /**
  * Import Private Key from JWK String or Object
  */
 export async function importPrivateKey(privateKeyJwkOrString) {
-  const jwk = typeof privateKeyJwkOrString === "string"
-    ? JSON.parse(privateKeyJwkOrString)
-    : privateKeyJwkOrString;
+  if (!privateKeyJwkOrString) return null;
+  try {
+    const jwk = typeof privateKeyJwkOrString === "string"
+      ? JSON.parse(privateKeyJwkOrString)
+      : privateKeyJwkOrString;
 
-  return await window.crypto.subtle.importKey(
-    "jwk",
-    jwk,
-    {
-      name: "ECDH",
-      namedCurve: "P-256",
-    },
-    true,
-    ["deriveKey", "deriveBits"]
-  );
+    if (!jwk || typeof jwk !== "object" || !jwk.kty) return null;
+
+    return await window.crypto.subtle.importKey(
+      "jwk",
+      jwk,
+      {
+        name: "ECDH",
+        namedCurve: "P-256",
+      },
+      true,
+      ["deriveKey", "deriveBits"]
+    );
+  } catch (err) {
+    console.warn("Failed to import private key:", err);
+    return null;
+  }
 }
 
 /**
  * Derive AES-256-GCM Shared Symmetric Key using ECDH
  */
 export async function deriveSharedKey(privateKey, partnerPublicKey) {
-  return await window.crypto.subtle.deriveKey(
-    {
-      name: "ECDH",
-      public: partnerPublicKey,
-    },
-    privateKey,
-    {
-      name: "AES-GCM",
-      length: 256,
-    },
-    false,
-    ["encrypt", "decrypt"]
-  );
+  if (!privateKey || !partnerPublicKey) return null;
+  try {
+    return await window.crypto.subtle.deriveKey(
+      {
+        name: "ECDH",
+        public: partnerPublicKey,
+      },
+      privateKey,
+      {
+        name: "AES-GCM",
+        length: 256,
+      },
+      false,
+      ["encrypt", "decrypt"]
+    );
+  } catch (err) {
+    console.warn("Failed to derive shared key:", err);
+    return null;
+  }
 }
 
 /**
@@ -121,6 +143,7 @@ export async function deriveSharedKey(privateKey, partnerPublicKey) {
  */
 export async function encryptText(plainText, sharedKey) {
   if (!plainText) return { ciphertext: "", iv: "" };
+  if (!sharedKey) return { ciphertext: plainText, iv: "" };
 
   const encoder = new TextEncoder();
   const encodedText = encoder.encode(plainText);
@@ -145,7 +168,16 @@ export async function encryptText(plainText, sharedKey) {
  * Decrypt AES-256-GCM encrypted ciphertext
  */
 export async function decryptText(ciphertextBase64, ivBase64, sharedKey) {
-  if (!ciphertextBase64 || !ivBase64) return ciphertextBase64 || "";
+  if (!ciphertextBase64) return "";
+  if (!ivBase64 || !sharedKey) return ciphertextBase64;
+
+  // Check if text contains spaces or non-base64 characters (plain text message)
+  if (
+    typeof ciphertextBase64 === "string" &&
+    (ciphertextBase64.includes(" ") || !/^[A-Za-z0-9+/=]+$/.test(ciphertextBase64.trim()))
+  ) {
+    return ciphertextBase64;
+  }
 
   try {
     const ciphertext = base64ToBuffer(ciphertextBase64);
@@ -163,8 +195,11 @@ export async function decryptText(ciphertextBase64, ivBase64, sharedKey) {
     const decoder = new TextDecoder();
     return decoder.decode(decryptedBuffer);
   } catch (error) {
-    console.error("E2EE Decryption Failed:", error);
-    return "🔒 [Encrypted Message - Unable to decrypt]";
+    // If text was short plain text or key session changed, fallback gracefully
+    if (typeof ciphertextBase64 === "string" && ciphertextBase64.length < 50 && !ciphertextBase64.endsWith("=")) {
+      return ciphertextBase64;
+    }
+    return "🔒 [Encrypted Message]";
   }
 }
 
@@ -188,10 +223,11 @@ export async function initUserE2EE(userId, savePublicKeyApi) {
 
       localStorage.setItem(privKeyKey, privateKeyStr);
       localStorage.setItem(pubKeyKey, publicKeyStr);
+    }
 
-      if (typeof savePublicKeyApi === "function") {
-        await savePublicKeyApi(publicKeyStr);
-      }
+    // Ensure backend always has current user public key synced
+    if (typeof savePublicKeyApi === "function" && publicKeyStr) {
+      savePublicKeyApi(publicKeyStr).catch(() => {});
     }
 
     const privateKey = await importPrivateKey(privateKeyStr);

@@ -29,7 +29,7 @@ const LegalPage = lazy(() => import("./pages/LegalPage"));
 const HelpPage = lazy(() => import("./pages/HelpPage"));
 const Settings = lazy(() => import("./pages/Settings"));
 const DramaPage = lazy(() => import("./pages/Drama"));
-const AddDramaPage = lazy(() => import("./pages/AddDrama"));
+// const AddDramaPage = lazy(() => import("./pages/AddDrama"));
 const AdManagement = lazy(() => import("./pages/AdManagement"));
 const FraudMonitoring = lazy(() => import("./pages/FraudMonitoring"));
 const AdminAnalytics = lazy(() => import("./pages/AdminAnalytics"));
@@ -292,22 +292,22 @@ function App() {
                 </PermissionGuard>
               }
             />
-            <Route
+            {/* <Route
               path="dramas"
               element={
                 <PermissionGuard pageKey="dramas">
                   <DramaPage />
                 </PermissionGuard>
               }
-            />
-            <Route
+            /> */}
+            {/* <Route
               path="add-drama"
               element={
                 <PermissionGuard pageKey="add-drama">
                   <AddDramaPage />
                 </PermissionGuard>
               }
-            />
+            /> */}
             
             <Route path="ad-management" element={<AdManagement />} />
             <Route path="fraud-monitoring" element={<FraudMonitoring />} />
