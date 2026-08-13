@@ -55,8 +55,15 @@ import {
   savePublicKey,
   getUserPublicKey,
   searchChatUsers,
+  getAgoraToken,
 } from "../api/chatApi";
 import { getUserFollowers, getUserFollowing } from "../api/userApi";
+import {
+  loginAgoraChat,
+  sendAgoraPeerMessage,
+  addAgoraEventHandler,
+  removeAgoraEventHandler,
+} from "../services/agoraChatService";
 import { BiMessageRoundedDots, BiPhoneCall, BiVideo } from "react-icons/bi";
 import { toast } from "react-toastify";
 import "./ChatPage.css";
@@ -129,6 +136,35 @@ const ChatPage = () => {
   // E2EE Key Management States & Refs
   const [e2eeKeys, setE2eeKeys] = useState(null);
   const partnerSharedKeysRef = useRef({});
+
+  // Agora Chat Connection State
+  const [agoraConnected, setAgoraConnected] = useState(false);
+
+  // Initialize Agora Chat User Connection
+  useEffect(() => {
+    if (!currentUserId) return;
+
+    let isMounted = true;
+    getAgoraToken()
+      .then((res) => {
+        if (!isMounted || !res || !res.data) return;
+        const { token, appKey } = res.data;
+        if (token && appKey) {
+          loginAgoraChat(currentUserId, token, appKey).then((client) => {
+            if (client && isMounted) {
+              setAgoraConnected(true);
+            }
+          });
+        }
+      })
+      .catch((err) => {
+        console.warn("Could not fetch Agora token for chat:", err);
+      });
+
+    return () => {
+      isMounted = false;
+    };
+  }, [currentUserId]);
 
   // Initialize E2EE Keypair for current user
   useEffect(() => {
@@ -539,6 +575,48 @@ const ChatPage = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [socket, activeConv?._id]);
 
+  // Agora Chat Event Listener for Real-time Text Messages
+  useEffect(() => {
+    if (!agoraConnected) return;
+
+    const agoraHandlerId = "CATCHWATCH_CHAT_HANDLER";
+    addAgoraEventHandler(agoraHandlerId, {
+      onTextMessage: async (message) => {
+        const ext = message.ext || {};
+        const incomingMsg = {
+          _id: message.id || `agora_${Date.now()}`,
+          conversationId: ext.conversationId,
+          sender: { _id: message.from },
+          recipient: { _id: currentUserId },
+          text: message.msg,
+          isEncrypted: ext.isEncrypted !== false,
+          iv: ext.iv || "",
+          messageType: ext.messageType || "text",
+          mediaUrl: ext.mediaUrl || "",
+          mediaMeta: ext.mediaMeta || {},
+          createdAt: new Date(),
+        };
+
+        if (
+          activeConv &&
+          (ext.conversationId?.toString() === activeConv._id.toString() ||
+            message.from === activeConv.partner?._id?.toString())
+        ) {
+          const partnerKey = await getSharedKeyForPartner(activeConv.partner);
+          const decryptedMsg = await processDecryptMessage(incomingMsg, partnerKey);
+          setMessages((prev) => addUniqueMessage(prev, decryptedMsg));
+          markAsRead(activeConv._id);
+        }
+        loadConversations();
+      },
+    });
+
+    return () => {
+      removeAgoraEventHandler(agoraHandlerId);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [agoraConnected, activeConv?._id]);
+
   // Handle Typing Event Trigger
   const handleTextInputChange = (e) => {
     setMessageText(e.target.value);
@@ -629,6 +707,16 @@ const ChatPage = () => {
 
       const res = await sendMessage(payload);
       if (res && res.data) {
+        // Dispatch via Agora Chat SDK for ultra-reliable real-time delivery
+        sendAgoraPeerMessage(activeConv.partner._id, textToSend, {
+          conversationId: activeConv._id,
+          iv: iv,
+          isEncrypted: isEncrypted,
+          messageType: selectedMediaPreview ? messageType : "text",
+          mediaUrl: mediaUrl,
+          mediaMeta: mediaMeta,
+        }).catch((err) => console.warn("Agora Peer Dispatch Error:", err));
+
         const decryptedMsg = {
           ...res.data,
           text: messageText.trim(),

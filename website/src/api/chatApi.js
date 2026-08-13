@@ -124,3 +124,9 @@ export const getUserPublicKey = async (userId) => {
   const res = await axiosInstance.get(`/chat/keys/${userId}`);
   return res.data;
 };
+
+export const getAgoraToken = async () => {
+  const res = await axiosInstance.get("/chat/agora-token");
+  return res.data;
+};
+

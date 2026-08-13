@@ -44,4 +44,7 @@ router.post("/fcm-token", chatController.updateFcmToken);
 router.post("/keys", chatController.setPublicKey);
 router.get("/keys/:userId", chatController.getPublicKey);
 
+// Agora Chat Token
+router.get("/agora-token", chatController.getAgoraToken);
+
 module.exports = router;

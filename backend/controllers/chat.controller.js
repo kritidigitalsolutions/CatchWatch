@@ -4,6 +4,7 @@ const UserBlock = require("../models/userBlock.model");
 const User = require("../models/user.model");
 const { sendPushNotification } = require("../utils/fcm.service");
 const { getIO, getUserSockets } = require("../socket/chatSocket");
+const { generateChatToken } = require("../services/agora.service");
 
 // Helper to check if two users have blocked each other
 const isBlockedPair = async (userId1, userId2) => {
@@ -1171,4 +1172,35 @@ exports.getPinnedMessages = async (req, res) => {
     });
   }
 };
+
+// 22. Get Agora Chat Token for logged in user
+exports.getAgoraToken = async (req, res) => {
+  try {
+    const currentUserId = req.user.id;
+    const appId = process.env.AGORA_APP_ID;
+    const appKey = process.env.AGORA_CHAT_APP_KEY;
+
+    if (!appId || !appKey) {
+      return res.status(500).json({
+        success: false,
+        message: "Agora credentials missing in server config",
+      });
+    }
+
+    const agoraData = generateChatToken(currentUserId);
+
+    return res.status(200).json({
+      success: true,
+      data: agoraData,
+    });
+  } catch (error) {
+    console.error("Get Agora Token Error:", error);
+    return res.status(500).json({
+      success: false,
+      message: "Failed to generate Agora Chat token",
+      error: error.message,
+    });
+  }
+};
+
 
