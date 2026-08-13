@@ -54,6 +54,7 @@ import {
   unblockUser,
   savePublicKey,
   getUserPublicKey,
+  searchChatUsers,
 } from "../api/chatApi";
 import { getUserFollowers, getUserFollowing } from "../api/userApi";
 import { BiMessageRoundedDots, BiPhoneCall, BiVideo } from "react-icons/bi";
@@ -203,15 +204,21 @@ const ChatPage = () => {
 
       const plainText = await decryptText(msg.text, msg.iv, keyToUse);
       if (plainText === null) {
+        if (typeof msg.text === "string" && (msg.text.includes(" ") || !/^[A-Za-z0-9+/=]+$/.test(msg.text.trim()))) {
+          return { ...msg, isDecrypted: true };
+        }
         return { ...msg, isDecrypted: false };
       }
       return { ...msg, text: plainText, isDecrypted: true };
     } catch (err) {
+      if (typeof msg.text === "string" && (msg.text.includes(" ") || !/^[A-Za-z0-9+/=]+$/.test(msg.text.trim()))) {
+        return { ...msg, isDecrypted: true };
+      }
       return { ...msg, isDecrypted: false };
     }
   };
 
-  // Auto-retry decryption whenever e2eeKeys or activeConv changes
+  // Auto-retry decryption whenever e2eeKeys, activeConv, or messages array updates
   useEffect(() => {
     if (!e2eeKeys || !activeConv || messages.length === 0) return;
 
@@ -221,7 +228,7 @@ const ChatPage = () => {
     let isMounted = true;
     (async () => {
       const partnerKey = await getSharedKeyForPartner(activeConv.partner);
-      if (!partnerKey || !isMounted) return;
+      if (!isMounted) return;
 
       const updated = await Promise.all(
         messages.map(async (msg) => {
@@ -233,7 +240,12 @@ const ChatPage = () => {
       );
 
       if (isMounted) {
-        setMessages(updated);
+        const hasChanges = updated.some(
+          (m, idx) => m.isDecrypted !== messages[idx]?.isDecrypted || m.text !== messages[idx]?.text
+        );
+        if (hasChanges) {
+          setMessages(updated);
+        }
       }
     })();
 
@@ -241,7 +253,7 @@ const ChatPage = () => {
       isMounted = false;
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [e2eeKeys, activeConv?._id]);
+  }, [e2eeKeys, activeConv?._id, messages]);
 
   // 1. Initial Load of Conversations
   useEffect(() => {
@@ -874,15 +886,15 @@ const ChatPage = () => {
     }
   };
 
-  // 11. Followers & Following Network Handlers
+  // 11. Followers, Following & New User Search Network Handlers
   const handleOpenFollowsModal = (tab = "followers") => {
     setFollowsTab(tab);
     setShowFollowsModal(true);
     setFollowsQuery("");
-    fetchFollowsData(tab);
+    fetchFollowsData(tab, "");
   };
 
-  const fetchFollowsData = async (tab) => {
+  const fetchFollowsData = async (tab, query = "") => {
     setLoadingFollows(true);
     try {
       if (tab === "followers") {
@@ -894,7 +906,7 @@ const ChatPage = () => {
         } else {
           setFollowsList([]);
         }
-      } else {
+      } else if (tab === "following") {
         const res = await getUserFollowing("me");
         if (res && res.following) {
           setFollowsList(res.following);
@@ -903,9 +915,16 @@ const ChatPage = () => {
         } else {
           setFollowsList([]);
         }
+      } else if (tab === "all") {
+        const res = await searchChatUsers(query);
+        if (res && res.data) {
+          setFollowsList(res.data);
+        } else {
+          setFollowsList([]);
+        }
       }
     } catch (err) {
-      console.error("Failed to fetch network list:", err);
+      console.error("Failed to fetch user list:", err);
       toast.error("Failed to load list");
       setFollowsList([]);
     } finally {
@@ -916,19 +935,46 @@ const ChatPage = () => {
   const handleSwitchFollowsTab = (tab) => {
     setFollowsTab(tab);
     setFollowsQuery("");
-    fetchFollowsData(tab);
+    fetchFollowsData(tab, "");
   };
 
-  const filteredFollowsList = followsList.filter((u) => {
-    if (!u) return false;
-    const q = followsQuery.toLowerCase().trim();
-    if (!q) return true;
-    return (
-      (u.name && u.name.toLowerCase().includes(q)) ||
-      (u.username && u.username.toLowerCase().includes(q)) ||
-      (u.phone && u.phone.includes(q))
-    );
-  });
+  // Debounce user search when typing in "all" tab
+  useEffect(() => {
+    if (!showFollowsModal) return;
+
+    if (followsTab === "all") {
+      const timer = setTimeout(async () => {
+        setLoadingFollows(true);
+        try {
+          const res = await searchChatUsers(followsQuery.trim());
+          if (res && res.data) {
+            setFollowsList(res.data);
+          } else {
+            setFollowsList([]);
+          }
+        } catch (err) {
+          console.error("Failed to search all users:", err);
+        } finally {
+          setLoadingFollows(false);
+        }
+      }, 300);
+
+      return () => clearTimeout(timer);
+    }
+  }, [followsQuery, followsTab, showFollowsModal]);
+
+  const filteredFollowsList = followsTab === "all"
+    ? followsList
+    : followsList.filter((u) => {
+        if (!u) return false;
+        const q = followsQuery.toLowerCase().trim();
+        if (!q) return true;
+        return (
+          (u.name && u.name.toLowerCase().includes(q)) ||
+          (u.username && u.username.toLowerCase().includes(q)) ||
+          (u.phone && u.phone.includes(q))
+        );
+      });
 
   // Sample GIFs list for demonstration
   const sampleGifs = [
@@ -984,7 +1030,7 @@ const ChatPage = () => {
             <FaSearch className="absolute left-3.5 top-3 text-gray-400 text-xs" />
             <input
               type="text"
-              placeholder="Search chats..."
+              placeholder="Search existing chats..."
               value={convSearch}
               onChange={(e) => setConvSearch(e.target.value)}
               className="w-full pl-9 pr-4 py-2 bg-gray-100 dark:bg-gray-800 border-none rounded-xl text-xs text-gray-800 dark:text-white focus:ring-2 focus:ring-brand-orange outline-none"
@@ -1564,14 +1610,14 @@ const ChatPage = () => {
         </div>
       )}
 
-      {/* 4. Followers & Following Network Modal */}
+      {/* 4. Followers, Following & New User Search Network Modal */}
       {showFollowsModal && (
         <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
           <div className="bg-white dark:bg-gray-900 rounded-2xl w-full max-w-md overflow-hidden shadow-2xl border border-gray-100 dark:border-gray-800 flex flex-col max-h-[85vh]">
             <div className="p-4 border-b border-gray-100 dark:border-gray-800 flex justify-between items-center bg-gray-50 dark:bg-gray-800/50">
               <h3 className="font-extrabold text-sm text-gray-800 dark:text-white flex items-center gap-2">
                 <FaUsers className="text-brand-orange" />
-                Network (Followers & Following)
+                Start New Chat & Network
               </h3>
               <button
                 onClick={() => setShowFollowsModal(false)}
@@ -1601,13 +1647,26 @@ const ChatPage = () => {
               >
                 Following
               </button>
+              <button
+                onClick={() => handleSwitchFollowsTab("all")}
+                className={`flex-1 py-2.5 text-xs font-bold text-center border-b-2 transition ${followsTab === "all"
+                    ? "border-brand-orange text-brand-orange"
+                    : "border-transparent text-gray-500 hover:text-gray-700 dark:hover:text-gray-300"
+                  }`}
+              >
+                All Users
+              </button>
             </div>
 
             {/* Search Input */}
             <div className="p-3 border-b border-gray-100 dark:border-gray-800">
               <input
                 type="text"
-                placeholder={`Search ${followsTab}...`}
+                placeholder={
+                  followsTab === "all"
+                    ? "Search new users by name, username or phone..."
+                    : `Search ${followsTab}...`
+                }
                 value={followsQuery}
                 onChange={(e) => setFollowsQuery(e.target.value)}
                 className="w-full px-3.5 py-2 bg-gray-100 dark:bg-gray-800 border-none rounded-xl text-xs text-gray-800 dark:text-white focus:ring-2 focus:ring-brand-orange outline-none"
@@ -1662,7 +1721,11 @@ const ChatPage = () => {
                 ))
               ) : (
                 <div className="text-center py-8 text-xs text-gray-400 font-medium">
-                  {followsQuery ? `No ${followsTab} matching "${followsQuery}"` : `No ${followsTab} found`}
+                  {followsQuery
+                    ? `No users matching "${followsQuery}"`
+                    : followsTab === "all"
+                    ? "Type name, username or phone to search platform users"
+                    : `No ${followsTab} found`}
                 </div>
               )}
             </div>

@@ -196,8 +196,8 @@ export async function decryptText(ciphertextBase64, ivBase64, sharedKey) {
     const decoder = new TextDecoder();
     return decoder.decode(decryptedBuffer);
   } catch (error) {
-    // If text was short plain text or key session changed, fallback gracefully
-    if (typeof ciphertextBase64 === "string" && ciphertextBase64.length < 50 && !ciphertextBase64.endsWith("=")) {
+    // If decryption failed, check if string was actually plain text
+    if (typeof ciphertextBase64 === "string" && (ciphertextBase64.length < 60 || !ciphertextBase64.endsWith("="))) {
       return ciphertextBase64;
     }
     return null;
