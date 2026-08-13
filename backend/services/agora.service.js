@@ -1,4 +1,5 @@
 const { RtcTokenBuilder, RtcRole, ChatTokenBuilder } = require("agora-token");
+const axios = require("axios");
 
 /**
  * Generate Agora RTC Token securely on backend
@@ -124,8 +125,73 @@ const generateChatToken = (userId, expireTime = 86400) => {
   };
 };
 
+/**
+ * Register Agora Chat User securely on backend using REST API
+ * @param {string} userId - User ID (Mongo ID)
+ */
+const registerAgoraChatUser = async (userId) => {
+  const appId = process.env.AGORA_APP_ID || "";
+  const appCertificate = process.env.AGORA_APP_CERTIFICATE || "";
+  const appKey = process.env.AGORA_CHAT_APP_KEY || "";
+
+  if (!appId || !appCertificate || !appKey) {
+    console.error("Agora credentials missing for user registration");
+    return false;
+  }
+
+  const parts = appKey.split("#");
+  if (parts.length !== 2) {
+    console.error("Invalid AGORA_CHAT_APP_KEY format. Expected 'orgName#appName'");
+    return false;
+  }
+  const [orgName, appName] = parts;
+
+  try {
+    // 1. Generate App Token
+    const appToken = ChatTokenBuilder.buildAppToken(appId, appCertificate, 3600);
+
+    // 2. Call Agora REST API to create user
+    const url = `https://a1.chat.agora.io/${orgName}/${appName}/users`;
+    const response = await axios.post(
+      url,
+      {
+        username: userId.toString(),
+        password: userId.toString(),
+      },
+      {
+        headers: {
+          Authorization: `Bearer ${appToken}`,
+          "Content-Type": "application/json",
+        },
+      }
+    );
+
+    console.log("Agora Chat User Registered successfully:", response.data);
+    return true;
+  } catch (error) {
+    if (error.response && error.response.status === 400) {
+      const errorMsg = error.response.data?.error || "";
+      const errorDesc = error.response.data?.error_description || "";
+      if (
+        errorMsg.includes("duplicate") ||
+        errorMsg.includes("already") ||
+        errorDesc.toLowerCase().includes("already")
+      ) {
+        console.log("Agora Chat User already exists.");
+        return true;
+      }
+    }
+    console.error(
+      "Agora Chat User Registration failed:",
+      error.response ? error.response.data : error.message
+    );
+    return false;
+  }
+};
+
 module.exports = {
   generateRtcToken,
   generateChatToken,
+  registerAgoraChatUser,
 };
 

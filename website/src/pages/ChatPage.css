@@ -12,6 +12,33 @@
     max-height: calc(100vh - 128px);
     overflow-x: hidden;
   }
+
+  /* Lock body view and hide main navigation components on mobile when chat is active */
+  body.chat-active-mobile {
+    overflow: hidden;
+    position: fixed;
+    width: 100%;
+    height: 100dvh;
+    max-height: 100dvh;
+  }
+
+  body.chat-active-mobile header,
+  body.chat-active-mobile nav,
+  body.chat-active-mobile footer {
+    display: none !important;
+  }
+
+  body.chat-active-mobile .chat-container {
+    height: 100dvh !important;
+    max-height: 100dvh !important;
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    border: none;
+    border-radius: 0;
+  }
 }
 
 .chat-sidebar {

@@ -114,7 +114,7 @@ const ChatPage = () => {
   const [replyingTo, setReplyingTo] = useState(null);
   const [editingMsg, setEditingMsg] = useState(null);
   const [forwardingMsg, setForwardingMsg] = useState(null);
-  const [typingPartner, setTypingPartner] = useState(false);
+  const [typingConversations, setTypingConversations] = useState({});
 
   // Pickers & Modals
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
@@ -173,6 +173,35 @@ const ChatPage = () => {
       if (keys) setE2eeKeys(keys);
     });
   }, [currentUserId]);
+
+  // Handle mobile system back button when conversation is open
+  useEffect(() => {
+    if (!activeConv) return;
+
+    window.history.pushState({ chatActive: true }, "");
+
+    const handlePopState = (event) => {
+      setActiveConv(null);
+    };
+
+    window.addEventListener("popstate", handlePopState);
+
+    return () => {
+      window.removeEventListener("popstate", handlePopState);
+    };
+  }, [activeConv]);
+
+  // Handle adding class to body to hide global layout navigation on mobile when chat is active
+  useEffect(() => {
+    if (activeConv) {
+      document.body.classList.add("chat-active-mobile");
+    } else {
+      document.body.classList.remove("chat-active-mobile");
+    }
+    return () => {
+      document.body.classList.remove("chat-active-mobile");
+    };
+  }, [activeConv]);
 
   // Derive and cache shared key for partner
   const getSharedKeyForPartner = async (partner) => {
@@ -382,7 +411,7 @@ const ChatPage = () => {
   // 3. Auto Scroll to Bottom on New Messages
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [messages, typingPartner]);
+  }, [messages, activeConv && typingConversations[activeConv._id]]);
 
   const addUniqueMessage = (prevMsgs, newMsg) => {
     if (!newMsg) return prevMsgs;
@@ -446,14 +475,14 @@ const ChatPage = () => {
     };
 
     const handleUserTypingStart = ({ conversationId, userId }) => {
-      if (activeConv && conversationId.toString() === activeConv._id.toString() && userId.toString() !== currentUserId.toString()) {
-        setTypingPartner(true);
+      if (userId.toString() !== currentUserId.toString()) {
+        setTypingConversations((prev) => ({ ...prev, [conversationId]: true }));
       }
     };
 
     const handleUserTypingStop = ({ conversationId, userId }) => {
-      if (activeConv && conversationId.toString() === activeConv._id.toString() && userId.toString() !== currentUserId.toString()) {
-        setTypingPartner(false);
+      if (userId.toString() !== currentUserId.toString()) {
+        setTypingConversations((prev) => ({ ...prev, [conversationId]: false }));
       }
     };
 
@@ -1138,6 +1167,7 @@ const ChatPage = () => {
                   key={conv._id ? `pinned-${conv._id}-${index}` : `pinned-${index}`}
                   conv={conv}
                   isActive={activeConv?._id === conv._id}
+                  isTyping={!!typingConversations[conv._id]}
                   onClick={() => setActiveConv(conv)}
                 />
               ))}
@@ -1156,6 +1186,7 @@ const ChatPage = () => {
                   key={conv._id ? `all-${conv._id}-${index}` : `all-${index}`}
                   conv={conv}
                   isActive={activeConv?._id === conv._id}
+                  isTyping={!!typingConversations[conv._id]}
                   onClick={() => setActiveConv(conv)}
                 />
               ))
@@ -1181,7 +1212,13 @@ const ChatPage = () => {
             <div className="px-4 py-3 bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-800 flex justify-between items-center shadow-sm flex-shrink-0 relative z-30">
               <div className="flex items-center gap-3">
                 <button
-                  onClick={() => setActiveConv(null)}
+                  onClick={() => {
+                    if (window.history.state?.chatActive) {
+                      window.history.back();
+                    } else {
+                      setActiveConv(null);
+                    }
+                  }}
                   className="md:hidden text-gray-600 dark:text-gray-300 pr-1 text-lg"
                 >
                   <FaArrowLeft />
@@ -1208,7 +1245,7 @@ const ChatPage = () => {
                       {activeConv.partner?.name || "User"}
                     </h3>
                     <p className="text-[11px] text-gray-500 dark:text-gray-400 flex items-center gap-1.5">
-                      {typingPartner ? (
+                      {activeConv && typingConversations[activeConv._id] ? (
                         <span className="text-brand-orange font-bold animate-pulse">
                           typing...
                         </span>
@@ -1426,6 +1463,16 @@ const ChatPage = () => {
                   No messages in this chat. Say hello 👋!
                 </div>
               )}
+              {activeConv && typingConversations[activeConv._id] && (
+                <div className="flex items-center gap-2 text-[11px] text-gray-500 dark:text-gray-400 italic p-3 bg-white dark:bg-gray-900 rounded-2xl w-fit shadow-xs animate-pulse mb-2 ml-2">
+                  <div className="flex gap-1 items-center">
+                    <span className="w-1.5 h-1.5 bg-brand-orange rounded-full animate-bounce [animation-delay:0s]"></span>
+                    <span className="w-1.5 h-1.5 bg-brand-orange rounded-full animate-bounce [animation-delay:0.2s]"></span>
+                    <span className="w-1.5 h-1.5 bg-brand-orange rounded-full animate-bounce [animation-delay:0.4s]"></span>
+                  </div>
+                  <span>{activeConv.partner?.name || "User"} is typing...</span>
+                </div>
+              )}
               <div ref={messagesEndRef} />
             </div>
 
@@ -1499,7 +1546,8 @@ const ChatPage = () => {
             ) : (
               <div className="p-3 bg-white dark:bg-gray-900 border-t border-gray-200 dark:border-gray-800 relative z-20 flex-shrink-0">
                 {/* Emoji Picker Popover */}
-                {showEmojiPicker && (
+                {/* Emoji Picker Popover (Only on Desktop) */}
+                {showEmojiPicker && window.innerWidth >= 640 && (
                   <div className="absolute bottom-16 left-4 z-50 shadow-2xl">
                     <EmojiPicker
                       onEmojiClick={(emojiData) => {
@@ -1558,25 +1606,12 @@ const ChatPage = () => {
 
                   {/* MOBILE DROP-UP POPOVER MENU (< sm screens) */}
                   {showMobileDropup && (
-                    <div className="sm:hidden absolute bottom-16 left-2 z-40 bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 rounded-2xl shadow-2xl p-3 flex gap-4 items-center animate-pop-in">
+                    <div className="sm:hidden absolute bottom-16 left-2 z-40 bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 rounded-2xl shadow-xl p-3 flex gap-4 items-center animate-pop-in">
                       <button
                         type="button"
                         onClick={() => {
                           setShowMobileDropup(false);
-                          setShowEmojiPicker(!showEmojiPicker);
-                        }}
-                        className="flex flex-col items-center gap-1 text-gray-700 dark:text-gray-200 hover:text-brand-orange text-[10px] font-bold"
-                      >
-                        <div className="w-10 h-10 rounded-full bg-orange-100 dark:bg-orange-950/40 text-brand-orange flex items-center justify-center text-lg shadow-sm">
-                          <FaSmile />
-                        </div>
-                        <span>Emoji</span>
-                      </button>
-
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setShowMobileDropup(false);
+                          // setShowShiftPicker ? setShowShiftPicker(false) : void(0); // compatibility placeholder check
                           setShowGifPicker(!showGifPicker);
                         }}
                         className="flex flex-col items-center gap-1 text-gray-700 dark:text-gray-200 hover:text-brand-orange text-[10px] font-bold"
@@ -1825,7 +1860,7 @@ const ChatPage = () => {
 };
 
 // Sub-component: Conversation List Item
-const ConversationItem = ({ conv, isActive, onClick }) => {
+const ConversationItem = ({ conv, isActive, isTyping, onClick }) => {
   const partner = conv.partner;
   const lastMsg = conv.lastMessage;
 
@@ -1872,7 +1907,9 @@ const ConversationItem = ({ conv, isActive, onClick }) => {
 
         <div className="flex justify-between items-center">
           <p className="text-[11px] text-gray-500 dark:text-gray-400 truncate max-w-[170px]">
-            {lastMsg ? (
+            {isTyping ? (
+              <span className="text-brand-orange font-bold animate-pulse">typing...</span>
+            ) : lastMsg ? (
               lastMsg.isUnsent ? (
                 <span className="italic">Message unsent</span>
               ) : lastMsg.isEncrypted ? (
@@ -2132,7 +2169,28 @@ const MessageBubble = ({
             <p>This message was unsent</p>
           ) : (
             <>
-              {msg.messageType === "text" && <p className="whitespace-pre-wrap">{msg.text}</p>}
+              {msg.messageType === "text" && (
+                <p className="whitespace-pre-wrap">
+                  {msg.isEncrypted && !msg.isDecrypted ? (
+                    <span className="flex items-center gap-1.5 opacity-80 italic font-medium">
+                      <FaLock className="text-[10px]" /> Waiting for decryption...
+                    </span>
+                  ) : (
+                    msg.text
+                  )}
+                </p>
+              )}
+
+              {msg.messageType === "call" && (
+                <div className="flex items-center gap-2 py-1.5 px-2 rounded-xl bg-black/5 dark:bg-white/5 font-extrabold text-[11px] leading-tight select-none">
+                  {msg.text.toLowerCase().includes("video") ? (
+                    <BiVideo className="text-sm text-brand-orange" />
+                  ) : (
+                    <BiPhoneCall className="text-sm text-brand-orange" />
+                  )}
+                  <span>{msg.text}</span>
+                </div>
+              )}
 
               {msg.messageType === "image" && (
                 <img

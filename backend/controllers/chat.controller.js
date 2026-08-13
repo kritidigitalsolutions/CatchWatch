@@ -4,7 +4,7 @@ const UserBlock = require("../models/userBlock.model");
 const User = require("../models/user.model");
 const { sendPushNotification } = require("../utils/fcm.service");
 const { getIO, getUserSockets } = require("../socket/chatSocket");
-const { generateChatToken } = require("../services/agora.service");
+const { generateChatToken, registerAgoraChatUser } = require("../services/agora.service");
 
 // Helper to check if two users have blocked each other
 const isBlockedPair = async (userId1, userId2) => {
@@ -1186,6 +1186,9 @@ exports.getAgoraToken = async (req, res) => {
         message: "Agora credentials missing in server config",
       });
     }
+
+    // Automatically register user in Agora Chat if not already registered
+    await registerAgoraChatUser(currentUserId);
 
     const agoraData = generateChatToken(currentUserId);
 

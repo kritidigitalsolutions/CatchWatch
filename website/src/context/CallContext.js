@@ -43,6 +43,7 @@ export const CallProvider = ({ children }) => {
   // Controls States
   const [isMuted, setIsMuted] = useState(false);
   const [isVideoOff, setIsVideoOff] = useState(false);
+  const [facingMode, setFacingMode] = useState("user");
   const [callDuration, setCallDuration] = useState(0);
   const [showCallHistoryModal, setShowCallHistoryModal] = useState(false);
 
@@ -497,6 +498,46 @@ export const CallProvider = ({ children }) => {
     }
   };
 
+  // 12.5. Switch Camera (Front / Back)
+  const switchCamera = async () => {
+    if (!localVideoTrackRef.current) return;
+    try {
+      const cameras = await AgoraRTC.getCameras();
+      if (cameras.length <= 1) {
+        toast.info("No other camera detected");
+        return;
+      }
+      const currentDeviceId = localVideoTrackRef.current.getDeviceId();
+      const currentIndex = cameras.findIndex((c) => c.deviceId === currentDeviceId);
+      const nextIndex = (currentIndex + 1) % cameras.length;
+      const nextCamera = cameras[nextIndex];
+
+      await localVideoTrackRef.current.setDevice(nextCamera.deviceId);
+      toast.success(`Switched camera to ${nextCamera.label || "Next"}`);
+    } catch (err) {
+      console.warn("Camera switch using setDevice failed, trying fallback:", err);
+      // Fallback: Re-create video track with the opposite facingMode
+      try {
+        const nextMode = facingMode === "user" ? "environment" : "user";
+        if (localVideoTrackRef.current) {
+          await agoraClient.unpublish(localVideoTrackRef.current);
+          localVideoTrackRef.current.stop();
+          localVideoTrackRef.current.close();
+        }
+        const newTrack = await AgoraRTC.createCameraVideoTrack({
+          facingMode: nextMode,
+        });
+        localVideoTrackRef.current = newTrack;
+        await agoraClient.publish(newTrack);
+        setFacingMode(nextMode);
+        toast.success(`Switched camera to ${nextMode} mode`);
+      } catch (fallbackErr) {
+        console.error("Camera switch fallback error:", fallbackErr);
+        toast.error("Failed to switch camera: " + fallbackErr.message);
+      }
+    }
+  };
+
   // 13. Cleanup and Reset Call State
   const cleanupAndResetCall = async () => {
     stopRingtone();
@@ -554,6 +595,7 @@ export const CallProvider = ({ children }) => {
         leaveAndEndCall,
         toggleMicrophone,
         toggleCamera,
+        switchCamera,
       }}
     >
       {children}

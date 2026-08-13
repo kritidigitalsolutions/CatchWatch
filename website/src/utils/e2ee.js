@@ -196,10 +196,6 @@ export async function decryptText(ciphertextBase64, ivBase64, sharedKey) {
     const decoder = new TextDecoder();
     return decoder.decode(decryptedBuffer);
   } catch (error) {
-    // If decryption failed, check if string was actually plain text
-    if (typeof ciphertextBase64 === "string" && (ciphertextBase64.length < 60 || !ciphertextBase64.endsWith("="))) {
-      return ciphertextBase64;
-    }
     return null;
   }
 }

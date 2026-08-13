@@ -2,6 +2,8 @@ const mongoose = require("mongoose");
 const Call = require("../models/call.model");
 const User = require("../models/user.model");
 const UserBlock = require("../models/userBlock.model");
+const Conversation = require("../models/conversation.model");
+const Message = require("../models/message.model");
 const { generateRtcToken } = require("../services/agora.service");
 const { getIO } = require("../socket/chatSocket");
 
@@ -11,6 +13,89 @@ const getNumericUid = (idStr) => {
   const digits = String(idStr).replace(/\D/g, "");
   const num = parseInt(digits.slice(-8), 10);
   return isNaN(num) ? Math.floor(Math.random() * 1000000) : num;
+};
+
+// Helper to write call logs to chat conversations
+const createCallLogMessage = async (call) => {
+  try {
+    const callerId = call.caller.toString();
+    const receiverId = call.receiver.toString();
+
+    // Find or create conversation
+    let conversation = await Conversation.findOne({
+      participants: { $all: [callerId, receiverId] },
+    });
+
+    if (!conversation) {
+      conversation = await Conversation.create({
+        participants: [callerId, receiverId],
+        unreadCount: {
+          [callerId]: 0,
+          [receiverId]: 0,
+        },
+      });
+    }
+
+    // Determine the call log text
+    let text = "";
+    const isVideo = call.type === "video";
+    const typeLabel = isVideo ? "Video Call" : "Voice Call";
+
+    if (call.status === "ended") {
+      const durationSec = call.duration || 0;
+      const m = Math.floor(durationSec / 60);
+      const s = durationSec % 60;
+      const durationStr = `${m}:${s < 10 ? "0" : ""}${s}`;
+      text = `📞 ${typeLabel} ended (${durationStr})`;
+    } else if (call.status === "rejected") {
+      text = `📞 Declined ${typeLabel}`;
+    } else if (call.status === "busy") {
+      text = `📞 Busy ${typeLabel}`;
+    } else if (call.status === "cancelled") {
+      text = `📞 Cancelled ${typeLabel}`;
+    } else if (call.status === "missed") {
+      text = `📞 Missed ${typeLabel}`;
+    } else {
+      return; // Do not log other statuses like ringing/calling
+    }
+
+    // Create call log message in database
+    const newMessage = await Message.create({
+      conversationId: conversation._id,
+      sender: call.caller, // Always log caller as the sender/initiator
+      recipient: call.receiver,
+      messageType: "call",
+      text: text,
+      status: "SENT",
+    });
+
+    const populatedMessage = await Message.findById(newMessage._id)
+      .populate("sender", "name username profileImage publicKey")
+      .populate("recipient", "name username profileImage publicKey");
+
+    // Update conversation lastMessage & lastMessageAt
+    conversation.lastMessage = newMessage._id;
+    conversation.lastMessageAt = new Date();
+
+    // Increment unreadCount for the receiver
+    if (["ended", "missed", "rejected"].includes(call.status)) {
+      const currentUnread = (conversation.unreadCount && conversation.unreadCount.get(receiverId)) || 0;
+      if (!conversation.unreadCount) conversation.unreadCount = new Map();
+      conversation.unreadCount.set(receiverId, currentUnread + 1);
+    }
+    await conversation.save();
+
+    // Emit Socket events to recipient and sender
+    const io = getIO();
+    if (io) {
+      io.to(`user_${receiverId}`).emit("new_message", populatedMessage);
+      io.to(`user_${callerId}`).emit("new_message", populatedMessage);
+      io.to(`user_${receiverId}`).emit("message_sent", populatedMessage);
+      io.to(`user_${callerId}`).emit("message_sent", populatedMessage);
+    }
+  } catch (err) {
+    console.error("Error creating call log message:", err);
+  }
 };
 
 // =========================================================
@@ -120,6 +205,8 @@ exports.startCall = async (req, res) => {
           message: "User is currently busy on another call",
         });
       }
+
+      createCallLogMessage(busyCall);
 
       return res.status(409).json({
         success: false,
@@ -280,6 +367,8 @@ exports.rejectCall = async (req, res) => {
     call.endedAt = new Date();
     await call.save();
 
+    createCallLogMessage(call);
+
     const io = getIO();
     if (io) {
       io.to(`user_${call.caller}`).emit("call_rejected", {
@@ -321,6 +410,8 @@ exports.busyCall = async (req, res) => {
     call.status = "busy";
     call.endedAt = new Date();
     await call.save();
+
+    createCallLogMessage(call);
 
     const io = getIO();
     if (io) {
@@ -371,6 +462,8 @@ exports.cancelCall = async (req, res) => {
     call.endedAt = new Date();
     await call.save();
 
+    createCallLogMessage(call);
+
     const io = getIO();
     if (io) {
       io.to(`user_${call.receiver}`).emit("call_cancelled", {
@@ -411,6 +504,8 @@ exports.missedCall = async (req, res) => {
     call.status = "missed";
     call.endedAt = new Date();
     await call.save();
+
+    createCallLogMessage(call);
 
     const io = getIO();
     if (io) {
@@ -474,6 +569,8 @@ exports.endCall = async (req, res) => {
     call.endedAt = endedAt;
     call.duration = duration;
     await call.save();
+
+    createCallLogMessage(call);
 
     const targetUserId = isCaller ? call.receiver : call.caller;
     const io = getIO();

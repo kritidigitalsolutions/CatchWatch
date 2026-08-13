@@ -11,7 +11,8 @@ import {
   FaTimes,
   FaHistory,
   FaArrowDown,
-  FaArrowUp
+  FaArrowUp,
+  FaSync
 } from "react-icons/fa";
 import { BiPhoneCall, BiVideo } from "react-icons/bi";
 
@@ -33,6 +34,7 @@ export const CallModal = () => {
     leaveAndEndCall,
     toggleMicrophone,
     toggleCamera,
+    switchCamera,
   } = useCall();
 
   const localVideoRef = useRef(null);
@@ -266,6 +268,17 @@ export const CallModal = () => {
                 title={isVideoOff ? "Turn Camera ON" : "Turn Camera OFF"}
               >
                 {isVideoOff ? <FaVideoSlash /> : <FaVideo />}
+              </button>
+            )}
+
+            {/* Switch Camera Button (Video Call Only) */}
+            {activeCall.type === "video" && (
+              <button
+                onClick={() => switchCamera()}
+                className="w-13 h-13 sm:w-14 sm:h-14 rounded-full bg-white/15 hover:bg-white/25 text-white backdrop-blur-md flex items-center justify-center text-xl transition shadow-lg"
+                title="Switch Camera (Front/Back)"
+              >
+                <FaSync />
               </button>
             )}
 
