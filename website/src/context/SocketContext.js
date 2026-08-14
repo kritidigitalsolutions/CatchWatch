@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useEffect, useState } from "react";
 import { io } from "socket.io-client";
 import { getConversations } from "../api/chatApi";
+import { logoutAgoraChat } from "../services/agoraChatService";
 
 const SocketContext = createContext();
 
@@ -63,6 +64,26 @@ export const SocketProvider = ({ children }) => {
 
     newSocket.on("connect_error", (err) => {
       console.warn("⚠️ Socket Connection Error:", err.message);
+      if (err.message && err.message.includes("Session revoked")) {
+        sessionStorage.setItem("session_revoked_notice", "Your account was logged in on another device.");
+        logoutAgoraChat();
+        localStorage.removeItem("authToken");
+        localStorage.removeItem("token");
+        localStorage.removeItem("user");
+        newSocket.disconnect();
+        window.location.href = "/login";
+      }
+    });
+
+    newSocket.on("session_revoked", (data) => {
+      console.warn("🔒 Session revoked by another login:", data);
+      sessionStorage.setItem("session_revoked_notice", data?.message || "Your account was logged in on another device.");
+      logoutAgoraChat();
+      localStorage.removeItem("authToken");
+      localStorage.removeItem("token");
+      localStorage.removeItem("user");
+      newSocket.disconnect();
+      window.location.href = "/login";
     });
 
     newSocket.on("new_message", () => {
@@ -80,6 +101,7 @@ export const SocketProvider = ({ children }) => {
       newSocket.off("connect");
       newSocket.off("disconnect");
       newSocket.off("connect_error");
+      newSocket.off("session_revoked");
       newSocket.off("new_message");
       newSocket.off("messages_read");
       newSocket.disconnect();

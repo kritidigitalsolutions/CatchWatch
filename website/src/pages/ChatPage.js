@@ -23,7 +23,7 @@ import {
   FaHistory,
   FaLock,
   FaDownload,
-  FaUser
+  FaUser,
 } from "react-icons/fa";
 import EmojiPicker from "emoji-picker-react";
 import { useSocket } from "../context/SocketContext";
@@ -43,7 +43,6 @@ import {
   startConversation,
   getMessages,
   sendMessage,
-  appendEncryptionEnvelopes,
   uploadChatMedia,
   editMessage,
   unsendMessage,
@@ -53,10 +52,11 @@ import {
   markAsRead,
   pinConversation,
   clearConversation,
+  getUserPublicKey,
+  saveE2EEIdentity,
+  getE2EEBackup,
   blockUser,
   unblockUser,
-  savePublicKey,
-  getUserPublicKey,
   searchChatUsers,
   getAgoraToken,
 } from "../api/chatApi";
@@ -73,10 +73,42 @@ import "./ChatPage.css";
 
 const QUICK_EMOJIS = ["❤️", "👍", "😂", "😮", "😢", "🔥"];
 const MORE_EMOJIS = [
-  "❤️", "👍", "😂", "😮", "😢", "🔥", "🎉", "💯", "👏", "🙏",
-  "🤩", "🥳", "🤣", "😍", "💩", "✨", "💡", "💔", "⚡", "🏆",
-  "👌", "😎", "😭", "🙄", "😬", "🫡", "🫣", "🚀", "🍿", "🙌",
-  "💖", "🥰", "🎯", "👑", "⭐", "💪"
+  "❤️",
+  "👍",
+  "😂",
+  "😮",
+  "😢",
+  "🔥",
+  "🎉",
+  "💯",
+  "👏",
+  "🙏",
+  "🤩",
+  "🥳",
+  "🤣",
+  "😍",
+  "💩",
+  "✨",
+  "💡",
+  "💔",
+  "⚡",
+  "🏆",
+  "👌",
+  "😎",
+  "😭",
+  "🙄",
+  "😬",
+  "🫡",
+  "🫣",
+  "🚀",
+  "🍿",
+  "🙌",
+  "💖",
+  "🥰",
+  "🎯",
+  "👑",
+  "⭐",
+  "💪",
 ];
 
 const ChatPage = () => {
@@ -104,14 +136,12 @@ const ChatPage = () => {
   const [messageText, setMessageText] = useState("");
   const [loadingMessages, setLoadingMessages] = useState(false);
 
-
   // Followers & Following Modal States
   const [showFollowsModal, setShowFollowsModal] = useState(false);
   const [followsTab, setFollowsTab] = useState("followers"); // "followers" | "following"
   const [followsList, setFollowsList] = useState([]);
   const [loadingFollows, setLoadingFollows] = useState(false);
   const [followsQuery, setFollowsQuery] = useState("");
-
 
   // Feature Action States
   const [replyingTo, setReplyingTo] = useState(null);
@@ -139,38 +169,8 @@ const ChatPage = () => {
   // E2EE Key Management States & Refs
   const [e2eeKeys, setE2eeKeys] = useState(null);
   const partnerSharedKeysRef = useRef({});
-  const envelopeBackfillRef = useRef({});
 
   const isSameId = (a, b) => a?.toString() === b?.toString();
-
-  const isProbablyPlainText = (value) => (
-    typeof value === "string" &&
-    (value.includes(" ") || !/^[A-Za-z0-9+/=]+$/.test(value.trim()))
-  );
-
-  const normalizeDeviceKeys = (userOrKeyRes, userId = null) => {
-    const source = userOrKeyRes?.data || userOrKeyRes || {};
-    const deviceKeys = Array.isArray(source.deviceKeys) ? source.deviceKeys : [];
-    const normalized = deviceKeys
-      .filter((key) => key?.deviceId && key?.keyId && key?.publicKey)
-      .map((key) => ({
-        userId: key.userId || source.userId || userId,
-        deviceId: key.deviceId,
-        keyId: key.keyId,
-        publicKey: key.publicKey,
-      }));
-
-    if (normalized.length === 0 && source.publicKey) {
-      normalized.push({
-        userId: source.userId || userId,
-        deviceId: "legacy",
-        keyId: "legacy",
-        publicKey: source.publicKey,
-      });
-    }
-
-    return normalized;
-  };
 
   // Agora Chat Connection State
   const [agoraConnected, setAgoraConnected] = useState(false);
@@ -202,11 +202,33 @@ const ChatPage = () => {
   }, [currentUserId]);
 
   // Initialize E2EE Keypair for current user
+  const ensureUserE2EE = async () => {
+    if (e2eeKeys && !e2eeKeys.error && e2eeKeys.privateKey) {
+      return e2eeKeys;
+    }
+    if (!currentUserId) return null;
+    try {
+      const keys = await initUserE2EE(
+        currentUserId,
+        saveE2EEIdentity,
+        getE2EEBackup,
+        getUserPublicKey,
+      );
+      if (keys && !keys.error && keys.privateKey) {
+        setE2eeKeys(keys);
+        return keys;
+      }
+      return keys;
+    } catch (err) {
+      console.error("Error ensuring user E2EE keys:", err);
+      return null;
+    }
+  };
+
   useEffect(() => {
     if (!currentUserId) return;
-    initUserE2EE(currentUserId, savePublicKey, getUserPublicKey).then((keys) => {
-      if (keys) setE2eeKeys(keys);
-    });
+    ensureUserE2EE();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currentUserId]);
 
   // Handle mobile system back button when conversation is open
@@ -228,40 +250,53 @@ const ChatPage = () => {
 
   // Handle adding class to body to hide global layout navigation on mobile when chat is active
   useEffect(() => {
-    if (activeConv) {
-      document.body.classList.add("chat-active-mobile");
-    } else {
-      document.body.classList.remove("chat-active-mobile");
-    }
+    if (!activeConv) return;
+    document.body.classList.add("chat-active-mobile");
     return () => {
       document.body.classList.remove("chat-active-mobile");
     };
   }, [activeConv]);
 
-  // Derive and cache shared key for partner
-  const getSharedKeyForPartner = async (partner) => {
-    if (!e2eeKeys || !partner) return null;
-    const partnerId = typeof partner === "string" ? partner : (partner._id || partner.id)?.toString();
+  // Derive shared key for partner with always-fresh public identity lookup
+  const getSharedKeyForPartner = async (partner, forceFresh = false) => {
+    const activeKeys = await ensureUserE2EE();
+    if (!activeKeys || !activeKeys.privateKey || !partner) return null;
+    const partnerId =
+      typeof partner === "string"
+        ? partner
+        : (partner._id || partner.id)?.toString();
     if (!partnerId) return null;
 
-    let partnerPubKeyStr = typeof partner === "object" ? partner.publicKey : null;
-    if (!partnerPubKeyStr) {
-      try {
-        const keyRes = await getUserPublicKey(partnerId);
-        if (keyRes && keyRes.data && keyRes.data.publicKey) {
-          partnerPubKeyStr = keyRes.data.publicKey;
-        }
-      } catch (err) {
-        console.warn("Could not fetch partner public key:", err);
+    let partnerPubKeyStr = null;
+    let partnerKeyId = "";
+
+    try {
+      const keyRes = await getUserPublicKey(partnerId);
+      if (keyRes && keyRes.data && keyRes.data.publicKey) {
+        partnerPubKeyStr = keyRes.data.publicKey;
+        partnerKeyId = keyRes.data.keyId || "";
       }
+    } catch (err) {
+      console.warn("Could not fetch fresh partner public key:", err);
     }
 
-    if (!partnerPubKeyStr || typeof partnerPubKeyStr !== "string" || !partnerPubKeyStr.trim()) {
+    if (!partnerPubKeyStr && typeof partner === "object" && partner.publicKey) {
+      partnerPubKeyStr = partner.publicKey;
+    }
+
+    if (
+      !partnerPubKeyStr ||
+      typeof partnerPubKeyStr !== "string" ||
+      !partnerPubKeyStr.trim()
+    ) {
+      safeKeyDiagnostic(E2EE_DIAGNOSTIC.KEY_NOT_FOUND, {
+        recipientId: partnerId,
+      });
       return null;
     }
 
-    const cacheKey = `${partnerId}_${partnerPubKeyStr.slice(0, 30)}`;
-    if (partnerSharedKeysRef.current[cacheKey]) {
+    const cacheKey = `${partnerId}_${partnerKeyId}_${partnerPubKeyStr.slice(0, 30)}`;
+    if (!forceFresh && partnerSharedKeysRef.current[cacheKey]) {
       return partnerSharedKeysRef.current[cacheKey];
     }
 
@@ -269,7 +304,10 @@ const ChatPage = () => {
       const partnerPubKey = await importPublicKey(partnerPubKeyStr);
       if (!partnerPubKey) return null;
 
-      const sharedKey = await deriveSharedKey(e2eeKeys.privateKey, partnerPubKey);
+      const sharedKey = await deriveSharedKey(
+        activeKeys.privateKey,
+        partnerPubKey,
+      );
       if (sharedKey) {
         partnerSharedKeysRef.current[cacheKey] = sharedKey;
       }
@@ -280,188 +318,105 @@ const ChatPage = () => {
     }
   };
 
-  const getSharedKeyForDeviceKey = async (userId, deviceKey) => {
-    if (!e2eeKeys || e2eeKeys.error || !e2eeKeys.privateKey || !deviceKey?.publicKey) {
-      if (e2eeKeys?.error === E2EE_DIAGNOSTIC.DEVICE_PRIVATE_KEY_MISSING) {
-        safeKeyDiagnostic(E2EE_DIAGNOSTIC.DEVICE_PRIVATE_KEY_MISSING, {
-          currentDeviceId: e2eeKeys.deviceId,
-          currentKeyId: e2eeKeys.keyId,
-          storedPrivateKeyExists: e2eeKeys.storedPrivateKeyExists,
-          serverRegisteredDeviceId: e2eeKeys.serverRegisteredDeviceId,
-          serverRegisteredKeyId: e2eeKeys.serverRegisteredKeyId,
-        });
-      }
-      return null;
-    }
-
-    const cacheKey = `${userId}_${deviceKey.deviceId}_${deviceKey.keyId}`;
-    if (partnerSharedKeysRef.current[cacheKey]) {
-      return partnerSharedKeysRef.current[cacheKey];
-    }
-
-    try {
-      const publicKey = await importPublicKey(deviceKey.publicKey);
-      if (!publicKey) {
-        safeKeyDiagnostic(E2EE_DIAGNOSTIC.KEY_NOT_FOUND, {
-          recipientId: userId,
-          recipientDeviceId: deviceKey.deviceId,
-          recipientKeyId: deviceKey.keyId,
-        });
-        return null;
-      }
-
-      const sharedKey = await deriveSharedKey(e2eeKeys.privateKey, publicKey);
-      if (sharedKey) {
-        partnerSharedKeysRef.current[cacheKey] = sharedKey;
-      }
-      return sharedKey;
-    } catch (err) {
-      safeKeyDiagnostic(E2EE_DIAGNOSTIC.KEY_MISMATCH, {
-        recipientId: userId,
-        recipientDeviceId: deviceKey.deviceId,
-        recipientKeyId: deviceKey.keyId,
-      });
-      return null;
-    }
-  };
-
-  const getPublicDeviceKeysForUser = async (user, forceFetch = false) => {
-    const userId = typeof user === "string" ? user : (user?._id || user?.id)?.toString();
-    if (!userId) return [];
-
-    let keys = !forceFetch && typeof user === "object" ? normalizeDeviceKeys(user, userId) : [];
-    if (keys.length > 0) return keys;
-
-    try {
-      const keyRes = await getUserPublicKey(userId);
-      keys = normalizeDeviceKeys(keyRes, userId);
-    } catch (err) {
-      console.warn("Could not fetch user device keys:", err);
-    }
-    return keys;
-  };
-
   const buildEncryptedMessagePayload = async (plainText, recipient) => {
-    if (!plainText || !e2eeKeys || e2eeKeys.error || !e2eeKeys.privateKey) return null;
-
-    const recipientId = (recipient?._id || recipient?.id || recipient)?.toString();
-    const recipientKeys = await getPublicDeviceKeysForUser(recipient, true);
-    const senderKeys = await getPublicDeviceKeysForUser(currentUserId, true);
-    const currentDeviceKey = {
-      userId: currentUserId,
-      deviceId: e2eeKeys.deviceId,
-      keyId: e2eeKeys.keyId,
-      publicKey: e2eeKeys.publicKeyString,
-    };
-
-    const targetKeysById = new Map();
-    [...recipientKeys, ...senderKeys, currentDeviceKey].forEach((key) => {
-      if (key?.userId && key?.deviceId && key?.keyId && key?.publicKey) {
-        targetKeysById.set(`${key.userId}_${key.deviceId}_${key.keyId}`, key);
-      }
-    });
-
-    const envelopes = [];
-    for (const deviceKey of targetKeysById.values()) {
-      const sharedKey = await getSharedKeyForDeviceKey(deviceKey.userId, deviceKey);
-      if (!sharedKey) continue;
-      const encrypted = await encryptText(plainText, sharedKey);
-      if (encrypted?.ciphertext && encrypted?.iv) {
-        envelopes.push({
-          userId: deviceKey.userId,
-          deviceId: deviceKey.deviceId,
-          keyId: deviceKey.keyId,
-          senderDeviceId: e2eeKeys.deviceId,
-          senderKeyId: e2eeKeys.keyId,
-          senderPublicKey: e2eeKeys.publicKeyString,
-          ciphertext: encrypted.ciphertext,
-          iv: encrypted.iv,
-        });
-      }
+    if (!plainText) return null;
+    const activeKeys = await ensureUserE2EE();
+    if (!activeKeys || activeKeys.error || !activeKeys.privateKey) {
+      safeKeyDiagnostic(E2EE_DIAGNOSTIC.DEVICE_PRIVATE_KEY_MISSING, {
+        senderId: currentUserId,
+        currentDeviceId: activeKeys?.deviceId,
+        currentKeyId: activeKeys?.keyId,
+        storedPrivateKeyExists: activeKeys?.storedPrivateKeyExists,
+      });
+      throw new Error(
+        "Device encryption key is missing or not initialized. Please refresh the page.",
+      );
     }
 
-    const primaryEnvelope = envelopes.find((envelope) => isSameId(envelope.userId, recipientId)) || envelopes[0];
-    if (!primaryEnvelope) {
+    const recipientId = (
+      recipient?._id ||
+      recipient?.id ||
+      recipient
+    )?.toString();
+    if (!recipientId) {
+      throw new Error("Recipient ID is required for message encryption.");
+    }
+
+    // Always fetch fresh recipient public identity
+    let recipientPubKeyStr = null;
+    let recipientKeyId = "";
+    try {
+      const keyRes = await getUserPublicKey(recipientId);
+      if (keyRes?.data?.publicKey) {
+        recipientPubKeyStr = keyRes.data.publicKey;
+        recipientKeyId = keyRes.data.keyId || "key_account";
+      }
+    } catch (err) {
+      console.warn("Could not fetch recipient public key:", err);
+    }
+
+    if (!recipientPubKeyStr && typeof recipient === "object" && recipient?.publicKey) {
+      recipientPubKeyStr = recipient.publicKey;
+    }
+
+    if (!recipientPubKeyStr) {
       safeKeyDiagnostic(E2EE_DIAGNOSTIC.KEY_NOT_FOUND, {
         recipientId,
-        senderDeviceId: e2eeKeys.deviceId,
-        senderKeyId: e2eeKeys.keyId,
+        senderDeviceId: activeKeys.deviceId,
+        senderKeyId: activeKeys.keyId,
       });
-      return null;
+      throw new Error(
+        "Recipient does not have an active encryption key registered. Secure delivery cannot be completed.",
+      );
     }
 
+    const recipientPubKey = await importPublicKey(recipientPubKeyStr);
+    const sharedKey = recipientPubKey
+      ? await deriveSharedKey(activeKeys.privateKey, recipientPubKey)
+      : null;
+
+    if (!sharedKey) {
+      safeKeyDiagnostic(E2EE_DIAGNOSTIC.KEY_NOT_FOUND, {
+        recipientId,
+      });
+      throw new Error("Failed to derive encryption key for recipient.");
+    }
+
+    const encrypted = await encryptText(plainText, sharedKey);
+    if (!encrypted?.ciphertext || !encrypted?.iv) {
+      safeKeyDiagnostic(E2EE_DIAGNOSTIC.ENCRYPT_FAILED, {
+        recipientId,
+        senderDeviceId: activeKeys.deviceId,
+        senderKeyId: activeKeys.keyId,
+      });
+      throw new Error("Failed to encrypt message.");
+    }
+
+    safeKeyDiagnostic("ENCRYPT_MESSAGE_SUCCESS", {
+      senderId: currentUserId,
+      recipientId,
+      currentDeviceId: activeKeys.deviceId,
+      currentKeyId: activeKeys.keyId,
+      senderDeviceId: activeKeys.deviceId,
+      recipientDeviceId: recipient?.sessions?.web?.deviceId || "active_device",
+      senderKeyId: activeKeys.keyId,
+      recipientKeyId: recipientKeyId || "key_account",
+    });
+
     return {
-      text: primaryEnvelope.ciphertext,
-      iv: primaryEnvelope.iv,
+      text: encrypted.ciphertext,
+      iv: encrypted.iv,
       isEncrypted: true,
       encryption: {
         version: 2,
-        senderDeviceId: e2eeKeys.deviceId,
-        senderKeyId: e2eeKeys.keyId,
-        senderPublicKey: e2eeKeys.publicKeyString,
-        recipientDeviceId: primaryEnvelope.deviceId,
-        recipientKeyId: primaryEnvelope.keyId,
-        envelopes,
+        senderDeviceId: activeKeys.deviceId,
+        senderKeyId: activeKeys.keyId,
+        senderPublicKey: activeKeys.publicKeyString,
+        recipientDeviceId: recipient?.sessions?.web?.deviceId || "active_device",
+        recipientKeyId: recipientKeyId || "key_account",
+        envelopes: [],
       },
     };
-  };
-
-  const backfillMissingDeviceEnvelopes = async (msg, plainText) => {
-    const messageId = (msg?._id || msg?.id)?.toString();
-    if (!messageId || !plainText || !e2eeKeys || e2eeKeys.error || !e2eeKeys.privateKey) return;
-    if (envelopeBackfillRef.current[messageId]) return;
-
-    envelopeBackfillRef.current[messageId] = true;
-    try {
-      const participantIds = [
-        msg.sender?._id || msg.sender?.id || msg.sender,
-        msg.recipient?._id || msg.recipient?.id || msg.recipient,
-      ].filter(Boolean).map((id) => id.toString());
-
-      const existing = Array.isArray(msg.encryption?.envelopes) ? msg.encryption.envelopes : [];
-      const targetKeysById = new Map();
-
-      for (const participantId of participantIds) {
-        const deviceKeys = await getPublicDeviceKeysForUser(participantId, true);
-        deviceKeys.forEach((key) => {
-          if (key?.userId && key?.deviceId && key?.keyId && key?.publicKey) {
-            const exists = existing.some((envelope) =>
-              isSameId(envelope.userId, key.userId) &&
-              envelope.deviceId === key.deviceId &&
-              envelope.keyId === key.keyId
-            );
-            if (!exists) {
-              targetKeysById.set(`${key.userId}_${key.deviceId}_${key.keyId}`, key);
-            }
-          }
-        });
-      }
-
-      const newEnvelopes = [];
-      for (const deviceKey of targetKeysById.values()) {
-        const sharedKey = await getSharedKeyForDeviceKey(deviceKey.userId, deviceKey);
-        if (!sharedKey) continue;
-        const encrypted = await encryptText(plainText, sharedKey);
-        if (encrypted?.ciphertext && encrypted?.iv) {
-          newEnvelopes.push({
-            userId: deviceKey.userId,
-            deviceId: deviceKey.deviceId,
-            keyId: deviceKey.keyId,
-            senderDeviceId: e2eeKeys.deviceId,
-            senderKeyId: e2eeKeys.keyId,
-            senderPublicKey: e2eeKeys.publicKeyString,
-            ciphertext: encrypted.ciphertext,
-            iv: encrypted.iv,
-          });
-        }
-      }
-
-      if (newEnvelopes.length > 0) {
-        await appendEncryptionEnvelopes(messageId, newEnvelopes);
-      }
-    } catch (err) {
-      console.warn("Could not backfill E2EE device envelopes:", err);
-    }
   };
 
   // Helper to decrypt message if encrypted
@@ -469,127 +424,181 @@ const ChatPage = () => {
     if (!msg || !msg.text) return msg;
     if (!msg.isEncrypted || !msg.iv) return { ...msg, isDecrypted: true };
     if (msg.isDecrypted) return msg;
-    if (e2eeKeys?.error === E2EE_DIAGNOSTIC.DEVICE_PRIVATE_KEY_MISSING || !e2eeKeys?.privateKey) {
+
+    const activeKeys = await ensureUserE2EE();
+    if (!activeKeys || activeKeys.error || !activeKeys.privateKey) {
       safeKeyDiagnostic(E2EE_DIAGNOSTIC.DEVICE_PRIVATE_KEY_MISSING, {
         messageId: msg._id || msg.id,
         senderId: msg.sender?._id || msg.sender?.id || msg.sender,
         recipientId: msg.recipient?._id || msg.recipient?.id || msg.recipient,
-        currentDeviceId: e2eeKeys?.deviceId,
-        currentKeyId: e2eeKeys?.keyId,
-        storedPrivateKeyExists: e2eeKeys?.storedPrivateKeyExists,
-        serverRegisteredDeviceId: e2eeKeys?.serverRegisteredDeviceId,
-        serverRegisteredKeyId: e2eeKeys?.serverRegisteredKeyId,
+        currentDeviceId: activeKeys?.deviceId,
+        currentKeyId: activeKeys?.keyId,
       });
       return { ...msg, isDecrypted: false };
     }
 
     try {
-      const envelopes = Array.isArray(msg.encryption?.envelopes) ? msg.encryption.envelopes : [];
+      let encryptionObj = msg.encryption;
+      if (typeof encryptionObj === "string") {
+        try {
+          encryptionObj = JSON.parse(encryptionObj);
+        } catch (e) {
+          encryptionObj = {};
+        }
+      }
+      if (!encryptionObj || typeof encryptionObj !== "object") {
+        encryptionObj = {};
+      }
+
+      const senderId = (msg.sender?._id || msg.sender?.id || msg.sender)?.toString();
+      const recipientId = (msg.recipient?._id || msg.recipient?.id || msg.recipient)?.toString();
+      const isSender = isSameId(senderId, currentUserId);
+      const partnerObj = isSender ? msg.recipient : msg.sender;
+
+      // Candidate partner public keys to try for ECDH decryption
+      const candidatePublicKeys = [];
+
+      if (!isSender) {
+        // Case 1: Message received from partner.
+        // Priority 1: Exact senderPublicKey saved in message payload
+        if (encryptionObj.senderPublicKey) {
+          candidatePublicKeys.push(encryptionObj.senderPublicKey);
+        }
+        // Priority 2: Partner's current public key from object
+        if (partnerObj?.publicKey && !candidatePublicKeys.includes(partnerObj.publicKey)) {
+          candidatePublicKeys.push(partnerObj.publicKey);
+        }
+        // Priority 3: Partner's active/e2eeIdentity public key
+        if (partnerObj?.e2eeIdentity?.publicKey && !candidatePublicKeys.includes(partnerObj.e2eeIdentity.publicKey)) {
+          candidatePublicKeys.push(partnerObj.e2eeIdentity.publicKey);
+        }
+        // Priority 4: Historical device keys for the sender
+        if (Array.isArray(partnerObj?.deviceKeys)) {
+          partnerObj.deviceKeys.forEach((dk) => {
+            if (dk?.publicKey && !candidatePublicKeys.includes(dk.publicKey)) {
+              candidatePublicKeys.push(dk.publicKey);
+            }
+          });
+        }
+      } else {
+        // Case 2: Message sent by current user.
+        // Priority 1: Partner's current public key from object
+        if (partnerObj?.publicKey) {
+          candidatePublicKeys.push(partnerObj.publicKey);
+        }
+        // Priority 2: Partner's e2eeIdentity public key
+        if (partnerObj?.e2eeIdentity?.publicKey && !candidatePublicKeys.includes(partnerObj.e2eeIdentity.publicKey)) {
+          candidatePublicKeys.push(partnerObj.e2eeIdentity.publicKey);
+        }
+        // Priority 3: Historical device keys for the recipient
+        if (Array.isArray(partnerObj?.deviceKeys)) {
+          partnerObj.deviceKeys.forEach((dk) => {
+            if (dk?.publicKey && !candidatePublicKeys.includes(dk.publicKey)) {
+              candidatePublicKeys.push(dk.publicKey);
+            }
+          });
+        }
+      }
+
+      // If a pre-derived shared key was passed, try it first
+      if (sharedKey) {
+        const plainText = await decryptText(msg.text, msg.iv, sharedKey);
+        if (plainText !== null) {
+          safeKeyDiagnostic(E2EE_DIAGNOSTIC.HISTORICAL_DECRYPT_SUCCESS, {
+            messageId: msg._id || msg.id,
+            senderId,
+            recipientId,
+          });
+          return { ...msg, text: plainText, isDecrypted: true };
+        }
+      }
+
+      // Try each candidate public key
+      for (const pubKeyStr of candidatePublicKeys) {
+        if (!pubKeyStr || typeof pubKeyStr !== "string") continue;
+        try {
+          const importedPub = await importPublicKey(pubKeyStr);
+          if (!importedPub) continue;
+          const derivedSecret = await deriveSharedKey(activeKeys.privateKey, importedPub);
+          if (!derivedSecret) continue;
+
+          const plainText = await decryptText(msg.text, msg.iv, derivedSecret);
+          if (plainText !== null) {
+            safeKeyDiagnostic(E2EE_DIAGNOSTIC.HISTORICAL_DECRYPT_SUCCESS, {
+              messageId: msg._id || msg.id,
+              senderId,
+              recipientId,
+            });
+            return { ...msg, text: plainText, isDecrypted: true };
+          }
+        } catch (e) {
+          // continue trying next key
+        }
+      }
+
+      // Method 3: Legacy multi-device envelope matching
+      const envelopes = Array.isArray(encryptionObj?.envelopes)
+        ? encryptionObj.envelopes
+        : [];
       if (envelopes.length > 0) {
-        const envelope = envelopes.find((item) =>
-          isSameId(item.userId, currentUserId) &&
-          item.deviceId === e2eeKeys?.deviceId &&
-          item.keyId === e2eeKeys?.keyId
+        const envelope = envelopes.find(
+          (item) => isSameId(item.userId, currentUserId)
         );
 
-        if (!envelope) {
-          safeKeyDiagnostic(E2EE_DIAGNOSTIC.DEVICE_ENVELOPE_NOT_FOUND, {
-            messageId: msg._id || msg.id,
-            senderId: msg.sender?._id || msg.sender?.id || msg.sender,
-            recipientId: msg.recipient?._id || msg.recipient?.id || msg.recipient,
-            currentDeviceId: e2eeKeys?.deviceId,
-            currentKeyId: e2eeKeys?.keyId,
-            storedPrivateKeyExists: e2eeKeys?.storedPrivateKeyExists,
-            serverRegisteredDeviceId: e2eeKeys?.serverRegisteredDeviceId,
-            serverRegisteredKeyId: e2eeKeys?.serverRegisteredKeyId,
-            senderDeviceId: msg.encryption?.senderDeviceId,
-            senderKeyId: msg.encryption?.senderKeyId,
-            recipientDeviceId: e2eeKeys?.deviceId,
-            recipientKeyId: e2eeKeys?.keyId,
-            envelopeCount: envelopes.length,
-          });
-          return { ...msg, isDecrypted: false };
+        if (envelope) {
+          const envSenderPub = envelope.senderPublicKey || encryptionObj.senderPublicKey;
+          if (envSenderPub) {
+            const envSenderCryptoKey = await importPublicKey(envSenderPub);
+            if (envSenderCryptoKey) {
+              const envSharedKey = await deriveSharedKey(
+                activeKeys.privateKey,
+                envSenderCryptoKey,
+              );
+              if (envSharedKey) {
+                const plainText = await decryptText(
+                  envelope.ciphertext,
+                  envelope.iv,
+                  envSharedKey,
+                );
+                if (plainText !== null) {
+                  safeKeyDiagnostic(E2EE_DIAGNOSTIC.HISTORICAL_DECRYPT_SUCCESS, {
+                    messageId: msg._id || msg.id,
+                  });
+                  return { ...msg, text: plainText, isDecrypted: true };
+                }
+              }
+            }
+          }
         }
-
-        const senderPublicKey = envelope.senderPublicKey || msg.encryption?.senderPublicKey;
-        const senderPublicCryptoKey = await importPublicKey(senderPublicKey);
-        if (!senderPublicCryptoKey) {
-          safeKeyDiagnostic(E2EE_DIAGNOSTIC.KEY_NOT_FOUND, {
-            messageId: msg._id || msg.id,
-            senderId: msg.sender?._id || msg.sender?.id || msg.sender,
-            currentDeviceId: e2eeKeys?.deviceId,
-            currentKeyId: e2eeKeys?.keyId,
-            storedPrivateKeyExists: e2eeKeys?.storedPrivateKeyExists,
-            serverRegisteredDeviceId: e2eeKeys?.serverRegisteredDeviceId,
-            serverRegisteredKeyId: e2eeKeys?.serverRegisteredKeyId,
-            senderDeviceId: msg.encryption?.senderDeviceId,
-            senderKeyId: msg.encryption?.senderKeyId,
-          });
-          return { ...msg, isDecrypted: false };
-        }
-
-        const envelopeSharedKey = await deriveSharedKey(e2eeKeys.privateKey, senderPublicCryptoKey);
-        if (!envelopeSharedKey) {
-          safeKeyDiagnostic(E2EE_DIAGNOSTIC.KEY_MISMATCH, {
-            messageId: msg._id || msg.id,
-            currentDeviceId: e2eeKeys?.deviceId,
-            currentKeyId: e2eeKeys?.keyId,
-            storedPrivateKeyExists: e2eeKeys?.storedPrivateKeyExists,
-            serverRegisteredDeviceId: e2eeKeys?.serverRegisteredDeviceId,
-            serverRegisteredKeyId: e2eeKeys?.serverRegisteredKeyId,
-            senderDeviceId: msg.encryption?.senderDeviceId,
-            senderKeyId: msg.encryption?.senderKeyId,
-            recipientDeviceId: envelope.deviceId,
-            recipientKeyId: envelope.keyId,
-          });
-          return { ...msg, isDecrypted: false };
-        }
-
-        const plainText = await decryptText(envelope.ciphertext, envelope.iv, envelopeSharedKey);
-        if (plainText === null) return { ...msg, isDecrypted: false };
-        backfillMissingDeviceEnvelopes(msg, plainText);
-        return { ...msg, text: plainText, isDecrypted: true };
       }
 
-      let keyToUse = sharedKey;
-      if (!keyToUse) {
-        const partner = (msg.sender?._id || msg.sender?.id || msg.sender)?.toString() === currentUserId?.toString()
-          ? (msg.recipient?._id || msg.recipient?.id || msg.recipient)
-          : (msg.sender?._id || msg.sender?.id || msg.sender);
-        keyToUse = await getSharedKeyForPartner(partner);
-      }
+      safeKeyDiagnostic(E2EE_DIAGNOSTIC.HISTORICAL_DECRYPT_FAILED, {
+        messageId: msg._id || msg.id,
+        senderId,
+        recipientId,
+        currentKeyId: activeKeys.keyId,
+        senderKeyId: encryptionObj?.senderKeyId,
+        recipientKeyId: encryptionObj?.recipientKeyId,
+      });
 
-      if (!keyToUse) {
-        safeKeyDiagnostic(E2EE_DIAGNOSTIC.KEY_NOT_FOUND, {
-          messageId: msg._id || msg.id,
-          senderId: msg.sender?._id || msg.sender?.id || msg.sender,
-          recipientId: msg.recipient?._id || msg.recipient?.id || msg.recipient,
-        });
-        if (isProbablyPlainText(msg.text)) {
-          return { ...msg, isDecrypted: true };
-        }
-        return { ...msg, isDecrypted: false };
-      }
-
-      const plainText = await decryptText(msg.text, msg.iv, keyToUse);
-      if (plainText === null) {
-        if (isProbablyPlainText(msg.text)) {
-          return { ...msg, isDecrypted: true };
-        }
-        return { ...msg, isDecrypted: false };
-      }
-      backfillMissingDeviceEnvelopes(msg, plainText);
-      return { ...msg, text: plainText, isDecrypted: true };
+      return {
+        ...msg,
+        text: "🔒 Message unavailable on this device",
+        isDecrypted: false,
+        isLegacyUnavailable: true,
+      };
     } catch (err) {
-      safeKeyDiagnostic(E2EE_DIAGNOSTIC.KEY_MISMATCH, {
+      safeKeyDiagnostic(E2EE_DIAGNOSTIC.HISTORICAL_DECRYPT_FAILED, {
         messageId: msg._id || msg.id,
         senderId: msg.sender?._id || msg.sender?.id || msg.sender,
         recipientId: msg.recipient?._id || msg.recipient?.id || msg.recipient,
       });
-      if (isProbablyPlainText(msg.text)) {
-        return { ...msg, isDecrypted: true };
-      }
-      return { ...msg, isDecrypted: false };
+      return {
+        ...msg,
+        text: "🔒 Message unavailable on this device",
+        isDecrypted: false,
+        isLegacyUnavailable: true,
+      };
     }
   };
 
@@ -597,7 +606,9 @@ const ChatPage = () => {
   useEffect(() => {
     if (!e2eeKeys || !activeConv || messages.length === 0) return;
 
-    const hasUndecrypted = messages.some((m) => m.isEncrypted && m.iv && !m.isDecrypted);
+    const hasUndecrypted = messages.some(
+      (m) => m.isEncrypted && m.iv && !m.isDecrypted,
+    );
     if (!hasUndecrypted) return;
 
     let isMounted = true;
@@ -611,12 +622,14 @@ const ChatPage = () => {
             return await processDecryptMessage(msg, partnerKey);
           }
           return msg;
-        })
+        }),
       );
 
       if (isMounted) {
         const hasChanges = updated.some(
-          (m, idx) => m.isDecrypted !== messages[idx]?.isDecrypted || m.text !== messages[idx]?.text
+          (m, idx) =>
+            m.isDecrypted !== messages[idx]?.isDecrypted ||
+            m.text !== messages[idx]?.text,
         );
         if (hasChanges) {
           setMessages(updated);
@@ -688,7 +701,7 @@ const ChatPage = () => {
         if (res && res.data) {
           const partnerKey = await getSharedKeyForPartner(activeConv.partner);
           const decryptedMessages = await Promise.all(
-            res.data.map((m) => processDecryptMessage(m, partnerKey))
+            res.data.map((m) => processDecryptMessage(m, partnerKey)),
           );
           setMessages(decryptedMessages);
         }
@@ -760,28 +773,31 @@ const ChatPage = () => {
 
     const handleMessageEdited = (editedMsg) => {
       setMessages((prev) =>
-        prev.map((m) => (m._id === editedMsg._id ? editedMsg : m))
+        prev.map((m) => (m._id === editedMsg._id ? editedMsg : m)),
       );
       loadConversations();
     };
 
     const handleMessageUnsent = (unsentMsg) => {
       setMessages((prev) =>
-        prev.map((m) => (m._id === unsentMsg._id ? unsentMsg : m))
+        prev.map((m) => (m._id === unsentMsg._id ? unsentMsg : m)),
       );
       loadConversations();
     };
 
     const handleMessageReaction = (reactedMsg) => {
       setMessages((prev) =>
-        prev.map((m) => (m._id === reactedMsg._id ? reactedMsg : m))
+        prev.map((m) => (m._id === reactedMsg._id ? reactedMsg : m)),
       );
     };
 
     const handleMessagesRead = ({ conversationId }) => {
-      if (activeConv && conversationId.toString() === activeConv._id.toString()) {
+      if (
+        activeConv &&
+        conversationId.toString() === activeConv._id.toString()
+      ) {
         setMessages((prev) =>
-          prev.map((m) => ({ ...m, status: "READ", readAt: new Date() }))
+          prev.map((m) => ({ ...m, status: "READ", readAt: new Date() })),
         );
       }
     };
@@ -794,15 +810,20 @@ const ChatPage = () => {
 
     const handleUserTypingStop = ({ conversationId, userId }) => {
       if (userId.toString() !== currentUserId.toString()) {
-        setTypingConversations((prev) => ({ ...prev, [conversationId]: false }));
+        setTypingConversations((prev) => ({
+          ...prev,
+          [conversationId]: false,
+        }));
       }
     };
 
     const handleUserOnline = ({ userId }) => {
       setConversations((prev) =>
         prev.map((c) =>
-          c.partner?._id === userId ? { ...c, partner: { ...c.partner, isOnline: true } } : c
-        )
+          c.partner?._id === userId
+            ? { ...c, partner: { ...c.partner, isOnline: true } }
+            : c,
+        ),
       );
       if (activeConv?.partner?._id === userId) {
         setActiveConv((prev) => ({
@@ -817,8 +838,8 @@ const ChatPage = () => {
         prev.map((c) =>
           c.partner?._id === userId
             ? { ...c, partner: { ...c.partner, isOnline: false, lastSeen } }
-            : c
-        )
+            : c,
+        ),
       );
       if (activeConv?.partner?._id === userId) {
         setActiveConv((prev) => ({
@@ -838,13 +859,27 @@ const ChatPage = () => {
             return { ...c, isBlockedByPartner: true, isBlocked: true };
           }
           return c;
-        })
+        }),
       );
-      if (activeConv?.partner?._id === blockedId && blockerId === currentUserId) {
-        setActiveConv((prev) => ({ ...prev, isBlockedByMe: true, isBlocked: true }));
+      if (
+        activeConv?.partner?._id === blockedId &&
+        blockerId === currentUserId
+      ) {
+        setActiveConv((prev) => ({
+          ...prev,
+          isBlockedByMe: true,
+          isBlocked: true,
+        }));
       }
-      if (activeConv?.partner?._id === blockerId && blockedId === currentUserId) {
-        setActiveConv((prev) => ({ ...prev, isBlockedByPartner: true, isBlocked: true }));
+      if (
+        activeConv?.partner?._id === blockerId &&
+        blockedId === currentUserId
+      ) {
+        setActiveConv((prev) => ({
+          ...prev,
+          isBlockedByPartner: true,
+          isBlocked: true,
+        }));
       }
     };
 
@@ -853,23 +888,37 @@ const ChatPage = () => {
         prev.map((c) => {
           if (c.partner?._id === unblockedId && unblockerId === currentUserId) {
             const isBlockedByPartner = c.isBlockedByPartner || false;
-            return { ...c, isBlockedByMe: false, isBlocked: isBlockedByPartner };
+            return {
+              ...c,
+              isBlockedByMe: false,
+              isBlocked: isBlockedByPartner,
+            };
           }
           if (c.partner?._id === unblockerId && unblockedId === currentUserId) {
             const isBlockedByMe = c.isBlockedByMe || false;
-            return { ...c, isBlockedByPartner: false, isBlocked: isBlockedByMe };
+            return {
+              ...c,
+              isBlockedByPartner: false,
+              isBlocked: isBlockedByMe,
+            };
           }
           return c;
-        })
+        }),
       );
-      if (activeConv?.partner?._id === unblockedId && unblockerId === currentUserId) {
+      if (
+        activeConv?.partner?._id === unblockedId &&
+        unblockerId === currentUserId
+      ) {
         setActiveConv((prev) => ({
           ...prev,
           isBlockedByMe: false,
           isBlocked: prev?.isBlockedByPartner || false,
         }));
       }
-      if (activeConv?.partner?._id === unblockerId && unblockedId === currentUserId) {
+      if (
+        activeConv?.partner?._id === unblockerId &&
+        unblockedId === currentUserId
+      ) {
         setActiveConv((prev) => ({
           ...prev,
           isBlockedByPartner: false,
@@ -880,7 +929,7 @@ const ChatPage = () => {
 
     const handleMessagePinned = (pinnedMsg) => {
       setMessages((prev) =>
-        prev.map((m) => (m._id === pinnedMsg._id ? pinnedMsg : m))
+        prev.map((m) => (m._id === pinnedMsg._id ? pinnedMsg : m)),
       );
     };
 
@@ -924,31 +973,65 @@ const ChatPage = () => {
     addAgoraEventHandler(agoraHandlerId, {
       onTextMessage: async (message) => {
         const ext = message.ext || {};
-        
+
         // Determine sender and recipient user objects for proper UI normalization
         const partner = activeConv?.partner;
         const isFromMe = message.from === currentUserId?.toString();
-        
-        const senderObj = isFromMe 
-          ? { _id: currentUserId, name: currentUser.name, username: currentUser.username, profileImage: currentUser.profileImage }
-          : { _id: message.from, name: partner?.name, username: partner?.username, profileImage: partner?.profileImage };
+
+        const senderObj = isFromMe
+          ? {
+              _id: currentUserId,
+              name: currentUser.name,
+              username: currentUser.username,
+              profileImage: currentUser.profileImage,
+            }
+          : {
+              _id: message.from,
+              name: partner?.name,
+              username: partner?.username,
+              profileImage: partner?.profileImage,
+            };
 
         const recipientObj = isFromMe
-          ? { _id: partner?._id || partner?.id, name: partner?.name, username: partner?.username, profileImage: partner?.profileImage }
-          : { _id: currentUserId, name: currentUser.name, username: currentUser.username, profileImage: currentUser.profileImage };
+          ? {
+              _id: partner?._id || partner?.id,
+              name: partner?.name,
+              username: partner?.username,
+              profileImage: partner?.profileImage,
+            }
+          : {
+              _id: currentUserId,
+              name: currentUser.name,
+              username: currentUser.username,
+              profileImage: currentUser.profileImage,
+            };
 
-        const isEncrypted = ext.isEncrypted === true || ext.isEncrypted === "true";
-        const iv = isEncrypted && typeof ext.iv === "string" ? ext.iv.trim() : "";
+        let parsedEncryption = ext.encryption;
+        if (typeof parsedEncryption === "string") {
+          try {
+            parsedEncryption = JSON.parse(parsedEncryption);
+          } catch (e) {
+            parsedEncryption = {};
+          }
+        }
+        if (!parsedEncryption || typeof parsedEncryption !== "object") {
+          parsedEncryption = {};
+        }
+
+        const isEncrypted =
+          ext.isEncrypted === true || ext.isEncrypted === "true";
+        const iv =
+          isEncrypted && typeof ext.iv === "string" ? ext.iv.trim() : "";
 
         const incomingMsg = {
-          _id: message.id || `agora_${Date.now()}`,
+          _id: ext._id || ext.messageId || message.id || `agora_${Date.now()}`,
           conversationId: ext.conversationId,
           sender: senderObj,
           recipient: recipientObj,
           text: message.msg,
           isEncrypted: isEncrypted && iv !== "",
           iv: iv,
-          encryption: ext.encryption || {},
+          encryption: parsedEncryption,
           messageType: ext.messageType || "text",
           mediaUrl: ext.mediaUrl || "",
           mediaMeta: ext.mediaMeta || {},
@@ -956,12 +1039,21 @@ const ChatPage = () => {
           createdAt: message.time ? new Date(message.time) : new Date(),
         };
 
-        const isMsgFromActivePartner = partner && (message.from === partner._id?.toString() || message.from === partner.id?.toString());
-        const isMsgForActiveConv = ext.conversationId && activeConv && ext.conversationId.toString() === activeConv._id.toString();
+        const isMsgFromActivePartner =
+          partner &&
+          (message.from === partner._id?.toString() ||
+            message.from === partner.id?.toString());
+        const isMsgForActiveConv =
+          ext.conversationId &&
+          activeConv &&
+          ext.conversationId.toString() === activeConv._id.toString();
 
         if (activeConv && (isMsgForActiveConv || isMsgFromActivePartner)) {
           const partnerKey = await getSharedKeyForPartner(activeConv.partner);
-          const decryptedMsg = await processDecryptMessage(incomingMsg, partnerKey);
+          const decryptedMsg = await processDecryptMessage(
+            incomingMsg,
+            partnerKey,
+          );
           setMessages((prev) => addUniqueMessage(prev, decryptedMsg));
           markAsRead(activeConv._id);
         }
@@ -1043,13 +1135,23 @@ const ChatPage = () => {
       let encryption = null;
 
       if (activeConv?.partner && textToSend) {
-        const encryptedPayload = await buildEncryptedMessagePayload(textToSend, activeConv.partner);
-        if (encryptedPayload) {
-          textToSend = encryptedPayload.text;
-          iv = encryptedPayload.iv;
-          isEncrypted = encryptedPayload.isEncrypted;
-          encryption = encryptedPayload.encryption;
+        const encryptedPayload = await buildEncryptedMessagePayload(
+          textToSend,
+          activeConv.partner,
+        );
+        if (
+          !encryptedPayload ||
+          !encryptedPayload.isEncrypted ||
+          !encryptedPayload.encryption
+        ) {
+          throw new Error(
+            "Failed to construct complete E2EE encryption payload.",
+          );
         }
+        textToSend = encryptedPayload.text;
+        iv = encryptedPayload.iv;
+        isEncrypted = true;
+        encryption = encryptedPayload.encryption;
       }
 
       const payload = {
@@ -1069,6 +1171,7 @@ const ChatPage = () => {
       if (res && res.data) {
         // Dispatch via Agora Chat SDK for ultra-reliable real-time delivery
         sendAgoraPeerMessage(activeConv.partner._id, textToSend, {
+          _id: res.data._id || res.data.id,
           conversationId: activeConv._id,
           iv: iv,
           isEncrypted: isEncrypted,
@@ -1076,15 +1179,19 @@ const ChatPage = () => {
           messageType: selectedMediaPreview ? messageType : "text",
           mediaUrl: mediaUrl,
           mediaMeta: mediaMeta,
-          replyTo: replyingTo ? {
-            _id: replyingTo._id,
-            text: replyingTo.text,
-            sender: replyingTo.sender ? {
-              _id: replyingTo.sender._id || replyingTo.sender.id,
-              name: replyingTo.sender.name,
-              username: replyingTo.sender.username
-            } : null
-          } : null,
+          replyTo: replyingTo
+            ? {
+                _id: replyingTo._id,
+                text: replyingTo.text,
+                sender: replyingTo.sender
+                  ? {
+                      _id: replyingTo.sender._id || replyingTo.sender.id,
+                      name: replyingTo.sender.name,
+                      username: replyingTo.sender.username,
+                    }
+                  : null,
+              }
+            : null,
         }).catch((err) => console.warn("Agora Peer Dispatch Error:", err));
 
         const decryptedMsg = {
@@ -1100,7 +1207,10 @@ const ChatPage = () => {
         loadConversations();
       }
     } catch (err) {
-      toast.error(err.response?.data?.message || "Failed to send message");
+      console.error("Send message error:", err);
+      toast.error(
+        err.message || err.response?.data?.message || "Failed to send message",
+      );
     }
   };
 
@@ -1144,8 +1254,6 @@ const ChatPage = () => {
     setSelectedMediaPreview({ file, previewUrl, type, name: file.name });
   };
 
-
-
   // const stopRecording = () => {
   //   if (mediaRecorderRef.current && isRecording) {
   //     mediaRecorderRef.current.stop();
@@ -1162,7 +1270,7 @@ const ChatPage = () => {
       const res = await toggleReaction(msgId, emoji);
       if (res && res.data) {
         setMessages((prev) =>
-          prev.map((m) => (m._id === msgId ? res.data : m))
+          prev.map((m) => (m._id === msgId ? res.data : m)),
         );
       }
     } catch (err) {
@@ -1176,7 +1284,7 @@ const ChatPage = () => {
       const res = await unsendMessage(msgId);
       if (res && res.data) {
         setMessages((prev) =>
-          prev.map((m) => (m._id === msgId ? res.data : m))
+          prev.map((m) => (m._id === msgId ? res.data : m)),
         );
         toast.info("Message unsent");
       }
@@ -1212,11 +1320,12 @@ const ChatPage = () => {
                   pinnedBy: updatedMsg.pinnedBy,
                   pinnedAt: updatedMsg.pinnedAt,
                 }
-              : m
-          )
+              : m,
+          ),
         );
         toast.success(
-          res.message || (updatedMsg.isPinned ? "Message pinned" : "Message unpinned")
+          res.message ||
+            (updatedMsg.isPinned ? "Message pinned" : "Message unpinned"),
         );
       }
     } catch (err) {
@@ -1225,7 +1334,10 @@ const ChatPage = () => {
     }
   };
 
-  const handleDownloadMedia = async (mediaUrl, defaultFileName = "chat_media") => {
+  const handleDownloadMedia = async (
+    mediaUrl,
+    defaultFileName = "chat_media",
+  ) => {
     if (!mediaUrl) return;
     try {
       const toastId = toast.loading("Downloading media...");
@@ -1269,7 +1381,12 @@ const ChatPage = () => {
     const elem = document.getElementById(`msg-${msgId}`);
     if (elem) {
       elem.scrollIntoView({ behavior: "smooth", block: "center" });
-      elem.classList.add("ring-2", "ring-brand-orange", "rounded-2xl", "transition-all");
+      elem.classList.add(
+        "ring-2",
+        "ring-brand-orange",
+        "rounded-2xl",
+        "transition-all",
+      );
       setTimeout(() => {
         elem.classList.remove("ring-2", "ring-brand-orange", "rounded-2xl");
       }, 2000);
@@ -1288,7 +1405,13 @@ const ChatPage = () => {
   };
 
   const handleClearChat = async () => {
-    if (!activeConv || !window.confirm("Are you sure you want to clear this conversation history?")) return;
+    if (
+      !activeConv ||
+      !window.confirm(
+        "Are you sure you want to clear this conversation history?",
+      )
+    )
+      return;
     try {
       await clearConversation(activeConv._id);
       setMessages([]);
@@ -1305,7 +1428,10 @@ const ChatPage = () => {
     const partnerName = activeConv.partner.name || "User";
     const actionText = isCurrentlyBlocked ? "unblock" : "block";
 
-    if (!window.confirm(`Are you sure you want to ${actionText} ${partnerName}?`)) return;
+    if (
+      !window.confirm(`Are you sure you want to ${actionText} ${partnerName}?`)
+    )
+      return;
 
     try {
       if (isCurrentlyBlocked) {
@@ -1314,11 +1440,11 @@ const ChatPage = () => {
         setActiveConv((prev) =>
           prev
             ? {
-              ...prev,
-              isBlockedByMe: false,
-              isBlocked: prev.isBlockedByPartner || false,
-            }
-            : null
+                ...prev,
+                isBlockedByMe: false,
+                isBlocked: prev.isBlockedByPartner || false,
+              }
+            : null,
         );
       } else {
         await blockUser(activeConv.partner._id);
@@ -1326,16 +1452,18 @@ const ChatPage = () => {
         setActiveConv((prev) =>
           prev
             ? {
-              ...prev,
-              isBlockedByMe: true,
-              isBlocked: true,
-            }
-            : null
+                ...prev,
+                isBlockedByMe: true,
+                isBlocked: true,
+              }
+            : null,
         );
       }
       loadConversations();
     } catch (err) {
-      toast.error(err.response?.data?.message || `Failed to ${actionText} user`);
+      toast.error(
+        err.response?.data?.message || `Failed to ${actionText} user`,
+      );
     }
   };
 
@@ -1429,18 +1557,19 @@ const ChatPage = () => {
     }
   }, [followsQuery, followsTab, showFollowsModal]);
 
-  const filteredFollowsList = followsTab === "all"
-    ? followsList
-    : followsList.filter((u) => {
-        if (!u) return false;
-        const q = followsQuery.toLowerCase().trim();
-        if (!q) return true;
-        return (
-          (u.name && u.name.toLowerCase().includes(q)) ||
-          (u.username && u.username.toLowerCase().includes(q)) ||
-          (u.phone && u.phone.includes(q))
-        );
-      });
+  const filteredFollowsList =
+    followsTab === "all"
+      ? followsList
+      : followsList.filter((u) => {
+          if (!u) return false;
+          const q = followsQuery.toLowerCase().trim();
+          if (!q) return true;
+          return (
+            (u.name && u.name.toLowerCase().includes(q)) ||
+            (u.username && u.username.toLowerCase().includes(q)) ||
+            (u.phone && u.phone.includes(q))
+          );
+        });
 
   // Sample GIFs list for demonstration
   const sampleGifs = [
@@ -1456,9 +1585,10 @@ const ChatPage = () => {
     return `Last seen at ${d.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}`;
   };
 
-  const filteredConvs = conversations.filter((c) =>
-    c.partner?.name?.toLowerCase().includes(convSearch.toLowerCase()) ||
-    c.partner?.username?.toLowerCase().includes(convSearch.toLowerCase())
+  const filteredConvs = conversations.filter(
+    (c) =>
+      c.partner?.name?.toLowerCase().includes(convSearch.toLowerCase()) ||
+      c.partner?.username?.toLowerCase().includes(convSearch.toLowerCase()),
   );
 
   const pinnedConvs = filteredConvs.filter((c) => c.isPinned);
@@ -1470,13 +1600,16 @@ const ChatPage = () => {
       {/* SIDEBAR: CONVERSATIONS LIST                                 */}
       {/* ========================================================= */}
       <div
-        className={`chat-sidebar w-full md:w-80 lg:w-96 bg-white dark:bg-gray-900 border-r border-gray-200 dark:border-gray-800 flex flex-col flex-shrink-0 ${activeConv ? "hidden md:flex" : "flex"
-          }`}
+        className={`chat-sidebar w-full md:w-80 lg:w-96 bg-white dark:bg-gray-900 border-r border-gray-200 dark:border-gray-800 flex flex-col flex-shrink-0 ${
+          activeConv ? "hidden md:flex" : "flex"
+        }`}
       >
         {/* Sidebar Header */}
         <div className="p-4 border-b border-gray-100 dark:border-gray-800 flex justify-between items-center bg-gray-50/50 dark:bg-gray-900/50">
           <div className="flex items-center gap-2">
-            <h2 className="font-extrabold text-lg text-gray-800 dark:text-white">Chats</h2>
+            <h2 className="font-extrabold text-lg text-gray-800 dark:text-white">
+              Chats
+            </h2>
           </div>
 
           <div className="flex items-center gap-1.5">
@@ -1513,7 +1646,9 @@ const ChatPage = () => {
               </span>
               {pinnedConvs.map((conv, index) => (
                 <ConversationItem
-                  key={conv._id ? `pinned-${conv._id}-${index}` : `pinned-${index}`}
+                  key={
+                    conv._id ? `pinned-${conv._id}-${index}` : `pinned-${index}`
+                  }
                   conv={conv}
                   isActive={activeConv?._id === conv._id}
                   isTyping={!!typingConversations[conv._id]}
@@ -1541,7 +1676,9 @@ const ChatPage = () => {
               ))
             ) : pinnedConvs.length === 0 ? (
               <div className="text-center py-12 px-4">
-                <p className="text-xs text-gray-400 font-medium">No conversations yet</p>
+                <p className="text-xs text-gray-400 font-medium">
+                  No conversations yet
+                </p>
               </div>
             ) : null}
           </div>
@@ -1552,8 +1689,9 @@ const ChatPage = () => {
       {/* CHAT MAIN WINDOW                                           */}
       {/* ========================================================= */}
       <div
-        className={`flex-1 flex flex-col h-full overflow-hidden bg-gray-100 dark:bg-gray-950 ${!activeConv ? "hidden md:flex" : "flex"
-          }`}
+        className={`flex-1 flex flex-col h-full overflow-hidden bg-gray-100 dark:bg-gray-950 ${
+          !activeConv ? "hidden md:flex" : "flex"
+        }`}
       >
         {activeConv ? (
           <>
@@ -1672,8 +1810,12 @@ const ChatPage = () => {
                         }}
                         className="w-full flex items-center gap-2.5 px-3 py-2 text-xs font-bold text-gray-700 dark:text-gray-200 hover:bg-orange-50 dark:hover:bg-gray-800 hover:text-brand-orange rounded-xl transition"
                       >
-                        <FaThumbtack className={`text-gray-400 text-sm ${activeConv.isPinned ? "rotate-45 text-brand-orange" : ""}`} />
-                        <span>{activeConv.isPinned ? "Unpin Chat" : "Pin Chat"}</span>
+                        <FaThumbtack
+                          className={`text-gray-400 text-sm ${activeConv.isPinned ? "rotate-45 text-brand-orange" : ""}`}
+                        />
+                        <span>
+                          {activeConv.isPinned ? "Unpin Chat" : "Pin Chat"}
+                        </span>
                       </button>
 
                       <button
@@ -1723,7 +1865,9 @@ const ChatPage = () => {
               <div className="bg-amber-50 dark:bg-amber-950/40 border-b border-amber-200 dark:border-amber-900/60 px-4 py-2 flex items-center justify-between text-xs shadow-xs flex-shrink-0 relative z-10 transition-all">
                 <div
                   className="flex items-center gap-2.5 cursor-pointer flex-1 min-w-0"
-                  onClick={() => scrollToMessage(pinnedMessagesList[currentPinnedIndex]._id)}
+                  onClick={() =>
+                    scrollToMessage(pinnedMessagesList[currentPinnedIndex]._id)
+                  }
                 >
                   <div className="p-1.5 bg-brand-orange/15 text-brand-orange rounded-xl shadow-xs">
                     <FaThumbtack className="text-xs" />
@@ -1740,13 +1884,16 @@ const ChatPage = () => {
                       )}
                     </div>
                     <p className="text-[11px] text-gray-600 dark:text-gray-300 truncate">
-                      {pinnedMessagesList[currentPinnedIndex]?.messageType === "image"
+                      {pinnedMessagesList[currentPinnedIndex]?.messageType ===
+                      "image"
                         ? "Image attachment"
-                        : pinnedMessagesList[currentPinnedIndex]?.messageType === "video"
-                        ? "Video attachment"
-                        : pinnedMessagesList[currentPinnedIndex]?.messageType === "audio"
-                        ? "Voice message"
-                        : pinnedMessagesList[currentPinnedIndex]?.text}
+                        : pinnedMessagesList[currentPinnedIndex]
+                              ?.messageType === "video"
+                          ? "Video attachment"
+                          : pinnedMessagesList[currentPinnedIndex]
+                                ?.messageType === "audio"
+                            ? "Voice message"
+                            : pinnedMessagesList[currentPinnedIndex]?.text}
                     </p>
                   </div>
                 </div>
@@ -1754,14 +1901,22 @@ const ChatPage = () => {
                 <div className="flex items-center gap-1.5 ml-2">
                   {pinnedMessagesList.length > 1 && (
                     <button
-                      onClick={() => setCurrentPinnedIndex((prev) => (prev + 1) % pinnedMessagesList.length)}
+                      onClick={() =>
+                        setCurrentPinnedIndex(
+                          (prev) => (prev + 1) % pinnedMessagesList.length,
+                        )
+                      }
                       className="px-2 py-1 bg-amber-200/80 dark:bg-amber-900/80 hover:bg-amber-300 text-amber-900 dark:text-amber-100 rounded-lg text-[10px] font-extrabold transition"
                     >
                       Next
                     </button>
                   )}
                   <button
-                    onClick={() => handleTogglePin(pinnedMessagesList[currentPinnedIndex]._id)}
+                    onClick={() =>
+                      handleTogglePin(
+                        pinnedMessagesList[currentPinnedIndex]._id,
+                      )
+                    }
                     className="p-1.5 text-amber-700 dark:text-amber-400 hover:text-red-600 rounded-lg transition"
                     title="Unpin message"
                   >
@@ -1779,9 +1934,15 @@ const ChatPage = () => {
                 </div>
               ) : messages.length > 0 ? (
                 Array.from(
-                  new Map(messages.map((m) => [(m._id || m.id)?.toString() || Math.random(), m])).values()
+                  new Map(
+                    messages.map((m) => [
+                      (m._id || m.id)?.toString() || Math.random(),
+                      m,
+                    ]),
+                  ).values(),
                 ).map((msg, index) => {
-                  const isMe = msg.sender?._id?.toString() === currentUserId.toString();
+                  const isMe =
+                    msg.sender?._id?.toString() === currentUserId.toString();
                   return (
                     <MessageBubble
                       key={msg._id ? `${msg._id}-${index}` : index}
@@ -1792,7 +1953,9 @@ const ChatPage = () => {
                       onForward={(m) => setForwardingMsg(m)}
                       onReaction={(id, emoji) => handleReaction(id, emoji)}
                       onPin={(id) => handleTogglePin(id)}
-                      onDownloadMedia={(url, filename) => handleDownloadMedia(url, filename)}
+                      onDownloadMedia={(url, filename) =>
+                        handleDownloadMedia(url, filename)
+                      }
                       onEdit={(m) => {
                         setEditingMsg(m);
                         setMessageText(m.text);
@@ -1841,7 +2004,9 @@ const ChatPage = () => {
                   )}
                   {editingMsg && (
                     <div>
-                      <span className="font-bold text-brand-orange block">Editing Message</span>
+                      <span className="font-bold text-brand-orange block">
+                        Editing Message
+                      </span>
                     </div>
                   )}
                   {selectedMediaPreview && (
@@ -1878,7 +2043,9 @@ const ChatPage = () => {
               <div className="p-4 bg-red-50 dark:bg-red-950/40 border-t border-red-200 dark:border-red-900/50 flex flex-col sm:flex-row items-center justify-between gap-3 text-center sm:text-left flex-shrink-0 z-20">
                 <div className="flex items-center gap-2 text-red-600 dark:text-red-400 text-xs font-bold">
                   <FaBan className="text-base shrink-0" />
-                  <span>You have blocked this user. Unblock to send messages.</span>
+                  <span>
+                    You have blocked this user. Unblock to send messages.
+                  </span>
                 </div>
                 <button
                   onClick={handleToggleBlock}
@@ -1890,7 +2057,10 @@ const ChatPage = () => {
             ) : activeConv.isBlockedByPartner ? (
               <div className="p-4 bg-gray-100 dark:bg-gray-800/80 border-t border-gray-200 dark:border-gray-700 flex items-center justify-center gap-2 text-gray-500 dark:text-gray-400 text-xs font-bold text-center flex-shrink-0 z-20">
                 <FaBan className="text-base shrink-0 text-gray-400" />
-                <span>You cannot send messages to this conversation because you have been blocked.</span>
+                <span>
+                  You cannot send messages to this conversation because you have
+                  been blocked.
+                </span>
               </div>
             ) : (
               <div className="p-3 bg-white dark:bg-gray-900 border-t border-gray-200 dark:border-gray-800 relative z-20 flex-shrink-0">
@@ -1950,7 +2120,9 @@ const ChatPage = () => {
                     className="sm:hidden p-2 text-gray-500 hover:text-brand-orange text-base transition shrink-0"
                     title="Add Attachment"
                   >
-                    <FaPlus className={`transition-transform duration-200 ${showMobileDropup ? "rotate-45 text-brand-orange" : ""}`} />
+                    <FaPlus
+                      className={`transition-transform duration-200 ${showMobileDropup ? "rotate-45 text-brand-orange" : ""}`}
+                    />
                   </button>
 
                   {/* MOBILE DROP-UP POPOVER MENU (< sm screens) */}
@@ -2049,7 +2221,8 @@ const ChatPage = () => {
               Select a conversation
             </h3>
             <p className="text-xs text-gray-400 max-w-sm">
-              Choose an existing chat from the left sidebar or start a new conversation to begin messaging.
+              Choose an existing chat from the left sidebar or start a new
+              conversation to begin messaging.
             </p>
           </div>
         )}
@@ -2065,8 +2238,6 @@ const ChatPage = () => {
         onClose={() => setForwardingMsg(null)}
         messageToForward={forwardingMsg}
       />
-
-
 
       {/* 3. Full Image Viewer Modal */}
       {fullViewImage && (
@@ -2103,28 +2274,31 @@ const ChatPage = () => {
             <div className="flex border-b border-gray-100 dark:border-gray-800 bg-gray-50/50 dark:bg-gray-900/50">
               <button
                 onClick={() => handleSwitchFollowsTab("followers")}
-                className={`flex-1 py-2.5 text-xs font-bold text-center border-b-2 transition ${followsTab === "followers"
+                className={`flex-1 py-2.5 text-xs font-bold text-center border-b-2 transition ${
+                  followsTab === "followers"
                     ? "border-brand-orange text-brand-orange"
                     : "border-transparent text-gray-500 hover:text-gray-700 dark:hover:text-gray-300"
-                  }`}
+                }`}
               >
                 Followers
               </button>
               <button
                 onClick={() => handleSwitchFollowsTab("following")}
-                className={`flex-1 py-2.5 text-xs font-bold text-center border-b-2 transition ${followsTab === "following"
+                className={`flex-1 py-2.5 text-xs font-bold text-center border-b-2 transition ${
+                  followsTab === "following"
                     ? "border-brand-orange text-brand-orange"
                     : "border-transparent text-gray-500 hover:text-gray-700 dark:hover:text-gray-300"
-                  }`}
+                }`}
               >
                 Following
               </button>
               <button
                 onClick={() => handleSwitchFollowsTab("all")}
-                className={`flex-1 py-2.5 text-xs font-bold text-center border-b-2 transition ${followsTab === "all"
+                className={`flex-1 py-2.5 text-xs font-bold text-center border-b-2 transition ${
+                  followsTab === "all"
                     ? "border-brand-orange text-brand-orange"
                     : "border-transparent text-gray-500 hover:text-gray-700 dark:hover:text-gray-300"
-                  }`}
+                }`}
               >
                 All Users
               </button>
@@ -2196,8 +2370,8 @@ const ChatPage = () => {
                   {followsQuery
                     ? `No users matching "${followsQuery}"`
                     : followsTab === "all"
-                    ? "Type name, username or phone to search platform users"
-                    : `No ${followsTab} found`}
+                      ? "Type name, username or phone to search platform users"
+                      : `No ${followsTab} found`}
                 </div>
               )}
             </div>
@@ -2216,10 +2390,11 @@ const ConversationItem = ({ conv, isActive, isTyping, onClick }) => {
   return (
     <div
       onClick={onClick}
-      className={`flex items-center gap-3 p-3.5 mx-2 rounded-2xl cursor-pointer transition ${isActive
+      className={`flex items-center gap-3 p-3.5 mx-2 rounded-2xl cursor-pointer transition ${
+        isActive
           ? "bg-brand-orange/10 dark:bg-brand-orange/20 border border-brand-orange/20"
           : "hover:bg-gray-100 dark:hover:bg-gray-800/60"
-        }`}
+      }`}
     >
       <div className="relative flex-shrink-0">
         <img
@@ -2257,7 +2432,9 @@ const ConversationItem = ({ conv, isActive, isTyping, onClick }) => {
         <div className="flex justify-between items-center">
           <p className="text-[11px] text-gray-500 dark:text-gray-400 truncate max-w-[170px]">
             {isTyping ? (
-              <span className="text-brand-orange font-bold animate-pulse">typing...</span>
+              <span className="text-brand-orange font-bold animate-pulse">
+                typing...
+              </span>
             ) : lastMsg ? (
               lastMsg.isUnsent ? (
                 <span className="italic">Message unsent</span>
@@ -2361,7 +2538,9 @@ const MessageBubble = ({
                   onClick={(e) => {
                     e.stopPropagation();
                     if (setShowMoreEmojisMsgId) {
-                      setShowMoreEmojisMsgId(showMoreEmojisMsgId === msg._id ? null : msg._id);
+                      setShowMoreEmojisMsgId(
+                        showMoreEmojisMsgId === msg._id ? null : msg._id,
+                      );
                     }
                   }}
                   className={`p-1 rounded-full text-[11px] transition flex items-center justify-center ${
@@ -2383,7 +2562,8 @@ const MessageBubble = ({
                       key={emoji}
                       onClick={() => {
                         onReaction(msg._id, emoji);
-                        if (setShowMoreEmojisMsgId) setShowMoreEmojisMsgId(null);
+                        if (setShowMoreEmojisMsgId)
+                          setShowMoreEmojisMsgId(null);
                         setActiveMenuId(null);
                       }}
                       className="text-base hover:scale-125 hover:bg-white dark:hover:bg-gray-700 rounded p-1 transition flex items-center justify-center"
@@ -2429,7 +2609,11 @@ const MessageBubble = ({
                       : "text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800"
                   }`}
                 >
-                  <FaThumbtack className={msg.isPinned ? "text-brand-orange rotate-45" : ""} />
+                  <FaThumbtack
+                    className={
+                      msg.isPinned ? "text-brand-orange rotate-45" : ""
+                    }
+                  />
                   {msg.isPinned ? "Unpin Message" : "Pin Message"}
                 </button>
               )}
@@ -2441,7 +2625,7 @@ const MessageBubble = ({
                     setActiveMenuId(null);
                     onDownloadMedia(
                       msg.mediaUrl,
-                      `${msg.messageType || "media"}_${msg._id}`
+                      `${msg.messageType || "media"}_${msg._id}`,
                     );
                   }}
                   className="w-full text-left px-3 py-1.5 text-xs text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800 flex items-center gap-2"
@@ -2450,8 +2634,8 @@ const MessageBubble = ({
                   {msg.messageType === "image"
                     ? "Download Image"
                     : msg.messageType === "video"
-                    ? "Download Video"
-                    : "Download File"}
+                      ? "Download Video"
+                      : "Download File"}
                 </button>
               )}
 
@@ -2495,14 +2679,15 @@ const MessageBubble = ({
             msg.isUnsent
               ? "bg-gray-200 dark:bg-gray-800 text-gray-500 italic rounded-2xl"
               : isMe
-              ? "chat-bubble-sent"
-              : "chat-bubble-received"
+                ? "chat-bubble-sent"
+                : "chat-bubble-received"
           }`}
         >
           {/* Pinned Badge on Top Right of Bubble */}
           {msg.isPinned && !msg.isUnsent && (
             <div className="flex items-center gap-1 text-[10px] font-bold text-amber-700 dark:text-amber-300 bg-amber-100/90 dark:bg-amber-900/60 px-2 py-0.5 rounded-full mb-1.5 w-fit border border-amber-200/50">
-              <FaThumbtack className="text-[9px] text-brand-orange" /> Pinned Message
+              <FaThumbtack className="text-[9px] text-brand-orange" /> Pinned
+              Message
             </div>
           )}
 
@@ -2522,7 +2707,10 @@ const MessageBubble = ({
                 <p className="whitespace-pre-wrap">
                   {msg.isEncrypted && !msg.isDecrypted ? (
                     <span className="flex items-center gap-1.5 opacity-80 italic font-medium">
-                      <FaLock className="text-[10px]" /> Waiting for decryption...
+                      <FaLock className="text-[10px]" />{" "}
+                      {msg.isLegacyUnavailable
+                        ? "Message unavailable on this device"
+                        : "Encrypted message"}
                     </span>
                   ) : (
                     msg.text
@@ -2559,7 +2747,11 @@ const MessageBubble = ({
               )}
 
               {msg.messageType === "audio" && (
-                <audio src={msg.mediaUrl} controls className="my-1 w-full max-w-full sm:max-w-xs" />
+                <audio
+                  src={msg.mediaUrl}
+                  controls
+                  className="my-1 w-full max-w-full sm:max-w-xs"
+                />
               )}
 
               {msg.messageType === "gif" && (
@@ -2573,7 +2765,9 @@ const MessageBubble = ({
           )}
 
           {/* Footer Metadata (Timestamp & Read Receipt Ticks) */}
-          <div className={`flex items-center justify-end gap-1 mt-1 text-[9px] ${isMe ? "text-white/80" : "text-gray-400"}`}>
+          <div
+            className={`flex items-center justify-end gap-1 mt-1 text-[9px] ${isMe ? "text-white/80" : "text-gray-400"}`}
+          >
             {msg.isEdited && <span className="mr-1">(edited)</span>}
             <span>
               {new Date(msg.createdAt).toLocaleTimeString([], {

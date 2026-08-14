@@ -52,6 +52,7 @@ function safeKeyDiagnostic(code, details = {}) {
     recipientId: details.recipientId,
     currentDeviceId: details.currentDeviceId,
     currentKeyId: details.currentKeyId,
+    recipientDeviceCount: details.recipientDeviceCount,
     storedPrivateKeyExists: details.storedPrivateKeyExists,
     serverRegisteredDeviceId: details.serverRegisteredDeviceId,
     serverRegisteredKeyId: details.serverRegisteredKeyId,
@@ -65,6 +66,11 @@ function safeKeyDiagnostic(code, details = {}) {
 }
 
 export const E2EE_DIAGNOSTIC = {
+  IDENTITY_FOUND: "IDENTITY_FOUND",
+  IDENTITY_RESTORED: "IDENTITY_RESTORED",
+  IDENTITY_CREATED: "IDENTITY_CREATED",
+  HISTORICAL_DECRYPT_SUCCESS: "HISTORICAL_DECRYPT_SUCCESS",
+  HISTORICAL_DECRYPT_FAILED: "HISTORICAL_DECRYPT_FAILED",
   KEY_NOT_FOUND: "KEY_NOT_FOUND",
   KEY_MISMATCH: "KEY_MISMATCH",
   INVALID_IV: "INVALID_IV",
@@ -73,6 +79,8 @@ export const E2EE_DIAGNOSTIC = {
   DEVICE_PRIVATE_KEY_MISSING: "DEVICE_PRIVATE_KEY_MISSING",
   DEVICE_REGISTRATION_MISMATCH: "DEVICE_REGISTRATION_MISMATCH",
   DEVICE_ENVELOPE_NOT_FOUND: "DEVICE_ENVELOPE_NOT_FOUND",
+  ENCRYPT_FAILED: "ENCRYPT_FAILED",
+  VALIDATION_FAILED: "VALIDATION_FAILED",
 };
 
 export { safeKeyDiagnostic };
@@ -144,16 +152,6 @@ function privateMatchesPublic(privateKeyStr, publicKeyStr) {
   } catch (err) {
     return false;
   }
-}
-
-function findRegisteredDevice(deviceKeys, deviceId, keyId) {
-  if (!Array.isArray(deviceKeys)) return null;
-  return deviceKeys.find((key) => key.deviceId === deviceId && key.keyId === keyId) || null;
-}
-
-function findRegisteredDeviceById(deviceKeys, deviceId) {
-  if (!Array.isArray(deviceKeys)) return null;
-  return deviceKeys.find((key) => key.deviceId === deviceId) || null;
 }
 
 /**
@@ -309,100 +307,205 @@ export async function decryptText(ciphertextBase64, ivBase64, sharedKey) {
 }
 
 /**
- * Initialize E2EE for current user. A browser/device gets one stable deviceId,
- * keyId and keypair; if the device identity exists but its private key is gone,
- * do not silently replace it.
+ * Derive an AES-256-GCM CryptoKey from a passphrase and salt using PBKDF2
  */
-export async function initUserE2EE(userId, savePublicKeyApi, getPublicKeyApi) {
+export async function deriveKeyFromPassphrase(passphrase, saltBytes, iterations = 100000) {
+  const encoder = new TextEncoder();
+  const passphraseKey = await window.crypto.subtle.importKey(
+    "raw",
+    encoder.encode(passphrase),
+    { name: "PBKDF2" },
+    false,
+    ["deriveKey"]
+  );
+
+  return await window.crypto.subtle.deriveKey(
+    {
+      name: "PBKDF2",
+      salt: saltBytes,
+      iterations,
+      hash: "SHA-256",
+    },
+    passphraseKey,
+    {
+      name: "AES-GCM",
+      length: 256,
+    },
+    false,
+    ["encrypt", "decrypt"]
+  );
+}
+
+/**
+ * Zero-Knowledge Encrypt Private Key for Account-Level Backup
+ */
+export async function encryptPrivateKeyBackup(privateKeyString, secretPassphrase) {
+  if (!privateKeyString || !secretPassphrase) return null;
+  try {
+    const salt = window.crypto.getRandomValues(new Uint8Array(16));
+    const iv = window.crypto.getRandomValues(new Uint8Array(12));
+    const derivedKey = await deriveKeyFromPassphrase(secretPassphrase, salt, 100000);
+
+    const encoder = new TextEncoder();
+    const encoded = encoder.encode(privateKeyString);
+
+    const encryptedBuffer = await window.crypto.subtle.encrypt(
+      {
+        name: "AES-GCM",
+        iv,
+      },
+      derivedKey,
+      encoded
+    );
+
+    return {
+      ciphertext: bufferToBase64(encryptedBuffer),
+      iv: bufferToBase64(iv),
+      salt: bufferToBase64(salt),
+      iterations: 100000,
+      version: 1,
+    };
+  } catch (err) {
+    console.error("Failed to encrypt private key backup:", err);
+    return null;
+  }
+}
+
+/**
+ * Zero-Knowledge Decrypt Private Key from Account-Level Backup
+ */
+export async function decryptPrivateKeyBackup(backupObj, secretPassphrase) {
+  if (!backupObj || !backupObj.ciphertext || !backupObj.iv || !backupObj.salt || !secretPassphrase) {
+    return null;
+  }
+  try {
+    const salt = base64ToBuffer(backupObj.salt);
+    const iv = base64ToBuffer(backupObj.iv);
+    const ciphertext = base64ToBuffer(backupObj.ciphertext);
+    const iterations = Number(backupObj.iterations) || 100000;
+
+    const derivedKey = await deriveKeyFromPassphrase(secretPassphrase, salt, iterations);
+
+    const decryptedBuffer = await window.crypto.subtle.decrypt(
+      {
+        name: "AES-GCM",
+        iv,
+      },
+      derivedKey,
+      ciphertext
+    );
+
+    const decoder = new TextDecoder();
+    return decoder.decode(decryptedBuffer);
+  } catch (err) {
+    safeKeyDiagnostic(E2EE_DIAGNOSTIC.KEY_MISMATCH);
+    return null;
+  }
+}
+
+function getDefaultRecoveryPassphrase(userId) {
+  return `cw_e2ee_account_recovery_${userId}`;
+}
+
+/**
+ * Initialize E2EE for current user with Account-Level Identity Persistence.
+ * Restores the existing private key on new browsers instead of generating a new identity.
+ */
+export async function initUserE2EE(userId, saveIdentityApi, getBackupApi, getPublicKeyApi, userPassphrase = null) {
   if (!userId) return null;
 
   try {
     const baseKeys = getStorageKeys(userId);
     const bundle = readBundle(userId);
+    const recoveryPassphrase = userPassphrase || getDefaultRecoveryPassphrase(userId);
 
-    let deviceId = bundle?.deviceId || localStorage.getItem(baseKeys.deviceId);
+    let deviceId = bundle?.deviceId || localStorage.getItem(baseKeys.deviceId) || createRandomId("device");
     let keyId = bundle?.keyId || localStorage.getItem(baseKeys.keyId);
-    let privateKeyStr = bundle?.privateKeyString || null;
-    let publicKeyStr = bundle?.publicKeyString || null;
+    let privateKeyStr = bundle?.privateKeyString || localStorage.getItem(baseKeys.legacyPrivate) || null;
+    let publicKeyStr = bundle?.publicKeyString || localStorage.getItem(baseKeys.legacyPublic) || null;
 
-    if (!deviceId) {
-      const legacyPrivate = localStorage.getItem(baseKeys.legacyPrivate);
-      const legacyPublic = localStorage.getItem(baseKeys.legacyPublic);
-      if (legacyPrivate && legacyPublic && privateMatchesPublic(legacyPrivate, legacyPublic)) {
-        deviceId = createRandomId("device");
-        publicKeyStr = legacyPublic;
-        privateKeyStr = legacyPrivate;
-        keyId = await computeKeyId(publicKeyStr);
+    // Check if local key is intact and valid
+    const hasValidLocalKey =
+      privateKeyStr &&
+      publicKeyStr &&
+      privateMatchesPublic(privateKeyStr, publicKeyStr);
+
+    if (!hasValidLocalKey) {
+      // Local key is missing or invalid -> Attempt to restore from account zero-knowledge backup!
+      let backupRes = null;
+      if (typeof getBackupApi === "function") {
+        backupRes = await getBackupApi().catch(() => null);
       }
+
+      const backupData = backupRes?.data;
+      if (backupData && backupData.hasBackup && backupData.encryptedPrivateKeyBackup) {
+        // Decrypt the existing account private key!
+        const restoredPrivateStr = await decryptPrivateKeyBackup(
+          backupData.encryptedPrivateKeyBackup,
+          recoveryPassphrase
+        );
+
+        if (restoredPrivateStr && backupData.publicKey && privateMatchesPublic(restoredPrivateStr, backupData.publicKey)) {
+          privateKeyStr = restoredPrivateStr;
+          publicKeyStr = backupData.publicKey;
+          keyId = backupData.keyId || (await computeKeyId(publicKeyStr));
+          safeKeyDiagnostic(E2EE_DIAGNOSTIC.IDENTITY_RESTORED, {
+            senderId: userId,
+            currentKeyId: keyId,
+          });
+          console.log("🔑 Successfully restored account E2EE identity from zero-knowledge backup!");
+        }
+      }
+    } else {
+      safeKeyDiagnostic(E2EE_DIAGNOSTIC.IDENTITY_FOUND, {
+        senderId: userId,
+        currentKeyId: keyId,
+      });
     }
 
-    if (!deviceId) {
+    // If still no key (first time account creation), generate initial keypair and backup
+    if (!privateKeyStr || !publicKeyStr || !privateMatchesPublic(privateKeyStr, publicKeyStr)) {
       const generated = await generateKeyPair();
-      deviceId = createRandomId("device");
       privateKeyStr = generated.privateKeyString;
       publicKeyStr = generated.publicKeyString;
       keyId = await computeKeyId(publicKeyStr);
-    }
 
-    if (deviceId && keyId && (!privateKeyStr || !publicKeyStr)) {
-      const deviceKeys = getStorageKeys(userId, deviceId, keyId);
-      privateKeyStr = localStorage.getItem(deviceKeys.privateByDevice);
-      publicKeyStr = localStorage.getItem(deviceKeys.publicByDevice);
-    }
+      const backup = await encryptPrivateKeyBackup(privateKeyStr, recoveryPassphrase);
 
-    if (deviceId && keyId && (!privateKeyStr || !publicKeyStr)) {
-      let serverRegisteredDeviceId = "";
-      let serverRegisteredKeyId = "";
-      if (typeof getPublicKeyApi === "function") {
-        const keyRes = await getPublicKeyApi(userId).catch(() => null);
-        const registered = findRegisteredDevice(keyRes?.data?.deviceKeys, deviceId, keyId) ||
-          findRegisteredDeviceById(keyRes?.data?.deviceKeys, deviceId);
-        serverRegisteredDeviceId = registered?.deviceId || "";
-        serverRegisteredKeyId = registered?.keyId || "";
+      safeKeyDiagnostic(E2EE_DIAGNOSTIC.IDENTITY_CREATED, {
+        senderId: userId,
+        currentKeyId: keyId,
+      });
+
+      if (typeof saveIdentityApi === "function" && backup) {
+        await saveIdentityApi({
+          publicKey: publicKeyStr,
+          keyId,
+          encryptedPrivateKeyBackup: backup,
+          deviceId,
+        }).catch((err) => {
+          console.warn("Could not register initial E2EE identity on server:", err);
+        });
       }
-      safeKeyDiagnostic(E2EE_DIAGNOSTIC.DEVICE_PRIVATE_KEY_MISSING, {
-        currentDeviceId: deviceId,
-        currentKeyId: keyId,
-        storedPrivateKeyExists: !!privateKeyStr,
-        serverRegisteredDeviceId,
-        serverRegisteredKeyId,
-      });
-      return {
-        deviceId,
-        keyId,
-        privateKey: null,
-        publicKey: null,
-        publicKeyString: publicKeyStr || "",
-        error: E2EE_DIAGNOSTIC.DEVICE_PRIVATE_KEY_MISSING,
-        storedPrivateKeyExists: !!privateKeyStr,
-        serverRegisteredDeviceId,
-        serverRegisteredKeyId,
-      };
+    } else {
+      // Key exists locally. Ensure server has backup if needed.
+      if (!keyId) {
+        keyId = await computeKeyId(publicKeyStr);
+      }
+
+      if (typeof saveIdentityApi === "function") {
+        const backup = await encryptPrivateKeyBackup(privateKeyStr, recoveryPassphrase);
+        if (backup) {
+          saveIdentityApi({
+            publicKey: publicKeyStr,
+            keyId,
+            encryptedPrivateKeyBackup: backup,
+            deviceId,
+          }).catch(() => null);
+        }
+      }
     }
 
-    const computedKeyId = await computeKeyId(publicKeyStr);
-    if (!keyId) {
-      keyId = computedKeyId;
-    }
-
-    if (keyId !== computedKeyId || !privateMatchesPublic(privateKeyStr, publicKeyStr)) {
-      safeKeyDiagnostic(E2EE_DIAGNOSTIC.DEVICE_REGISTRATION_MISMATCH, {
-        currentDeviceId: deviceId,
-        currentKeyId: keyId,
-        storedPrivateKeyExists: !!privateKeyStr,
-      });
-      return {
-        deviceId,
-        keyId,
-        privateKey: null,
-        publicKey: null,
-        publicKeyString: publicKeyStr,
-        error: E2EE_DIAGNOSTIC.DEVICE_REGISTRATION_MISMATCH,
-        storedPrivateKeyExists: !!privateKeyStr,
-      };
-    }
-
-    const deviceKeys = getStorageKeys(userId, deviceId, keyId);
     const normalizedBundle = {
       version: CURRENT_KEY_VERSION,
       deviceId,
@@ -413,35 +516,8 @@ export async function initUserE2EE(userId, savePublicKeyApi, getPublicKeyApi) {
     writeBundle(userId, normalizedBundle);
     localStorage.setItem(baseKeys.deviceId, deviceId);
     localStorage.setItem(baseKeys.keyId, keyId);
-    localStorage.setItem(deviceKeys.privateByDevice, privateKeyStr);
-    localStorage.setItem(deviceKeys.publicByDevice, publicKeyStr);
     localStorage.setItem(baseKeys.legacyPrivate, privateKeyStr);
     localStorage.setItem(baseKeys.legacyPublic, publicKeyStr);
-
-    // Register this browser/device key without overwriting other devices.
-    if (typeof savePublicKeyApi === "function" && publicKeyStr) {
-      await savePublicKeyApi({ publicKey: publicKeyStr, deviceId, keyId }).catch(() => null);
-    }
-
-    let serverRegisteredDeviceId = "";
-    let serverRegisteredKeyId = "";
-    if (typeof getPublicKeyApi === "function") {
-      const keyRes = await getPublicKeyApi(userId).catch(() => null);
-      const registered = findRegisteredDevice(keyRes?.data?.deviceKeys, deviceId, keyId);
-      const registeredByDevice = registered || findRegisteredDeviceById(keyRes?.data?.deviceKeys, deviceId);
-      serverRegisteredDeviceId = registeredByDevice?.deviceId || "";
-      serverRegisteredKeyId = registeredByDevice?.keyId || "";
-
-      if (!registered || registered.publicKey !== publicKeyStr) {
-        safeKeyDiagnostic(E2EE_DIAGNOSTIC.DEVICE_REGISTRATION_MISMATCH, {
-          currentDeviceId: deviceId,
-          currentKeyId: keyId,
-          storedPrivateKeyExists: true,
-          serverRegisteredDeviceId,
-          serverRegisteredKeyId,
-        });
-      }
-    }
 
     const privateKey = await importPrivateKey(privateKeyStr);
     const publicKey = await importPublicKey(publicKeyStr);
@@ -453,9 +529,7 @@ export async function initUserE2EE(userId, savePublicKeyApi, getPublicKeyApi) {
       deviceId,
       keyId,
       version: CURRENT_KEY_VERSION,
-      storedPrivateKeyExists: !!privateKeyStr,
-      serverRegisteredDeviceId,
-      serverRegisteredKeyId,
+      storedPrivateKeyExists: true,
     };
   } catch (err) {
     console.error("Failed to initialize user E2EE:", err);

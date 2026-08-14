@@ -9,31 +9,106 @@ const crypto = require("crypto");
 
 const populateMessage = (query) =>
   query
-    .populate("sender", "name username profileImage publicKey deviceKeys")
-    .populate("recipient", "name username profileImage publicKey deviceKeys");
+    .populate("sender", "name username profileImage publicKey activeSession deviceKeys")
+    .populate("recipient", "name username profileImage publicKey activeSession deviceKeys");
 
 const getActiveDeviceKeys = (user) => {
-  const keys = Array.isArray(user?.deviceKeys) ? user.deviceKeys : [];
-  const activeKeys = keys
-    .filter((key) => key && key.isActive !== false && key.deviceId && key.keyId && key.publicKey)
-    .map((key) => ({
-      deviceId: key.deviceId,
-      keyId: key.keyId,
-      publicKey: key.publicKey,
-      createdAt: key.createdAt,
-      lastSeenAt: key.lastSeenAt,
-    }));
+  const userId = (user?._id || user?.id)?.toString() || "";
+  const activeSession = user?.activeSession;
+  const keys = [];
 
-  if (activeKeys.length === 0 && user?.publicKey) {
-    activeKeys.push({
+  if (activeSession && activeSession.publicKey && activeSession.status !== "REVOKED") {
+    keys.push({
+      userId,
+      sessionId: activeSession.sessionId || "",
+      deviceId: activeSession.deviceId || "active_device",
+      keyId: activeSession.keyId || "active_key",
+      publicKey: activeSession.publicKey,
+      isActive: true,
+      createdAt: activeSession.lastActive,
+      lastSeenAt: activeSession.lastActive,
+    });
+    return keys;
+  }
+
+  if (user?.publicKey) {
+    keys.push({
+      userId,
+      sessionId: "",
       deviceId: "legacy",
       keyId: "legacy",
       publicKey: user.publicKey,
+      isActive: true,
       legacy: true,
     });
   }
 
-  return activeKeys;
+  return keys;
+};
+
+const safeE2eeDiagnostic = (code, details = {}) => {
+  console.warn(`[E2EE:${code}]`, {
+    messageId: details.messageId,
+    senderId: details.senderId,
+    recipientId: details.recipientId,
+    currentDeviceId: details.currentDeviceId,
+    currentKeyId: details.currentKeyId,
+    recipientDeviceCount: details.recipientDeviceCount,
+    envelopeCount: details.envelopeCount,
+    senderDeviceId: details.senderDeviceId,
+    recipientDeviceId: details.recipientDeviceId,
+    senderKeyId: details.senderKeyId,
+    recipientKeyId: details.recipientKeyId,
+  });
+};
+
+const normalizeEncryptionMetadata = (encryption = {}) => {
+  const envelopes = Array.isArray(encryption.envelopes)
+    ? encryption.envelopes.map((envelope) => ({
+      userId: envelope.userId ? envelope.userId.toString() : "",
+      deviceId: envelope.deviceId || "",
+      keyId: envelope.keyId || "",
+      senderDeviceId: envelope.senderDeviceId || encryption.senderDeviceId || "",
+      senderKeyId: envelope.senderKeyId || encryption.senderKeyId || "",
+      senderPublicKey: envelope.senderPublicKey || encryption.senderPublicKey || "",
+      ciphertext: envelope.ciphertext || "",
+      iv: envelope.iv || "",
+    })).filter((envelope) =>
+      envelope.userId &&
+      envelope.deviceId &&
+      envelope.keyId &&
+      envelope.senderDeviceId &&
+      envelope.senderKeyId &&
+      envelope.senderPublicKey &&
+      envelope.ciphertext &&
+      envelope.iv
+    )
+    : [];
+
+  return {
+    version: Number(encryption.version) || 2,
+    senderDeviceId: encryption.senderDeviceId || "",
+    senderKeyId: encryption.senderKeyId || "",
+    senderPublicKey: encryption.senderPublicKey || "",
+    recipientDeviceId: encryption.recipientDeviceId || "",
+    recipientKeyId: encryption.recipientKeyId || "",
+    envelopes,
+  };
+};
+
+const validateEncryptedMessagePayload = (encryption, text, iv, targetRecipientId = null) => {
+  const normalized = normalizeEncryptionMetadata(encryption);
+
+  const hasSenderPublic = Boolean(normalized.senderPublicKey && normalized.senderPublicKey.trim());
+  const hasText = Boolean(text && typeof text === "string" && text.trim());
+  const hasIv = Boolean(iv && typeof iv === "string" && iv.trim());
+
+  const valid = hasText && hasIv && hasSenderPublic;
+
+  return {
+    valid,
+    normalized,
+  };
 };
 
 // Helper to check if two users have blocked each other
@@ -339,6 +414,45 @@ exports.sendMessage = async (req, res) => {
       return res.status(403).json({ success: false, message: "Cannot send message to blocked user" });
     }
 
+    // Determine E2EE Encryption payload with strict validation
+    let finalIsEncrypted = false;
+    let finalIv = "";
+    let finalEncryption = undefined;
+
+    if (isEncrypted || (encryption && Object.keys(encryption).length > 0)) {
+      const validation = validateEncryptedMessagePayload(encryption, text, iv, targetRecipientId);
+      if (!validation.valid) {
+        safeE2eeDiagnostic("INVALID_ENCRYPTED_PAYLOAD", {
+          senderId,
+          recipientId: targetRecipientId,
+          senderDeviceId: encryption?.senderDeviceId,
+          senderKeyId: encryption?.senderKeyId,
+          recipientDeviceId: encryption?.recipientDeviceId,
+          recipientKeyId: encryption?.recipientKeyId,
+          envelopeCount: Array.isArray(encryption?.envelopes) ? encryption.envelopes.length : 0,
+        });
+        return res.status(400).json({
+          success: false,
+          message:
+            "Invalid E2EE payload: Encrypted messages must include valid ciphertext, IV, and sender public key.",
+        });
+      }
+
+      finalIsEncrypted = true;
+      finalIv = iv.trim();
+      finalEncryption = validation.normalized;
+
+      safeE2eeDiagnostic("MESSAGE_ENCRYPTED_VALIDATED", {
+        senderId,
+        recipientId: targetRecipientId,
+        senderDeviceId: finalEncryption.senderDeviceId,
+        senderKeyId: finalEncryption.senderKeyId,
+        recipientDeviceId: finalEncryption.recipientDeviceId,
+        recipientKeyId: finalEncryption.recipientKeyId,
+        envelopeCount: finalEncryption.envelopes.length,
+      });
+    }
+
     // Determine initial status based on recipient socket connection
     const io = getIO();
     const recipientSockets = getUserSockets(targetRecipientId.toString());
@@ -351,26 +465,9 @@ exports.sendMessage = async (req, res) => {
       recipient: targetRecipientId,
       messageType,
       text: text || "",
-      isEncrypted: !!isEncrypted,
-      iv: iv || "",
-      encryption: isEncrypted ? {
-        version: encryption.version || 2,
-        senderDeviceId: encryption.senderDeviceId || "",
-        senderKeyId: encryption.senderKeyId || "",
-        senderPublicKey: encryption.senderPublicKey || "",
-        recipientDeviceId: encryption.recipientDeviceId || "",
-        recipientKeyId: encryption.recipientKeyId || "",
-        envelopes: Array.isArray(encryption.envelopes) ? encryption.envelopes.map((envelope) => ({
-          userId: envelope.userId,
-          deviceId: envelope.deviceId || "",
-          keyId: envelope.keyId || "",
-          senderDeviceId: envelope.senderDeviceId || encryption.senderDeviceId || "",
-          senderKeyId: envelope.senderKeyId || encryption.senderKeyId || "",
-          senderPublicKey: envelope.senderPublicKey || encryption.senderPublicKey || "",
-          ciphertext: envelope.ciphertext || "",
-          iv: envelope.iv || "",
-        })).filter((envelope) => envelope.userId && envelope.deviceId && envelope.keyId && envelope.ciphertext && envelope.iv) : [],
-      } : undefined,
+      isEncrypted: finalIsEncrypted,
+      iv: finalIv,
+      encryption: finalEncryption,
       mediaUrl: mediaUrl || "",
       mediaMeta: mediaMeta || {},
       replyTo: replyTo || null,
@@ -410,8 +507,8 @@ exports.sendMessage = async (req, res) => {
       const recipientUser = await User.findById(targetRecipientId).select("fcmToken name");
       const senderUser = await User.findById(senderId).select("name username");
       if (recipientUser && recipientUser.fcmToken) {
-        let notificationBody = isEncrypted ? "🔒 End-to-End Encrypted Message" : (text || "Sent a media message");
-        if (!isEncrypted) {
+        let notificationBody = finalIsEncrypted ? "🔒 End-to-End Encrypted Message" : (text || "Sent a media message");
+        if (!finalIsEncrypted) {
           if (messageType === "image") notificationBody = "📷 Sent an image";
           if (messageType === "video") notificationBody = "🎥 Sent a video";
           if (messageType === "audio") notificationBody = "🎵 Sent a voice message";
@@ -493,9 +590,9 @@ exports.appendEncryptionEnvelopes = async (req, res) => {
         userId: envelope.userId,
         deviceId: envelope.deviceId,
         keyId: envelope.keyId,
-        senderDeviceId: envelope.senderDeviceId || "",
-        senderKeyId: envelope.senderKeyId || "",
-        senderPublicKey: envelope.senderPublicKey || "",
+        senderDeviceId: envelope.senderDeviceId || message.encryption.senderDeviceId || "",
+        senderKeyId: envelope.senderKeyId || message.encryption.senderKeyId || "",
+        senderPublicKey: envelope.senderPublicKey || message.encryption.senderPublicKey || "",
         ciphertext: envelope.ciphertext,
         iv: envelope.iv,
       });
@@ -505,6 +602,13 @@ exports.appendEncryptionEnvelopes = async (req, res) => {
     if (appended > 0) {
       message.encryption.version = Math.max(message.encryption.version || 1, 2);
       await message.save();
+
+      safeE2eeDiagnostic("ENVELOPES_APPENDED", {
+        messageId: message._id,
+        currentDeviceId: envelopes[0]?.deviceId,
+        currentKeyId: envelopes[0]?.keyId,
+        envelopeCount: message.encryption.envelopes.length,
+      });
     }
 
     return res.status(200).json({
@@ -1145,90 +1249,157 @@ exports.uploadChatMedia = async (req, res) => {
   }
 };
 
-// 18. Register User Device Public Key (E2EE)
-exports.setPublicKey = async (req, res) => {
+// 18. Register Account E2EE Identity and Zero-Knowledge Encrypted Backup
+exports.setE2EEIdentity = async (req, res) => {
   try {
     const userId = req.user.id;
-    let { publicKey, deviceId, keyId } = req.body;
+    const { publicKey, keyId, encryptedPrivateKeyBackup, deviceId } = req.body;
 
-    if (!publicKey || typeof publicKey !== "string") {
-      return res.status(400).json({ success: false, message: "publicKey is required" });
-    }
-    if (!deviceId || typeof deviceId !== "string" || !keyId || typeof keyId !== "string") {
-      const legacyKeyHash = crypto.createHash("sha256").update(publicKey).digest("hex").slice(0, 32);
-      deviceId = deviceId || `legacy_${legacyKeyHash}`;
-      keyId = keyId || `legacy_${legacyKeyHash}`;
+    if (!publicKey || typeof publicKey !== "string" || !publicKey.trim()) {
+      return res.status(400).json({ success: false, message: "Valid publicKey string is required" });
     }
 
-    const user = await User.findById(userId).select("publicKey deviceKeys");
+    // Security check: NEVER allow plaintext private keys on backend
+    if (req.body.privateKey || req.body.privateKeyString) {
+      return res.status(400).json({
+        success: false,
+        message: "Plaintext private keys are strictly forbidden. Only zero-knowledge client-encrypted backups are accepted.",
+      });
+    }
+
+    const user = await User.findById(userId).select("publicKey e2eeIdentity activeSession sessions deviceKeys");
     if (!user) {
       return res.status(404).json({ success: false, message: "User not found" });
     }
 
-    if (!Array.isArray(user.deviceKeys)) {
-      user.deviceKeys = [];
+    const legacyKeyHash = crypto.createHash("sha256").update(publicKey).digest("hex").slice(0, 32);
+    const effectiveKeyId = keyId && typeof keyId === "string" ? keyId.trim() : (user.e2eeIdentity?.keyId || `key_${legacyKeyHash}`);
+    const effectiveDeviceId = deviceId && typeof deviceId === "string" ? deviceId.trim() : `dev_${legacyKeyHash}`;
+
+    if (!user.e2eeIdentity) {
+      user.e2eeIdentity = {};
     }
 
-    const now = new Date();
-    const existingKey = user.deviceKeys.find((key) => key.deviceId === deviceId);
-    if (existingKey) {
-      existingKey.keyId = keyId;
-      existingKey.publicKey = publicKey;
-      existingKey.lastSeenAt = now;
-      existingKey.isActive = true;
-    } else {
-      user.deviceKeys.push({
-        deviceId,
-        keyId,
-        publicKey,
-        createdAt: now,
-        lastSeenAt: now,
-        isActive: true,
-      });
+    user.e2eeIdentity.publicKey = publicKey.trim();
+    user.e2eeIdentity.keyId = effectiveKeyId;
+    user.publicKey = publicKey.trim();
+
+    if (
+      encryptedPrivateKeyBackup &&
+      typeof encryptedPrivateKeyBackup === "object" &&
+      encryptedPrivateKeyBackup.ciphertext &&
+      encryptedPrivateKeyBackup.iv &&
+      encryptedPrivateKeyBackup.salt
+    ) {
+      user.e2eeIdentity.encryptedPrivateKeyBackup = {
+        ciphertext: String(encryptedPrivateKeyBackup.ciphertext),
+        iv: String(encryptedPrivateKeyBackup.iv),
+        salt: String(encryptedPrivateKeyBackup.salt),
+        iterations: Number(encryptedPrivateKeyBackup.iterations) || 100000,
+        version: Number(encryptedPrivateKeyBackup.version) || 1,
+      };
+      user.e2eeIdentity.hasBackup = true;
+      user.e2eeIdentity.backupUpdatedAt = new Date();
     }
 
-    if (!user.publicKey) {
-      user.publicKey = publicKey;
-    }
+    // Also sync active web session
+    const currentSessionId = req.user?.sessionId || user.sessions?.web?.sessionId || user.activeSession?.sessionId || `sess_${crypto.randomBytes(16).toString("hex")}`;
+    user.activeSession = {
+      sessionId: currentSessionId,
+      deviceId: effectiveDeviceId,
+      keyId: effectiveKeyId,
+      publicKey: publicKey.trim(),
+      lastActive: new Date(),
+      status: "ACTIVE",
+    };
 
     await user.save();
 
+    safeE2eeDiagnostic("SET_E2EE_IDENTITY", {
+      senderId: userId,
+      currentKeyId: effectiveKeyId,
+    });
+
     return res.status(200).json({
       success: true,
-      message: "Device public key registered successfully",
+      message: "Account E2EE identity registered successfully",
       data: {
-        deviceId,
-        keyId,
+        keyId: effectiveKeyId,
+        publicKey: user.e2eeIdentity.publicKey,
+        hasBackup: Boolean(user.e2eeIdentity.hasBackup),
+        sessionId: currentSessionId,
       },
     });
   } catch (error) {
-    console.error("Set Device Public Key Error:", error);
+    console.error("Set E2EE Identity Error:", error);
     return res.status(500).json({
       success: false,
-      message: "Failed to register device public key",
+      message: "Failed to register E2EE identity",
       error: error.message,
     });
   }
 };
 
-// 19. Get User Device Public Keys (E2EE)
-exports.getPublicKey = async (req, res) => {
-  try {
-    const { userId } = req.params;
+// Backward-compatible alias for setPublicKey
+exports.setPublicKey = exports.setE2EEIdentity;
 
-    const user = await User.findById(userId).select("name username publicKey deviceKeys");
+// 18b. Get Zero-Knowledge E2EE Backup for Current User
+exports.getE2EEBackup = async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const user = await User.findById(userId).select("publicKey e2eeIdentity");
     if (!user) {
       return res.status(404).json({ success: false, message: "User not found" });
     }
 
-    const deviceKeys = getActiveDeviceKeys(user);
+    return res.status(200).json({
+      success: true,
+      data: {
+        keyId: user.e2eeIdentity?.keyId || "",
+        publicKey: user.e2eeIdentity?.publicKey || user.publicKey || "",
+        hasBackup: Boolean(user.e2eeIdentity?.hasBackup),
+        encryptedPrivateKeyBackup: user.e2eeIdentity?.hasBackup
+          ? user.e2eeIdentity.encryptedPrivateKeyBackup
+          : null,
+        backupUpdatedAt: user.e2eeIdentity?.backupUpdatedAt || null,
+      },
+    });
+  } catch (error) {
+    console.error("Get E2EE Backup Error:", error);
+    return res.status(500).json({
+      success: false,
+      message: "Failed to fetch E2EE backup",
+      error: error.message,
+    });
+  }
+};
+
+// 19. Get User Public E2EE Key Identity
+exports.getPublicKey = async (req, res) => {
+  try {
+    const { userId } = req.params;
+
+    const user = await User.findById(userId).select("name username publicKey e2eeIdentity activeSession sessions deviceKeys");
+    if (!user) {
+      return res.status(404).json({ success: false, message: "User not found" });
+    }
+
+    const publicKey = user.e2eeIdentity?.publicKey || user.publicKey || "";
+    const keyId = user.e2eeIdentity?.keyId || (publicKey ? "key_account" : "");
+
+    safeE2eeDiagnostic("GET_PUBLIC_KEYS", {
+      recipientId: user._id,
+      recipientKeyId: keyId,
+    });
 
     return res.status(200).json({
       success: true,
       data: {
         userId: user._id,
-        publicKey: user.publicKey || "",
-        deviceKeys,
+        publicKey,
+        keyId,
+        hasBackup: Boolean(user.e2eeIdentity?.hasBackup),
+        status: user.sessions?.web?.status || user.activeSession?.status || "ACTIVE",
       },
     });
   } catch (error) {

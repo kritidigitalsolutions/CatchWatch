@@ -33,9 +33,22 @@ axiosInstance.interceptors.response.use(
   },
   (error) => {
     if (error.response && error.response.status === 401) {
+      const isRevoked =
+        error.response.data?.code === "SESSION_REVOKED" ||
+        (typeof error.response.data?.message === "string" &&
+          error.response.data.message.includes("another device"));
+
+      if (isRevoked) {
+        sessionStorage.setItem(
+          "session_revoked_notice",
+          error.response.data?.message || "Your account was logged in on another device."
+        );
+      }
+
       console.warn("Unauthorized request detected! Clearing session and redirecting to login.");
       localStorage.removeItem("authToken");
       localStorage.removeItem("token");
+      localStorage.removeItem("user");
       localStorage.removeItem("userIsPremium");
 
       // Redirect to login if not already on the login page

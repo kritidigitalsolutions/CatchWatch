@@ -5,11 +5,11 @@ const router = express.Router();
 const {
   sendOTP,
   verifyOtp,
-  googleLogin,
   refreshToken,
+  logout,
+  getSession,
 } = require("../../controllers/auth.controller");
-const { isAuth } = require("../../middlewares/auth.middleware");
-
+const { isAuth, optionalAuth } = require("../../middlewares/auth.middleware");
 
 // ========================================
 // SEND OTP
@@ -18,7 +18,6 @@ router.post(
   "/send-otp",
   sendOTP
 );
-
 
 // ========================================
 // VERIFY OTP
@@ -33,14 +32,8 @@ router.post(
 // ========================================
 router.post(
   "/logout",
-  (req, res) => {
-    res.clearCookie("authToken", {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === "production",
-      sameSite: "lax",
-    });
-    res.json({ success: true, message: "Logged out successfully" });
-  }
+  optionalAuth,
+  logout
 );
 
 // ========================================
@@ -50,6 +43,15 @@ router.post(
   "/refresh-token",
   isAuth,
   refreshToken
+);
+
+// ========================================
+// GET CURRENT ACTIVE SESSION
+// ========================================
+router.get(
+  "/session",
+  isAuth,
+  getSession
 );
 
 module.exports = router;

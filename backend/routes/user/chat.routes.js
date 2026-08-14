@@ -43,6 +43,8 @@ router.post("/fcm-token", chatController.updateFcmToken);
 
 // E2EE Key Management
 router.post("/keys", chatController.setPublicKey);
+router.post("/keys/identity", chatController.setE2EEIdentity);
+router.get("/keys/backup", chatController.getE2EEBackup);
 router.get("/keys/:userId", chatController.getPublicKey);
 
 // Agora Chat Token

@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { FaPaperPlane, FaTimes, FaSearch } from "react-icons/fa";
-import { getConversations, sendMessage, savePublicKey, getUserPublicKey } from "../api/chatApi";
+import { getConversations, sendMessage, saveE2EEIdentity, getE2EEBackup, getUserPublicKey } from "../api/chatApi";
 import {
   initUserE2EE,
   importPublicKey,
@@ -28,7 +28,7 @@ const ForwardModal = ({ isOpen, onClose, messageToForward }) => {
 
   useEffect(() => {
     if (!isOpen || !currentUserId) return;
-    initUserE2EE(currentUserId, savePublicKey, getUserPublicKey).then((keys) => {
+    initUserE2EE(currentUserId, saveE2EEIdentity, getE2EEBackup, getUserPublicKey).then((keys) => {
       if (keys) setE2eeKeys(keys);
     });
   }, [isOpen, currentUserId]);
@@ -46,6 +46,24 @@ const ForwardModal = ({ isOpen, onClose, messageToForward }) => {
 
   if (!isOpen || !messageToForward) return null;
 
+  const ensureUserE2EE = async () => {
+    if (e2eeKeys && !e2eeKeys.error && e2eeKeys.privateKey) {
+      return e2eeKeys;
+    }
+    if (!currentUserId) return null;
+    try {
+      const keys = await initUserE2EE(currentUserId, saveE2EEIdentity, getE2EEBackup, getUserPublicKey);
+      if (keys && !keys.error && keys.privateKey) {
+        setE2eeKeys(keys);
+        return keys;
+      }
+      return keys;
+    } catch (err) {
+      console.error("Error ensuring user E2EE keys in forward modal:", err);
+      return null;
+    }
+  };
+
   const handleForward = async () => {
     if (!selectedRecipientId) {
       toast.warning("Please select a user to forward message");
@@ -58,78 +76,63 @@ const ForwardModal = ({ isOpen, onClose, messageToForward }) => {
       let iv = "";
       let encryption = null;
 
-      if (messageToForward.messageType === "text" && text && e2eeKeys) {
-        const recipientKeyRes = await getUserPublicKey(selectedRecipientId);
-        const senderKeyRes = await getUserPublicKey(currentUserId);
-        const normalizeKeys = (res, userId) => {
-          const deviceKeys = Array.isArray(res?.data?.deviceKeys) ? res.data.deviceKeys : [];
-          if (deviceKeys.length > 0) {
-            return deviceKeys.map((key) => ({ ...key, userId }));
-          }
-          return res?.data?.publicKey ? [{
-            userId,
-            deviceId: "legacy",
-            keyId: "legacy",
-            publicKey: res.data.publicKey,
-          }] : [];
-        };
-        const currentDeviceKey = {
-          userId: currentUserId,
-          deviceId: e2eeKeys.deviceId,
-          keyId: e2eeKeys.keyId,
-          publicKey: e2eeKeys.publicKeyString,
-        };
-        const targetsById = new Map();
-        [
-          ...normalizeKeys(recipientKeyRes, selectedRecipientId),
-          ...normalizeKeys(senderKeyRes, currentUserId),
-          currentDeviceKey,
-        ].forEach((key) => {
-          if (key.userId && key.deviceId && key.keyId && key.publicKey) {
-            targetsById.set(`${key.userId}_${key.deviceId}_${key.keyId}`, key);
-          }
-        });
-        const envelopes = [];
-
-        for (const target of targetsById.values()) {
-          const publicKey = await importPublicKey(target.publicKey);
-          const sharedKey = publicKey ? await deriveSharedKey(e2eeKeys.privateKey, publicKey) : null;
-          if (!sharedKey) {
-            safeKeyDiagnostic(E2EE_DIAGNOSTIC.KEY_NOT_FOUND, {
-              recipientId: target.userId,
-              recipientDeviceId: target.deviceId,
-              recipientKeyId: target.keyId,
-            });
-            continue;
-          }
-          const encrypted = await encryptText(text, sharedKey);
-          envelopes.push({
-            userId: target.userId,
-            deviceId: target.deviceId,
-            keyId: target.keyId,
-            senderDeviceId: e2eeKeys.deviceId,
-            senderKeyId: e2eeKeys.keyId,
-            senderPublicKey: e2eeKeys.publicKeyString,
-            ciphertext: encrypted.ciphertext,
-            iv: encrypted.iv,
+      if (messageToForward.messageType === "text" && text) {
+        const activeKeys = await ensureUserE2EE();
+        if (!activeKeys || activeKeys.error || !activeKeys.privateKey) {
+          safeKeyDiagnostic(E2EE_DIAGNOSTIC.DEVICE_PRIVATE_KEY_MISSING, {
+            senderId: currentUserId,
+            currentDeviceId: activeKeys?.deviceId,
+            currentKeyId: activeKeys?.keyId,
           });
+          throw new Error("Device encryption key is missing or not initialized.");
         }
 
-        const primaryEnvelope = envelopes.find((envelope) => envelope.userId?.toString() === selectedRecipientId?.toString()) || envelopes[0];
-        if (primaryEnvelope) {
-          text = primaryEnvelope.ciphertext;
-          iv = primaryEnvelope.iv;
-          isEncrypted = true;
-          encryption = {
-            version: 2,
-            senderDeviceId: e2eeKeys.deviceId,
-            senderKeyId: e2eeKeys.keyId,
-            senderPublicKey: e2eeKeys.publicKeyString,
-            recipientDeviceId: primaryEnvelope.deviceId,
-            recipientKeyId: primaryEnvelope.keyId,
-            envelopes,
-          };
+        const recipientKeyRes = await getUserPublicKey(selectedRecipientId);
+        const recipientPubKeyStr =
+          recipientKeyRes?.data?.publicKey ||
+          recipientKeyRes?.data?.deviceKeys?.[0]?.publicKey;
+
+        if (!recipientPubKeyStr) {
+          safeKeyDiagnostic(E2EE_DIAGNOSTIC.KEY_NOT_FOUND, {
+            recipientId: selectedRecipientId,
+            senderDeviceId: activeKeys.deviceId,
+            senderKeyId: activeKeys.keyId,
+          });
+          throw new Error("Recipient does not have an active encryption key registered.");
         }
+
+        const recipientPubKey = await importPublicKey(recipientPubKeyStr);
+        const sharedKey = recipientPubKey
+          ? await deriveSharedKey(activeKeys.privateKey, recipientPubKey)
+          : null;
+
+        if (!sharedKey) {
+          safeKeyDiagnostic(E2EE_DIAGNOSTIC.KEY_NOT_FOUND, {
+            recipientId: selectedRecipientId,
+          });
+          throw new Error("Failed to derive encryption key for recipient.");
+        }
+
+        const encrypted = await encryptText(text, sharedKey);
+        if (!encrypted?.ciphertext || !encrypted?.iv) {
+          safeKeyDiagnostic(E2EE_DIAGNOSTIC.ENCRYPT_FAILED, {
+            recipientId: selectedRecipientId,
+          });
+          throw new Error("Failed to encrypt forwarded message.");
+        }
+
+        text = encrypted.ciphertext;
+        iv = encrypted.iv;
+        isEncrypted = true;
+        encryption = {
+          version: 2,
+          senderDeviceId: activeKeys.deviceId,
+          senderKeyId: activeKeys.keyId,
+          senderPublicKey: activeKeys.publicKeyString,
+          recipientDeviceId: recipientKeyRes?.data?.deviceId || "active_device",
+          recipientKeyId: recipientKeyRes?.data?.keyId || "active_key",
+          envelopes: [],
+        };
       }
 
       await sendMessage({
@@ -146,7 +149,8 @@ const ForwardModal = ({ isOpen, onClose, messageToForward }) => {
       toast.success("Message forwarded successfully!");
       onClose();
     } catch (err) {
-      toast.error(err.response?.data?.message || "Failed to forward message");
+      console.error("Forward message error:", err);
+      toast.error(err.message || err.response?.data?.message || "Failed to forward message");
     } finally {
       setLoading(false);
     }

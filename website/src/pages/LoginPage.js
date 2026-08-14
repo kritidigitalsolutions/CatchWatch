@@ -15,6 +15,12 @@ const LoginPage = () => {
     const navigate = useNavigate();
 
     useEffect(() => {
+        const revokedNotice = sessionStorage.getItem("session_revoked_notice");
+        if (revokedNotice) {
+            toast.info(revokedNotice, { autoClose: 6000 });
+            sessionStorage.removeItem("session_revoked_notice");
+        }
+
         const token = localStorage.getItem("authToken");
         if (token) {
             navigate("/", { replace: true });

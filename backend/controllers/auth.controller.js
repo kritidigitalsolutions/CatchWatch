@@ -1,7 +1,9 @@
 const jwt = require("jsonwebtoken");
+const crypto = require("crypto");
 
 const OTP = require("../models/user.otp.model");
 const User = require("../models/user.model");
+const { revokeUserSockets } = require("../socket/chatSocket");
 
 const { admin } = require("../config/firebase");
 const { OAuth2Client } = require("google-auth-library");
@@ -114,16 +116,24 @@ const sendSMS = async (phone, otp) => {
 // ========================================
 // GENERATE USER TOKEN
 // ========================================
-const generateUserToken = (user) => {
+const generateUserToken = (user, sessionId = null, platform = "web") => {
+  const effectivePlatform = platform === "mobile" ? "mobile" : "web";
+  const effectiveSessionId =
+    sessionId ||
+    user.sessions?.[effectivePlatform]?.sessionId ||
+    (effectivePlatform === "web" ? user.activeSession?.sessionId : "") ||
+    "";
+
   return jwt.sign(
     {
       id: user._id,
       role: user.role,
+      sessionId: effectiveSessionId,
+      platform: effectivePlatform,
     },
     process.env.JWT_SECRET,
     {
       expiresIn: process.env.JWT_EXPIRE || "30d",
-
       issuer: "catchwatch",
       audience: "catchwatch-app",
     }
@@ -386,13 +396,54 @@ exports.verifyOtp = async (req, res) => {
 
       user.fcmToken = normalizedFcmToken;
       user.fcmTokenUpdatedAt = new Date();
-
       await user.save();
     }
 
-    // generate token
-    const token =
-      generateUserToken(user);
+    // Determine platform (web vs mobile)
+    const platform = req.body.platform === "mobile" ? "mobile" : "web";
+    const newSessionId = `sess_${crypto.randomBytes(16).toString("hex")}`;
+    const previousSessionId =
+      user.sessions?.[platform]?.sessionId ||
+      (platform === "web" ? user.activeSession?.sessionId : null);
+
+    // Revoke previous sockets for this platform only
+    if (previousSessionId) {
+      revokeUserSockets(user._id, platform, newSessionId);
+    }
+
+    if (!user.sessions) {
+      user.sessions = {};
+    }
+
+    user.sessions[platform] = {
+      sessionId: newSessionId,
+      deviceId: req.body.deviceId || "",
+      lastActive: new Date(),
+      status: "ACTIVE",
+    };
+
+    if (platform === "web") {
+      user.activeSession = {
+        sessionId: newSessionId,
+        deviceId: req.body.deviceId || "",
+        keyId: user.e2eeIdentity?.keyId || req.body.keyId || "",
+        publicKey: user.e2eeIdentity?.publicKey || req.body.publicKey || user.publicKey || "",
+        lastActive: new Date(),
+        status: "ACTIVE",
+      };
+    }
+
+    if (req.body.publicKey && !user.e2eeIdentity?.publicKey) {
+      user.publicKey = req.body.publicKey;
+      if (!user.e2eeIdentity) user.e2eeIdentity = {};
+      user.e2eeIdentity.publicKey = req.body.publicKey;
+      user.e2eeIdentity.keyId = req.body.keyId || `key_${Date.now()}`;
+    }
+
+    await user.save();
+
+    // generate token with sessionId and platform
+    const token = generateUserToken(user, newSessionId, platform);
 
     const isNewUser = !user.profileComplete;
 
@@ -402,6 +453,8 @@ exports.verifyOtp = async (req, res) => {
         "OTP verified successfully",
 
       token,
+      sessionId: newSessionId,
+      platform,
       isNewUser,
 
       user: {
@@ -414,6 +467,13 @@ exports.verifyOtp = async (req, res) => {
         profileComplete:
           user.profileComplete,
         role: user.role,
+        e2eeIdentity: {
+          keyId: user.e2eeIdentity?.keyId || "",
+          publicKey: user.e2eeIdentity?.publicKey || user.publicKey || "",
+          hasBackup: Boolean(user.e2eeIdentity?.hasBackup),
+        },
+        activeSession: user.sessions?.web || user.activeSession,
+        sessions: user.sessions,
       },
     });
 
@@ -591,7 +651,9 @@ exports.refreshToken = async (req, res) => {
       });
     }
 
-    const token = generateUserToken(user);
+    const platform = req.user.platform === "mobile" ? "mobile" : "web";
+    const sessionId = req.user.sessionId || user.sessions?.[platform]?.sessionId || "";
+    const token = generateUserToken(user, sessionId, platform);
 
     res.cookie("authToken", token, {
       httpOnly: true,
@@ -604,6 +666,8 @@ exports.refreshToken = async (req, res) => {
       success: true,
       message: "Token refreshed successfully",
       token,
+      sessionId,
+      platform,
       user: {
         id: user._id,
         name: user.name,
@@ -612,6 +676,13 @@ exports.refreshToken = async (req, res) => {
         profileImage: user.profileImage,
         profileComplete: user.profileComplete,
         role: user.role,
+        e2eeIdentity: {
+          keyId: user.e2eeIdentity?.keyId || "",
+          publicKey: user.e2eeIdentity?.publicKey || user.publicKey || "",
+          hasBackup: Boolean(user.e2eeIdentity?.hasBackup),
+        },
+        activeSession: user.sessions?.web || user.activeSession,
+        sessions: user.sessions,
       },
     });
   } catch (error) {
@@ -619,6 +690,82 @@ exports.refreshToken = async (req, res) => {
     return res.status(500).json({
       success: false,
       message: "Token refresh failed",
+    });
+  }
+};
+
+exports.logout = async (req, res) => {
+  try {
+    if (req.user?.id) {
+      const platform = req.user.platform === "mobile" ? "mobile" : "web";
+      const updateDoc = {
+        [`sessions.${platform}.status`]: "REVOKED",
+        isOnline: false,
+        lastSeen: new Date(),
+      };
+      if (platform === "web") {
+        updateDoc["activeSession.status"] = "REVOKED";
+      }
+
+      await User.findByIdAndUpdate(req.user.id, updateDoc);
+      revokeUserSockets(req.user.id, platform);
+    }
+
+    res.clearCookie("authToken", {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "lax",
+    });
+
+    return res.status(200).json({
+      success: true,
+      message: "Logged out successfully",
+    });
+  } catch (error) {
+    console.error("LOGOUT ERROR:", error);
+    return res.status(500).json({
+      success: false,
+      message: "Logout failed",
+    });
+  }
+};
+
+exports.getSession = async (req, res) => {
+  try {
+    const user = await User.findById(req.user.id).select("sessions activeSession e2eeIdentity");
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: "User not found",
+      });
+    }
+
+    const platform = req.user.platform === "mobile" ? "mobile" : "web";
+    const currentSession = user.sessions?.[platform] || (platform === "web" ? user.activeSession : null);
+
+    const isActive =
+      Boolean(req.user?.sessionId) &&
+      currentSession?.sessionId === req.user.sessionId &&
+      currentSession?.status === "ACTIVE";
+
+    return res.status(200).json({
+      success: true,
+      data: {
+        platform,
+        currentSession,
+        isActive,
+        e2eeIdentity: {
+          keyId: user.e2eeIdentity?.keyId || "",
+          publicKey: user.e2eeIdentity?.publicKey || "",
+          hasBackup: Boolean(user.e2eeIdentity?.hasBackup),
+        },
+      },
+    });
+  } catch (error) {
+    console.error("GET SESSION ERROR:", error);
+    return res.status(500).json({
+      success: false,
+      message: "Failed to get session",
     });
   }
 };

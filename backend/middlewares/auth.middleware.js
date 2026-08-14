@@ -1,4 +1,5 @@
 const jwt = require("jsonwebtoken");
+const User = require("../models/user.model");
 
 const isAuth = async (
   req,
@@ -19,21 +20,12 @@ const isAuth = async (
         message: "Unauthorized",
       });
     }
-    console.log("========== AUTH REQUEST ==========");
-    console.log("Authorization Header:", req.headers.authorization);
-    console.log("Token:", token);
-
-    const decodedToken = jwt.decode(token);
-    console.log("Decoded:", decodedToken);
-
-    console.log("JWT_SECRET:", process.env.JWT_SECRET);
-    console.log("==================================");
 
     const verified = jwt.verify(
       token,
       process.env.JWT_SECRET
     );
-    console.log("Verified Payload:", verified);
+
     if (verified.role !== "USER") {
       return res.status(403).json({
         success: false,
@@ -41,15 +33,46 @@ const isAuth = async (
       });
     }
 
+    const user = await User.findById(verified.id).select("role status sessions activeSession");
+    if (!user) {
+      return res.status(401).json({
+        success: false,
+        message: "User not found",
+      });
+    }
+
+    if (user.status === "Blocked") {
+      return res.status(403).json({
+        success: false,
+        message: "Your account has been disabled",
+      });
+    }
+
+    if (verified.sessionId) {
+      const platform = verified.platform === "mobile" ? "mobile" : "web";
+      const currentPlatformSession = user.sessions?.[platform] || (platform === "web" ? user.activeSession : null);
+
+      if (
+        !currentPlatformSession ||
+        !currentPlatformSession.sessionId ||
+        currentPlatformSession.sessionId !== verified.sessionId ||
+        currentPlatformSession.status === "REVOKED"
+      ) {
+        return res.status(401).json({
+          success: false,
+          code: "SESSION_REVOKED",
+          platform,
+          message: "Your account was logged in on another device.",
+        });
+      }
+    }
+
     req.user = verified;
+    req.currentUser = user;
 
     next();
 
   } catch (error) {
-    console.error("========== JWT ERROR ==========");
-    console.error(error);
-    console.error("===============================");
-
     return res.status(401).json({
       success: false,
       error: error.name,
@@ -68,7 +91,20 @@ const optionalAuth = async (req, res, next) => {
     if (token) {
       const verified = jwt.verify(token, process.env.JWT_SECRET);
       if (verified.role === "USER") {
-        req.user = verified;
+        const user = await User.findById(verified.id).select("role status sessions activeSession");
+        if (user && user.status !== "Blocked") {
+          const platform = verified.platform === "mobile" ? "mobile" : "web";
+          const currentPlatformSession = user.sessions?.[platform] || (platform === "web" ? user.activeSession : null);
+          if (
+            !verified.sessionId ||
+            (currentPlatformSession &&
+              currentPlatformSession.sessionId === verified.sessionId &&
+              currentPlatformSession.status !== "REVOKED")
+          ) {
+            req.user = verified;
+            req.currentUser = user;
+          }
+        }
       }
     }
   } catch (err) {

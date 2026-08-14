@@ -126,6 +126,16 @@ export const savePublicKey = async (keyData) => {
   return res.data;
 };
 
+export const saveE2EEIdentity = async (identityData) => {
+  const res = await axiosInstance.post("/chat/keys/identity", identityData);
+  return res.data;
+};
+
+export const getE2EEBackup = async () => {
+  const res = await axiosInstance.get("/chat/keys/backup");
+  return res.data;
+};
+
 export const getUserPublicKey = async (userId) => {
   const res = await axiosInstance.get(`/chat/keys/${userId}`);
   return res.data;

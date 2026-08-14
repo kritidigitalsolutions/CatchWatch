@@ -97,6 +97,103 @@ const userSchema = new mongoose.Schema(
       default: "",
     },
 
+    e2eeIdentity: {
+      keyId: {
+        type: String,
+        default: "",
+      },
+      publicKey: {
+        type: String,
+        default: "",
+      },
+      encryptedPrivateKeyBackup: {
+        ciphertext: { type: String, default: "" },
+        iv: { type: String, default: "" },
+        salt: { type: String, default: "" },
+        iterations: { type: Number, default: 100000 },
+        version: { type: Number, default: 1 },
+      },
+      hasBackup: {
+        type: Boolean,
+        default: false,
+      },
+      backupUpdatedAt: {
+        type: Date,
+      },
+    },
+
+    sessions: {
+      web: {
+        sessionId: {
+          type: String,
+          default: "",
+          index: true,
+        },
+        deviceId: {
+          type: String,
+          default: "",
+        },
+        lastActive: {
+          type: Date,
+          default: Date.now,
+        },
+        status: {
+          type: String,
+          enum: ["ACTIVE", "REVOKED"],
+          default: "ACTIVE",
+        },
+      },
+      mobile: {
+        sessionId: {
+          type: String,
+          default: "",
+          index: true,
+        },
+        deviceId: {
+          type: String,
+          default: "",
+        },
+        lastActive: {
+          type: Date,
+          default: Date.now,
+        },
+        status: {
+          type: String,
+          enum: ["ACTIVE", "REVOKED"],
+          default: "ACTIVE",
+        },
+      },
+    },
+
+    activeSession: {
+      sessionId: {
+        type: String,
+        default: "",
+        index: true,
+      },
+      deviceId: {
+        type: String,
+        default: "",
+      },
+      keyId: {
+        type: String,
+        default: "",
+      },
+      publicKey: {
+        type: String,
+        default: "",
+      },
+      lastActive: {
+        type: Date,
+        default: Date.now,
+      },
+      status: {
+        type: String,
+        enum: ["ACTIVE", "REVOKED"],
+        default: "ACTIVE",
+      },
+    },
+
     deviceKeys: [
       {
         deviceId: {

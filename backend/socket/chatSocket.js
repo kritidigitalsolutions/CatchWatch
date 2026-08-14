@@ -53,7 +53,29 @@ const initSocket = (server, allowedOrigins) => {
       }
 
       const decoded = jwt.verify(token, process.env.JWT_SECRET);
-      socket.userId = (decoded.id || decoded._id || decoded.userId).toString();
+      const userId = (decoded.id || decoded._id || decoded.userId).toString();
+      const platform = decoded.platform === "mobile" ? "mobile" : "web";
+      socket.userId = userId;
+      socket.sessionId = decoded.sessionId || "";
+      socket.platform = platform;
+
+      if (decoded.sessionId) {
+        const user = await User.findById(userId).select("status sessions activeSession");
+        if (!user || user.status === "Blocked") {
+          return next(new Error("Authentication error: Account disabled"));
+        }
+
+        const currentPlatformSession = user.sessions?.[platform] || (platform === "web" ? user.activeSession : null);
+
+        if (
+          currentPlatformSession &&
+          currentPlatformSession.sessionId &&
+          (currentPlatformSession.sessionId !== decoded.sessionId || currentPlatformSession.status === "REVOKED")
+        ) {
+          return next(new Error("Authentication error: Session revoked"));
+        }
+      }
+
       return next();
     } catch (err) {
       console.error("Socket authentication error:", err.message);
@@ -63,7 +85,7 @@ const initSocket = (server, allowedOrigins) => {
 
   io.on("connection", async (socket) => {
     const userId = socket.userId;
-    console.log(`🔌 Socket connected: User ${userId} (Socket ID: ${socket.id})`);
+    console.log(`🔌 Socket connected: User ${userId} (${socket.platform}) (Socket ID: ${socket.id})`);
 
     // Track user socket
     if (!userSocketsMap.has(userId)) {
@@ -209,8 +231,29 @@ const getIO = () => io;
 
 const getUserSockets = (userId) => userSocketsMap.get(userId.toString());
 
+const revokeUserSockets = (userId, platform = "web", exceptSessionId = null) => {
+  if (!io || !userId) return;
+  const userIdStr = userId.toString();
+  const socketIds = userSocketsMap.get(userIdStr);
+  if (!socketIds || socketIds.size === 0) return;
+
+  for (const socketId of Array.from(socketIds)) {
+    const s = io.sockets.sockets.get(socketId);
+    if (s && s.platform === platform && (!exceptSessionId || s.sessionId !== exceptSessionId)) {
+      console.log(`🔌 Revoking ${platform} socket ${socketId} for user ${userIdStr} (Session: ${s.sessionId})`);
+      s.emit("session_revoked", {
+        code: "SESSION_REVOKED",
+        platform,
+        message: "Your account was logged in on another device.",
+      });
+      s.disconnect(true);
+    }
+  }
+};
+
 module.exports = {
   initSocket,
   getIO,
   getUserSockets,
+  revokeUserSockets,
 };
