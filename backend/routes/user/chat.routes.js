@@ -18,6 +18,7 @@ router.delete("/conversations/:conversationId", chatController.clearConversation
 router.get("/conversations/:conversationId/messages", chatController.getMessages);
 router.get("/conversations/:conversationId/pinned-messages", chatController.getPinnedMessages);
 router.post("/messages", chatController.sendMessage);
+router.post("/messages/:messageId/encryption-envelopes", chatController.appendEncryptionEnvelopes);
 router.put("/messages/:messageId", chatController.editMessage);
 router.post("/messages/:messageId/unsend", chatController.unsendMessage);
 router.delete("/messages/:messageId", chatController.deleteMessageForMe);

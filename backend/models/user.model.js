@@ -97,6 +97,37 @@ const userSchema = new mongoose.Schema(
       default: "",
     },
 
+    deviceKeys: [
+      {
+        deviceId: {
+          type: String,
+          required: true,
+          trim: true,
+        },
+        keyId: {
+          type: String,
+          required: true,
+          trim: true,
+        },
+        publicKey: {
+          type: String,
+          required: true,
+        },
+        createdAt: {
+          type: Date,
+          default: Date.now,
+        },
+        lastSeenAt: {
+          type: Date,
+          default: Date.now,
+        },
+        isActive: {
+          type: Boolean,
+          default: true,
+        },
+      },
+    ],
+
     isOnline: {
       type: Boolean,
       default: false,

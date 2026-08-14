@@ -5,6 +5,36 @@ const User = require("../models/user.model");
 const { sendPushNotification } = require("../utils/fcm.service");
 const { getIO, getUserSockets } = require("../socket/chatSocket");
 const { generateChatToken, registerAgoraChatUser } = require("../services/agora.service");
+const crypto = require("crypto");
+
+const populateMessage = (query) =>
+  query
+    .populate("sender", "name username profileImage publicKey deviceKeys")
+    .populate("recipient", "name username profileImage publicKey deviceKeys");
+
+const getActiveDeviceKeys = (user) => {
+  const keys = Array.isArray(user?.deviceKeys) ? user.deviceKeys : [];
+  const activeKeys = keys
+    .filter((key) => key && key.isActive !== false && key.deviceId && key.keyId && key.publicKey)
+    .map((key) => ({
+      deviceId: key.deviceId,
+      keyId: key.keyId,
+      publicKey: key.publicKey,
+      createdAt: key.createdAt,
+      lastSeenAt: key.lastSeenAt,
+    }));
+
+  if (activeKeys.length === 0 && user?.publicKey) {
+    activeKeys.push({
+      deviceId: "legacy",
+      keyId: "legacy",
+      publicKey: user.publicKey,
+      legacy: true,
+    });
+  }
+
+  return activeKeys;
+};
 
 // Helper to check if two users have blocked each other
 const isBlockedPair = async (userId1, userId2) => {
@@ -44,7 +74,7 @@ exports.getConversations = async (req, res) => {
     })
       .populate({
         path: "participants",
-        select: "name username profileImage isOnline lastSeen phone bio role verification publicKey",
+        select: "name username profileImage isOnline lastSeen phone bio role verification publicKey deviceKeys",
       })
       .populate({
         path: "lastMessage",
@@ -112,7 +142,7 @@ exports.startConversation = async (req, res) => {
       return res.status(400).json({ success: false, message: "Cannot chat with yourself" });
     }
 
-    const recipient = await User.findById(recipientId).select("name username profileImage isOnline lastSeen phone bio publicKey");
+    const recipient = await User.findById(recipientId).select("name username profileImage isOnline lastSeen phone bio publicKey deviceKeys");
     if (!recipient) {
       return res.status(404).json({ success: false, message: "Recipient user not found" });
     }
@@ -127,7 +157,7 @@ exports.startConversation = async (req, res) => {
       participants: { $all: [currentUserId, recipientId] },
     }).populate({
       path: "participants",
-      select: "name username profileImage isOnline lastSeen phone bio role verification publicKey",
+      select: "name username profileImage isOnline lastSeen phone bio role verification publicKey deviceKeys",
     }).populate("lastMessage");
 
     if (conversation) {
@@ -149,7 +179,7 @@ exports.startConversation = async (req, res) => {
 
       conversation = await Conversation.findById(conversation._id).populate({
         path: "participants",
-        select: "name username profileImage isOnline lastSeen phone bio role verification publicKey",
+        select: "name username profileImage isOnline lastSeen phone bio role verification publicKey deviceKeys",
       });
     }
 
@@ -205,8 +235,8 @@ exports.getMessages = async (req, res) => {
       conversationId,
       deletedFor: { $ne: currentUserId },
     })
-      .populate("sender", "name username profileImage publicKey")
-      .populate("recipient", "name username profileImage publicKey")
+      .populate("sender", "name username profileImage publicKey deviceKeys")
+      .populate("recipient", "name username profileImage publicKey deviceKeys")
       .populate("pinnedBy", "name username")
       .populate({
         path: "replyTo",
@@ -274,6 +304,7 @@ exports.sendMessage = async (req, res) => {
       isForwarded = false,
       isEncrypted = false,
       iv = "",
+      encryption = {},
     } = req.body;
 
     let targetConvId = conversationId;
@@ -322,6 +353,24 @@ exports.sendMessage = async (req, res) => {
       text: text || "",
       isEncrypted: !!isEncrypted,
       iv: iv || "",
+      encryption: isEncrypted ? {
+        version: encryption.version || 2,
+        senderDeviceId: encryption.senderDeviceId || "",
+        senderKeyId: encryption.senderKeyId || "",
+        senderPublicKey: encryption.senderPublicKey || "",
+        recipientDeviceId: encryption.recipientDeviceId || "",
+        recipientKeyId: encryption.recipientKeyId || "",
+        envelopes: Array.isArray(encryption.envelopes) ? encryption.envelopes.map((envelope) => ({
+          userId: envelope.userId,
+          deviceId: envelope.deviceId || "",
+          keyId: envelope.keyId || "",
+          senderDeviceId: envelope.senderDeviceId || encryption.senderDeviceId || "",
+          senderKeyId: envelope.senderKeyId || encryption.senderKeyId || "",
+          senderPublicKey: envelope.senderPublicKey || encryption.senderPublicKey || "",
+          ciphertext: envelope.ciphertext || "",
+          iv: envelope.iv || "",
+        })).filter((envelope) => envelope.userId && envelope.deviceId && envelope.keyId && envelope.ciphertext && envelope.iv) : [],
+      } : undefined,
       mediaUrl: mediaUrl || "",
       mediaMeta: mediaMeta || {},
       replyTo: replyTo || null,
@@ -330,9 +379,7 @@ exports.sendMessage = async (req, res) => {
       deliveredAt: isRecipientConnected ? new Date() : null,
     });
 
-    const populatedMessage = await Message.findById(newMessage._id)
-      .populate("sender", "name username profileImage publicKey")
-      .populate("recipient", "name username profileImage publicKey")
+    const populatedMessage = await populateMessage(Message.findById(newMessage._id))
       .populate({
         path: "replyTo",
         populate: { path: "sender", select: "name username" },
@@ -399,6 +446,84 @@ exports.sendMessage = async (req, res) => {
   }
 };
 
+// 4b. Append missing E2EE device envelopes without storing plaintext
+exports.appendEncryptionEnvelopes = async (req, res) => {
+  try {
+    const currentUserId = req.user.id;
+    const { messageId } = req.params;
+    const { envelopes = [] } = req.body;
+
+    if (!Array.isArray(envelopes) || envelopes.length === 0) {
+      return res.status(400).json({ success: false, message: "envelopes are required" });
+    }
+
+    const message = await Message.findById(messageId);
+    if (!message) {
+      return res.status(404).json({ success: false, message: "Message not found" });
+    }
+
+    const isParticipant =
+      message.sender.toString() === currentUserId.toString() ||
+      message.recipient.toString() === currentUserId.toString();
+    if (!isParticipant) {
+      return res.status(403).json({ success: false, message: "Unauthorized to update message envelopes" });
+    }
+
+    if (!message.encryption) {
+      message.encryption = { version: 2, envelopes: [] };
+    }
+    if (!Array.isArray(message.encryption.envelopes)) {
+      message.encryption.envelopes = [];
+    }
+
+    let appended = 0;
+    envelopes.forEach((envelope) => {
+      if (!envelope?.userId || !envelope?.deviceId || !envelope?.keyId || !envelope?.ciphertext || !envelope?.iv) {
+        return;
+      }
+
+      const exists = message.encryption.envelopes.some((existing) =>
+        existing.userId?.toString() === envelope.userId.toString() &&
+        existing.deviceId === envelope.deviceId &&
+        existing.keyId === envelope.keyId
+      );
+      if (exists) return;
+
+      message.encryption.envelopes.push({
+        userId: envelope.userId,
+        deviceId: envelope.deviceId,
+        keyId: envelope.keyId,
+        senderDeviceId: envelope.senderDeviceId || "",
+        senderKeyId: envelope.senderKeyId || "",
+        senderPublicKey: envelope.senderPublicKey || "",
+        ciphertext: envelope.ciphertext,
+        iv: envelope.iv,
+      });
+      appended += 1;
+    });
+
+    if (appended > 0) {
+      message.encryption.version = Math.max(message.encryption.version || 1, 2);
+      await message.save();
+    }
+
+    return res.status(200).json({
+      success: true,
+      data: {
+        messageId: message._id,
+        appended,
+      },
+    });
+  } catch (error) {
+    console.error("Append Encryption Envelopes Error:", error);
+    return res.status(500).json({
+      success: false,
+      message: "Failed to append encryption envelopes",
+      error: error.message,
+    });
+  }
+};
+
 // 5. Edit Text Message
 exports.editMessage = async (req, res) => {
   try {
@@ -429,8 +554,8 @@ exports.editMessage = async (req, res) => {
     await message.save();
 
     const updatedMessage = await Message.findById(message._id)
-      .populate("sender", "name username profileImage publicKey")
-      .populate("recipient", "name username profileImage publicKey")
+      .populate("sender", "name username profileImage publicKey deviceKeys")
+      .populate("recipient", "name username profileImage publicKey deviceKeys")
       .populate({
         path: "replyTo",
         populate: { path: "sender", select: "name username" },
@@ -476,8 +601,8 @@ exports.unsendMessage = async (req, res) => {
     await message.save();
 
     const updatedMessage = await Message.findById(message._id)
-      .populate("sender", "name username profileImage publicKey")
-      .populate("recipient", "name username profileImage publicKey");
+      .populate("sender", "name username profileImage publicKey deviceKeys")
+      .populate("recipient", "name username profileImage publicKey deviceKeys");
 
     // Notify sockets
     const io = getIO();
@@ -572,8 +697,8 @@ exports.toggleReaction = async (req, res) => {
     await message.save();
 
     const updatedMessage = await Message.findById(message._id)
-      .populate("sender", "name username profileImage publicKey")
-      .populate("recipient", "name username profileImage publicKey")
+      .populate("sender", "name username profileImage publicKey deviceKeys")
+      .populate("recipient", "name username profileImage publicKey deviceKeys")
       .populate("reactions.user", "name username");
 
     // Notify sockets
@@ -766,8 +891,8 @@ exports.searchMessages = async (req, res) => {
     }
 
     const messages = await Message.find(filter)
-      .populate("sender", "name username profileImage publicKey")
-      .populate("recipient", "name username profileImage publicKey")
+      .populate("sender", "name username profileImage publicKey deviceKeys")
+      .populate("recipient", "name username profileImage publicKey deviceKeys")
       .sort({ createdAt: -1 })
       .limit(50);
 
@@ -1020,47 +1145,90 @@ exports.uploadChatMedia = async (req, res) => {
   }
 };
 
-// 18. Set User Public Key (E2EE)
+// 18. Register User Device Public Key (E2EE)
 exports.setPublicKey = async (req, res) => {
   try {
     const userId = req.user.id;
-    const { publicKey } = req.body;
+    let { publicKey, deviceId, keyId } = req.body;
 
     if (!publicKey || typeof publicKey !== "string") {
       return res.status(400).json({ success: false, message: "publicKey is required" });
     }
+    if (!deviceId || typeof deviceId !== "string" || !keyId || typeof keyId !== "string") {
+      const legacyKeyHash = crypto.createHash("sha256").update(publicKey).digest("hex").slice(0, 32);
+      deviceId = deviceId || `legacy_${legacyKeyHash}`;
+      keyId = keyId || `legacy_${legacyKeyHash}`;
+    }
 
-    await User.findByIdAndUpdate(userId, { publicKey });
+    const user = await User.findById(userId).select("publicKey deviceKeys");
+    if (!user) {
+      return res.status(404).json({ success: false, message: "User not found" });
+    }
+
+    if (!Array.isArray(user.deviceKeys)) {
+      user.deviceKeys = [];
+    }
+
+    const now = new Date();
+    const existingKey = user.deviceKeys.find((key) => key.deviceId === deviceId);
+    if (existingKey) {
+      existingKey.keyId = keyId;
+      existingKey.publicKey = publicKey;
+      existingKey.lastSeenAt = now;
+      existingKey.isActive = true;
+    } else {
+      user.deviceKeys.push({
+        deviceId,
+        keyId,
+        publicKey,
+        createdAt: now,
+        lastSeenAt: now,
+        isActive: true,
+      });
+    }
+
+    if (!user.publicKey) {
+      user.publicKey = publicKey;
+    }
+
+    await user.save();
 
     return res.status(200).json({
       success: true,
-      message: "Public key updated successfully",
+      message: "Device public key registered successfully",
+      data: {
+        deviceId,
+        keyId,
+      },
     });
   } catch (error) {
-    console.error("Set Public Key Error:", error);
+    console.error("Set Device Public Key Error:", error);
     return res.status(500).json({
       success: false,
-      message: "Failed to update public key",
+      message: "Failed to register device public key",
       error: error.message,
     });
   }
 };
 
-// 19. Get User Public Key (E2EE)
+// 19. Get User Device Public Keys (E2EE)
 exports.getPublicKey = async (req, res) => {
   try {
     const { userId } = req.params;
 
-    const user = await User.findById(userId).select("name username publicKey");
+    const user = await User.findById(userId).select("name username publicKey deviceKeys");
     if (!user) {
       return res.status(404).json({ success: false, message: "User not found" });
     }
+
+    const deviceKeys = getActiveDeviceKeys(user);
 
     return res.status(200).json({
       success: true,
       data: {
         userId: user._id,
         publicKey: user.publicKey || "",
+        deviceKeys,
       },
     });
   } catch (error) {
@@ -1104,8 +1272,8 @@ exports.togglePinMessage = async (req, res) => {
     await message.save();
 
     const updatedMessage = await Message.findById(message._id)
-      .populate("sender", "name username profileImage publicKey")
-      .populate("recipient", "name username profileImage publicKey")
+      .populate("sender", "name username profileImage publicKey deviceKeys")
+      .populate("recipient", "name username profileImage publicKey deviceKeys")
       .populate("pinnedBy", "name username")
       .populate({
         path: "replyTo",
@@ -1154,8 +1322,8 @@ exports.getPinnedMessages = async (req, res) => {
       isPinned: true,
       deletedFor: { $ne: currentUserId },
     })
-      .populate("sender", "name username profileImage publicKey")
-      .populate("recipient", "name username profileImage publicKey")
+      .populate("sender", "name username profileImage publicKey deviceKeys")
+      .populate("recipient", "name username profileImage publicKey deviceKeys")
       .populate("pinnedBy", "name username")
       .sort({ pinnedAt: -1, createdAt: -1 });
 
@@ -1205,5 +1373,3 @@ exports.getAgoraToken = async (req, res) => {
     });
   }
 };
-
-

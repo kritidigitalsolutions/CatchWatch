@@ -42,7 +42,7 @@ const defaultAllowed = [
   "https://admin.catchandwatch.com",
   "https://www.admin.catchandwatch.com",
   "https://catch-watch-tdyg.vercel.app",
-  "http://localhost:5173",
+  "http://localhost:5400",
   "http://localhost:3000",
   "http://localhost:3001",
   "http://192.168.1.16:3000"

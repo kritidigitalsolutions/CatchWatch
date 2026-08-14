@@ -22,6 +22,11 @@ export const sendMessage = async (messageData) => {
   return res.data;
 };
 
+export const appendEncryptionEnvelopes = async (messageId, envelopes) => {
+  const res = await axiosInstance.post(`/chat/messages/${messageId}/encryption-envelopes`, { envelopes });
+  return res.data;
+};
+
 export const uploadChatMedia = async (formData) => {
   const res = await axiosInstance.post("/chat/messages/upload", formData, {
     headers: {
@@ -115,8 +120,9 @@ export const updateFcmToken = async (fcmToken) => {
   return res.data;
 };
 
-export const savePublicKey = async (publicKey) => {
-  const res = await axiosInstance.post("/chat/keys", { publicKey });
+export const savePublicKey = async (keyData) => {
+  const payload = typeof keyData === "string" ? { publicKey: keyData } : keyData;
+  const res = await axiosInstance.post("/chat/keys", payload);
   return res.data;
 };
 
@@ -129,4 +135,3 @@ export const getAgoraToken = async () => {
   const res = await axiosInstance.get("/chat/agora-token");
   return res.data;
 };
-

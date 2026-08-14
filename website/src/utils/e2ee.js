@@ -4,6 +4,7 @@
  */
 
 const KEY_STORAGE_PREFIX = "catchwatch_e2ee_";
+const CURRENT_KEY_VERSION = 2;
 
 // Helper: Convert ArrayBuffer to Base64 String
 function bufferToBase64(buffer) {
@@ -26,6 +27,55 @@ function base64ToBuffer(base64) {
   }
   return bytes;
 }
+
+function bytesToHex(bytes) {
+  return Array.from(bytes)
+    .map((byte) => byte.toString(16).padStart(2, "0"))
+    .join("");
+}
+
+function createRandomId(prefix) {
+  const bytes = window.crypto.getRandomValues(new Uint8Array(16));
+  return `${prefix}_${bytesToHex(bytes)}`;
+}
+
+async function sha256Text(text) {
+  const encoded = new TextEncoder().encode(text);
+  const hash = await window.crypto.subtle.digest("SHA-256", encoded);
+  return bytesToHex(new Uint8Array(hash));
+}
+
+function safeKeyDiagnostic(code, details = {}) {
+  const safeDetails = {
+    messageId: details.messageId,
+    senderId: details.senderId,
+    recipientId: details.recipientId,
+    currentDeviceId: details.currentDeviceId,
+    currentKeyId: details.currentKeyId,
+    storedPrivateKeyExists: details.storedPrivateKeyExists,
+    serverRegisteredDeviceId: details.serverRegisteredDeviceId,
+    serverRegisteredKeyId: details.serverRegisteredKeyId,
+    senderDeviceId: details.senderDeviceId,
+    senderKeyId: details.senderKeyId,
+    recipientDeviceId: details.recipientDeviceId,
+    recipientKeyId: details.recipientKeyId,
+    envelopeCount: details.envelopeCount,
+  };
+  console.warn(`[E2EE:${code}]`, safeDetails);
+}
+
+export const E2EE_DIAGNOSTIC = {
+  KEY_NOT_FOUND: "KEY_NOT_FOUND",
+  KEY_MISMATCH: "KEY_MISMATCH",
+  INVALID_IV: "INVALID_IV",
+  INVALID_CIPHERTEXT: "INVALID_CIPHERTEXT",
+  KEY_ID_NOT_FOUND: "KEY_ID_NOT_FOUND",
+  DEVICE_PRIVATE_KEY_MISSING: "DEVICE_PRIVATE_KEY_MISSING",
+  DEVICE_REGISTRATION_MISMATCH: "DEVICE_REGISTRATION_MISMATCH",
+  DEVICE_ENVELOPE_NOT_FOUND: "DEVICE_ENVELOPE_NOT_FOUND",
+};
+
+export { safeKeyDiagnostic };
 
 /**
  * Generate ECDH (P-256) Key Pair
@@ -55,6 +105,55 @@ export async function generateKeyPair() {
     publicKey: keyPair.publicKey,
     privateKey: keyPair.privateKey,
   };
+}
+
+function getStorageKeys(userId, deviceId = "", keyId = "") {
+  return {
+    legacyPrivate: `${KEY_STORAGE_PREFIX}priv_${userId}`,
+    legacyPublic: `${KEY_STORAGE_PREFIX}pub_${userId}`,
+    deviceId: `${KEY_STORAGE_PREFIX}device_${userId}`,
+    keyId: `${KEY_STORAGE_PREFIX}keyid_${userId}`,
+    privateByDevice: `${KEY_STORAGE_PREFIX}priv_${userId}_${deviceId}_${keyId}`,
+    publicByDevice: `${KEY_STORAGE_PREFIX}pub_${userId}_${deviceId}_${keyId}`,
+    bundle: `${KEY_STORAGE_PREFIX}bundle_${userId}`,
+  };
+}
+
+function readBundle(userId) {
+  try {
+    const raw = localStorage.getItem(getStorageKeys(userId).bundle);
+    return raw ? JSON.parse(raw) : null;
+  } catch (err) {
+    return null;
+  }
+}
+
+function writeBundle(userId, bundle) {
+  localStorage.setItem(getStorageKeys(userId).bundle, JSON.stringify(bundle));
+}
+
+async function computeKeyId(publicKeyString) {
+  return `p256_${(await sha256Text(publicKeyString)).slice(0, 32)}`;
+}
+
+function privateMatchesPublic(privateKeyStr, publicKeyStr) {
+  try {
+    const privateJwk = JSON.parse(privateKeyStr);
+    const publicJwk = JSON.parse(publicKeyStr);
+    return privateJwk?.x === publicJwk?.x && privateJwk?.y === publicJwk?.y;
+  } catch (err) {
+    return false;
+  }
+}
+
+function findRegisteredDevice(deviceKeys, deviceId, keyId) {
+  if (!Array.isArray(deviceKeys)) return null;
+  return deviceKeys.find((key) => key.deviceId === deviceId && key.keyId === keyId) || null;
+}
+
+function findRegisteredDeviceById(deviceKeys, deviceId) {
+  if (!Array.isArray(deviceKeys)) return null;
+  return deviceKeys.find((key) => key.deviceId === deviceId) || null;
 }
 
 /**
@@ -183,6 +282,14 @@ export async function decryptText(ciphertextBase64, ivBase64, sharedKey) {
   try {
     const ciphertext = base64ToBuffer(ciphertextBase64);
     const iv = base64ToBuffer(ivBase64);
+    if (iv.byteLength !== 12) {
+      safeKeyDiagnostic(E2EE_DIAGNOSTIC.INVALID_IV);
+      return null;
+    }
+    if (ciphertext.byteLength < 16) {
+      safeKeyDiagnostic(E2EE_DIAGNOSTIC.INVALID_CIPHERTEXT);
+      return null;
+    }
 
     const decryptedBuffer = await window.crypto.subtle.decrypt(
       {
@@ -196,35 +303,144 @@ export async function decryptText(ciphertextBase64, ivBase64, sharedKey) {
     const decoder = new TextDecoder();
     return decoder.decode(decryptedBuffer);
   } catch (error) {
+    safeKeyDiagnostic(E2EE_DIAGNOSTIC.KEY_MISMATCH);
     return null;
   }
 }
 
 /**
- * Initialize E2EE for current user, generating keypair if missing and syncing public key
+ * Initialize E2EE for current user. A browser/device gets one stable deviceId,
+ * keyId and keypair; if the device identity exists but its private key is gone,
+ * do not silently replace it.
  */
-export async function initUserE2EE(userId, savePublicKeyApi) {
+export async function initUserE2EE(userId, savePublicKeyApi, getPublicKeyApi) {
   if (!userId) return null;
 
   try {
-    const privKeyKey = `${KEY_STORAGE_PREFIX}priv_${userId}`;
-    const pubKeyKey = `${KEY_STORAGE_PREFIX}pub_${userId}`;
+    const baseKeys = getStorageKeys(userId);
+    const bundle = readBundle(userId);
 
-    let privateKeyStr = localStorage.getItem(privKeyKey);
-    let publicKeyStr = localStorage.getItem(pubKeyKey);
+    let deviceId = bundle?.deviceId || localStorage.getItem(baseKeys.deviceId);
+    let keyId = bundle?.keyId || localStorage.getItem(baseKeys.keyId);
+    let privateKeyStr = bundle?.privateKeyString || null;
+    let publicKeyStr = bundle?.publicKeyString || null;
 
-    if (!privateKeyStr || !publicKeyStr) {
-      const generated = await generateKeyPair();
-      privateKeyStr = generated.privateKeyString;
-      publicKeyStr = generated.publicKeyString;
-
-      localStorage.setItem(privKeyKey, privateKeyStr);
-      localStorage.setItem(pubKeyKey, publicKeyStr);
+    if (!deviceId) {
+      const legacyPrivate = localStorage.getItem(baseKeys.legacyPrivate);
+      const legacyPublic = localStorage.getItem(baseKeys.legacyPublic);
+      if (legacyPrivate && legacyPublic && privateMatchesPublic(legacyPrivate, legacyPublic)) {
+        deviceId = createRandomId("device");
+        publicKeyStr = legacyPublic;
+        privateKeyStr = legacyPrivate;
+        keyId = await computeKeyId(publicKeyStr);
+      }
     }
 
-    // Ensure backend always has current user public key synced
+    if (!deviceId) {
+      const generated = await generateKeyPair();
+      deviceId = createRandomId("device");
+      privateKeyStr = generated.privateKeyString;
+      publicKeyStr = generated.publicKeyString;
+      keyId = await computeKeyId(publicKeyStr);
+    }
+
+    if (deviceId && keyId && (!privateKeyStr || !publicKeyStr)) {
+      const deviceKeys = getStorageKeys(userId, deviceId, keyId);
+      privateKeyStr = localStorage.getItem(deviceKeys.privateByDevice);
+      publicKeyStr = localStorage.getItem(deviceKeys.publicByDevice);
+    }
+
+    if (deviceId && keyId && (!privateKeyStr || !publicKeyStr)) {
+      let serverRegisteredDeviceId = "";
+      let serverRegisteredKeyId = "";
+      if (typeof getPublicKeyApi === "function") {
+        const keyRes = await getPublicKeyApi(userId).catch(() => null);
+        const registered = findRegisteredDevice(keyRes?.data?.deviceKeys, deviceId, keyId) ||
+          findRegisteredDeviceById(keyRes?.data?.deviceKeys, deviceId);
+        serverRegisteredDeviceId = registered?.deviceId || "";
+        serverRegisteredKeyId = registered?.keyId || "";
+      }
+      safeKeyDiagnostic(E2EE_DIAGNOSTIC.DEVICE_PRIVATE_KEY_MISSING, {
+        currentDeviceId: deviceId,
+        currentKeyId: keyId,
+        storedPrivateKeyExists: !!privateKeyStr,
+        serverRegisteredDeviceId,
+        serverRegisteredKeyId,
+      });
+      return {
+        deviceId,
+        keyId,
+        privateKey: null,
+        publicKey: null,
+        publicKeyString: publicKeyStr || "",
+        error: E2EE_DIAGNOSTIC.DEVICE_PRIVATE_KEY_MISSING,
+        storedPrivateKeyExists: !!privateKeyStr,
+        serverRegisteredDeviceId,
+        serverRegisteredKeyId,
+      };
+    }
+
+    const computedKeyId = await computeKeyId(publicKeyStr);
+    if (!keyId) {
+      keyId = computedKeyId;
+    }
+
+    if (keyId !== computedKeyId || !privateMatchesPublic(privateKeyStr, publicKeyStr)) {
+      safeKeyDiagnostic(E2EE_DIAGNOSTIC.DEVICE_REGISTRATION_MISMATCH, {
+        currentDeviceId: deviceId,
+        currentKeyId: keyId,
+        storedPrivateKeyExists: !!privateKeyStr,
+      });
+      return {
+        deviceId,
+        keyId,
+        privateKey: null,
+        publicKey: null,
+        publicKeyString: publicKeyStr,
+        error: E2EE_DIAGNOSTIC.DEVICE_REGISTRATION_MISMATCH,
+        storedPrivateKeyExists: !!privateKeyStr,
+      };
+    }
+
+    const deviceKeys = getStorageKeys(userId, deviceId, keyId);
+    const normalizedBundle = {
+      version: CURRENT_KEY_VERSION,
+      deviceId,
+      keyId,
+      publicKeyString: publicKeyStr,
+      privateKeyString: privateKeyStr,
+    };
+    writeBundle(userId, normalizedBundle);
+    localStorage.setItem(baseKeys.deviceId, deviceId);
+    localStorage.setItem(baseKeys.keyId, keyId);
+    localStorage.setItem(deviceKeys.privateByDevice, privateKeyStr);
+    localStorage.setItem(deviceKeys.publicByDevice, publicKeyStr);
+    localStorage.setItem(baseKeys.legacyPrivate, privateKeyStr);
+    localStorage.setItem(baseKeys.legacyPublic, publicKeyStr);
+
+    // Register this browser/device key without overwriting other devices.
     if (typeof savePublicKeyApi === "function" && publicKeyStr) {
-      savePublicKeyApi(publicKeyStr).catch(() => {});
+      await savePublicKeyApi({ publicKey: publicKeyStr, deviceId, keyId }).catch(() => null);
+    }
+
+    let serverRegisteredDeviceId = "";
+    let serverRegisteredKeyId = "";
+    if (typeof getPublicKeyApi === "function") {
+      const keyRes = await getPublicKeyApi(userId).catch(() => null);
+      const registered = findRegisteredDevice(keyRes?.data?.deviceKeys, deviceId, keyId);
+      const registeredByDevice = registered || findRegisteredDeviceById(keyRes?.data?.deviceKeys, deviceId);
+      serverRegisteredDeviceId = registeredByDevice?.deviceId || "";
+      serverRegisteredKeyId = registeredByDevice?.keyId || "";
+
+      if (!registered || registered.publicKey !== publicKeyStr) {
+        safeKeyDiagnostic(E2EE_DIAGNOSTIC.DEVICE_REGISTRATION_MISMATCH, {
+          currentDeviceId: deviceId,
+          currentKeyId: keyId,
+          storedPrivateKeyExists: true,
+          serverRegisteredDeviceId,
+          serverRegisteredKeyId,
+        });
+      }
     }
 
     const privateKey = await importPrivateKey(privateKeyStr);
@@ -234,6 +450,12 @@ export async function initUserE2EE(userId, savePublicKeyApi) {
       privateKey,
       publicKey,
       publicKeyString: publicKeyStr,
+      deviceId,
+      keyId,
+      version: CURRENT_KEY_VERSION,
+      storedPrivateKeyExists: !!privateKeyStr,
+      serverRegisteredDeviceId,
+      serverRegisteredKeyId,
     };
   } catch (err) {
     console.error("Failed to initialize user E2EE:", err);

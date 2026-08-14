@@ -40,6 +40,22 @@ export const loginAgoraChat = async (userId, token, appKey) => {
   const client = getAgoraConnection(appKey);
   if (!client) return null;
 
+  // If already logged in, check if the session is under a different user
+  if (isAgoraConnected()) {
+    const connectedUser = client.user || client.context?.userId || client.context?.user;
+    if (connectedUser && connectedUser.toString() !== userId.toString()) {
+      console.log(`Agora connection is open under a different user (${connectedUser}). Closing old connection...`);
+      try {
+        client.close();
+      } catch (e) {
+        console.warn("Error closing old Agora connection:", e);
+      }
+    } else {
+      console.log("Agora Chat is already logged in for current user:", userId);
+      return client;
+    }
+  }
+
   try {
     await client.open({
       user: userId.toString(),
@@ -49,6 +65,11 @@ export const loginAgoraChat = async (userId, token, appKey) => {
     console.log("Agora Chat Connected for user:", userId);
     return client;
   } catch (err) {
+    // If the error code/type is 208, the user is already logged in
+    if (err && (err.type === 208 || err.code === 208 || (err.message && err.message.includes("logged in")))) {
+      console.log("Agora Chat is already logged in (208) for user:", userId);
+      return client;
+    }
     console.warn("Agora Chat Login Error:", err);
     return null;
   }

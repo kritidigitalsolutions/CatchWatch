@@ -27,6 +27,7 @@ import { BiSolidVideos } from "react-icons/bi";
 
 import Loader from "../components/Loader";
 import VerifiedBadge from "../components/VerifiedBadge";
+import { logoutAgoraChat } from "../services/agoraChatService";
 
 // API Services
 import {
@@ -183,6 +184,7 @@ const ProfileMenuPage = () => {
   // Logout Handler Function
   const handleLogout = async () => {
     try {
+      logoutAgoraChat();
       localStorage.removeItem("authToken");
       localStorage.removeItem("token");
       console.log("User logged out successfully, cache cleared.");

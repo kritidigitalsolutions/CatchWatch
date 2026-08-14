@@ -35,12 +35,15 @@ import {
   importPublicKey,
   encryptText,
   decryptText,
+  safeKeyDiagnostic,
+  E2EE_DIAGNOSTIC,
 } from "../utils/e2ee";
 import {
   getConversations,
   startConversation,
   getMessages,
   sendMessage,
+  appendEncryptionEnvelopes,
   uploadChatMedia,
   editMessage,
   unsendMessage,
@@ -136,6 +139,38 @@ const ChatPage = () => {
   // E2EE Key Management States & Refs
   const [e2eeKeys, setE2eeKeys] = useState(null);
   const partnerSharedKeysRef = useRef({});
+  const envelopeBackfillRef = useRef({});
+
+  const isSameId = (a, b) => a?.toString() === b?.toString();
+
+  const isProbablyPlainText = (value) => (
+    typeof value === "string" &&
+    (value.includes(" ") || !/^[A-Za-z0-9+/=]+$/.test(value.trim()))
+  );
+
+  const normalizeDeviceKeys = (userOrKeyRes, userId = null) => {
+    const source = userOrKeyRes?.data || userOrKeyRes || {};
+    const deviceKeys = Array.isArray(source.deviceKeys) ? source.deviceKeys : [];
+    const normalized = deviceKeys
+      .filter((key) => key?.deviceId && key?.keyId && key?.publicKey)
+      .map((key) => ({
+        userId: key.userId || source.userId || userId,
+        deviceId: key.deviceId,
+        keyId: key.keyId,
+        publicKey: key.publicKey,
+      }));
+
+    if (normalized.length === 0 && source.publicKey) {
+      normalized.push({
+        userId: source.userId || userId,
+        deviceId: "legacy",
+        keyId: "legacy",
+        publicKey: source.publicKey,
+      });
+    }
+
+    return normalized;
+  };
 
   // Agora Chat Connection State
   const [agoraConnected, setAgoraConnected] = useState(false);
@@ -169,7 +204,7 @@ const ChatPage = () => {
   // Initialize E2EE Keypair for current user
   useEffect(() => {
     if (!currentUserId) return;
-    initUserE2EE(currentUserId, savePublicKey).then((keys) => {
+    initUserE2EE(currentUserId, savePublicKey, getUserPublicKey).then((keys) => {
       if (keys) setE2eeKeys(keys);
     });
   }, [currentUserId]);
@@ -245,13 +280,277 @@ const ChatPage = () => {
     }
   };
 
+  const getSharedKeyForDeviceKey = async (userId, deviceKey) => {
+    if (!e2eeKeys || e2eeKeys.error || !e2eeKeys.privateKey || !deviceKey?.publicKey) {
+      if (e2eeKeys?.error === E2EE_DIAGNOSTIC.DEVICE_PRIVATE_KEY_MISSING) {
+        safeKeyDiagnostic(E2EE_DIAGNOSTIC.DEVICE_PRIVATE_KEY_MISSING, {
+          currentDeviceId: e2eeKeys.deviceId,
+          currentKeyId: e2eeKeys.keyId,
+          storedPrivateKeyExists: e2eeKeys.storedPrivateKeyExists,
+          serverRegisteredDeviceId: e2eeKeys.serverRegisteredDeviceId,
+          serverRegisteredKeyId: e2eeKeys.serverRegisteredKeyId,
+        });
+      }
+      return null;
+    }
+
+    const cacheKey = `${userId}_${deviceKey.deviceId}_${deviceKey.keyId}`;
+    if (partnerSharedKeysRef.current[cacheKey]) {
+      return partnerSharedKeysRef.current[cacheKey];
+    }
+
+    try {
+      const publicKey = await importPublicKey(deviceKey.publicKey);
+      if (!publicKey) {
+        safeKeyDiagnostic(E2EE_DIAGNOSTIC.KEY_NOT_FOUND, {
+          recipientId: userId,
+          recipientDeviceId: deviceKey.deviceId,
+          recipientKeyId: deviceKey.keyId,
+        });
+        return null;
+      }
+
+      const sharedKey = await deriveSharedKey(e2eeKeys.privateKey, publicKey);
+      if (sharedKey) {
+        partnerSharedKeysRef.current[cacheKey] = sharedKey;
+      }
+      return sharedKey;
+    } catch (err) {
+      safeKeyDiagnostic(E2EE_DIAGNOSTIC.KEY_MISMATCH, {
+        recipientId: userId,
+        recipientDeviceId: deviceKey.deviceId,
+        recipientKeyId: deviceKey.keyId,
+      });
+      return null;
+    }
+  };
+
+  const getPublicDeviceKeysForUser = async (user, forceFetch = false) => {
+    const userId = typeof user === "string" ? user : (user?._id || user?.id)?.toString();
+    if (!userId) return [];
+
+    let keys = !forceFetch && typeof user === "object" ? normalizeDeviceKeys(user, userId) : [];
+    if (keys.length > 0) return keys;
+
+    try {
+      const keyRes = await getUserPublicKey(userId);
+      keys = normalizeDeviceKeys(keyRes, userId);
+    } catch (err) {
+      console.warn("Could not fetch user device keys:", err);
+    }
+    return keys;
+  };
+
+  const buildEncryptedMessagePayload = async (plainText, recipient) => {
+    if (!plainText || !e2eeKeys || e2eeKeys.error || !e2eeKeys.privateKey) return null;
+
+    const recipientId = (recipient?._id || recipient?.id || recipient)?.toString();
+    const recipientKeys = await getPublicDeviceKeysForUser(recipient, true);
+    const senderKeys = await getPublicDeviceKeysForUser(currentUserId, true);
+    const currentDeviceKey = {
+      userId: currentUserId,
+      deviceId: e2eeKeys.deviceId,
+      keyId: e2eeKeys.keyId,
+      publicKey: e2eeKeys.publicKeyString,
+    };
+
+    const targetKeysById = new Map();
+    [...recipientKeys, ...senderKeys, currentDeviceKey].forEach((key) => {
+      if (key?.userId && key?.deviceId && key?.keyId && key?.publicKey) {
+        targetKeysById.set(`${key.userId}_${key.deviceId}_${key.keyId}`, key);
+      }
+    });
+
+    const envelopes = [];
+    for (const deviceKey of targetKeysById.values()) {
+      const sharedKey = await getSharedKeyForDeviceKey(deviceKey.userId, deviceKey);
+      if (!sharedKey) continue;
+      const encrypted = await encryptText(plainText, sharedKey);
+      if (encrypted?.ciphertext && encrypted?.iv) {
+        envelopes.push({
+          userId: deviceKey.userId,
+          deviceId: deviceKey.deviceId,
+          keyId: deviceKey.keyId,
+          senderDeviceId: e2eeKeys.deviceId,
+          senderKeyId: e2eeKeys.keyId,
+          senderPublicKey: e2eeKeys.publicKeyString,
+          ciphertext: encrypted.ciphertext,
+          iv: encrypted.iv,
+        });
+      }
+    }
+
+    const primaryEnvelope = envelopes.find((envelope) => isSameId(envelope.userId, recipientId)) || envelopes[0];
+    if (!primaryEnvelope) {
+      safeKeyDiagnostic(E2EE_DIAGNOSTIC.KEY_NOT_FOUND, {
+        recipientId,
+        senderDeviceId: e2eeKeys.deviceId,
+        senderKeyId: e2eeKeys.keyId,
+      });
+      return null;
+    }
+
+    return {
+      text: primaryEnvelope.ciphertext,
+      iv: primaryEnvelope.iv,
+      isEncrypted: true,
+      encryption: {
+        version: 2,
+        senderDeviceId: e2eeKeys.deviceId,
+        senderKeyId: e2eeKeys.keyId,
+        senderPublicKey: e2eeKeys.publicKeyString,
+        recipientDeviceId: primaryEnvelope.deviceId,
+        recipientKeyId: primaryEnvelope.keyId,
+        envelopes,
+      },
+    };
+  };
+
+  const backfillMissingDeviceEnvelopes = async (msg, plainText) => {
+    const messageId = (msg?._id || msg?.id)?.toString();
+    if (!messageId || !plainText || !e2eeKeys || e2eeKeys.error || !e2eeKeys.privateKey) return;
+    if (envelopeBackfillRef.current[messageId]) return;
+
+    envelopeBackfillRef.current[messageId] = true;
+    try {
+      const participantIds = [
+        msg.sender?._id || msg.sender?.id || msg.sender,
+        msg.recipient?._id || msg.recipient?.id || msg.recipient,
+      ].filter(Boolean).map((id) => id.toString());
+
+      const existing = Array.isArray(msg.encryption?.envelopes) ? msg.encryption.envelopes : [];
+      const targetKeysById = new Map();
+
+      for (const participantId of participantIds) {
+        const deviceKeys = await getPublicDeviceKeysForUser(participantId, true);
+        deviceKeys.forEach((key) => {
+          if (key?.userId && key?.deviceId && key?.keyId && key?.publicKey) {
+            const exists = existing.some((envelope) =>
+              isSameId(envelope.userId, key.userId) &&
+              envelope.deviceId === key.deviceId &&
+              envelope.keyId === key.keyId
+            );
+            if (!exists) {
+              targetKeysById.set(`${key.userId}_${key.deviceId}_${key.keyId}`, key);
+            }
+          }
+        });
+      }
+
+      const newEnvelopes = [];
+      for (const deviceKey of targetKeysById.values()) {
+        const sharedKey = await getSharedKeyForDeviceKey(deviceKey.userId, deviceKey);
+        if (!sharedKey) continue;
+        const encrypted = await encryptText(plainText, sharedKey);
+        if (encrypted?.ciphertext && encrypted?.iv) {
+          newEnvelopes.push({
+            userId: deviceKey.userId,
+            deviceId: deviceKey.deviceId,
+            keyId: deviceKey.keyId,
+            senderDeviceId: e2eeKeys.deviceId,
+            senderKeyId: e2eeKeys.keyId,
+            senderPublicKey: e2eeKeys.publicKeyString,
+            ciphertext: encrypted.ciphertext,
+            iv: encrypted.iv,
+          });
+        }
+      }
+
+      if (newEnvelopes.length > 0) {
+        await appendEncryptionEnvelopes(messageId, newEnvelopes);
+      }
+    } catch (err) {
+      console.warn("Could not backfill E2EE device envelopes:", err);
+    }
+  };
+
   // Helper to decrypt message if encrypted
   const processDecryptMessage = async (msg, sharedKey = null) => {
     if (!msg || !msg.text) return msg;
     if (!msg.isEncrypted || !msg.iv) return { ...msg, isDecrypted: true };
     if (msg.isDecrypted) return msg;
+    if (e2eeKeys?.error === E2EE_DIAGNOSTIC.DEVICE_PRIVATE_KEY_MISSING || !e2eeKeys?.privateKey) {
+      safeKeyDiagnostic(E2EE_DIAGNOSTIC.DEVICE_PRIVATE_KEY_MISSING, {
+        messageId: msg._id || msg.id,
+        senderId: msg.sender?._id || msg.sender?.id || msg.sender,
+        recipientId: msg.recipient?._id || msg.recipient?.id || msg.recipient,
+        currentDeviceId: e2eeKeys?.deviceId,
+        currentKeyId: e2eeKeys?.keyId,
+        storedPrivateKeyExists: e2eeKeys?.storedPrivateKeyExists,
+        serverRegisteredDeviceId: e2eeKeys?.serverRegisteredDeviceId,
+        serverRegisteredKeyId: e2eeKeys?.serverRegisteredKeyId,
+      });
+      return { ...msg, isDecrypted: false };
+    }
 
     try {
+      const envelopes = Array.isArray(msg.encryption?.envelopes) ? msg.encryption.envelopes : [];
+      if (envelopes.length > 0) {
+        const envelope = envelopes.find((item) =>
+          isSameId(item.userId, currentUserId) &&
+          item.deviceId === e2eeKeys?.deviceId &&
+          item.keyId === e2eeKeys?.keyId
+        );
+
+        if (!envelope) {
+          safeKeyDiagnostic(E2EE_DIAGNOSTIC.DEVICE_ENVELOPE_NOT_FOUND, {
+            messageId: msg._id || msg.id,
+            senderId: msg.sender?._id || msg.sender?.id || msg.sender,
+            recipientId: msg.recipient?._id || msg.recipient?.id || msg.recipient,
+            currentDeviceId: e2eeKeys?.deviceId,
+            currentKeyId: e2eeKeys?.keyId,
+            storedPrivateKeyExists: e2eeKeys?.storedPrivateKeyExists,
+            serverRegisteredDeviceId: e2eeKeys?.serverRegisteredDeviceId,
+            serverRegisteredKeyId: e2eeKeys?.serverRegisteredKeyId,
+            senderDeviceId: msg.encryption?.senderDeviceId,
+            senderKeyId: msg.encryption?.senderKeyId,
+            recipientDeviceId: e2eeKeys?.deviceId,
+            recipientKeyId: e2eeKeys?.keyId,
+            envelopeCount: envelopes.length,
+          });
+          return { ...msg, isDecrypted: false };
+        }
+
+        const senderPublicKey = envelope.senderPublicKey || msg.encryption?.senderPublicKey;
+        const senderPublicCryptoKey = await importPublicKey(senderPublicKey);
+        if (!senderPublicCryptoKey) {
+          safeKeyDiagnostic(E2EE_DIAGNOSTIC.KEY_NOT_FOUND, {
+            messageId: msg._id || msg.id,
+            senderId: msg.sender?._id || msg.sender?.id || msg.sender,
+            currentDeviceId: e2eeKeys?.deviceId,
+            currentKeyId: e2eeKeys?.keyId,
+            storedPrivateKeyExists: e2eeKeys?.storedPrivateKeyExists,
+            serverRegisteredDeviceId: e2eeKeys?.serverRegisteredDeviceId,
+            serverRegisteredKeyId: e2eeKeys?.serverRegisteredKeyId,
+            senderDeviceId: msg.encryption?.senderDeviceId,
+            senderKeyId: msg.encryption?.senderKeyId,
+          });
+          return { ...msg, isDecrypted: false };
+        }
+
+        const envelopeSharedKey = await deriveSharedKey(e2eeKeys.privateKey, senderPublicCryptoKey);
+        if (!envelopeSharedKey) {
+          safeKeyDiagnostic(E2EE_DIAGNOSTIC.KEY_MISMATCH, {
+            messageId: msg._id || msg.id,
+            currentDeviceId: e2eeKeys?.deviceId,
+            currentKeyId: e2eeKeys?.keyId,
+            storedPrivateKeyExists: e2eeKeys?.storedPrivateKeyExists,
+            serverRegisteredDeviceId: e2eeKeys?.serverRegisteredDeviceId,
+            serverRegisteredKeyId: e2eeKeys?.serverRegisteredKeyId,
+            senderDeviceId: msg.encryption?.senderDeviceId,
+            senderKeyId: msg.encryption?.senderKeyId,
+            recipientDeviceId: envelope.deviceId,
+            recipientKeyId: envelope.keyId,
+          });
+          return { ...msg, isDecrypted: false };
+        }
+
+        const plainText = await decryptText(envelope.ciphertext, envelope.iv, envelopeSharedKey);
+        if (plainText === null) return { ...msg, isDecrypted: false };
+        backfillMissingDeviceEnvelopes(msg, plainText);
+        return { ...msg, text: plainText, isDecrypted: true };
+      }
+
       let keyToUse = sharedKey;
       if (!keyToUse) {
         const partner = (msg.sender?._id || msg.sender?.id || msg.sender)?.toString() === currentUserId?.toString()
@@ -261,7 +560,12 @@ const ChatPage = () => {
       }
 
       if (!keyToUse) {
-        if (typeof msg.text === "string" && (msg.text.includes(" ") || !/^[A-Za-z0-9+/=]+$/.test(msg.text.trim()))) {
+        safeKeyDiagnostic(E2EE_DIAGNOSTIC.KEY_NOT_FOUND, {
+          messageId: msg._id || msg.id,
+          senderId: msg.sender?._id || msg.sender?.id || msg.sender,
+          recipientId: msg.recipient?._id || msg.recipient?.id || msg.recipient,
+        });
+        if (isProbablyPlainText(msg.text)) {
           return { ...msg, isDecrypted: true };
         }
         return { ...msg, isDecrypted: false };
@@ -269,14 +573,20 @@ const ChatPage = () => {
 
       const plainText = await decryptText(msg.text, msg.iv, keyToUse);
       if (plainText === null) {
-        if (typeof msg.text === "string" && (msg.text.includes(" ") || !/^[A-Za-z0-9+/=]+$/.test(msg.text.trim()))) {
+        if (isProbablyPlainText(msg.text)) {
           return { ...msg, isDecrypted: true };
         }
         return { ...msg, isDecrypted: false };
       }
+      backfillMissingDeviceEnvelopes(msg, plainText);
       return { ...msg, text: plainText, isDecrypted: true };
     } catch (err) {
-      if (typeof msg.text === "string" && (msg.text.includes(" ") || !/^[A-Za-z0-9+/=]+$/.test(msg.text.trim()))) {
+      safeKeyDiagnostic(E2EE_DIAGNOSTIC.KEY_MISMATCH, {
+        messageId: msg._id || msg.id,
+        senderId: msg.sender?._id || msg.sender?.id || msg.sender,
+        recipientId: msg.recipient?._id || msg.recipient?.id || msg.recipient,
+      });
+      if (isProbablyPlainText(msg.text)) {
         return { ...msg, isDecrypted: true };
       }
       return { ...msg, isDecrypted: false };
@@ -409,9 +719,11 @@ const ChatPage = () => {
   }, [activeConv?._id]);
 
   // 3. Auto Scroll to Bottom on New Messages
+  const activeTyping = activeConv ? typingConversations[activeConv._id] : false;
+
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [messages, activeConv && typingConversations[activeConv._id]]);
+  }, [messages, activeTyping]);
 
   const addUniqueMessage = (prevMsgs, newMsg) => {
     if (!newMsg) return prevMsgs;
@@ -636,6 +948,7 @@ const ChatPage = () => {
           text: message.msg,
           isEncrypted: isEncrypted && iv !== "",
           iv: iv,
+          encryption: ext.encryption || {},
           messageType: ext.messageType || "text",
           mediaUrl: ext.mediaUrl || "",
           mediaMeta: ext.mediaMeta || {},
@@ -727,14 +1040,15 @@ const ChatPage = () => {
       let textToSend = messageText.trim();
       let isEncrypted = false;
       let iv = "";
+      let encryption = null;
 
       if (activeConv?.partner && textToSend) {
-        const sharedKey = await getSharedKeyForPartner(activeConv.partner);
-        if (sharedKey) {
-          const encrypted = await encryptText(textToSend, sharedKey);
-          textToSend = encrypted.ciphertext;
-          iv = encrypted.iv;
-          isEncrypted = true;
+        const encryptedPayload = await buildEncryptedMessagePayload(textToSend, activeConv.partner);
+        if (encryptedPayload) {
+          textToSend = encryptedPayload.text;
+          iv = encryptedPayload.iv;
+          isEncrypted = encryptedPayload.isEncrypted;
+          encryption = encryptedPayload.encryption;
         }
       }
 
@@ -744,6 +1058,7 @@ const ChatPage = () => {
         text: textToSend,
         isEncrypted,
         iv,
+        encryption,
         messageType: selectedMediaPreview ? messageType : "text",
         mediaUrl,
         mediaMeta,
@@ -757,6 +1072,7 @@ const ChatPage = () => {
           conversationId: activeConv._id,
           iv: iv,
           isEncrypted: isEncrypted,
+          encryption: encryption,
           messageType: selectedMediaPreview ? messageType : "text",
           mediaUrl: mediaUrl,
           mediaMeta: mediaMeta,

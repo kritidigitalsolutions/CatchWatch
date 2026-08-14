@@ -57,6 +57,44 @@ const messageSchema = new mongoose.Schema(
       type: String,
       default: "",
     },
+    encryption: {
+      version: {
+        type: Number,
+        default: 1,
+      },
+      senderDeviceId: {
+        type: String,
+        default: "",
+      },
+      senderKeyId: {
+        type: String,
+        default: "",
+      },
+      senderPublicKey: {
+        type: String,
+        default: "",
+      },
+      recipientDeviceId: {
+        type: String,
+        default: "",
+      },
+      recipientKeyId: {
+        type: String,
+        default: "",
+      },
+      envelopes: [
+        {
+          userId: { type: mongoose.Schema.Types.ObjectId, ref: "User" },
+          deviceId: { type: String, default: "" },
+          keyId: { type: String, default: "" },
+          senderDeviceId: { type: String, default: "" },
+          senderKeyId: { type: String, default: "" },
+          senderPublicKey: { type: String, default: "" },
+          ciphertext: { type: String, default: "" },
+          iv: { type: String, default: "" },
+        },
+      ],
+    },
     mediaUrl: {
       type: String,
       default: "",
