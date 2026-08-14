@@ -427,24 +427,24 @@ const ChatPage = () => {
   useEffect(() => {
     if (!socket) return;
 
-    const handleNewMessage = async (newMsg) => {
-      if (activeConv && newMsg.conversationId.toString() === activeConv._id.toString()) {
-        const partnerKey = await getSharedKeyForPartner(activeConv.partner);
-        const decryptedMsg = await processDecryptMessage(newMsg, partnerKey);
-        setMessages((prev) => addUniqueMessage(prev, decryptedMsg));
-        markAsRead(activeConv._id);
-      }
-      loadConversations();
-    };
+    // const handleNewMessage = async (newMsg) => {
+    //   if (activeConv && newMsg.conversationId.toString() === activeConv._id.toString()) {
+    //     const partnerKey = await getSharedKeyForPartner(activeConv.partner);
+    //     const decryptedMsg = await processDecryptMessage(newMsg, partnerKey);
+    //     setMessages((prev) => addUniqueMessage(prev, decryptedMsg));
+    //     markAsRead(activeConv._id);
+    //   }
+    //   loadConversations();
+    // };
 
-    const handleMessageSent = async (sentMsg) => {
-      if (activeConv && sentMsg.conversationId.toString() === activeConv._id.toString()) {
-        const partnerKey = await getSharedKeyForPartner(activeConv.partner);
-        const decryptedMsg = await processDecryptMessage(sentMsg, partnerKey);
-        setMessages((prev) => addUniqueMessage(prev, decryptedMsg));
-      }
-      loadConversations();
-    };
+    // const handleMessageSent = async (sentMsg) => {
+    //   if (activeConv && sentMsg.conversationId.toString() === activeConv._id.toString()) {
+    //     const partnerKey = await getSharedKeyForPartner(activeConv.partner);
+    //     const decryptedMsg = await processDecryptMessage(sentMsg, partnerKey);
+    //     setMessages((prev) => addUniqueMessage(prev, decryptedMsg));
+    //   }
+    //   loadConversations();
+    // };
 
     const handleMessageEdited = (editedMsg) => {
       setMessages((prev) =>
@@ -572,8 +572,8 @@ const ChatPage = () => {
       );
     };
 
-    socket.on("new_message", handleNewMessage);
-    socket.on("message_sent", handleMessageSent);
+    // socket.on("new_message", handleNewMessage);
+    // socket.on("message_sent", handleMessageSent);
     socket.on("message_edited", handleMessageEdited);
     socket.on("message_unsent", handleMessageUnsent);
     socket.on("message_reaction", handleMessageReaction);
@@ -587,8 +587,8 @@ const ChatPage = () => {
     socket.on("user_unblocked", handleUserUnblocked);
 
     return () => {
-      socket.off("new_message", handleNewMessage);
-      socket.off("message_sent", handleMessageSent);
+      // socket.off("new_message", handleNewMessage);
+      // socket.off("message_sent", handleMessageSent);
       socket.off("message_edited", handleMessageEdited);
       socket.off("message_unsent", handleMessageUnsent);
       socket.off("message_reaction", handleMessageReaction);
@@ -612,25 +612,41 @@ const ChatPage = () => {
     addAgoraEventHandler(agoraHandlerId, {
       onTextMessage: async (message) => {
         const ext = message.ext || {};
+        
+        // Determine sender and recipient user objects for proper UI normalization
+        const partner = activeConv?.partner;
+        const isFromMe = message.from === currentUserId?.toString();
+        
+        const senderObj = isFromMe 
+          ? { _id: currentUserId, name: currentUser.name, username: currentUser.username, profileImage: currentUser.profileImage }
+          : { _id: message.from, name: partner?.name, username: partner?.username, profileImage: partner?.profileImage };
+
+        const recipientObj = isFromMe
+          ? { _id: partner?._id || partner?.id, name: partner?.name, username: partner?.username, profileImage: partner?.profileImage }
+          : { _id: currentUserId, name: currentUser.name, username: currentUser.username, profileImage: currentUser.profileImage };
+
+        const isEncrypted = ext.isEncrypted === true || ext.isEncrypted === "true";
+        const iv = isEncrypted && typeof ext.iv === "string" ? ext.iv.trim() : "";
+
         const incomingMsg = {
           _id: message.id || `agora_${Date.now()}`,
           conversationId: ext.conversationId,
-          sender: { _id: message.from },
-          recipient: { _id: currentUserId },
+          sender: senderObj,
+          recipient: recipientObj,
           text: message.msg,
-          isEncrypted: ext.isEncrypted !== false,
-          iv: ext.iv || "",
+          isEncrypted: isEncrypted && iv !== "",
+          iv: iv,
           messageType: ext.messageType || "text",
           mediaUrl: ext.mediaUrl || "",
           mediaMeta: ext.mediaMeta || {},
-          createdAt: new Date(),
+          replyTo: ext.replyTo || null,
+          createdAt: message.time ? new Date(message.time) : new Date(),
         };
 
-        if (
-          activeConv &&
-          (ext.conversationId?.toString() === activeConv._id.toString() ||
-            message.from === activeConv.partner?._id?.toString())
-        ) {
+        const isMsgFromActivePartner = partner && (message.from === partner._id?.toString() || message.from === partner.id?.toString());
+        const isMsgForActiveConv = ext.conversationId && activeConv && ext.conversationId.toString() === activeConv._id.toString();
+
+        if (activeConv && (isMsgForActiveConv || isMsgFromActivePartner)) {
           const partnerKey = await getSharedKeyForPartner(activeConv.partner);
           const decryptedMsg = await processDecryptMessage(incomingMsg, partnerKey);
           setMessages((prev) => addUniqueMessage(prev, decryptedMsg));
@@ -644,7 +660,7 @@ const ChatPage = () => {
       removeAgoraEventHandler(agoraHandlerId);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [agoraConnected, activeConv?._id]);
+  }, [agoraConnected, activeConv?._id, currentUserId]);
 
   // Handle Typing Event Trigger
   const handleTextInputChange = (e) => {
@@ -744,6 +760,15 @@ const ChatPage = () => {
           messageType: selectedMediaPreview ? messageType : "text",
           mediaUrl: mediaUrl,
           mediaMeta: mediaMeta,
+          replyTo: replyingTo ? {
+            _id: replyingTo._id,
+            text: replyingTo.text,
+            sender: replyingTo.sender ? {
+              _id: replyingTo.sender._id || replyingTo.sender.id,
+              name: replyingTo.sender.name,
+              username: replyingTo.sender.username
+            } : null
+          } : null,
         }).catch((err) => console.warn("Agora Peer Dispatch Error:", err));
 
         const decryptedMsg = {
@@ -774,6 +799,14 @@ const ChatPage = () => {
         mediaUrl: gifUrl,
       });
       if (res && res.data) {
+        // Dispatch via Agora Chat SDK for ultra-reliable real-time delivery
+        sendAgoraPeerMessage(activeConv.partner._id, "", {
+          conversationId: activeConv._id,
+          isEncrypted: false,
+          messageType: "gif",
+          mediaUrl: gifUrl,
+        }).catch((err) => console.warn("Agora GIF Dispatch Error:", err));
+
         setMessages((prev) => addUniqueMessage(prev, res.data));
         loadConversations();
       }
