@@ -109,6 +109,12 @@ app.get("/", (req, res) => {
 });
 
 // ========================================
+// STREAM PROXY ROUTE (FOR BUNNY CDN STREAMING)
+// ========================================
+const streamProxyRoutes = require("./routes/streamProxy.routes");
+app.use("/api/stream-proxy", streamProxyRoutes);
+
+// ========================================
 // ADMIN ROUTES
 // ========================================
 const adminAuthRoutes = require("./routes/admin/auth.routes");

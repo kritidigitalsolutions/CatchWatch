@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import API, { BASE_URL } from "../api/axios";
 import { uploadToBunny } from "../features/services/bunnyUpload";
+import AdminVideoPlayer from "../components/AdminVideoPlayer";
 
 import "./Content.css";
 import {
@@ -1858,50 +1859,21 @@ export default function Content() {
 
                   {selectedEpisode?.videoUrl ? (
                     <div className="view-video-section">
-                      {getYouTubeId(selectedEpisode.videoUrl) ? (
-                        <iframe
-                          src={`https://www.youtube.com/embed/${getYouTubeId(selectedEpisode.videoUrl)}`}
-                          title="Episode Video"
-                          frameBorder="0"
-                          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                          allowFullScreen
-                          className="view-video-player"
-                          style={{ aspectRatio: "16/9", height: "auto" }}
-                        ></iframe>
-                      ) : (
-                        <>
-                          <video
-                            ref={videoRef}
-                            controls
-                            className="view-video-player"
-                            src={getFullUrl(selectedEpisode.videoUrl)}
-                            crossOrigin="anonymous"
-                          >
-                            {activeSubUrl && (
-                              <track
-                                kind="subtitles"
-                                src={getFullUrl(activeSubUrl)}
-                                srcLang={activeSubLang.toLowerCase().slice(0, 2)}
-                                label={activeSubLang}
-                                default
-                              />
-                            )}
-                            Your browser does not support the video tag.
-                          </video>
-                          {isSecondaryAudio && activeAudioUrl && (
-                            <audio
-                              ref={audioRef}
-                              src={getFullUrl(activeAudioUrl)}
-                              style={{ display: "none" }}
-                              crossOrigin="anonymous"
-                            />
-                          )}
-                          <button className="btn btn-primary pip-btn" onClick={() => videoRef.current?.requestPictureInPicture?.()} style={{ marginTop: "10px" }}>
-                            <Tv size={18} style={{ marginRight: 6 }} /> PiP
-                          </button>
+                      <div style={{ position: "relative", width: "100%", height: "0", paddingBottom: "56.25%", background: "#000", borderRadius: "8px", overflow: "hidden" }}>
+                        <AdminVideoPlayer
+                          videoUrl={selectedEpisode.videoUrl}
+                          item={selectedEpisode}
+                          subtitles={selectedEpisode.subtitles}
+                          activeSubUrl={activeSubUrl}
+                          activeSubLang={activeSubLang}
+                          activeAudioUrl={activeAudioUrl}
+                          isSecondaryAudio={isSecondaryAudio}
+                          style={{ position: "absolute", top: 0, left: 0, width: "100%", height: "100%" }}
+                        />
+                      </div>
 
-                          {/* Multilingual Tracks selectors */}
-                          {!getYouTubeId(selectedEpisode.videoUrl) && (
+                      {/* Multilingual Tracks selectors */}
+                      {!getYouTubeId(selectedEpisode.videoUrl) && (
                             <div style={{ display: "flex", gap: "20px", padding: "12px 15px", background: "var(--bg-card, #1f2937)", borderRadius: "8px", marginTop: "10px" }}>
                               <div>
                                 <label style={{ display: "block", fontSize: "11px", color: "var(--text-muted, #9ca3af)", marginBottom: "4px" }}>Audio Track</label>
@@ -1973,8 +1945,6 @@ export default function Content() {
                               </div>
                             </div>
                           )}
-                        </>
-                      )}
                     </div>
                   ) : (
                     <div style={{ padding: "20px", background: "var(--bg3)", borderRadius: "var(--radius-sm)", textAlign: "center", color: "var(--text-muted)" }}>
@@ -2053,14 +2023,12 @@ export default function Content() {
                   <div className="vp-section">
                     <div className="vp-section-label"><Play size={14} /> Trailer</div>
                     {selectedItem.trailerUrl ? (
-                      <div className="vp-video-wrap">
-                        {getYouTubeId(selectedItem.trailerUrl) ? (
-                          <iframe src={`https://www.youtube.com/embed/${getYouTubeId(selectedItem.trailerUrl)}`} title="Trailer" frameBorder="0" allowFullScreen></iframe>
-                        ) : getBunnyEmbedUrl(selectedItem.trailerUrl) ? (
-                          <iframe src={getBunnyEmbedUrl(selectedItem.trailerUrl)} title="Trailer" frameBorder="0" allowFullScreen></iframe>
-                        ) : (
-                          <video controls src={getFullUrl(selectedItem.trailerUrl)}></video>
-                        )}
+                      <div className="vp-video-wrap" style={{ position: "relative", width: "100%", height: "0", paddingBottom: "56.25%", background: "#000", borderRadius: "8px", overflow: "hidden" }}>
+                        <AdminVideoPlayer
+                          videoUrl={selectedItem.trailerUrl}
+                          item={selectedItem}
+                          style={{ position: "absolute", top: 0, left: 0, width: "100%", height: "100%" }}
+                        />
                       </div>
                     ) : (
                       <div className="vp-unavailable">
@@ -2076,39 +2044,16 @@ export default function Content() {
                       {!isLocked(selectedItem) && (selectedItem.videoUrl || selectedItem.video) ? (
                         <div className="vp-video-wrap" style={{ display: "flex", flexDirection: "column", gap: "15px" }}>
                           <div style={{ position: "relative", width: "100%", height: "0", paddingBottom: "56.25%", background: "#000", borderRadius: "8px", overflow: "hidden" }}>
-                            {getYouTubeId(selectedItem.videoUrl || selectedItem.video) ? (
-                              <iframe src={`https://www.youtube.com/embed/${getYouTubeId(selectedItem.videoUrl || selectedItem.video)}`} title="Full Movie" frameBorder="0" allowFullScreen style={{ position: "absolute", top: 0, left: 0, width: "100%", height: "100%" }}></iframe>
-                            ) : getBunnyEmbedUrl(selectedItem) ? (
-                              <iframe src={getBunnyEmbedUrl(selectedItem)} title="Full Movie" frameBorder="0" allowFullScreen style={{ position: "absolute", top: 0, left: 0, width: "100%", height: "100%" }}></iframe>
-                            ) : (
-                              <>
-                                <video
-                                  ref={videoRef}
-                                  controls
-                                  src={getFullUrl(selectedItem.videoUrl || selectedItem.video)}
-                                  crossOrigin="anonymous"
-                                  style={{ position: "absolute", top: 0, left: 0, width: "100%", height: "100%" }}
-                                >
-                                  {activeSubUrl && (
-                                    <track
-                                      kind="subtitles"
-                                      src={getFullUrl(activeSubUrl)}
-                                      srcLang={activeSubLang.toLowerCase().slice(0, 2)}
-                                      label={activeSubLang}
-                                      default
-                                    />
-                                  )}
-                                </video>
-                                {isSecondaryAudio && activeAudioUrl && (
-                                  <audio
-                                    ref={audioRef}
-                                    src={getFullUrl(activeAudioUrl)}
-                                    style={{ display: "none" }}
-                                    crossOrigin="anonymous"
-                                  />
-                                )}
-                              </>
-                            )}
+                            <AdminVideoPlayer
+                              videoUrl={selectedItem.videoUrl || selectedItem.video}
+                              item={selectedItem}
+                              subtitles={selectedItem.subtitles}
+                              activeSubUrl={activeSubUrl}
+                              activeSubLang={activeSubLang}
+                              activeAudioUrl={activeAudioUrl}
+                              isSecondaryAudio={isSecondaryAudio}
+                              style={{ position: "absolute", top: 0, left: 0, width: "100%", height: "100%" }}
+                            />
                           </div>
 
                           {/* Multilingual Tracks selectors */}
