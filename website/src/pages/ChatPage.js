@@ -24,6 +24,8 @@ import {
   FaLock,
   FaDownload,
   FaUser,
+  FaChevronDown,
+  FaPlay,
 } from "react-icons/fa";
 import EmojiPicker from "emoji-picker-react";
 import { useSocket } from "../context/SocketContext";
@@ -111,6 +113,113 @@ const MORE_EMOJIS = [
   "💪",
 ];
 
+// Curated GIF Categories & Rich Collection
+export const GIF_CATEGORIES = [
+  "All",
+  "Trending",
+  "Laugh",
+  "Love",
+  "Dance",
+  "Party",
+  "Sad",
+  "Shocked",
+  "Hi & Bye",
+  "Clap",
+  "Thumbs Up",
+  "Fire",
+  "Cute",
+  "Anime",
+];
+
+export const CHAT_GIFS = [
+  { id: "g1", title: "Minions Cheering Yay", category: "Trending", url: "https://media.giphy.com/media/artj92V8o75VPL7AeQ/giphy.gif" },
+  { id: "g2", title: "Excited Happy Dance", category: "Dance", url: "https://media.giphy.com/media/blSTtZehjAZ8I/giphy.gif" },
+  { id: "g3", title: "Leonardo DiCaprio Cheers Toast", category: "Party", url: "https://media.giphy.com/media/GCLlQnV7d42BRBRpdK/giphy.gif" },
+  { id: "g4", title: "Popcorn Watching Drama", category: "Trending", url: "https://media.giphy.com/media/gl0mkIZOW6Nwc/giphy.gif" },
+  { id: "g5", title: "Cat Vibing / Grooving", category: "Dance", url: "https://media.giphy.com/media/jpbnoe3UIa8TU8LM13/giphy.gif" },
+  { id: "g6", title: "Laughing Out Loud LOL", category: "Laugh", url: "https://media.giphy.com/media/10JhviFuU2gWD6/giphy.gif" },
+  { id: "g7", title: "Tom and Jerry Laughing Hard", category: "Laugh", url: "https://media.giphy.com/media/ltIFdjNAasOwVvKhvx/giphy.gif" },
+  { id: "g8", title: "Heart Love Flying Kiss", category: "Love", url: "https://media.giphy.com/media/26FLdm964upIOCZYQ/giphy.gif" },
+  { id: "g9", title: "Cute Bear Hug Love", category: "Love", url: "https://media.giphy.com/media/MDJ9IbxxvDUQM/giphy.gif" },
+  { id: "g10", title: "Thumbs Up Awesome Job", category: "Thumbs Up", url: "https://media.giphy.com/media/111ebonMs90YLu/giphy.gif" },
+  { id: "g11", title: "Borat Great Success Thumbs Up", category: "Thumbs Up", url: "https://media.giphy.com/media/a0h7sAqON67nO/giphy.gif" },
+  { id: "g12", title: "Clapping Standing Ovation", category: "Clap", url: "https://media.giphy.com/media/7rj2ZgttvgomY/giphy.gif" },
+  { id: "g13", title: "Baby Happy Dance", category: "Dance", url: "https://media.giphy.com/media/l3vRlT2k2L35Cnn5C/giphy.gif" },
+  { id: "g14", title: "Party Confetti Celebration", category: "Party", url: "https://media.giphy.com/media/26tOZ42Mg6pbTUPHW/giphy.gif" },
+  { id: "g15", title: "Crying Sad Tears", category: "Sad", url: "https://media.giphy.com/media/d2lcHJTG5Tscg/giphy.gif" },
+  { id: "g16", title: "Shocked Mind Blown", category: "Shocked", url: "https://media.giphy.com/media/26ufdipQqU2lhNA4g/giphy.gif" },
+  { id: "g17", title: "OMG Shocked Cat", category: "Shocked", url: "https://media.giphy.com/media/C9x8gX02SnMIoAClXA/giphy.gif" },
+  { id: "g18", title: "Hello Wave Hi", category: "Hi & Bye", url: "https://media.giphy.com/media/Nx0rz3jtxt969jIvNT/giphy.gif" },
+  { id: "g19", title: "Homer Simpson Disappearing Bye", category: "Hi & Bye", url: "https://media.giphy.com/media/jUwpNzg9IcyrK/giphy.gif" },
+  { id: "g20", title: "Fire Lit Hot Flame", category: "Fire", url: "https://media.giphy.com/media/yr7n0u3qzO9nG/giphy.gif" },
+  { id: "g21", title: "Dancing Carlton Fresh Prince", category: "Dance", url: "https://media.giphy.com/media/pa37AAGzKXoek/giphy.gif" },
+  { id: "g22", title: "Cute Panda Rolling", category: "Cute", url: "https://media.giphy.com/media/EatwJZRUIv41G/giphy.gif" },
+  { id: "g23", title: "Anime Wow Star Eyes", category: "Anime", url: "https://media.giphy.com/media/po3NDGWuAE33qqqmg3/giphy.gif" },
+  { id: "g24", title: "Anime Happy Smile", category: "Anime", url: "https://media.giphy.com/media/ErZ8hv5eO92JW/giphy.gif" },
+  { id: "g25", title: "Cool Sunglasses Deal With It", category: "Trending", url: "https://media.giphy.com/media/xT0BKk9aPtLzKJiUi4/giphy.gif" },
+  { id: "g26", title: "Facepalm Oh No", category: "Shocked", url: "https://media.giphy.com/media/3og0INyCmHlNylks9O/giphy.gif" },
+  { id: "g27", title: "Winking Flirt Eye", category: "Love", url: "https://media.giphy.com/media/6ra84UsoIZ9AIA3KZ3/giphy.gif" },
+  { id: "g28", title: "Dog Nodding Yes Agree", category: "Trending", url: "https://media.giphy.com/media/krewXUB6LBja/giphy.gif" },
+  { id: "g29", title: "Shaq Shimmy Laugh", category: "Laugh", url: "https://media.giphy.com/media/UO5elnTqo4vSg/giphy.gif" },
+  { id: "g30", title: "Money Cash Rain Party", category: "Party", url: "https://media.giphy.com/media/LdOyjZ7io5Msw/giphy.gif" },
+  { id: "g31", title: "Applause DiCaprio Wolf", category: "Clap", url: "https://media.giphy.com/media/nbvFVPiEiJH6JOGIok/giphy.gif" },
+  { id: "g32", title: "Pikachu Shocked Face", category: "Anime", url: "https://media.giphy.com/media/6nWhy3NdSTmBQEDzdT/giphy.gif" },
+];
+
+// WhatsApp-style timestamp formatter for chat conversation list
+export const formatWhatsAppTimestamp = (dateStr) => {
+  if (!dateStr) return "";
+  const d = new Date(dateStr);
+  if (isNaN(d.getTime())) return "";
+
+  const now = new Date();
+  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  const targetDay = new Date(d.getFullYear(), d.getMonth(), d.getDate());
+  const diffTime = today.getTime() - targetDay.getTime();
+  const diffDays = Math.floor(diffTime / (24 * 60 * 60 * 1000));
+
+  if (diffDays === 0) {
+    return d.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+  } else if (diffDays === 1) {
+    return "Yesterday";
+  } else if (diffDays > 1 && diffDays < 7) {
+    return d.toLocaleDateString([], { weekday: "long" });
+  } else {
+    return d.toLocaleDateString([], {
+      day: "2-digit",
+      month: "2-digit",
+      year: "numeric",
+    });
+  }
+};
+
+// WhatsApp-style date divider label for message feed (Today, Yesterday, Day Name, or Full Date)
+export const getChatDateDivider = (dateStr) => {
+  if (!dateStr) return "";
+  const d = new Date(dateStr);
+  if (isNaN(d.getTime())) return "";
+
+  const now = new Date();
+  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  const targetDay = new Date(d.getFullYear(), d.getMonth(), d.getDate());
+  const diffTime = today.getTime() - targetDay.getTime();
+  const diffDays = Math.floor(diffTime / (24 * 60 * 60 * 1000));
+
+  if (diffDays === 0) {
+    return "Today";
+  } else if (diffDays === 1) {
+    return "Yesterday";
+  } else if (diffDays > 1 && diffDays < 7) {
+    return d.toLocaleDateString([], { weekday: "long" });
+  } else {
+    return d.toLocaleDateString([], {
+      day: "numeric",
+      month: "long",
+      year: "numeric",
+    });
+  }
+};
+
 const ChatPage = () => {
   const navigate = useNavigate();
   const { socket, fetchUnreadChatCount } = useSocket();
@@ -152,6 +261,8 @@ const ChatPage = () => {
   // Pickers & Modals
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
   const [showGifPicker, setShowGifPicker] = useState(false);
+  const [gifCategory, setGifCategory] = useState("All");
+  const [gifSearchQuery, setGifSearchQuery] = useState("");
   const [showMobileDropup, setShowMobileDropup] = useState(false);
   const [selectedMediaPreview, setSelectedMediaPreview] = useState(null);
   const [uploadingMedia, setUploadingMedia] = useState(false);
@@ -159,10 +270,13 @@ const ChatPage = () => {
   const [showMoreEmojisMsgId, setShowMoreEmojisMsgId] = useState(null);
   const [currentPinnedIndex, setCurrentPinnedIndex] = useState(0);
   const [fullViewImage, setFullViewImage] = useState(null);
+  const [fullViewVideo, setFullViewVideo] = useState(null);
   const [showHeaderMenu, setShowHeaderMenu] = useState(false);
+  const [showScrollBottom, setShowScrollBottom] = useState(false);
 
   // Refs
   const messagesEndRef = useRef(null);
+  const messagesContainerRef = useRef(null);
   const fileInputRef = useRef(null);
   const typingTimeoutRef = useRef(null);
 
@@ -419,8 +533,8 @@ const ChatPage = () => {
     };
   };
 
-  // Helper to decrypt message if encrypted
-  const processDecryptMessage = async (msg, sharedKey = null) => {
+  // Helper to decrypt a single payload's text if encrypted
+  const decryptMessageText = async (msg, sharedKey = null) => {
     if (!msg || !msg.text) return msg;
     if (!msg.isEncrypted || !msg.iv) return { ...msg, isDecrypted: true };
     if (msg.isDecrypted) return msg;
@@ -460,19 +574,15 @@ const ChatPage = () => {
 
       if (!isSender) {
         // Case 1: Message received from partner.
-        // Priority 1: Exact senderPublicKey saved in message payload
         if (encryptionObj.senderPublicKey) {
           candidatePublicKeys.push(encryptionObj.senderPublicKey);
         }
-        // Priority 2: Partner's current public key from object
         if (partnerObj?.publicKey && !candidatePublicKeys.includes(partnerObj.publicKey)) {
           candidatePublicKeys.push(partnerObj.publicKey);
         }
-        // Priority 3: Partner's active/e2eeIdentity public key
         if (partnerObj?.e2eeIdentity?.publicKey && !candidatePublicKeys.includes(partnerObj.e2eeIdentity.publicKey)) {
           candidatePublicKeys.push(partnerObj.e2eeIdentity.publicKey);
         }
-        // Priority 4: Historical device keys for the sender
         if (Array.isArray(partnerObj?.deviceKeys)) {
           partnerObj.deviceKeys.forEach((dk) => {
             if (dk?.publicKey && !candidatePublicKeys.includes(dk.publicKey)) {
@@ -482,15 +592,12 @@ const ChatPage = () => {
         }
       } else {
         // Case 2: Message sent by current user.
-        // Priority 1: Partner's current public key from object
         if (partnerObj?.publicKey) {
           candidatePublicKeys.push(partnerObj.publicKey);
         }
-        // Priority 2: Partner's e2eeIdentity public key
         if (partnerObj?.e2eeIdentity?.publicKey && !candidatePublicKeys.includes(partnerObj.e2eeIdentity.publicKey)) {
           candidatePublicKeys.push(partnerObj.e2eeIdentity.publicKey);
         }
-        // Priority 3: Historical device keys for the recipient
         if (Array.isArray(partnerObj?.deviceKeys)) {
           partnerObj.deviceKeys.forEach((dk) => {
             if (dk?.publicKey && !candidatePublicKeys.includes(dk.publicKey)) {
@@ -498,6 +605,11 @@ const ChatPage = () => {
             }
           });
         }
+      }
+
+      // If active conversation partner key is available, add as fallback
+      if (activeConv?.partner?.publicKey && !candidatePublicKeys.includes(activeConv.partner.publicKey)) {
+        candidatePublicKeys.push(activeConv.partner.publicKey);
       }
 
       // If a pre-derived shared key was passed, try it first
@@ -602,12 +714,54 @@ const ChatPage = () => {
     }
   };
 
+  // Helper to decrypt message AND its replyTo snippet if encrypted
+  const processDecryptMessage = async (msg, sharedKey = null) => {
+    if (!msg) return msg;
+
+    let decryptedMsg = await decryptMessageText(msg, sharedKey);
+
+    // If replyTo exists and is an object, decrypt it too
+    if (
+      decryptedMsg &&
+      decryptedMsg.replyTo &&
+      typeof decryptedMsg.replyTo === "object"
+    ) {
+      let replyObj = { ...decryptedMsg.replyTo };
+      if (replyObj.isEncrypted && replyObj.iv && !replyObj.isDecrypted) {
+        // First check if already in messages state
+        const cached = messages.find(
+          (m) =>
+            (m._id || m.id)?.toString() ===
+            (replyObj._id || replyObj.id)?.toString(),
+        );
+        if (cached && cached.isDecrypted && cached.text) {
+          replyObj.text = cached.text;
+          replyObj.isDecrypted = true;
+        } else {
+          const decryptedReply = await decryptMessageText(replyObj, sharedKey);
+          if (decryptedReply && decryptedReply.isDecrypted) {
+            replyObj = decryptedReply;
+          }
+        }
+      }
+      decryptedMsg = { ...decryptedMsg, replyTo: replyObj };
+    }
+
+    return decryptedMsg;
+  };
+
   // Auto-retry decryption whenever e2eeKeys, activeConv, or messages array updates
   useEffect(() => {
     if (!e2eeKeys || !activeConv || messages.length === 0) return;
 
     const hasUndecrypted = messages.some(
-      (m) => m.isEncrypted && m.iv && !m.isDecrypted,
+      (m) =>
+        (m.isEncrypted && m.iv && !m.isDecrypted) ||
+        (m.replyTo &&
+          typeof m.replyTo === "object" &&
+          m.replyTo.isEncrypted &&
+          m.replyTo.iv &&
+          !m.replyTo.isDecrypted),
     );
     if (!hasUndecrypted) return;
 
@@ -618,7 +772,16 @@ const ChatPage = () => {
 
       const updated = await Promise.all(
         messages.map(async (msg) => {
-          if (msg.isEncrypted && msg.iv && !msg.isDecrypted) {
+          const needsMsgDecryption =
+            msg.isEncrypted && msg.iv && !msg.isDecrypted;
+          const needsReplyDecryption =
+            msg.replyTo &&
+            typeof msg.replyTo === "object" &&
+            msg.replyTo.isEncrypted &&
+            msg.replyTo.iv &&
+            !msg.replyTo.isDecrypted;
+
+          if (needsMsgDecryption || needsReplyDecryption) {
             return await processDecryptMessage(msg, partnerKey);
           }
           return msg;
@@ -629,7 +792,9 @@ const ChatPage = () => {
         const hasChanges = updated.some(
           (m, idx) =>
             m.isDecrypted !== messages[idx]?.isDecrypted ||
-            m.text !== messages[idx]?.text,
+            m.text !== messages[idx]?.text ||
+            m.replyTo?.text !== messages[idx]?.replyTo?.text ||
+            m.replyTo?.isDecrypted !== messages[idx]?.replyTo?.isDecrypted,
         );
         if (hasChanges) {
           setMessages(updated);
@@ -659,7 +824,7 @@ const ChatPage = () => {
     }
   };
 
-  // Close menu dropdowns on outside touch/click
+  // Close menu dropdowns and pickers on outside touch/click
   useEffect(() => {
     const handleOutsideClick = (e) => {
       if (activeActionMenuId && !e.target.closest(".chat-dropdown-container")) {
@@ -669,6 +834,24 @@ const ChatPage = () => {
       if (showHeaderMenu && !e.target.closest(".header-menu-container")) {
         setShowHeaderMenu(false);
       }
+      if (
+        showMobileDropup &&
+        !e.target.closest(".mobile-dropup-container")
+      ) {
+        setShowMobileDropup(false);
+      }
+      if (
+        showEmojiPicker &&
+        !e.target.closest(".emoji-picker-container")
+      ) {
+        setShowEmojiPicker(false);
+      }
+      if (
+        showGifPicker &&
+        !e.target.closest(".gif-picker-container")
+      ) {
+        setShowGifPicker(false);
+      }
     };
     window.addEventListener("mousedown", handleOutsideClick);
     window.addEventListener("touchstart", handleOutsideClick);
@@ -676,7 +859,13 @@ const ChatPage = () => {
       window.removeEventListener("mousedown", handleOutsideClick);
       window.removeEventListener("touchstart", handleOutsideClick);
     };
-  }, [activeActionMenuId, showHeaderMenu]);
+  }, [
+    activeActionMenuId,
+    showHeaderMenu,
+    showMobileDropup,
+    showEmojiPicker,
+    showGifPicker,
+  ]);
 
   // 2. Load Messages & Reset Drafts when Active Conversation Changes
   useEffect(() => {
@@ -691,6 +880,7 @@ const ChatPage = () => {
     setShowHeaderMenu(false);
     setShowEmojiPicker(false);
     setShowGifPicker(false);
+    setShowScrollBottom(false);
 
     if (!activeConv) return;
 
@@ -752,24 +942,34 @@ const ChatPage = () => {
   useEffect(() => {
     if (!socket) return;
 
-    // const handleNewMessage = async (newMsg) => {
-    //   if (activeConv && newMsg.conversationId.toString() === activeConv._id.toString()) {
-    //     const partnerKey = await getSharedKeyForPartner(activeConv.partner);
-    //     const decryptedMsg = await processDecryptMessage(newMsg, partnerKey);
-    //     setMessages((prev) => addUniqueMessage(prev, decryptedMsg));
-    //     markAsRead(activeConv._id);
-    //   }
-    //   loadConversations();
-    // };
+    const handleNewMessage = async (newMsg) => {
+      if (
+        activeConv &&
+        newMsg?.conversationId &&
+        newMsg.conversationId.toString() === activeConv._id.toString()
+      ) {
+        const partnerKey = await getSharedKeyForPartner(activeConv.partner);
+        const decryptedMsg = await processDecryptMessage(newMsg, partnerKey);
+        setMessages((prev) => addUniqueMessage(prev, decryptedMsg));
+        markAsRead(activeConv._id);
+      }
+      loadConversations();
+      fetchUnreadChatCount();
+    };
 
-    // const handleMessageSent = async (sentMsg) => {
-    //   if (activeConv && sentMsg.conversationId.toString() === activeConv._id.toString()) {
-    //     const partnerKey = await getSharedKeyForPartner(activeConv.partner);
-    //     const decryptedMsg = await processDecryptMessage(sentMsg, partnerKey);
-    //     setMessages((prev) => addUniqueMessage(prev, decryptedMsg));
-    //   }
-    //   loadConversations();
-    // };
+    const handleMessageSent = async (sentMsg) => {
+      if (
+        activeConv &&
+        sentMsg?.conversationId &&
+        sentMsg.conversationId.toString() === activeConv._id.toString()
+      ) {
+        const partnerKey = await getSharedKeyForPartner(activeConv.partner);
+        const decryptedMsg = await processDecryptMessage(sentMsg, partnerKey);
+        setMessages((prev) => addUniqueMessage(prev, decryptedMsg));
+      }
+      loadConversations();
+      fetchUnreadChatCount();
+    };
 
     const handleMessageEdited = (editedMsg) => {
       setMessages((prev) =>
@@ -933,8 +1133,8 @@ const ChatPage = () => {
       );
     };
 
-    // socket.on("new_message", handleNewMessage);
-    // socket.on("message_sent", handleMessageSent);
+    socket.on("new_message", handleNewMessage);
+    socket.on("message_sent", handleMessageSent);
     socket.on("message_edited", handleMessageEdited);
     socket.on("message_unsent", handleMessageUnsent);
     socket.on("message_reaction", handleMessageReaction);
@@ -948,8 +1148,8 @@ const ChatPage = () => {
     socket.on("user_unblocked", handleUserUnblocked);
 
     return () => {
-      // socket.off("new_message", handleNewMessage);
-      // socket.off("message_sent", handleMessageSent);
+      socket.off("new_message", handleNewMessage);
+      socket.off("message_sent", handleMessageSent);
       socket.off("message_edited", handleMessageEdited);
       socket.off("message_unsent", handleMessageUnsent);
       socket.off("message_reaction", handleMessageReaction);
@@ -1089,6 +1289,15 @@ const ChatPage = () => {
   // 5. Send Message Handler
   const handleSendMessage = async () => {
     if (editingMsg) {
+      if (
+        editingMsg.createdAt &&
+        Date.now() - new Date(editingMsg.createdAt).getTime() > 60 * 60 * 1000
+      ) {
+        toast.error("Messages older than 1 hour cannot be edited");
+        setEditingMsg(null);
+        setMessageText("");
+        return;
+      }
       // Edit existing message
       try {
         await editMessage(editingMsg._id, messageText);
@@ -1198,6 +1407,15 @@ const ChatPage = () => {
           ...res.data,
           text: messageText.trim(),
           isDecrypted: true,
+          replyTo: replyingTo
+            ? {
+                _id: replyingTo._id,
+                text: replyingTo.text,
+                sender: replyingTo.sender,
+                isDecrypted: true,
+                messageType: replyingTo.messageType || "text",
+              }
+            : res.data.replyTo,
         };
         setMessages((prev) => addUniqueMessage(prev, decryptedMsg));
         setMessageText("");
@@ -1571,14 +1789,6 @@ const ChatPage = () => {
           );
         });
 
-  // Sample GIFs list for demonstration
-  const sampleGifs = [
-    "https://media.giphy.com/media/l0HlHFRbmaZtBRhXG/giphy.gif",
-    "https://media.giphy.com/media/3o7TKsjRrfIPjeiVyM/giphy.gif",
-    "https://media.giphy.com/media/g9582DNuQppxC/giphy.gif",
-    "https://media.giphy.com/media/26u4cqiYI30juCOGY/giphy.gif",
-  ];
-
   const formatLastSeen = (dateStr) => {
     if (!dateStr) return "Offline";
     const d = new Date(dateStr);
@@ -1927,49 +2137,91 @@ const ChatPage = () => {
             )}
 
             {/* Messages Feed */}
-            <div className="flex-1 overflow-y-auto p-4 chat-scroll space-y-4">
+            <div
+              ref={messagesContainerRef}
+              onScroll={(e) => {
+                const { scrollTop, scrollHeight, clientHeight } = e.currentTarget;
+                const distanceToBottom = scrollHeight - scrollTop - clientHeight;
+                setShowScrollBottom(distanceToBottom > 150);
+              }}
+              className="flex-1 overflow-y-auto p-4 chat-scroll space-y-4 relative"
+            >
               {loadingMessages ? (
                 <div className="flex justify-center items-center h-full">
                   <div className="w-8 h-8 border-4 border-brand-orange border-t-transparent rounded-full animate-spin"></div>
                 </div>
               ) : messages.length > 0 ? (
-                Array.from(
-                  new Map(
-                    messages.map((m) => [
-                      (m._id || m.id)?.toString() || Math.random(),
-                      m,
-                    ]),
-                  ).values(),
-                ).map((msg, index) => {
-                  const isMe =
-                    msg.sender?._id?.toString() === currentUserId.toString();
-                  return (
-                    <MessageBubble
-                      key={msg._id ? `${msg._id}-${index}` : index}
-                      msg={msg}
-                      isMe={isMe}
-                      index={index}
-                      onReply={(m) => setReplyingTo(m)}
-                      onForward={(m) => setForwardingMsg(m)}
-                      onReaction={(id, emoji) => handleReaction(id, emoji)}
-                      onPin={(id) => handleTogglePin(id)}
-                      onDownloadMedia={(url, filename) =>
-                        handleDownloadMedia(url, filename)
-                      }
-                      onEdit={(m) => {
-                        setEditingMsg(m);
-                        setMessageText(m.text);
-                      }}
-                      onUnsend={(id) => handleUnsend(id)}
-                      onDelete={(id) => handleDeleteForMe(id)}
-                      onImageClick={(url) => setFullViewImage(url)}
-                      activeMenuId={activeActionMenuId}
-                      setActiveMenuId={setActiveActionMenuId}
-                      showMoreEmojisMsgId={showMoreEmojisMsgId}
-                      setShowMoreEmojisMsgId={setShowMoreEmojisMsgId}
-                    />
+                (() => {
+                  const uniqueMsgs = Array.from(
+                    new Map(
+                      messages.map((m) => [
+                        (m._id || m.id)?.toString() || Math.random(),
+                        m,
+                      ]),
+                    ).values(),
                   );
-                })
+
+                  return uniqueMsgs.map((msg, index) => {
+                    const isMe =
+                      msg.sender?._id?.toString() === currentUserId.toString();
+                    const msgDateStr = msg.createdAt
+                      ? new Date(msg.createdAt).toDateString()
+                      : "";
+                    const prevMsg = index > 0 ? uniqueMsgs[index - 1] : null;
+                    const prevMsgDateStr = prevMsg?.createdAt
+                      ? new Date(prevMsg.createdAt).toDateString()
+                      : "";
+                    const showDateDivider =
+                      index === 0 ||
+                      (msgDateStr && msgDateStr !== prevMsgDateStr);
+
+                    return (
+                      <div key={msg._id ? `${msg._id}-${index}` : index}>
+                        {showDateDivider && msg.createdAt && (
+                          <div className="flex justify-center my-3 sticky top-1 z-10 pointer-events-none">
+                            <span className="bg-gray-200/90 dark:bg-gray-800/90 text-gray-600 dark:text-gray-300 text-[10px] font-bold px-3 py-1 rounded-full shadow-xs border border-gray-200/50 dark:border-gray-700/50 uppercase tracking-wider backdrop-blur-xs">
+                              {getChatDateDivider(msg.createdAt)}
+                            </span>
+                          </div>
+                        )}
+                        <MessageBubble
+                          msg={msg}
+                          isMe={isMe}
+                          index={index}
+                          onReply={(m) => setReplyingTo(m)}
+                          onForward={(m) => setForwardingMsg(m)}
+                          onReaction={(id, emoji) => handleReaction(id, emoji)}
+                          onPin={(id) => handleTogglePin(id)}
+                          onDownloadMedia={(url, filename) =>
+                            handleDownloadMedia(url, filename)
+                          }
+                          onEdit={(m) => {
+                            if (
+                              m.createdAt &&
+                              Date.now() - new Date(m.createdAt).getTime() >
+                                60 * 60 * 1000
+                            ) {
+                              toast.error(
+                                "Messages older than 1 hour cannot be edited",
+                              );
+                              return;
+                            }
+                            setEditingMsg(m);
+                            setMessageText(m.text);
+                          }}
+                          onUnsend={(id) => handleUnsend(id)}
+                          onDelete={(id) => handleDeleteForMe(id)}
+                          onImageClick={(url) => setFullViewImage(url)}
+                          onVideoClick={(url) => setFullViewVideo(url)}
+                          activeMenuId={activeActionMenuId}
+                          setActiveMenuId={setActiveActionMenuId}
+                          showMoreEmojisMsgId={showMoreEmojisMsgId}
+                          setShowMoreEmojisMsgId={setShowMoreEmojisMsgId}
+                        />
+                      </div>
+                    );
+                  });
+                })()
               ) : (
                 <div className="text-center py-20 text-xs text-gray-400 font-medium">
                   No messages in this chat. Say hello 👋!
@@ -1987,6 +2239,21 @@ const ChatPage = () => {
               )}
               <div ref={messagesEndRef} />
             </div>
+
+            {/* Floating Scroll to Bottom Button */}
+            {showScrollBottom && (
+              <button
+                onClick={() => {
+                  messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+                  setShowScrollBottom(false);
+                }}
+                className="absolute right-4 sm:right-6 bottom-20 sm:bottom-24 z-30 w-9 h-9 sm:w-10 sm:h-10 rounded-full bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-200 border border-gray-200/80 dark:border-gray-700/80 shadow-xl flex items-center justify-center hover:bg-orange-50 dark:hover:bg-gray-700 hover:text-brand-orange hover:scale-110 active:scale-95 transition-all duration-200 animate-fade-in group cursor-pointer"
+                title="Scroll to bottom"
+                aria-label="Scroll to bottom"
+              >
+                <FaChevronDown className="text-xs sm:text-sm text-brand-orange group-hover:translate-y-0.5 transition-transform" />
+              </button>
+            )}
 
             {/* Reply / Media Preview Context Banner */}
             {(replyingTo || selectedMediaPreview || editingMsg) && (
@@ -2064,10 +2331,26 @@ const ChatPage = () => {
               </div>
             ) : (
               <div className="p-3 bg-white dark:bg-gray-900 border-t border-gray-200 dark:border-gray-800 relative z-20 flex-shrink-0">
-                {/* Emoji Picker Popover */}
-                {/* Emoji Picker Popover (Only on Desktop) */}
+                {/* Backdrop to dismiss dropups when touching background */}
+                {(showMobileDropup || showEmojiPicker || showGifPicker) && (
+                  <div
+                    className="fixed inset-0 z-30 bg-transparent"
+                    onClick={() => {
+                      setShowMobileDropup(false);
+                      setShowEmojiPicker(false);
+                      setShowGifPicker(false);
+                    }}
+                    onTouchStart={() => {
+                      setShowMobileDropup(false);
+                      setShowEmojiPicker(false);
+                      setShowGifPicker(false);
+                    }}
+                  />
+                )}
+
+                {/* Emoji Picker Popover (Desktop) */}
                 {showEmojiPicker && window.innerWidth >= 640 && (
-                  <div className="absolute bottom-16 left-4 z-50 shadow-2xl">
+                  <div className="absolute bottom-16 left-4 z-50 shadow-2xl emoji-picker-container">
                     <EmojiPicker
                       onEmojiClick={(emojiData) => {
                         setMessageText((prev) => prev + emojiData.emoji);
@@ -2076,30 +2359,91 @@ const ChatPage = () => {
                   </div>
                 )}
 
-                {/* GIF Picker Popover */}
+                {/* Enhanced GIF Picker Popover */}
                 {showGifPicker && (
-                  <div className="absolute bottom-16 left-12 z-50 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 p-3 rounded-2xl shadow-2xl w-72">
-                    <div className="flex justify-between items-center mb-2">
-                      <span className="font-bold text-xs text-gray-700 dark:text-gray-200">
-                        Select GIF
-                      </span>
+                  <div className="absolute bottom-16 left-2 sm:left-12 z-50 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 p-3 sm:p-4 rounded-3xl shadow-2xl w-[92vw] sm:w-96 gif-picker-container animate-fade-in-up">
+                    <div className="flex justify-between items-center mb-2.5">
+                      <div className="flex items-center gap-1.5">
+                        <span className="bg-brand-orange text-white text-[10px] font-black px-2 py-0.5 rounded-md">GIF</span>
+                        <span className="font-extrabold text-xs text-gray-800 dark:text-white">
+                          Select a GIF
+                        </span>
+                      </div>
                       <button
                         onClick={() => setShowGifPicker(false)}
-                        className="text-gray-400 hover:text-gray-600"
+                        className="p-1 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800 transition"
                       >
-                        <FaTimes />
+                        <FaTimes className="text-xs" />
                       </button>
                     </div>
-                    <div className="grid grid-cols-2 gap-2 max-h-48 overflow-y-auto">
-                      {sampleGifs.map((gif, i) => (
-                        <img
-                          key={i}
-                          src={gif}
-                          alt="gif"
-                          onClick={() => handleSendGif(gif)}
-                          className="w-full h-20 object-cover rounded-lg cursor-pointer hover:opacity-80 transition"
-                        />
+
+                    {/* Search GIFs Bar */}
+                    <div className="relative mb-2.5">
+                      <FaSearch className="absolute left-3 top-2.5 text-gray-400 text-[11px]" />
+                      <input
+                        type="text"
+                        placeholder="Search GIFs (e.g. happy, laugh, dance)..."
+                        value={gifSearchQuery}
+                        onChange={(e) => setGifSearchQuery(e.target.value)}
+                        className="w-full pl-8 pr-3 py-1.5 bg-gray-100 dark:bg-gray-800 rounded-xl text-xs text-gray-800 dark:text-white focus:ring-2 focus:ring-brand-orange outline-none"
+                      />
+                    </div>
+
+                    {/* Category Filter Pills */}
+                    <div className="flex items-center gap-1.5 overflow-x-auto pb-2 mb-2 custom-scrollbar no-scrollbar">
+                      {GIF_CATEGORIES.map((cat) => (
+                        <button
+                          key={cat}
+                          type="button"
+                          onClick={() => setGifCategory(cat)}
+                          className={`px-2.5 py-1 rounded-full text-[10px] font-extrabold whitespace-nowrap transition ${
+                            gifCategory === cat
+                              ? "bg-brand-orange text-white shadow-xs"
+                              : "bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700"
+                          }`}
+                        >
+                          {cat}
+                        </button>
                       ))}
+                    </div>
+
+                    {/* GIFs Grid List */}
+                    <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 max-h-60 overflow-y-auto custom-scrollbar p-0.5">
+                      {(() => {
+                        const filtered = CHAT_GIFS.filter((g) => {
+                          const matchCat = gifCategory === "All" || g.category.toLowerCase() === gifCategory.toLowerCase();
+                          const matchSearch =
+                            !gifSearchQuery ||
+                            g.title.toLowerCase().includes(gifSearchQuery.toLowerCase()) ||
+                            g.category.toLowerCase().includes(gifSearchQuery.toLowerCase());
+                          return matchCat && matchSearch;
+                        });
+
+                        return filtered.length > 0 ? (
+                          filtered.map((gif) => (
+                            <div
+                              key={gif.id}
+                              onClick={() => handleSendGif(gif.url)}
+                              className="group relative h-24 bg-gray-100 dark:bg-gray-800 rounded-xl overflow-hidden cursor-pointer border border-transparent hover:border-brand-orange hover:shadow-md transition-all duration-200"
+                              title={gif.title}
+                            >
+                              <img
+                                src={gif.url}
+                                alt={gif.title}
+                                className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                                loading="lazy"
+                              />
+                              <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/80 to-transparent p-1 text-[9px] text-white font-medium truncate opacity-0 group-hover:opacity-100 transition-opacity">
+                                {gif.title}
+                              </div>
+                            </div>
+                          ))
+                        ) : (
+                          <div className="col-span-full py-8 text-center text-xs text-gray-400 font-medium">
+                            No GIFs found for "{gifSearchQuery || gifCategory}"
+                          </div>
+                        );
+                      })()}
                     </div>
                   </div>
                 )}
@@ -2114,68 +2458,73 @@ const ChatPage = () => {
                   />
 
                   {/* MOBILE ATTACHMENT PLUS BUTTON (< sm screens) */}
-                  <button
-                    type="button"
-                    onClick={() => setShowMobileDropup(!showMobileDropup)}
-                    className="sm:hidden p-2 text-gray-500 hover:text-brand-orange text-base transition shrink-0"
-                    title="Add Attachment"
-                  >
-                    <FaPlus
-                      className={`transition-transform duration-200 ${showMobileDropup ? "rotate-45 text-brand-orange" : ""}`}
-                    />
-                  </button>
+                  <div className="sm:hidden relative mobile-dropup-container">
+                    <button
+                      type="button"
+                      onClick={() => setShowMobileDropup(!showMobileDropup)}
+                      className="p-2 text-gray-500 hover:text-brand-orange text-base transition shrink-0"
+                      title="Add Attachment"
+                    >
+                      <FaPlus
+                        className={`transition-transform duration-200 ${showMobileDropup ? "rotate-45 text-brand-orange" : ""}`}
+                      />
+                    </button>
 
-                  {/* MOBILE DROP-UP POPOVER MENU (< sm screens) */}
-                  {showMobileDropup && (
-                    <div className="sm:hidden absolute bottom-16 left-2 z-40 bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 rounded-2xl shadow-xl p-3 flex gap-4 items-center animate-pop-in">
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setShowMobileDropup(false);
-                          // setShowShiftPicker ? setShowShiftPicker(false) : void(0); // compatibility placeholder check
-                          setShowGifPicker(!showGifPicker);
-                        }}
-                        className="flex flex-col items-center gap-1 text-gray-700 dark:text-gray-200 hover:text-brand-orange text-[10px] font-bold"
-                      >
-                        <div className="w-10 h-10 rounded-full bg-purple-100 dark:bg-purple-950/40 text-purple-600 flex items-center justify-center text-xs font-black shadow-sm">
-                          GIF
-                        </div>
-                        <span>GIF</span>
-                      </button>
+                    {/* MOBILE DROP-UP POPOVER MENU (< sm screens) */}
+                    {showMobileDropup && (
+                      <div className="absolute bottom-12 left-0 z-40 bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 rounded-2xl shadow-xl p-3 flex gap-4 items-center animate-pop-in">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setShowMobileDropup(false);
+                            setShowGifPicker(!showGifPicker);
+                          }}
+                          className="flex flex-col items-center gap-1 text-gray-700 dark:text-gray-200 hover:text-brand-orange text-[10px] font-bold"
+                        >
+                          <div className="w-10 h-10 rounded-full bg-purple-100 dark:bg-purple-950/40 text-purple-600 flex items-center justify-center text-xs font-black shadow-sm">
+                            GIF
+                          </div>
+                          <span>GIF</span>
+                        </button>
 
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setShowMobileDropup(false);
-                          fileInputRef.current?.click();
-                        }}
-                        className="flex flex-col items-center gap-1 text-gray-700 dark:text-gray-200 hover:text-brand-orange text-[10px] font-bold"
-                      >
-                        <div className="w-10 h-10 rounded-full bg-blue-100 dark:bg-blue-950/40 text-blue-600 flex items-center justify-center text-lg shadow-sm">
-                          <FaPaperclip />
-                        </div>
-                        <span>Attach</span>
-                      </button>
-                    </div>
-                  )}
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setShowMobileDropup(false);
+                            fileInputRef.current?.click();
+                          }}
+                          className="flex flex-col items-center gap-1 text-gray-700 dark:text-gray-200 hover:text-brand-orange text-[10px] font-bold"
+                        >
+                          <div className="w-10 h-10 rounded-full bg-blue-100 dark:bg-blue-950/40 text-blue-600 flex items-center justify-center text-lg shadow-sm">
+                            <FaPaperclip />
+                          </div>
+                          <span>Attach</span>
+                        </button>
+                      </div>
+                    )}
+                  </div>
 
                   {/* DESKTOP INLINE ACTION BUTTONS (>= sm screens) */}
                   <div className="hidden sm:flex items-center gap-1 shrink-0">
-                    <button
-                      type="button"
-                      onClick={() => setShowEmojiPicker(!showEmojiPicker)}
-                      className="p-2 text-gray-500 hover:text-brand-orange text-lg transition"
-                    >
-                      <FaSmile />
-                    </button>
+                    <div className="relative emoji-picker-container">
+                      <button
+                        type="button"
+                        onClick={() => setShowEmojiPicker(!showEmojiPicker)}
+                        className="p-2 text-gray-500 hover:text-brand-orange text-lg transition"
+                      >
+                        <FaSmile />
+                      </button>
+                    </div>
 
-                    <button
-                      type="button"
-                      onClick={() => setShowGifPicker(!showGifPicker)}
-                      className="px-2 py-1 bg-gray-100 dark:bg-gray-800 hover:bg-orange-100 text-gray-600 dark:text-gray-300 text-xs font-black rounded-lg transition"
-                    >
-                      GIF
-                    </button>
+                    <div className="relative gif-picker-container">
+                      <button
+                        type="button"
+                        onClick={() => setShowGifPicker(!showGifPicker)}
+                        className="px-2 py-1 bg-gray-100 dark:bg-gray-800 hover:bg-orange-100 text-gray-600 dark:text-gray-300 text-xs font-black rounded-lg transition"
+                      >
+                        GIF
+                      </button>
+                    </div>
 
                     <button
                       type="button"
@@ -2250,6 +2599,42 @@ const ChatPage = () => {
             alt="Full view"
             className="max-w-full max-h-full rounded-lg object-contain"
           />
+        </div>
+      )}
+
+      {/* Full Video Viewer Modal */}
+      {fullViewVideo && (
+        <div
+          className="fixed inset-0 z-50 bg-black/95 backdrop-blur-md flex items-center justify-center p-4 animate-fade-in"
+          onClick={() => setFullViewVideo(null)}
+        >
+          <div
+            className="relative max-w-4xl w-full max-h-[90vh] flex flex-col items-center justify-center"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <button
+              onClick={() => setFullViewVideo(null)}
+              className="absolute -top-12 right-0 text-white/80 hover:text-white text-2xl p-2 transition bg-white/10 hover:bg-white/20 rounded-full cursor-pointer"
+              title="Close"
+            >
+              <FaTimes />
+            </button>
+            <video
+              src={fullViewVideo}
+              controls
+              autoPlay
+              playsInline
+              className="max-h-[75vh] w-auto max-w-full rounded-2xl shadow-2xl bg-black border border-white/10"
+            />
+            <div className="mt-4 flex items-center gap-3">
+              {/* <button
+                onClick={() => handleDownloadMedia(fullViewVideo, "chat_video.mp4")}
+                className="px-5 py-2.5 bg-brand-orange hover:bg-orange-600 text-white rounded-xl text-xs font-bold transition flex items-center gap-2 shadow-lg cursor-pointer"
+              >
+                <FaDownload /> Download Video
+              </button> */}
+            </div>
+          </div>
         </div>
       )}
 
@@ -2382,26 +2767,67 @@ const ChatPage = () => {
   );
 };
 
+// Helper to get initials for avatar
+const getInitials = (name) => {
+  if (!name) return "U";
+  const parts = name.trim().split(" ");
+  if (parts.length >= 2 && parts[0] && parts[1]) {
+    return (parts[0][0] + parts[1][0]).toUpperCase();
+  }
+  return name.trim().slice(0, 2).toUpperCase();
+};
+
+const getAvatarColor = (name) => {
+  const colors = [
+    "bg-[#fedacb] text-[#c54924]",
+    "bg-[#fde2e4] text-[#d63384]",
+    "bg-[#e2ece9] text-[#198754]",
+    "bg-[#dbeafe] text-[#1d4ed8]",
+    "bg-[#ede9fe] text-[#6d28d9]",
+    "bg-[#fef3c7] text-[#b45309]",
+  ];
+  let hash = 0;
+  for (let i = 0; i < (name || "").length; i++) {
+    hash = name.charCodeAt(i) + ((hash << 5) - hash);
+  }
+  return colors[Math.abs(hash) % colors.length];
+};
+
 // Sub-component: Conversation List Item
 const ConversationItem = ({ conv, isActive, isTyping, onClick }) => {
   const partner = conv.partner;
   const lastMsg = conv.lastMessage;
+  const unreadCount = Number(conv.unreadCount || 0);
+  const hasCustomImage = partner?.profileImage && 
+    partner.profileImage !== "/logo192.png" && 
+    !partner.profileImage.includes("default") &&
+    !partner.profileImage.includes("placeholder");
 
   return (
     <div
       onClick={onClick}
-      className={`flex items-center gap-3 p-3.5 mx-2 rounded-2xl cursor-pointer transition ${
+      className={`flex items-center gap-3 p-3.5 mx-2 rounded-2xl cursor-pointer transition relative ${
         isActive
           ? "bg-brand-orange/10 dark:bg-brand-orange/20 border border-brand-orange/20"
           : "hover:bg-gray-100 dark:hover:bg-gray-800/60"
       }`}
     >
       <div className="relative flex-shrink-0">
-        <img
-          src={partner?.profileImage || "/logo192.png"}
-          alt={partner?.name}
-          className="w-11 h-11 rounded-full object-cover border border-gray-200 dark:border-gray-700"
-        />
+        {hasCustomImage ? (
+          <img
+            src={partner.profileImage}
+            alt={partner?.name}
+            className="w-11 h-11 rounded-full object-cover border border-gray-200 dark:border-gray-700"
+          />
+        ) : (
+          <div
+            className={`w-11 h-11 rounded-full flex items-center justify-center font-bold text-sm select-none border border-black/5 dark:border-white/5 ${getAvatarColor(
+              partner?.name
+            )}`}
+          >
+            {getInitials(partner?.name)}
+          </div>
+        )}
         {partner?.isOnline && (
           <span className="absolute bottom-0 right-0 w-3 h-3 bg-green-500 rounded-full border-2 border-white dark:border-gray-900"></span>
         )}
@@ -2413,6 +2839,9 @@ const ConversationItem = ({ conv, isActive, isTyping, onClick }) => {
             <h4 className="font-extrabold text-xs text-gray-800 dark:text-white truncate">
               {partner?.name || "User"}
             </h4>
+            {conv.isPinned && (
+              <FaThumbtack className="text-[10px] text-brand-orange shrink-0 rotate-45" title="Pinned" />
+            )}
             {conv.isBlockedByMe && (
               <span className="bg-red-100 text-red-600 dark:bg-red-950/70 dark:text-red-400 text-[9px] font-black px-1.5 py-0.5 rounded-full flex items-center gap-0.5 shrink-0 border border-red-200 dark:border-red-800">
                 <FaBan className="text-[8px]" /> Blocked
@@ -2420,17 +2849,26 @@ const ConversationItem = ({ conv, isActive, isTyping, onClick }) => {
             )}
           </div>
           {conv.lastMessageAt && (
-            <span className="text-[10px] text-gray-400 font-semibold shrink-0">
-              {new Date(conv.lastMessageAt).toLocaleTimeString([], {
-                hour: "2-digit",
-                minute: "2-digit",
-              })}
+            <span
+              className={`text-[10px] shrink-0 ${
+                unreadCount > 0
+                  ? "text-[#25D366] font-bold"
+                  : "text-gray-400 font-semibold"
+              }`}
+            >
+              {formatWhatsAppTimestamp(conv.lastMessageAt)}
             </span>
           )}
         </div>
 
-        <div className="flex justify-between items-center">
-          <p className="text-[11px] text-gray-500 dark:text-gray-400 truncate max-w-[170px]">
+        <div className="flex justify-between items-center gap-2">
+          <p
+            className={`text-[11px] truncate flex-1 min-w-0 ${
+              unreadCount > 0
+                ? "font-bold text-gray-900 dark:text-white"
+                : "text-gray-500 dark:text-gray-400"
+            }`}
+          >
             {isTyping ? (
               <span className="text-brand-orange font-bold animate-pulse">
                 typing...
@@ -2442,6 +2880,8 @@ const ConversationItem = ({ conv, isActive, isTyping, onClick }) => {
                 <span className="inline-flex items-center gap-1 font-semibold text-emerald-600 dark:text-emerald-400">
                   <FaLock className="text-[9px]" /> Encrypted Message
                 </span>
+              ) : lastMsg.messageType === "reel" || lastMsg.mediaMeta?.isReelShare || (typeof lastMsg.text === "string" && lastMsg.text.includes("/reels/")) ? (
+                <span>🎬 Reel: {lastMsg.mediaMeta?.title || lastMsg.mediaMeta?.caption || (lastMsg.text ? lastMsg.text.replace(/https?:\/\/[^\s]+/g, "").replace(/^🎬\s*/, "").trim() : "") || "Watch Reel"}</span>
               ) : (
                 lastMsg.text || `[${lastMsg.messageType}]`
               )
@@ -2450,9 +2890,10 @@ const ConversationItem = ({ conv, isActive, isTyping, onClick }) => {
             )}
           </p>
 
-          {conv.unreadCount > 0 && (
-            <span className="bg-brand-orange text-white text-[10px] font-black px-1.5 py-0.5 rounded-full min-w-[18px] text-center shadow-sm">
-              {conv.unreadCount}
+          {/* WhatsApp-Style Green Notification Count Badge */}
+          {unreadCount > 0 && (
+            <span className="bg-[#25D366] text-white text-[11px] font-bold min-w-[20px] h-[20px] px-1 rounded-full flex items-center justify-center text-center shadow-xs shrink-0">
+              {unreadCount > 99 ? "99+" : unreadCount}
             </span>
           )}
         </div>
@@ -2475,6 +2916,7 @@ const MessageBubble = ({
   onUnsend,
   onDelete,
   onImageClick,
+  onVideoClick,
   activeMenuId,
   setActiveMenuId,
   showMoreEmojisMsgId,
@@ -2482,6 +2924,93 @@ const MessageBubble = ({
 }) => {
   const isMenuOpen = activeMenuId === msg._id;
   const openDownwards = index < 2;
+  const isWithin1Hour =
+    !msg.createdAt ||
+    Date.now() - new Date(msg.createdAt).getTime() <= 60 * 60 * 1000;
+
+  const navigate = useNavigate();
+
+  const isReel =
+    msg.messageType === "reel" ||
+    Boolean(msg.mediaMeta?.isReelShare) ||
+    (typeof msg.text === "string" && msg.text.includes("/reels/"));
+
+  let reelId = msg.mediaMeta?.reelId;
+  let reelTitle = msg.mediaMeta?.title || msg.mediaMeta?.caption;
+  let reelThumb = msg.mediaUrl || msg.mediaMeta?.thumbnailUrl;
+  let reelCreator = msg.mediaMeta?.creatorName;
+  let reelCreatorAvatar = msg.mediaMeta?.creatorImage;
+
+  if (!reelId && typeof msg.text === "string") {
+    const match = msg.text.match(/\/reels\/([a-zA-Z0-9_-]+)/);
+    if (match) {
+      reelId = match[1];
+    }
+    if (!reelTitle) {
+      reelTitle = msg.text
+        .replace(/https?:\/\/[^\s]+/g, "")
+        .replace(/^🎬\s*/, "")
+        .trim();
+    }
+  }
+
+  const longPressTimerRef = useRef(null);
+  const touchStartPosRef = useRef({ x: 0, y: 0 });
+  const isLongPressTriggeredRef = useRef(false);
+
+  const startLongPress = (clientX, clientY) => {
+    isLongPressTriggeredRef.current = false;
+    touchStartPosRef.current = { x: clientX, y: clientY };
+
+    if (longPressTimerRef.current) clearTimeout(longPressTimerRef.current);
+
+    longPressTimerRef.current = setTimeout(() => {
+      isLongPressTriggeredRef.current = true;
+      setActiveMenuId(msg._id);
+      if (setShowMoreEmojisMsgId) setShowMoreEmojisMsgId(null);
+      if (navigator.vibrate) {
+        try {
+          navigator.vibrate(40);
+        } catch (_) {}
+      }
+    }, 450);
+  };
+
+  const cancelLongPress = () => {
+    if (longPressTimerRef.current) {
+      clearTimeout(longPressTimerRef.current);
+      longPressTimerRef.current = null;
+    }
+  };
+
+  const handleTouchStart = (e) => {
+    if (e.touches && e.touches[0]) {
+      startLongPress(e.touches[0].clientX, e.touches[0].clientY);
+    }
+  };
+
+  const handleTouchMove = (e) => {
+    if (e.touches && e.touches[0] && longPressTimerRef.current) {
+      const dx = Math.abs(e.touches[0].clientX - touchStartPosRef.current.x);
+      const dy = Math.abs(e.touches[0].clientY - touchStartPosRef.current.y);
+      if (dx > 10 || dy > 10) {
+        cancelLongPress();
+      }
+    }
+  };
+
+  const handleMouseDown = (e) => {
+    // Only left-click triggers long-press timer
+    if (e.button === 0) {
+      startLongPress(e.clientX, e.clientY);
+    }
+  };
+
+  const handleContextMenu = (e) => {
+    e.preventDefault();
+    setActiveMenuId(msg._id);
+    if (setShowMoreEmojisMsgId) setShowMoreEmojisMsgId(null);
+  };
 
   return (
     <div
@@ -2490,11 +3019,20 @@ const MessageBubble = ({
     >
       {/* Quoted Parent Reply Snippet */}
       {msg.replyTo && (
-        <div className="mb-1 text-[10px] bg-gray-200 dark:bg-gray-800 text-gray-600 dark:text-gray-300 px-3 py-1.5 rounded-xl border-l-4 border-brand-orange max-w-xs truncate">
+        <div className="mb-1 text-[10px] bg-gray-200 dark:bg-gray-800 text-gray-600 dark:text-gray-300 px-3 py-1.5 rounded-xl border-l-4 border-brand-orange max-w-xs truncate shadow-xs">
           <span className="font-bold text-brand-orange block">
-            {msg.replyTo.sender?.name}:
+            {msg.replyTo.sender?.name || "User"}:
           </span>
-          {msg.replyTo.text || "Attachment"}
+          {msg.replyTo.text ||
+            (msg.replyTo.messageType === "image"
+              ? "📷 Image Attachment"
+              : msg.replyTo.messageType === "video"
+                ? "🎥 Video Attachment"
+                : msg.replyTo.messageType === "audio"
+                  ? "🎵 Voice Message"
+                  : msg.replyTo.messageType === "gif"
+                    ? "🖼️ GIF"
+                    : "Media Attachment")}
         </div>
       )}
 
@@ -2618,8 +3156,8 @@ const MessageBubble = ({
                 </button>
               )}
 
-              {/* Download Image / Video / Attachment */}
-              {msg.mediaUrl && !msg.isUnsent && (
+              {/* Download Image / Video / Attachment (Hidden for Reels) */}
+              {msg.mediaUrl && !msg.isUnsent && !isReel && msg.messageType !== "reel" && (
                 <button
                   onClick={() => {
                     setActiveMenuId(null);
@@ -2640,7 +3178,7 @@ const MessageBubble = ({
               )}
 
               {/* Edit */}
-              {isMe && !msg.isUnsent && msg.messageType === "text" && (
+              {isMe && !msg.isUnsent && msg.messageType === "text" && isWithin1Hour && (
                 <button
                   onClick={() => {
                     setActiveMenuId(null);
@@ -2675,7 +3213,17 @@ const MessageBubble = ({
 
         {/* Bubble Content */}
         <div
-          className={`p-3 text-xs shadow-sm relative ${
+          onTouchStart={handleTouchStart}
+          onTouchMove={handleTouchMove}
+          onTouchEnd={cancelLongPress}
+          onTouchCancel={cancelLongPress}
+          onMouseDown={handleMouseDown}
+          onMouseUp={cancelLongPress}
+          onMouseLeave={cancelLongPress}
+          onContextMenu={handleContextMenu}
+          className={`p-3 text-xs shadow-sm relative transition-all duration-200 select-none cursor-pointer ${
+            isMenuOpen ? "ring-2 ring-brand-orange/60 scale-[1.01]" : ""
+          } ${
             msg.isUnsent
               ? "bg-gray-200 dark:bg-gray-800 text-gray-500 italic rounded-2xl"
               : isMe
@@ -2701,6 +3249,81 @@ const MessageBubble = ({
           {/* Render Media / Text Content */}
           {msg.isUnsent ? (
             <p>This message was unsent</p>
+          ) : isReel ? (
+            /* Reel Card Preview */
+            <div
+              onClick={(e) => {
+                e.stopPropagation();
+                if (reelId) {
+                  navigate(`/reels/${reelId}`);
+                }
+              }}
+              className="w-56 sm:w-64 rounded-2xl overflow-hidden bg-black border border-white/10 shadow-xl cursor-pointer group/reel transition-all hover:scale-[1.02] active:scale-[0.98] my-1"
+            >
+              {/* Reel Thumbnail Card */}
+              <div className="relative w-full h-72 sm:h-80 bg-zinc-950 flex items-center justify-center overflow-hidden">
+                {reelThumb ? (
+                  <img
+                    src={reelThumb}
+                    alt="Reel preview"
+                    className="w-full h-full object-cover group-hover/reel:scale-105 transition-transform duration-500"
+                  />
+                ) : (
+                  <div className="flex flex-col items-center justify-center text-zinc-600">
+                    <FaPlay className="text-3xl text-zinc-700" />
+                  </div>
+                )}
+
+                {/* Dark Gradient Overlay */}
+                <div className="absolute inset-0 bg-gradient-to-t from-black/95 via-black/35 to-black/20" />
+
+                {/* Top Left Badge: "▶ Reel" */}
+                <div className="absolute top-2.5 left-2.5 z-10 flex items-center gap-1.5 bg-black/60 backdrop-blur-md px-2.5 py-1 rounded-full text-[10px] font-black text-white border border-white/15 shadow-sm">
+                  <FaPlay className="text-[8px] text-brand-orange" />
+                  <span>Reel</span>
+                </div>
+
+                {/* Center Play Button Overlay */}
+                <div className="absolute inset-0 flex items-center justify-center z-10">
+                  <div className="w-12 h-12 rounded-full bg-brand-orange/95 text-white flex items-center justify-center text-sm shadow-2xl group-hover/reel:scale-110 active:scale-95 transition-transform">
+                    <FaPlay className="ml-0.5 text-white" />
+                  </div>
+                </div>
+
+                {/* Bottom Info: Creator, Caption & Watch Button */}
+                <div className="absolute bottom-0 inset-x-0 p-3 z-10 text-white flex flex-col gap-1 text-left">
+                  {reelCreator && (
+                    <div className="flex items-center gap-1.5 mb-0.5">
+                      {reelCreatorAvatar ? (
+                        <img
+                          src={reelCreatorAvatar}
+                          alt={reelCreator}
+                          className="w-5 h-5 rounded-full object-cover border border-white/40"
+                        />
+                      ) : (
+                        <div className="w-5 h-5 rounded-full bg-brand-orange text-white text-[9px] font-bold flex items-center justify-center">
+                          {reelCreator[0]?.toUpperCase()}
+                        </div>
+                      )}
+                      <span className="text-[11px] font-extrabold text-white truncate shadow-xs">
+                        {reelCreator}
+                      </span>
+                    </div>
+                  )}
+
+                  {reelTitle && (
+                    <p className="text-xs font-semibold text-white/95 line-clamp-2 leading-snug drop-shadow-md">
+                      {reelTitle}
+                    </p>
+                  )}
+
+                  <div className="mt-1 flex items-center justify-between pt-1.5 border-t border-white/15 text-[10px] text-brand-orange font-black">
+                    <span>Watch Reel</span>
+                    <span>→</span>
+                  </div>
+                </div>
+              </div>
+            </div>
           ) : (
             <>
               {msg.messageType === "text" && (
@@ -2739,11 +3362,22 @@ const MessageBubble = ({
               )}
 
               {msg.messageType === "video" && (
-                <video
-                  src={msg.mediaUrl}
-                  controls
-                  className="rounded-xl w-full max-w-full sm:max-w-xs max-h-52 object-cover my-1"
-                />
+                <div
+                  onClick={() => onVideoClick && onVideoClick(msg.mediaUrl)}
+                  className="relative group/video cursor-pointer my-1 rounded-xl overflow-hidden max-w-full sm:max-w-xs max-h-52 bg-black flex items-center justify-center shadow-xs"
+                >
+                  <video
+                    src={msg.mediaUrl}
+                    className="rounded-xl w-full max-w-full sm:max-w-xs max-h-52 object-cover pointer-events-none"
+                    playsInline
+                    muted
+                  />
+                  <div className="absolute inset-0 bg-black/35 hover:bg-black/15 flex items-center justify-center transition backdrop-blur-[1px]">
+                    <div className="w-11 h-11 bg-brand-orange text-white rounded-full flex items-center justify-center text-sm shadow-xl hover:scale-110 active:scale-95 transition">
+                      <FaPlay className="ml-0.5" />
+                    </div>
+                  </div>
+                </div>
               )}
 
               {msg.messageType === "audio" && (

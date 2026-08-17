@@ -1,7 +1,9 @@
 import { useEffect, useState } from "react";
 import API from "../api/axios";
-import { HelpCircle, Eye, Edit2, X, Save, Trash2 } from "lucide-react";
+import { HelpCircle, Eye, Edit2, X, Save, Trash2, Edit } from "lucide-react";
 import "./Dashboard.css";
+import { IoMdAddCircleOutline } from "react-icons/io";
+import { FaPhoneAlt } from "react-icons/fa";
 
 export default function HelpPage() {
   const [help, setHelp] = useState([]);
@@ -84,7 +86,7 @@ export default function HelpPage() {
               setIsAdding(true);
             }}
           >
-            ➕ Add Help Card
+            <IoMdAddCircleOutline /> Add Help Card
           </button>
         </div>
         <div>
@@ -124,7 +126,7 @@ export default function HelpPage() {
                 {item.category && <span className="badge badge-active">{item.category}</span>}
                 {item.supportNumber && (
                   <span className="badge badge-pub" style={{ background: "rgba(59, 130, 246, 0.1)", color: "var(--blue)", border: "1px solid rgba(59, 130, 246, 0.2)" }}>
-                    📞 {item.supportNumber}
+                    <FaPhoneAlt /> {item.supportNumber}
                   </span>
                 )}
                 <span
@@ -133,7 +135,7 @@ export default function HelpPage() {
                   onClick={() => handleTogglePublish(item._id)}
                   title="Click to toggle visibility"
                 >
-                  {item.isPublished !== false ? "👁️ Published" : "👁️‍🗨️ Draft"}
+                  {item.isPublished !== false ? `👁️ Published` : `👁️‍🗨️ Draft`}
                 </span>
               </div>
 
@@ -144,16 +146,16 @@ export default function HelpPage() {
       )}
 
       {(selected || isAdding) && selected && (
-        <div className="modal-overlay">
-          <div className="modal-box" style={{ maxWidth: 560 }}>
+        <div className="modal-overlay" style={{ zIndex: 9999 }}>
+          <div className="modal-box">
             <div className="modal-head">
               <h3>
                 {mode === "view" ? (
-                  <>👁️ View FAQ</>
+                  <div className="flex items-center justify-center gap-2"><Eye/> View FAQ</div>
                 ) : mode === "edit" ? (
-                  <>✏️ Edit FAQ</>
+                  <div className="flex items-center justify-center gap-2"><Edit/> Edit FAQ</div>
                 ) : (
-                  <>➕ Add FAQ</>
+                  <div className="flex items-center justify-center gap-2"><IoMdAddCircleOutline /> Add FAQ</div>
                 )}
               </h3>
               <button

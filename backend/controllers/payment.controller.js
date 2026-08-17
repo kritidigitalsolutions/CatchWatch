@@ -231,6 +231,8 @@ exports.verifyPayment = async (
     // VERIFY SIGNATURE
     // ========================================
 
+    const keySecret = (process.env.RAZORPAY_KEY_SECRET || "").trim();
+
     const body =
       razorpay_order_id +
       "|" +
@@ -240,8 +242,7 @@ exports.verifyPayment = async (
       crypto
         .createHmac(
           "sha256",
-          process.env
-            .RAZORPAY_KEY_SECRET
+          keySecret
         )
         .update(body)
         .digest("hex");
@@ -257,7 +258,7 @@ exports.verifyPayment = async (
       });
     }
 
-    const userId = req.user.id;
+    const userId = req.user?.id || req.user?._id;
 
     // ========================================
     // PREVENT DUPLICATE PAYMENT
@@ -293,11 +294,16 @@ exports.verifyPayment = async (
       });
     }
 
+    const isBlueTick =
+      plan.category === "BLUETICK" ||
+      plan.type === "BLUETICK" ||
+      plan.planType === "BLUETICK";
+
     // ========================================
     // CHECK EXISTING SUBSCRIPTION (Only for video streaming plans, skip for BLUETICK)
     // ========================================
 
-    if (plan.type !== "BLUETICK") {
+    if (!isBlueTick) {
       let existing =
         await Subscription.findOne({
           user: userId,
@@ -322,33 +328,27 @@ exports.verifyPayment = async (
       }
     }
 
-    // ========================================
-    // RAZORPAY CHECK
-    // ========================================
-
-    if (!razorpay) {
-      return res.status(503).json({
-        success: false,
-        message:
-          "Payment gateway not configured",
-      });
-    }
-
-    // ========================================
-    // FETCH ORDER DETAILS
-    // ========================================
-
-    const orderDetails =
-      await razorpay.orders.fetch(
-        razorpay_order_id
-      );
-
     let finalAmount =
       plan.price;
 
-    const appliedCode =
-      orderDetails.notes
-        ?.promoCode || "";
+    let appliedCode = "";
+
+    // ========================================
+    // FETCH ORDER DETAILS (Safely)
+    // ========================================
+
+    if (razorpay) {
+      try {
+        const orderDetails =
+          await razorpay.orders.fetch(
+            razorpay_order_id
+          );
+        appliedCode =
+          orderDetails?.notes?.promoCode || "";
+      } catch (fetchErr) {
+        console.warn("Could not fetch order from Razorpay API, proceeding with verified signature:", fetchErr.message);
+      }
+    }
 
     // ========================================
     // APPLY PROMO
@@ -407,7 +407,7 @@ exports.verifyPayment = async (
 
     endDate.setUTCDate(
       endDate.getUTCDate() +
-        plan.duration
+        (plan.duration || 30)
     );
 
     const subscription =

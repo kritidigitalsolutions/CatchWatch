@@ -42,7 +42,7 @@ const messageSchema = new mongoose.Schema(
     },
     messageType: {
       type: String,
-      enum: ["text", "image", "video", "audio", "gif", "call"],
+      enum: ["text", "image", "video", "audio", "gif", "call", "reel"],
       default: "text",
     },
     text: {
@@ -100,10 +100,8 @@ const messageSchema = new mongoose.Schema(
       default: "",
     },
     mediaMeta: {
-      fileName: { type: String, default: "" },
-      fileSize: { type: Number, default: 0 },
-      duration: { type: Number, default: 0 },
-      mimeType: { type: String, default: "" },
+      type: mongoose.Schema.Types.Mixed,
+      default: {},
     },
     replyTo: {
       type: mongoose.Schema.Types.ObjectId,

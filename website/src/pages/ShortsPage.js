@@ -7,11 +7,12 @@ import { FaShareNodes } from "react-icons/fa6";
 import { LuMessageCircleMore } from "react-icons/lu";
 import Loader from '../components/Loader';
 import VerifiedBadge from '../components/VerifiedBadge';
+import ShareReelModal from '../components/ShareReelModal';
 import { HiSpeakerphone } from "react-icons/hi";
 
 // APIs Import
 import API from '../api/axiosConfig';
-import { getReelsFeed, incrementShares } from '../api/reelsApi';
+import { getReelsFeed } from '../api/reelsApi';
 import { toggleLike, toggleBookmark, getContentInteractions } from '../api/interactionApi';
 import { addComment, getComments, deleteComment, pinComment } from '../api/commentApi';
 import { toggleFollowUser } from '../api/userApi';
@@ -40,11 +41,12 @@ const ShortVideo = ({ video, isActive }) => {
   const [isPlaying, setIsPlaying] = useState(false);
 
   // Interactive States
-  const [liked, setLiked] = useState(false);
-  const [likesCount, setLikesCount] = useState(video.likesCount || video.likes?.length || 0);
-  const [saved, setSaved] = useState(false);
-  const [isFollowing, setIsFollowing] = useState(video.isFollowing || false);
+  const [liked, setLiked] = useState(Boolean(video.isLiked || video.userInteraction === "like"));
+  const [likesCount, setLikesCount] = useState(Number(video.likesCount ?? video.likes?.length ?? 0));
+  const [saved, setSaved] = useState(Boolean(video.isSaved || video.isBookmarked));
+  const [isFollowing, setIsFollowing] = useState(Boolean(video.isFollowing));
   const [showComments, setShowComments] = useState(false);
+  const [showShareModal, setShowShareModal] = useState(false);
   const [comments, setComments] = useState([]);
   const [commentText, setCommentText] = useState("");
   const [isLoadingComments, setIsLoadingComments] = useState(false);
@@ -171,22 +173,32 @@ const ShortVideo = ({ video, isActive }) => {
 
   // Fetch stats and interactions if active
   useEffect(() => {
+    const reelId = video._id || video.id;
+    if (!reelId) return;
+
     const fetchStats = async () => {
-      const token = localStorage.getItem("authToken") || localStorage.getItem("token");
-      if (!token) return;
       try {
-        const stats = await getContentInteractions(video._id);
-        setLiked(stats.userInteraction === "like");
-        setSaved(stats.isBookmarked);
-        setLikesCount(stats.likes || 0);
+        const stats = await getContentInteractions(reelId);
+        if (stats) {
+          if (stats.userInteraction) {
+            setLiked(stats.userInteraction === "like");
+          }
+          if (typeof stats.isBookmarked === "boolean") {
+            setSaved(stats.isBookmarked);
+          }
+          if (typeof stats.likes === "number") {
+            setLikesCount(stats.likes);
+          }
+        }
       } catch (e) {
         console.log("Error fetching stats for reel:", e);
       }
     };
-    if (isActive && video._id) {
+
+    if (isActive) {
       fetchStats();
     }
-  }, [isActive, video._id]);
+  }, [isActive, video._id, video.id]);
 
   // Fetch comments when comments section is opened
   useEffect(() => {
@@ -257,17 +269,29 @@ const ShortVideo = ({ video, isActive }) => {
 
   // Like Click Handler
   const handleLikeToggle = async (e) => {
-    e.stopPropagation();
+    if (e && e.stopPropagation) e.stopPropagation();
     const token = localStorage.getItem("authToken") || localStorage.getItem("token");
     if (!token) {
       alert("Please log in to like this reel.");
       return;
     }
+    const reelId = video._id || video.id;
+    if (!reelId) return;
+
     const nextLiked = !liked;
     setLiked(nextLiked);
     setLikesCount(prev => nextLiked ? prev + 1 : Math.max(0, prev - 1));
     try {
-      await toggleLike(video._id);
+      const res = await toggleLike(reelId);
+      if (res && typeof res.totalLikes === "number") {
+        setLikesCount(res.totalLikes);
+      }
+      if (res && typeof res.isLiked === "boolean") {
+        setLiked(res.isLiked);
+      } else if (res && res.message) {
+        const isNowLiked = res.message.toLowerCase().includes("added") || (res.message.toLowerCase().includes("like") && !res.message.toLowerCase().includes("removed"));
+        setLiked(isNowLiked);
+      }
     } catch (err) {
       console.error("Like toggle failed", err);
       // Rollback
@@ -278,16 +302,19 @@ const ShortVideo = ({ video, isActive }) => {
 
   // Save Click Handler
   const handleSaveToggle = async (e) => {
-    e.stopPropagation();
+    if (e && e.stopPropagation) e.stopPropagation();
     const token = localStorage.getItem("authToken") || localStorage.getItem("token");
     if (!token) {
       alert("Please log in to save this reel.");
       return;
     }
+    const reelId = video._id || video.id;
+    if (!reelId) return;
+
     const nextSaved = !saved;
     setSaved(nextSaved);
     try {
-      await toggleBookmark(video._id);
+      await toggleBookmark(reelId);
     } catch (err) {
       console.error("Bookmark toggle failed", err);
       // Rollback
@@ -296,16 +323,9 @@ const ShortVideo = ({ video, isActive }) => {
   };
 
   // Share Click Handler
-  const handleShareClick = async (e) => {
-    e.stopPropagation();
-    try {
-      const shareUrl = `${window.location.origin}/reels/${video._id}`;
-      await navigator.clipboard.writeText(shareUrl);
-      alert("Reel link copied to clipboard!");
-      await incrementShares(video._id);
-    } catch (err) {
-      console.log("Share action failed", err);
-    }
+  const handleShareClick = (e) => {
+    if (e && e.stopPropagation) e.stopPropagation();
+    setShowShareModal(true);
   };
 
   // Comment Submit Handler
@@ -392,55 +412,55 @@ const ShortVideo = ({ video, isActive }) => {
       )}
 
       {/* Floating System Actions Widget Stack */}
-      <div className="absolute bottom-24 right-4 flex flex-col gap-5 items-center z-20 text-white">
+      <div className="absolute bottom-16 sm:bottom-20 md:bottom-24 right-2 sm:right-3 md:right-4 flex flex-col gap-2.5 sm:gap-3.5 md:gap-5 items-center z-20 text-white">
         {/* Like Button */}
         <button onClick={handleLikeToggle} className="flex flex-col items-center group">
-          <div className={`w-12 h-12 bg-black/40 backdrop-blur-md border border-white/10 rounded-full flex items-center justify-center text-xl hover:bg-white/20 transition ${liked ? 'text-red-500 scale-110' : ''}`}>
+          <div className={`w-9 h-9 sm:w-10 sm:h-10 md:w-12 md:h-12 bg-black/40 backdrop-blur-md border border-white/10 rounded-full flex items-center justify-center text-base sm:text-lg md:text-xl hover:bg-white/20 transition ${liked ? 'text-red-500 scale-110' : ''}`}>
             {liked ? <FaHeart /> : <FaRegHeart />}
           </div>
-          <span className="text-xs font-bold mt-1 shadow-sm">
+          <span className="text-[10px] sm:text-xs font-bold mt-0.5 sm:mt-1 shadow-sm">
             {likesCount}
           </span>
         </button>
 
         {/* Comment Button */}
         <button onClick={(e) => { e.stopPropagation(); setShowComments(true); }} className="flex flex-col items-center group">
-          <div className="w-12 h-12 bg-black/40 backdrop-blur-md border border-white/10 rounded-full flex items-center justify-center text-xl group-hover:bg-white/20 transition">
+          <div className="w-9 h-9 sm:w-10 sm:h-10 md:w-12 md:h-12 bg-black/40 backdrop-blur-md border border-white/10 rounded-full flex items-center justify-center text-base sm:text-lg md:text-xl group-hover:bg-white/20 transition">
             <LuMessageCircleMore />
           </div>
-          <span className="text-xs font-bold mt-1 shadow-sm">
+          <span className="text-[10px] sm:text-xs font-bold mt-0.5 sm:mt-1 shadow-sm">
             {commentsCount}
           </span>
         </button>
 
         {/* Save Button */}
         <button onClick={handleSaveToggle} className="flex flex-col items-center group">
-          <div className={`w-12 h-12 bg-black/40 backdrop-blur-md border border-white/10 rounded-full flex items-center justify-center text-xl hover:bg-white/20 transition ${saved ? 'text-orange-500 scale-110' : ''}`}>
+          <div className={`w-9 h-9 sm:w-10 sm:h-10 md:w-12 md:h-12 bg-black/40 backdrop-blur-md border border-white/10 rounded-full flex items-center justify-center text-base sm:text-lg md:text-xl hover:bg-white/20 transition ${saved ? 'text-orange-500 scale-110' : ''}`}>
             <FaBookmark />
           </div>
-          <span className={`text-[10px] uppercase font-bold tracking-wide mt-0.5 ${saved ? 'text-orange-400' : ''}`}>
+          <span className={`text-[9px] sm:text-[10px] uppercase font-bold tracking-wide mt-0.5 ${saved ? 'text-orange-400' : ''}`}>
             {saved ? 'Saved' : 'Save'}
           </span>
         </button>
 
         {/* Share Button */}
         <button onClick={handleShareClick} className="flex flex-col items-center group">
-          <div className="w-12 h-12 bg-black/40 backdrop-blur-md border border-white/10 rounded-full flex items-center justify-center text-xl group-hover:bg-white/20 transition">
+          <div className="w-9 h-9 sm:w-10 sm:h-10 md:w-12 md:h-12 bg-black/40 backdrop-blur-md border border-white/10 rounded-full flex items-center justify-center text-base sm:text-lg md:text-xl group-hover:bg-white/20 transition">
             <FaShareNodes />
           </div>
-          <span className="text-[10px] uppercase font-bold tracking-wide mt-0.5">Share</span>
+          <span className="text-[9px] sm:text-[10px] uppercase font-bold tracking-wide mt-0.5">Share</span>
         </button>
       </div>
 
       {/* Bottom User Description Meta Interface */}
-      <div className="absolute bottom-6 left-4 right-20 z-20 text-white bg-gradient-to-t from-black/80 via-black/40 to-transparent p-3 rounded-xl backdrop-blur-[2px] border border-white/5">
-        <div className="flex items-center justify-between gap-2 mb-2">
+      <div className="absolute bottom-2 sm:bottom-3 md:bottom-5 left-2 sm:left-3 md:left-4 right-14 sm:right-16 md:right-20 z-20 text-white bg-gradient-to-t from-black/85 via-black/45 to-transparent p-2 sm:p-2.5 md:p-3 rounded-xl backdrop-blur-[2px] border border-white/5 max-h-[45%] overflow-hidden">
+        <div className="flex items-center justify-between gap-1.5 sm:gap-2 mb-1.5 sm:mb-2">
           {/* Author Avatar, Name & Username - Clickable */}
           <div
             onClick={handleProfileClick}
-            className="flex items-center gap-3 cursor-pointer group flex-1 min-w-0"
+            className="flex items-center gap-2 sm:gap-3 cursor-pointer group flex-1 min-w-0"
           >
-            <div className="w-10 h-10 rounded-full bg-brand-orange flex items-center justify-center font-bold text-sm border-2 border-white/70 overflow-hidden flex-shrink-0 group-hover:scale-105 transition">
+            <div className="w-7 h-7 sm:w-8 sm:h-8 md:w-10 md:h-10 rounded-full bg-brand-orange flex items-center justify-center font-bold text-xs sm:text-sm border-2 border-white/70 overflow-hidden flex-shrink-0 group-hover:scale-105 transition">
               {authorObj.profileImage || video.authorImage || video.channelImage ? (
                 <img
                   src={authorObj.profileImage || video.authorImage || video.channelImage}
@@ -452,11 +472,11 @@ const ShortVideo = ({ video, isActive }) => {
               )}
             </div>
             <div className="min-w-0 flex-1">
-              <h4 className="font-extrabold tracking-wide text-sm sm:text-base line-clamp-1 group-hover:text-brand-orange transition flex items-center gap-1.5">
+              <h4 className="font-extrabold tracking-wide text-xs sm:text-sm md:text-base line-clamp-1 group-hover:text-brand-orange transition flex items-center gap-1">
                 <span>{authorObj.name || video.authorName || "User"}</span>
                 <VerifiedBadge user={authorObj} size="sm" />
               </h4>
-              <p className="text-xs font-bold text-gray-300 line-clamp-1 group-hover:underline">
+              <p className="text-[10px] sm:text-xs font-bold text-gray-300 line-clamp-1 group-hover:underline">
                 {authorObj.username ? (authorObj.username.startsWith("@") ? authorObj.username : `@${authorObj.username}`) : "@user"}
               </p>
             </div>
@@ -466,7 +486,7 @@ const ShortVideo = ({ video, isActive }) => {
           {!isSelf && authorId && (
             <button
               onClick={handleFollowToggle}
-              className={`px-3.5 py-1.5 rounded-full text-xs font-extrabold transition shadow flex-shrink-0 ${
+              className={`px-2.5 py-1 sm:px-3.5 sm:py-1.5 rounded-full text-[10px] sm:text-xs font-extrabold transition shadow flex-shrink-0 ${
                 isFollowing
                   ? "bg-white/20 text-white border border-white/30 hover:bg-red-500/80 hover:border-red-500"
                   : "bg-brand-orange text-white hover:bg-orange-600"
@@ -476,7 +496,7 @@ const ShortVideo = ({ video, isActive }) => {
             </button>
           )}
         </div>
-        <p className="text-xs sm:text-sm text-gray-200 font-medium mb-2 line-clamp-2">
+        <p className="text-[11px] sm:text-xs md:text-sm text-gray-200 font-medium mb-1 sm:mb-2 line-clamp-2">
           {video.description || video.caption || "Enjoy this reel exclusively on CatchWatch."}
         </p>
         <div className="flex items-center gap-2 text-xs text-gray-300">
@@ -638,6 +658,13 @@ const ShortVideo = ({ video, isActive }) => {
           </div>
         </div>
       )}
+
+      {/* Share Reel Modal */}
+      <ShareReelModal
+        isOpen={showShareModal}
+        onClose={() => setShowShareModal(false)}
+        reel={video}
+      />
 
     </div>
   );
@@ -838,19 +865,19 @@ const ShortsPage = () => {
 
   if (error || reels.length === 0) {
     return (
-      <div className="max-w-md mx-auto w-full bg-black rounded-2xl overflow-hidden relative shadow-2xl aspect-[9/16] my-2 md:my-6 flex flex-col items-center justify-center text-white">
-        <h2 className="text-xl font-bold">Oops!</h2>
-        <p className="text-sm text-gray-400 mt-2">{error || "No reels available right now."}</p>
+      <div className="mx-auto w-auto max-w-full bg-black rounded-2xl overflow-hidden relative shadow-2xl aspect-[9/16] h-[calc(100dvh-136px)] max-h-[calc(100dvh-136px)] md:h-[calc(100vh-120px)] md:max-h-[780px] my-auto flex flex-col items-center justify-center text-white p-4">
+        <h2 className="text-lg sm:text-xl font-bold">Oops!</h2>
+        <p className="text-xs sm:text-sm text-gray-400 mt-2 text-center">{error || "No reels available right now."}</p>
       </div>
     );
   }
 
   return (
-    <div className="max-w-md mx-auto w-full bg-black rounded-2xl overflow-hidden relative shadow-2xl aspect-[9/16] my-2 md:my-6">
+    <div className="mx-auto w-auto max-w-full bg-black rounded-2xl overflow-hidden relative shadow-2xl aspect-[9/16] h-[calc(100dvh-136px)] max-h-[calc(100dvh-136px)] md:h-[calc(100vh-120px)] md:max-h-[780px] my-auto">
 
       {/* Absolute Transparent Frame Header */}
-      <div className="absolute top-0 left-0 right-0 p-4 flex justify-between items-center bg-gradient-to-b from-black/80 to-transparent z-50 text-white pointer-events-none">
-        <h1 className="text-xl font-black tracking-wide drop-shadow-md">Reels</h1>
+      <div className="absolute top-0 left-0 right-0 p-3 sm:p-4 flex justify-between items-center bg-gradient-to-b from-black/80 to-transparent z-40 text-white pointer-events-none">
+        <h1 className="text-base sm:text-xl font-black tracking-wide drop-shadow-md">Reels</h1>
       </div>
 
       {/* Scrollable Video Feed Container */}

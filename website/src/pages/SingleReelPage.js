@@ -6,9 +6,10 @@ import { FaShareNodes } from "react-icons/fa6";
 import { LuMessageCircleMore } from "react-icons/lu";
 import { GiSaveArrow } from "react-icons/gi";
 import Loader from '../components/Loader';
+import ShareReelModal from '../components/ShareReelModal';
 
 // APIs Import
-import { getReelById, incrementViews, incrementShares } from '../api/reelsApi';
+import { getReelById, incrementViews } from '../api/reelsApi';
 import { toggleLike, toggleBookmark, getContentInteractions } from '../api/interactionApi';
 import { addComment, getComments, deleteComment, pinComment } from '../api/commentApi';
 
@@ -44,6 +45,7 @@ const SingleReelPage = () => {
   const [likesCount, setLikesCount] = useState(0);
   const [saved, setSaved] = useState(false);
   const [showComments, setShowComments] = useState(false);
+  const [showShareModal, setShowShareModal] = useState(false);
   const [comments, setComments] = useState([]);
   const [commentText, setCommentText] = useState("");
   const [isLoadingComments, setIsLoadingComments] = useState(false);
@@ -127,18 +129,27 @@ const SingleReelPage = () => {
   // Sync state once reel is loaded
   useEffect(() => {
     if (reel) {
-      setLikesCount(reel.likesCount || reel.likes?.length || 0);
-      setCommentsCount(reel.commentsCount || reel.comments?.length || 0);
-      setLiked(reel.userInteraction === "like");
+      setLikesCount(Number(reel.likesCount ?? reel.likes?.length ?? 0));
+      setCommentsCount(Number(reel.commentsCount ?? reel.comments?.length ?? 0));
+      setLiked(Boolean(reel.isLiked || reel.userInteraction === "like"));
+
+      const targetId = reel._id || id;
+      if (!targetId) return;
 
       const fetchInteractions = async () => {
-        const token = localStorage.getItem("authToken") || localStorage.getItem("token");
-        if (!token) return;
         try {
-          const stats = await getContentInteractions(reel._id || id);
-          setLiked(stats.userInteraction === "like");
-          setSaved(stats.isBookmarked);
-          setLikesCount(stats.likes || 0);
+          const stats = await getContentInteractions(targetId);
+          if (stats) {
+            if (stats.userInteraction) {
+              setLiked(stats.userInteraction === "like");
+            }
+            if (typeof stats.isBookmarked === "boolean") {
+              setSaved(stats.isBookmarked);
+            }
+            if (typeof stats.likes === "number") {
+              setLikesCount(stats.likes);
+            }
+          }
         } catch (e) {
           console.log("Error fetching stats:", e);
         }
@@ -214,17 +225,29 @@ const SingleReelPage = () => {
 
   // Like Click Handler
   const handleLikeToggle = async (e) => {
-    e.stopPropagation();
+    if (e && e.stopPropagation) e.stopPropagation();
     const token = localStorage.getItem("authToken") || localStorage.getItem("token");
     if (!token) {
       alert("Please log in to like this reel.");
       return;
     }
+    const targetId = reel?._id || id;
+    if (!targetId) return;
+
     const nextLiked = !liked;
     setLiked(nextLiked);
     setLikesCount(prev => nextLiked ? prev + 1 : Math.max(0, prev - 1));
     try {
-      await toggleLike(id);
+      const res = await toggleLike(targetId);
+      if (res && typeof res.totalLikes === "number") {
+        setLikesCount(res.totalLikes);
+      }
+      if (res && typeof res.isLiked === "boolean") {
+        setLiked(res.isLiked);
+      } else if (res && res.message) {
+        const isNowLiked = res.message.toLowerCase().includes("added") || (res.message.toLowerCase().includes("like") && !res.message.toLowerCase().includes("removed"));
+        setLiked(isNowLiked);
+      }
     } catch (err) {
       console.error("Like toggle failed", err);
       // Rollback
@@ -235,16 +258,19 @@ const SingleReelPage = () => {
 
   // Save Click Handler
   const handleSaveToggle = async (e) => {
-    e.stopPropagation();
+    if (e && e.stopPropagation) e.stopPropagation();
     const token = localStorage.getItem("authToken") || localStorage.getItem("token");
     if (!token) {
       alert("Please log in to save this reel.");
       return;
     }
+    const targetId = reel?._id || id;
+    if (!targetId) return;
+
     const nextSaved = !saved;
     setSaved(nextSaved);
     try {
-      await toggleBookmark(id);
+      await toggleBookmark(targetId);
     } catch (err) {
       console.error("Bookmark toggle failed", err);
       // Rollback
@@ -253,16 +279,9 @@ const SingleReelPage = () => {
   };
 
   // Share functionality
-  const handleShare = async (e) => {
-    if (e) e.stopPropagation();
-    try {
-      const shareUrl = `${window.location.origin}/reels/${id}`;
-      await navigator.clipboard.writeText(shareUrl);
-      alert("Reel link copied to clipboard!");
-      await incrementShares(id);
-    } catch (err) {
-      console.log("Share failed", err);
-    }
+  const handleShare = (e) => {
+    if (e && e.stopPropagation) e.stopPropagation();
+    setShowShareModal(true);
   };
 
   // Comment Submit Handler
@@ -316,10 +335,10 @@ const SingleReelPage = () => {
   }
 
   return (
-    <div className="max-w-md mx-auto w-full bg-black sm:rounded-2xl overflow-hidden relative shadow-2xl h-[100dvh] sm:h-auto sm:aspect-[9/16] sm:my-6 flex flex-col">
+    <div className="mx-auto w-auto max-w-full bg-black rounded-2xl overflow-hidden relative shadow-2xl aspect-[9/16] h-[calc(100dvh-136px)] max-h-[calc(100dvh-136px)] md:h-[calc(100vh-120px)] md:max-h-[780px] my-auto flex flex-col">
 
       {/* Top Navigation Bar overlay */}
-      <div className="absolute top-0 left-0 right-0 p-4 flex justify-between items-center bg-gradient-to-b from-black/80 to-transparent z-20 text-white">
+      <div className="absolute top-0 left-0 right-0 p-3 sm:p-4 flex justify-between items-center bg-gradient-to-b from-black/80 to-transparent z-20 text-white">
         <button onClick={() => navigate(-1)} className="text-xl hover:text-brand-orange transition p-2 bg-black/30 rounded-full backdrop-blur-sm z-20">
           <FaArrowLeft />
         </button>
@@ -359,52 +378,52 @@ const SingleReelPage = () => {
         )}
 
         {/* Floating Side Actions */}
-        <div className="absolute bottom-28 right-4 flex flex-col gap-6 items-center z-20 text-white animate-fade-in">
+        <div className="absolute bottom-16 sm:bottom-20 md:bottom-24 right-2 sm:right-3 md:right-4 flex flex-col gap-2.5 sm:gap-3.5 md:gap-5 items-center z-20 text-white animate-fade-in">
           {/* Like button */}
           <button onClick={handleLikeToggle} className="flex flex-col items-center group">
-            <div className={`w-12 h-12 bg-black/40 backdrop-blur-md border border-white/10 rounded-full flex items-center justify-center text-xl hover:bg-white/20 transition ${liked ? 'text-red-500 scale-110' : ''}`}>
+            <div className={`w-9 h-9 sm:w-10 sm:h-10 md:w-12 md:h-12 bg-black/40 backdrop-blur-md border border-white/10 rounded-full flex items-center justify-center text-base sm:text-lg md:text-xl hover:bg-white/20 transition ${liked ? 'text-red-500 scale-110' : ''}`}>
               {liked ? <FaHeart /> : <FaRegHeart />}
             </div>
-            <span className="text-xs font-bold mt-1.5 drop-shadow-md">{likesCount}</span>
+            <span className="text-[10px] sm:text-xs font-bold mt-0.5 sm:mt-1 drop-shadow-md">{likesCount}</span>
           </button>
 
           {/* Comment button */}
           <button onClick={() => setShowComments(true)} className="flex flex-col items-center group">
-            <div className="w-12 h-12 bg-black/40 backdrop-blur-md border border-white/10 rounded-full flex items-center justify-center text-xl group-hover:bg-white/20 transition">
+            <div className="w-9 h-9 sm:w-10 sm:h-10 md:w-12 md:h-12 bg-black/40 backdrop-blur-md border border-white/10 rounded-full flex items-center justify-center text-base sm:text-lg md:text-xl group-hover:bg-white/20 transition">
               <LuMessageCircleMore />
             </div>
-            <span className="text-xs font-bold mt-1.5 drop-shadow-md">{commentsCount}</span>
+            <span className="text-[10px] sm:text-xs font-bold mt-0.5 sm:mt-1 drop-shadow-md">{commentsCount}</span>
           </button>
 
           {/* Save button */}
           <button onClick={handleSaveToggle} className="flex flex-col items-center group">
-            <div className={`w-12 h-12 bg-black/40 backdrop-blur-md border border-white/10 rounded-full flex items-center justify-center text-xl hover:bg-white/20 transition ${saved ? 'text-orange-500 scale-110' : ''}`}>
+            <div className={`w-9 h-9 sm:w-10 sm:h-10 md:w-12 md:h-12 bg-black/40 backdrop-blur-md border border-white/10 rounded-full flex items-center justify-center text-base sm:text-lg md:text-xl hover:bg-white/20 transition ${saved ? 'text-orange-500 scale-110' : ''}`}>
               <GiSaveArrow />
             </div>
-            <span className={`text-[10px] uppercase font-bold tracking-wide mt-1.5 drop-shadow-md ${saved ? 'text-orange-400 font-extrabold' : ''}`}>
+            <span className={`text-[9px] sm:text-[10px] uppercase font-bold tracking-wide mt-0.5 drop-shadow-md ${saved ? 'text-orange-400 font-extrabold' : ''}`}>
               {saved ? 'Saved' : 'Save'}
             </span>
           </button>
 
           {/* Share button */}
           <button onClick={handleShare} className="flex flex-col items-center group">
-            <div className="w-12 h-12 bg-black/40 backdrop-blur-md border border-white/10 rounded-full flex items-center justify-center text-xl group-hover:bg-white/20 transition">
+            <div className="w-9 h-9 sm:w-10 sm:h-10 md:w-12 md:h-12 bg-black/40 backdrop-blur-md border border-white/10 rounded-full flex items-center justify-center text-base sm:text-lg md:text-xl group-hover:bg-white/20 transition">
               <FaShareNodes />
             </div>
-            <span className="text-[10px] uppercase font-bold tracking-wide mt-1.5 drop-shadow-md">Share</span>
+            <span className="text-[9px] sm:text-[10px] uppercase font-bold tracking-wide mt-0.5 drop-shadow-md">Share</span>
           </button>
         </div>
 
         {/* Bottom Description Overlay */}
-        <div className="absolute bottom-6 left-4 right-20 z-20 text-white bg-gradient-to-t from-black/80 via-black/40 to-transparent p-4 rounded-xl backdrop-blur-sm border border-white/10">
-          <h2 className="font-extrabold tracking-wide text-sm sm:text-base mb-1 drop-shadow-md">
+        <div className="absolute bottom-2 sm:bottom-3 md:bottom-5 left-2 sm:left-3 md:left-4 right-14 sm:right-16 md:right-20 z-20 text-white bg-gradient-to-t from-black/85 via-black/45 to-transparent p-2.5 sm:p-3 md:p-4 rounded-xl backdrop-blur-sm border border-white/10 max-h-[45%] overflow-hidden">
+          <h2 className="font-extrabold tracking-wide text-xs sm:text-sm md:text-base mb-1 drop-shadow-md line-clamp-1">
             {reel.title || "My Studio Reel"}
           </h2>
-          <p className="text-xs text-gray-200 font-medium mb-3 line-clamp-2">
+          <p className="text-[11px] sm:text-xs text-gray-200 font-medium mb-1.5 sm:mb-2 line-clamp-2">
             {reel.description || reel.caption || "Enjoy this reel exclusively on CatchWatch."}
           </p>
-          <div className="flex items-center gap-2 text-[11px] text-gray-300 font-bold bg-white/10 w-fit px-3 py-1.5 rounded-full border border-white/5">
-            <FaItunesNote className="text-brand-orange" />
+          <div className="flex items-center gap-1.5 text-[10px] sm:text-[11px] text-gray-300 font-bold bg-white/10 w-fit px-2.5 py-1 rounded-full border border-white/5">
+            <FaItunesNote className="text-brand-orange text-xs" />
             <span className="truncate max-w-[150px]">Original Audio - {reel.user?.name || "User"}</span>
           </div>
         </div>
@@ -540,6 +559,15 @@ const SingleReelPage = () => {
             </form>
           </div>
         </div>
+      )}
+
+      {/* Share Reel Modal */}
+      {reel && (
+        <ShareReelModal
+          isOpen={showShareModal}
+          onClose={() => setShowShareModal(false)}
+          reel={reel}
+        />
       )}
 
     </div>

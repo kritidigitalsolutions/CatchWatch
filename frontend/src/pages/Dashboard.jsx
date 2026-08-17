@@ -293,7 +293,7 @@ export default function Dashboard() {
       <div className="charts-row">
         {/* Area Chart */}
         <div className="content-box">
-          <h3>📈 User Growth — This Week</h3>
+          <h3> User Growth — This Week</h3>
           <ResponsiveContainer width="100%" height={260}>
             <AreaChart data={GROWTH} margin={{ top: 8, right: 12, left: -18, bottom: 0 }}>
               <defs>
@@ -315,7 +315,7 @@ export default function Dashboard() {
 
         {/* Pie Chart */}
         <div className="content-box">
-          <h3>🎬 Content Split</h3>
+          <h3> Content Split</h3>
           <ResponsiveContainer width="100%" height={260}>
             <PieChart>
               <Pie data={PIE} cx="50%" cy="50%"
@@ -334,7 +334,7 @@ export default function Dashboard() {
 
       {/* ─── Recent Activity ─── */}
       <div className="content-box">
-        <h3>🕐 Recent Users</h3>
+        <h3> Recent Users</h3>
         {loading ? (
           <p style={{ color: "var(--text-muted)", padding: "20px 0" }}>Loading...</p>
         ) : !Array.isArray(users) || users.length === 0 ? (

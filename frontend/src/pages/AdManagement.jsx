@@ -364,10 +364,10 @@ export default function AdManagement() {
                     onChange={(e) => setFormData({ ...formData, adType: e.target.value })}
                   >
                     <option value="SPONSORED_REELS">Sponsored Reel / Short</option>
-                    <option value="VIDEO">Video Ad</option>
+                    {/* <option value="VIDEO">Video Ad</option>
                     <option value="BANNER">Banner Ad</option>
                     <option value="CAROUSEL">Carousel Ad</option>
-                    <option value="SPLASH">Splash Screen Ad</option>
+                    <option value="SPLASH">Splash Screen Ad</option> */}
                   </select>
                 </div>
               </div>

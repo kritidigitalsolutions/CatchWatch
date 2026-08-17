@@ -420,6 +420,23 @@ const Topbar = () => {
                 )}
               </div>
 
+              {/* MOBILE PROFILE AVATAR TAB (< 1024px) */}
+              <NavLink
+                to="/profile"
+                className="flex items-center p-0.5 transition-transform hover:scale-105"
+                title="Profile"
+              >
+                <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-full border-2 border-orange-200 overflow-hidden bg-brand-orange text-white flex items-center justify-center text-xs font-black shadow-sm shrink-0">
+                  {userProfile?.profileImage ? (
+                    <img src={userProfile.profileImage} alt={userProfile.name || "User"} className="w-full h-full object-cover" />
+                  ) : userProfile?.name ? (
+                    userProfile.name.charAt(0).toUpperCase()
+                  ) : (
+                    <FaRegUserCircle className="text-sm sm:text-base" />
+                  )}
+                </div>
+              </NavLink>
+
               <button
                 onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
                 className="text-2xl text-gray-700 focus:outline-none p-1 ml-1"

@@ -10,7 +10,7 @@ const NAV = [
   { id: "verification", label: "Verification Management", icon: BadgeCheck, color: "#3b82f6" },
   { id: "redeem-requests", label: "Coins Redeem Requests", icon: DollarSign, color: "#f59e0b" },
   { id: "ad-management", label: "Advertisement & Campaigns", icon: Megaphone, color: "#ec4899" },
-  { id: "fraud-monitoring", label: "Fraud Monitoring", icon: ShieldAlert, color: "#ef4444" },
+  // { id: "fraud-monitoring", label: "Fraud Monitoring", icon: ShieldAlert, color: "#ef4444" },
   { id: "admin-analytics", label: "Analytics & Revenue", icon: Activity, color: "#06b6d4" },
   { id: "categories", label: "Categories", icon: Layers, color: "#a855f7" },
   { id: "add-content", label: "Add Content", icon: Plus, color: "#10b981" },

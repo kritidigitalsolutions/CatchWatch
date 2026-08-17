@@ -11,11 +11,10 @@ const axiosInstance = axios.create({
 // Request Interceptor: Har API call se pehle ye token attach karega
 axiosInstance.interceptors.request.use(
   (config) => {
-    // Check karein ki aap token kis naam se save kar rahe hain (e.g., 'token' ya 'authToken')
-    // Agar login ke waqt aap 'token' naam se save karte hain, toh yahan wahi naam use karein
-    const token = localStorage.getItem('authToken'); // Ya 'authToken'
+    // Check both 'authToken' and 'token' in localStorage
+    const token = localStorage.getItem('authToken') || localStorage.getItem('token');
 
-    if (token) {
+    if (token && token !== "secured_token") {
       config.headers['Authorization'] = `Bearer ${token}`;
     }
 

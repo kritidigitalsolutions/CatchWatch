@@ -55,35 +55,147 @@ export const CallProvider = ({ children }) => {
   const audioContextRef = useRef(null);
   const ringtoneIntervalRef = useRef(null);
 
-  // 1. Ringtone Generator using Web Audio API
+  // 1. Rock-Solid Ringtone Generator (AudioContext + Dual-Tone + Auto-Resume + Haptic Vibration)
+  const getAudioContext = () => {
+    try {
+      const AudioCtx = window.AudioContext || window.webkitAudioContext;
+      if (!AudioCtx) return null;
+      if (!audioContextRef.current || audioContextRef.current.state === "closed") {
+        audioContextRef.current = new AudioCtx();
+      }
+      if (audioContextRef.current.state === "suspended") {
+        audioContextRef.current.resume().catch(() => {});
+      }
+      return audioContextRef.current;
+    } catch (e) {
+      console.warn("Audio Context init error:", e);
+      return null;
+    }
+  };
+
+  // Pre-unlock AudioContext on user interactions across the app
+  useEffect(() => {
+    const unlockAudio = () => {
+      if (audioContextRef.current && audioContextRef.current.state === "suspended") {
+        audioContextRef.current.resume().catch(() => {});
+      }
+    };
+    window.addEventListener("click", unlockAudio, { passive: true });
+    window.addEventListener("touchstart", unlockAudio, { passive: true });
+    window.addEventListener("keydown", unlockAudio, { passive: true });
+    return () => {
+      window.removeEventListener("click", unlockAudio);
+      window.removeEventListener("touchstart", unlockAudio);
+      window.removeEventListener("keydown", unlockAudio);
+    };
+  }, []);
+
   const playRingtone = (isIncoming = false) => {
     stopRingtone();
     try {
-      const AudioCtx = window.AudioContext || window.webkitAudioContext;
-      if (!AudioCtx) return;
-      audioContextRef.current = new AudioCtx();
+      const ctx = getAudioContext();
+      if (!ctx) return;
 
-      const playBeep = () => {
-        if (!audioContextRef.current) return;
-        const osc = audioContextRef.current.createOscillator();
-        const gain = audioContextRef.current.createGain();
+      const playRingBurst = () => {
+        try {
+          const currentCtx = getAudioContext();
+          if (!currentCtx) return;
 
-        osc.type = "sine";
-        osc.frequency.setValueAtTime(isIncoming ? 440 : 350, audioContextRef.current.currentTime);
-        gain.gain.setValueAtTime(0.15, audioContextRef.current.currentTime);
-        gain.gain.exponentialRampToValueAtTime(0.0001, audioContextRef.current.currentTime + 1.2);
+          const now = currentCtx.currentTime;
 
-        osc.connect(gain);
-        gain.connect(audioContextRef.current.destination);
+          if (isIncoming) {
+            // INCOMING CALL: Dual-Tone Pleasant Harmonic Phone Ring (853Hz & 960Hz standard phone ring chime)
+            // Pattern: Ring (0.45s) - pause (0.1s) - Ring (0.45s) - pause (1.6s)
+            
+            // Burst 1 (0 to 0.45s)
+            const osc1 = currentCtx.createOscillator();
+            const osc2 = currentCtx.createOscillator();
+            const gain1 = currentCtx.createGain();
 
-        osc.start();
-        osc.stop(audioContextRef.current.currentTime + 1.2);
+            osc1.type = "sine";
+            osc1.frequency.setValueAtTime(853, now);
+            osc2.type = "sine";
+            osc2.frequency.setValueAtTime(960, now);
+
+            gain1.gain.setValueAtTime(0, now);
+            gain1.gain.linearRampToValueAtTime(0.35, now + 0.05);
+            gain1.gain.setValueAtTime(0.35, now + 0.4);
+            gain1.gain.linearRampToValueAtTime(0.001, now + 0.45);
+
+            osc1.connect(gain1);
+            osc2.connect(gain1);
+            gain1.connect(currentCtx.destination);
+
+            osc1.start(now);
+            osc2.start(now);
+            osc1.stop(now + 0.45);
+            osc2.stop(now + 0.45);
+
+            // Burst 2 (0.55s to 1.0s)
+            const osc3 = currentCtx.createOscillator();
+            const osc4 = currentCtx.createOscillator();
+            const gain2 = currentCtx.createGain();
+
+            osc3.type = "sine";
+            osc3.frequency.setValueAtTime(853, now + 0.55);
+            osc4.type = "sine";
+            osc4.frequency.setValueAtTime(960, now + 0.55);
+
+            gain2.gain.setValueAtTime(0, now + 0.55);
+            gain2.gain.linearRampToValueAtTime(0.35, now + 0.6);
+            gain2.gain.setValueAtTime(0.35, now + 0.95);
+            gain2.gain.linearRampToValueAtTime(0.001, now + 1.0);
+
+            osc3.connect(gain2);
+            osc4.connect(gain2);
+            gain2.connect(currentCtx.destination);
+
+            osc3.start(now + 0.55);
+            osc4.start(now + 0.55);
+            osc3.stop(now + 1.0);
+            osc4.stop(now + 1.0);
+
+            // Haptic vibration on mobile devices
+            if (typeof navigator !== "undefined" && navigator.vibrate) {
+              try {
+                navigator.vibrate([400, 100, 400, 1600]);
+              } catch (_) {}
+            }
+          } else {
+            // OUTGOING CALL (Ringback Tone): Classic 440Hz + 480Hz dial ring
+            // Pattern: 1.5s tone, 2.5s pause
+            const osc1 = currentCtx.createOscillator();
+            const osc2 = currentCtx.createOscillator();
+            const gain = currentCtx.createGain();
+
+            osc1.type = "sine";
+            osc1.frequency.setValueAtTime(440, now);
+            osc2.type = "sine";
+            osc2.frequency.setValueAtTime(480, now);
+
+            gain.gain.setValueAtTime(0, now);
+            gain.gain.linearRampToValueAtTime(0.2, now + 0.05);
+            gain.gain.setValueAtTime(0.2, now + 1.45);
+            gain.gain.linearRampToValueAtTime(0.001, now + 1.5);
+
+            osc1.connect(gain);
+            osc2.connect(gain);
+            gain.connect(currentCtx.destination);
+
+            osc1.start(now);
+            osc2.start(now);
+            osc1.stop(now + 1.5);
+            osc2.stop(now + 1.5);
+          }
+        } catch (err) {
+          console.warn("Ring burst error:", err);
+        }
       };
 
-      playBeep();
-      ringtoneIntervalRef.current = setInterval(playBeep, isIncoming ? 2500 : 3000);
+      playRingBurst();
+      ringtoneIntervalRef.current = setInterval(playRingBurst, isIncoming ? 2600 : 4000);
     } catch (e) {
-      console.error("Audio Context Error:", e);
+      console.error("Play Ringtone Error:", e);
     }
   };
 
@@ -92,11 +204,10 @@ export const CallProvider = ({ children }) => {
       clearInterval(ringtoneIntervalRef.current);
       ringtoneIntervalRef.current = null;
     }
-    if (audioContextRef.current) {
+    if (typeof navigator !== "undefined" && navigator.vibrate) {
       try {
-        audioContextRef.current.close();
-      } catch (e) {}
-      audioContextRef.current = null;
+        navigator.vibrate(0); // Cancel ongoing vibration
+      } catch (_) {}
     }
   };
 

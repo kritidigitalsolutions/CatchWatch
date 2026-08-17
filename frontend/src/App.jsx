@@ -31,7 +31,7 @@ const Settings = lazy(() => import("./pages/Settings"));
 const DramaPage = lazy(() => import("./pages/Drama"));
 // const AddDramaPage = lazy(() => import("./pages/AddDrama"));
 const AdManagement = lazy(() => import("./pages/AdManagement"));
-const FraudMonitoring = lazy(() => import("./pages/FraudMonitoring"));
+// const FraudMonitoring = lazy(() => import("./pages/FraudMonitoring"));
 const AdminAnalytics = lazy(() => import("./pages/AdminAnalytics"));
 const AdminSettings = lazy(() => import("./pages/AdminSettings"));
 const RedeemRequests = lazy(() => import("./pages/RedeemRequests"));
@@ -310,7 +310,7 @@ function App() {
             /> */}
             
             <Route path="ad-management" element={<AdManagement />} />
-            <Route path="fraud-monitoring" element={<FraudMonitoring />} />
+            {/* <Route path="fraud-monitoring" element={<FraudMonitoring />} /> */}
             <Route path="redeem-requests" element={<RedeemRequests />} />
             <Route path="admin-analytics" element={<AdminAnalytics />} />
             <Route path="admin-settings" element={<AdminSettings />} />

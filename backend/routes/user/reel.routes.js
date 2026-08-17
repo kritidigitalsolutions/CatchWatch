@@ -110,4 +110,18 @@ router.delete(
   unsaveReel
 );
 
+// Direct Like Toggle for Reel
+const { toggleLike } = require("../../controllers/interaction.controller");
+router.post(
+  "/:id/like",
+  isAuth,
+  toggleLike
+);
+
+router.post(
+  "/like/:id",
+  isAuth,
+  toggleLike
+);
+
 module.exports = router;

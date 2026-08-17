@@ -57,7 +57,6 @@ const LiveCameraRecorder = ({ onVideoRecorded, onCancel }) => {
   const [recordedBlob, setRecordedBlob] = useState(null);
   const [recordedBlobUrl, setRecordedBlobUrl] = useState(null);
   const [errorMessage, setErrorMessage] = useState('');
-  const [hasMultipleCameras, setHasMultipleCameras] = useState(false);
   
   // Filter States
   const [selectedCategory, setSelectedCategory] = useState('all');
@@ -79,38 +78,28 @@ const LiveCameraRecorder = ({ onVideoRecorded, onCancel }) => {
     selectedFilterRef.current = selectedFilter;
   }, [selectedFilter]);
 
-  // Detect available video devices
-  useEffect(() => {
-    const checkDevices = async () => {
-      try {
-        if (navigator.mediaDevices && navigator.mediaDevices.enumerateDevices) {
-          const devices = await navigator.mediaDevices.enumerateDevices();
-          const videoInputCount = devices.filter(device => device.kind === 'videoinput').length;
-          setHasMultipleCameras(videoInputCount > 1);
-        }
-      } catch (err) {
-        console.warn("Could not enumerate camera devices:", err);
-      }
-    };
-    checkDevices();
-  }, []);
-
   // Initialize camera stream
   const startCamera = async (currentFacingMode = facingMode) => {
     setErrorMessage('');
     stopCameraStream();
 
     try {
-      const constraints = {
-        video: {
-          facingMode: currentFacingMode,
-          width: { ideal: 1280 },
-          height: { ideal: 720 }
-        },
-        audio: true
-      };
+      let mediaStream = null;
+      try {
+        const constraints = {
+          video: {
+            facingMode: currentFacingMode === 'user' ? 'user' : { ideal: 'environment' },
+            width: { ideal: 1280 },
+            height: { ideal: 720 }
+          },
+          audio: true
+        };
+        mediaStream = await navigator.mediaDevices.getUserMedia(constraints);
+      } catch (e1) {
+        console.warn("Primary facingMode constraints failed, attempting fallback:", e1);
+        mediaStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
+      }
 
-      const mediaStream = await navigator.mediaDevices.getUserMedia(constraints);
       setStream(mediaStream);
 
       if (liveVideoRef.current) {
@@ -456,48 +445,48 @@ const LiveCameraRecorder = ({ onVideoRecorded, onCancel }) => {
 
         {/* Instagram-Style Multi-Category Filter Drawer */}
         {showFilterPicker && phase === 'idle' && (
-          <div className="absolute bottom-4 inset-x-0 z-30 px-4 py-3 bg-black/85 backdrop-blur-lg flex flex-col gap-2.5 transition-all animate-fade-in border-t border-white/10">
+          <div className="absolute bottom-2 sm:bottom-4 inset-x-2 sm:inset-x-4 z-30 px-3 py-2.5 sm:px-4 sm:py-3 bg-black/90 backdrop-blur-xl rounded-2xl flex flex-col gap-2 transition-all animate-fade-in border border-white/15 shadow-2xl">
+            {/* Top Header Row */}
             <div className="flex justify-between items-center px-1">
-              <span className="text-white text-xs font-extrabold flex items-center gap-1.5">
-                <FaMagic className="text-brand-orange" /> Filters & Effects Studio
+              <span className="text-white text-xs font-black flex items-center gap-1.5 tracking-wide">
+                <FaMagic className="text-brand-orange text-sm" /> Filters & Effects Studio
               </span>
-
-              {/* Category Pills */}
-              <div className="flex items-center gap-1.5 bg-white/10 p-1 rounded-full text-[10px] font-bold">
-                {CATEGORIES.map(cat => (
-                  <button
-                    key={cat.id}
-                    onClick={() => setSelectedCategory(cat.id)}
-                    className={`px-2.5 py-0.5 rounded-full transition ${
-                      selectedCategory === cat.id ? 'bg-brand-orange text-white' : 'text-white/70 hover:text-white'
-                    }`}
-                  >
-                    {cat.name}
-                  </button>
-                ))}
-              </div>
-
               <button 
                 onClick={() => setShowFilterPicker(false)}
-                className="text-white/60 hover:text-white text-xs font-bold px-2 py-0.5"
+                className="text-white/80 hover:text-white text-xs font-bold px-2.5 py-1 bg-white/10 hover:bg-white/20 rounded-full transition flex items-center gap-1"
               >
-                Done
+                <FaCheck className="text-[10px]" /> Done
               </button>
             </div>
 
+            {/* Category Pills Row (Horizontally Scrollable) */}
+            <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar py-0.5">
+              {CATEGORIES.map(cat => (
+                <button
+                  key={cat.id}
+                  onClick={() => setSelectedCategory(cat.id)}
+                  className={`px-3 py-1 rounded-full text-[11px] font-bold whitespace-nowrap transition-all flex-shrink-0 ${
+                    selectedCategory === cat.id ? 'bg-brand-orange text-white shadow-md' : 'bg-white/10 text-white/75 hover:bg-white/20 hover:text-white'
+                  }`}
+                >
+                  {cat.name}
+                </button>
+              ))}
+            </div>
+
             {/* Filter Swatches Carousel */}
-            <div className="flex items-center gap-3 overflow-x-auto py-1 scrollbar-none">
+            <div className="flex items-center gap-2.5 sm:gap-3.5 overflow-x-auto no-scrollbar py-1">
               {filteredList.map(filter => (
                 <button
                   key={filter.id}
                   onClick={() => setSelectedFilter(filter)}
-                  className={`flex flex-col items-center gap-1 min-w-[64px] transition ${
-                    selectedFilter.id === filter.id ? 'scale-110 opacity-100' : 'opacity-65 hover:opacity-95'
+                  className={`flex flex-col items-center gap-1 min-w-[58px] sm:min-w-[64px] transition-all flex-shrink-0 ${
+                    selectedFilter.id === filter.id ? 'scale-105 opacity-100' : 'opacity-65 hover:opacity-95'
                   }`}
                 >
                   <div 
-                    className={`w-12 h-12 rounded-full border-2 p-0.5 transition shadow-lg relative ${
-                      selectedFilter.id === filter.id ? 'border-brand-orange ring-2 ring-brand-orange/50' : 'border-white/40'
+                    className={`w-11 h-11 sm:w-12 sm:h-12 rounded-full border-2 p-0.5 transition shadow-lg relative ${
+                      selectedFilter.id === filter.id ? 'border-brand-orange ring-2 ring-brand-orange/60' : 'border-white/40'
                     }`}
                     style={{ background: filter.bg }}
                   >
@@ -506,8 +495,8 @@ const LiveCameraRecorder = ({ onVideoRecorded, onCancel }) => {
                       style={{ filter: filter.css }}
                     />
                   </div>
-                  <span className={`text-[10px] font-bold truncate max-w-[68px] ${
-                    selectedFilter.id === filter.id ? 'text-brand-orange' : 'text-white'
+                  <span className={`text-[10px] font-bold truncate max-w-[64px] ${
+                    selectedFilter.id === filter.id ? 'text-brand-orange font-extrabold' : 'text-white'
                   }`}>
                     {filter.name}
                   </span>
@@ -590,13 +579,11 @@ const LiveCameraRecorder = ({ onVideoRecorded, onCancel }) => {
             {/* Switch Camera Button (Front / Back) */}
             <button 
               onClick={toggleFacingMode}
-              disabled={phase === 'recording' || !hasMultipleCameras}
-              className={`p-3 rounded-full text-white backdrop-blur-md transition ${
-                hasMultipleCameras ? 'bg-white/15 hover:bg-white/25' : 'bg-white/5 text-white/30 cursor-not-allowed'
-              } disabled:opacity-40`}
-              title="Flip Camera"
+              disabled={phase === 'recording'}
+              className="p-3 rounded-full text-white backdrop-blur-md transition bg-white/15 hover:bg-white/25 active:scale-95 disabled:opacity-40"
+              title={`Switch to ${facingMode === 'user' ? 'Rear (Back)' : 'Front (Selfie)'} Camera`}
             >
-              <FaSync className={`text-lg ${phase === 'recording' ? '' : 'hover:rotate-180 transition duration-300'}`} />
+              <FaSync className={`text-lg transition-transform duration-500 ${facingMode === 'environment' ? 'rotate-180 text-brand-orange' : ''}`} />
             </button>
           </>
         )}

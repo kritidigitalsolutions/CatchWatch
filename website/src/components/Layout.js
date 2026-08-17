@@ -16,6 +16,7 @@ const Layout = ({ children }) => {
 
   const hideFooter = isFullHeightPage;
   const isChatPage = path === '/chat';
+  const isReelsPage = path === '/reels-feed' || path.startsWith('/reels');
 
   return (
     <div className="min-h-screen bg-brand-light-bg flex flex-col justify-between font-sans">
@@ -28,6 +29,8 @@ const Layout = ({ children }) => {
         className={`flex-1 w-full mx-auto ${
           isChatPage
             ? 'max-w-full p-0 overflow-hidden'
+            : isReelsPage
+            ? 'max-w-full p-0 sm:py-2 md:py-3 flex flex-col items-center justify-center overflow-hidden'
             : 'max-w-[1600px] px-4 sm:px-6 lg:px-8 py-6 md:py-10'
         }`}
       >

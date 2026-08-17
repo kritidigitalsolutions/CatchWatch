@@ -1,3 +1,4 @@
+const mongoose = require("mongoose");
 const Conversation = require("../models/conversation.model");
 const Message = require("../models/message.model");
 const UserBlock = require("../models/userBlock.model");
@@ -160,6 +161,37 @@ exports.getConversations = async (req, res) => {
       })
       .sort({ lastMessageAt: -1 });
 
+    // Calculate exact unread count per conversation for current user
+    const unreadMap = {};
+    try {
+      if (mongoose.Types.ObjectId.isValid(currentUserId)) {
+        const userObjId = new mongoose.Types.ObjectId(String(currentUserId));
+        const unreadCounts = await Message.aggregate([
+          {
+            $match: {
+              recipient: userObjId,
+              status: { $ne: "READ" },
+              deletedFor: { $ne: userObjId },
+            },
+          },
+          {
+            $group: {
+              _id: "$conversationId",
+              count: { $sum: 1 },
+            },
+          },
+        ]);
+
+        unreadCounts.forEach((item) => {
+          if (item._id) {
+            unreadMap[item._id.toString()] = item.count;
+          }
+        });
+      }
+    } catch (aggErr) {
+      console.warn("Could not aggregate unread message counts:", aggErr.message);
+    }
+
     const formattedConversations = conversations.map((conv) => {
       const convObj = conv.toObject();
       const otherParticipant = convObj.participants.find(
@@ -171,7 +203,18 @@ exports.getConversations = async (req, res) => {
       const isBlockedByPartner = partnerId ? blockedMeUser.has(partnerId) : false;
       const isBlocked = isBlockedByMe || isBlockedByPartner;
 
-      const unread = convObj.unreadCount ? convObj.unreadCount[currentUserId.toString()] || 0 : 0;
+      // Prioritize aggregate unread count, with conv.unreadCount as fallback
+      let mapUnread = 0;
+      if (conv.unreadCount && typeof conv.unreadCount.get === "function") {
+        mapUnread = conv.unreadCount.get(currentUserId.toString()) || 0;
+      } else if (convObj.unreadCount) {
+        mapUnread = typeof convObj.unreadCount.get === "function"
+          ? convObj.unreadCount.get(currentUserId.toString()) || 0
+          : convObj.unreadCount[currentUserId.toString()] || 0;
+      }
+
+      const convIdStr = convObj._id.toString();
+      const unread = typeof unreadMap[convIdStr] === "number" ? unreadMap[convIdStr] : mapUnread;
       const isPinned = Array.isArray(convObj.pinnedBy) && convObj.pinnedBy.some(id => id.toString() === currentUserId.toString());
 
       return {
@@ -315,7 +358,10 @@ exports.getMessages = async (req, res) => {
       .populate("pinnedBy", "name username")
       .populate({
         path: "replyTo",
-        populate: { path: "sender", select: "name username" },
+        populate: [
+          { path: "sender", select: "name username profileImage publicKey activeSession deviceKeys" },
+          { path: "recipient", select: "name username profileImage publicKey activeSession deviceKeys" },
+        ],
       })
       .sort({ createdAt: -1 })
       .skip(skip)
@@ -479,7 +525,10 @@ exports.sendMessage = async (req, res) => {
     const populatedMessage = await populateMessage(Message.findById(newMessage._id))
       .populate({
         path: "replyTo",
-        populate: { path: "sender", select: "name username" },
+        populate: [
+          { path: "sender", select: "name username profileImage publicKey activeSession deviceKeys" },
+          { path: "recipient", select: "name username profileImage publicKey activeSession deviceKeys" },
+        ],
       });
 
     // Update conversation lastMessage & increment recipient unreadCount
@@ -652,6 +701,15 @@ exports.editMessage = async (req, res) => {
       return res.status(400).json({ success: false, message: "Only text messages can be edited" });
     }
 
+    const oneHourInMs = 60 * 60 * 1000;
+    const messageAge = Date.now() - new Date(message.createdAt).getTime();
+    if (messageAge > oneHourInMs) {
+      return res.status(400).json({
+        success: false,
+        message: "Messages older than 1 hour cannot be edited",
+      });
+    }
+
     message.text = text.trim();
     message.isEdited = true;
     message.editedAt = new Date();
@@ -662,7 +720,10 @@ exports.editMessage = async (req, res) => {
       .populate("recipient", "name username profileImage publicKey deviceKeys")
       .populate({
         path: "replyTo",
-        populate: { path: "sender", select: "name username" },
+        populate: [
+          { path: "sender", select: "name username profileImage publicKey activeSession deviceKeys" },
+          { path: "recipient", select: "name username profileImage publicKey activeSession deviceKeys" },
+        ],
       });
 
     // Notify sockets
@@ -1448,7 +1509,10 @@ exports.togglePinMessage = async (req, res) => {
       .populate("pinnedBy", "name username")
       .populate({
         path: "replyTo",
-        populate: { path: "sender", select: "name username" },
+        populate: [
+          { path: "sender", select: "name username profileImage publicKey activeSession deviceKeys" },
+          { path: "recipient", select: "name username profileImage publicKey activeSession deviceKeys" },
+        ],
       });
 
     // Notify sockets

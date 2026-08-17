@@ -226,84 +226,82 @@ exports.getReelsFeed = async (req, res) => {
       return new Date(b.createdAt) - new Date(a.createdAt);
     });
 
-    // AD INSERTION ENGINE (Only if user is UNVERIFIED & Ads are enabled)
+    // AD INSERTION ENGINE (Runs for all users including verified users in Reels feed)
     let finalFeed = reels;
 
-    if (!isVerifiedUser) {
-      try {
-        const SystemSettings = require("../models/systemSettings.model");
-        const AdCampaign = require("../models/adCampaign.model");
-        const Ad = require("../models/ad.model");
+    try {
+      const SystemSettings = require("../models/systemSettings.model");
+      const AdCampaign = require("../models/adCampaign.model");
+      const Ad = require("../models/ad.model");
 
-        const settings = await SystemSettings.getSettings();
-        const adFrequency = settings.adSettings?.adFrequency || 3;
-        const now = new Date();
+      const settings = await SystemSettings.getSettings();
+      const adFrequency = settings.adSettings?.adFrequency || 3;
+      const now = new Date();
 
-        // Query active ad campaigns
-        const activeCampaigns = await AdCampaign.find({
+      // Query active ad campaigns
+      const activeCampaigns = await AdCampaign.find({
+        status: "ACTIVE",
+        startDate: { $lte: now },
+        endDate: { $gte: now },
+        $expr: { $gt: ["$budget", "$spent"] },
+      })
+        .sort({ priority: -1 })
+        .lean();
+
+      if (activeCampaigns.length > 0) {
+        const campaignIds = activeCampaigns.map((c) => c._id);
+        const activeAds = await Ad.find({
+          campaignId: { $in: campaignIds },
           status: "ACTIVE",
-          startDate: { $lte: now },
-          endDate: { $gte: now },
-          $expr: { $gt: ["$budget", "$spent"] },
-        })
-          .sort({ priority: -1 })
-          .lean();
+        }).lean();
 
-        if (activeCampaigns.length > 0) {
-          const campaignIds = activeCampaigns.map((c) => c._id);
-          const activeAds = await Ad.find({
-            campaignId: { $in: campaignIds },
-            status: "ACTIVE",
-          }).lean();
+        if (activeAds.length > 0) {
+          finalFeed = [];
+          let reelCounter = 0;
 
-          if (activeAds.length > 0) {
-            finalFeed = [];
-            let reelCounter = 0;
-
-            reels.forEach((reelItem) => {
-              finalFeed.push(reelItem);
-              if (reelItem.allowAds !== false) {
-                reelCounter++;
-                if (reelCounter % adFrequency === 0) {
-                  // Pick random active ad creative
-                  const selectedAd =
-                    activeAds[Math.floor(Math.random() * activeAds.length)];
-                  finalFeed.push({
-                    _id: `ad_${reelCounter}_${selectedAd._id}`,
-                    adId: selectedAd._id,
-                    campaignId: selectedAd.campaignId,
-                    advertiserId: selectedAd.advertiserId,
-                    title: selectedAd.title || "Sponsored Ad",
-                    caption: selectedAd.title || "Sponsored Ad",
-                    adType: selectedAd.adType || "VIDEO",
-                    mediaUrl: selectedAd.mediaUrl,
-                    videoUrl: selectedAd.mediaUrl,
-                    thumbnailUrl: selectedAd.thumbnailUrl || selectedAd.mediaUrl,
-                    ctaText: selectedAd.ctaText || "Learn More",
-                    destinationUrl: selectedAd.destinationUrl || "#",
-                    durationSeconds: selectedAd.durationSeconds || 15,
-                    isAd: true,
-                    user: {
-                      name: "Sponsored Ad",
-                      username: "@sponsored",
-                      profileImage: selectedAd.thumbnailUrl || "",
-                      isVerified: true,
-                    },
-                  });
-                }
+          reels.forEach((reelItem) => {
+            finalFeed.push(reelItem);
+            if (reelItem.allowAds !== false) {
+              reelCounter++;
+              if (reelCounter % adFrequency === 0) {
+                // Pick random active ad creative
+                const selectedAd =
+                  activeAds[Math.floor(Math.random() * activeAds.length)];
+                finalFeed.push({
+                  _id: `ad_${reelCounter}_${selectedAd._id}`,
+                  adId: selectedAd._id,
+                  campaignId: selectedAd.campaignId,
+                  advertiserId: selectedAd.advertiserId,
+                  title: selectedAd.title || "Sponsored Ad",
+                  caption: selectedAd.title || "Sponsored Ad",
+                  adType: selectedAd.adType || "VIDEO",
+                  mediaUrl: selectedAd.mediaUrl,
+                  videoUrl: selectedAd.mediaUrl,
+                  thumbnailUrl: selectedAd.thumbnailUrl || selectedAd.mediaUrl,
+                  ctaText: selectedAd.ctaText || "Learn More",
+                  destinationUrl: selectedAd.destinationUrl || "#",
+                  durationSeconds: selectedAd.durationSeconds || 15,
+                  isAd: true,
+                  user: {
+                    name: "Sponsored Ad",
+                    username: "@sponsored",
+                    profileImage: selectedAd.thumbnailUrl || "",
+                    isVerified: true,
+                  },
+                });
               }
-            });
-          }
+            }
+          });
         }
-      } catch (adError) {
-        console.error("Ad Insertion Error in Feed:", adError);
       }
+    } catch (adError) {
+      console.error("Ad Insertion Error in Feed:", adError);
     }
 
     return res.status(200).json({
       success: true,
       count: finalFeed.length,
-      isAdFree: isVerifiedUser,
+      isAdFree: false,
       reels: finalFeed,
     });
   } catch (error) {

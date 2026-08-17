@@ -10,8 +10,15 @@ exports.toggleLike = async (
   res
 ) => {
   try {
-    const userId = req.user.id;
-    const contentId = req.params.contentId || req.params.reelId;
+    const userId = req.user?.id || req.user?._id;
+    const contentId = req.params.contentId || req.params.reelId || req.params.id;
+
+    if (!userId) {
+      return res.status(401).json({
+        success: false,
+        message: "Authentication required to like content",
+      });
+    }
 
     if (!mongoose.Types.ObjectId.isValid(contentId)) {
       return res.status(400).json({
@@ -80,6 +87,12 @@ exports.toggleLike = async (
         message = "Changed to like";
         actionType = "LIKE";
         pointsDelta = 1;
+      } else {
+        existing.type = "like";
+        await existing.save();
+        message = "Like added";
+        actionType = "LIKE";
+        pointsDelta = 1;
       }
     } else {
       // Create new like interaction
@@ -95,15 +108,19 @@ exports.toggleLike = async (
     }
 
     if (contentType === "reel" && reel && reel.user && pointsDelta !== 0) {
-      const isSelfLike = String(userId) === String(reel.user);
-      const { recordEngagementEvent } = require("../utils/creator.helper");
-      await recordEngagementEvent({
-        creatorId: reel.user,
-        reelId: reel._id,
-        userId,
-        action: actionType,
-        pointsDelta: isSelfLike ? 0 : pointsDelta,
-      });
+      try {
+        const isSelfLike = String(userId) === String(reel.user);
+        const { recordEngagementEvent } = require("../utils/creator.helper");
+        await recordEngagementEvent({
+          creatorId: reel.user,
+          reelId: reel._id,
+          userId,
+          action: actionType,
+          pointsDelta: isSelfLike ? 0 : pointsDelta,
+        });
+      } catch (engageErr) {
+        console.warn("Engagement event recording issue (non-fatal):", engageErr.message);
+      }
     }
 
     // Calculate counts directly from Interaction collection
@@ -118,12 +135,19 @@ exports.toggleLike = async (
       type: "dislike",
     });
 
+    if (contentType === "reel") {
+      try {
+        await Reel.findByIdAndUpdate(contentId, { $set: { likesCount: totalLikes } });
+      } catch (err) {}
+    }
+
     return res.status(200).json({
       success: true,
       message,
       totalLikes,
       totalDislikes,
       contentType,
+      isLiked: message.includes("added") || message.includes("Changed"),
     });
   } catch (error) {
     console.error("Toggle Like Error:", error);
