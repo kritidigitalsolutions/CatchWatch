@@ -133,15 +133,12 @@ export default function FraudMonitoring() {
         <form onSubmit={handleSearch} style={{ display: "flex", gap: "8px" }}>
           <input
             type="text"
+            className="form-control-input"
             placeholder="Search IP, Device, User..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             style={{
               padding: "8px 12px",
-              borderRadius: "8px",
-              background: "#1e293b",
-              border: "1px solid rgba(255,255,255,0.1)",
-              color: "#fff",
               fontSize: "0.85rem",
             }}
           />

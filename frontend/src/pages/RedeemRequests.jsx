@@ -135,47 +135,55 @@ export default function RedeemRequests() {
   });
 
   return (
-    <div className="ad-management-container" style={{ padding: "28px", color: "#f8fafc" }}>
+    <div className="ad-management-container">
       {/* Page Title */}
-      <div className="ad-header" style={{ marginBottom: "24px" }}>
+      <div className="ad-header">
         <div>
-          <h1 style={{ fontSize: "1.8rem", fontWeight: 800, color: "#fff", display: "flex", alignItems: "center", gap: "10px" }}>
+          <h1 style={{ fontSize: "1.8rem", fontWeight: 800, display: "flex", alignItems: "center", gap: "10px" }}>
             <DollarSign size={28} color="#f59e0b" /> Creator Coins Redeem Requests
           </h1>
-          <p style={{ color: "#94a3b8", fontSize: "0.9rem", marginTop: "4px" }}>
+          <p style={{ fontSize: "0.9rem", marginTop: "4px" }}>
             Review creator coin cashout requests, copy payment account details, calculate conversion rupees & approve payouts
           </p>
         </div>
-      </div>      {/* Metrics Cards Row */}
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(260px, 1fr))", gap: "20px", marginBottom: "28px" }}>
-        <div className="ad-metric-card" style={{ background: "linear-gradient(135deg, #1e293b, #0f172a)", border: "1px solid rgba(255,255,255,0.08)", padding: "22px", borderRadius: "16px", flex: 1 }}>
-          <div className="card-icon" style={{ background: "rgba(245, 158, 11, 0.15)", color: "#f59e0b", padding: "12px", borderRadius: "12px", display: "inline-block", marginBottom: "8px" }}>
+      </div>
+
+      {/* Metrics Cards Row */}
+      <div className="ad-stats-grid" style={{ marginBottom: "28px" }}>
+        <div className="ad-metric-card">
+          <div className="card-icon" style={{ background: "rgba(245, 158, 11, 0.15)", color: "#f59e0b" }}>
             <Clock size={22} />
           </div>
-          <div style={{ fontSize: "0.82rem", color: "#94a3b8", fontWeight: 600 }}>Pending Requests</div>
-          <div style={{ fontSize: "1.7rem", fontWeight: 800, color: "#fff", marginTop: "4px" }}>{pendingCount}</div>
+          <div>
+            <div className="stat-label">Pending Requests</div>
+            <div className="stat-value">{pendingCount}</div>
+          </div>
         </div>
 
-        <div className="ad-metric-card" style={{ background: "linear-gradient(135deg, #1e293b, #0f172a)", border: "1px solid rgba(255,255,255,0.08)", padding: "22px", borderRadius: "16px", flex: 1 }}>
-          <div className="card-icon" style={{ background: "rgba(16, 185, 129, 0.15)", color: "#10b981", padding: "12px", borderRadius: "12px", display: "inline-block", marginBottom: "8px" }}>
+        <div className="ad-metric-card">
+          <div className="card-icon" style={{ background: "rgba(16, 185, 129, 0.15)", color: "#10b981" }}>
             <CheckCircle2 size={22} />
           </div>
-          <div style={{ fontSize: "0.82rem", color: "#94a3b8", fontWeight: 600 }}>Approved Requests</div>
-          <div style={{ fontSize: "1.7rem", fontWeight: 800, color: "#fff", marginTop: "4px" }}>{approvedCount}</div>
+          <div>
+            <div className="stat-label">Approved Requests</div>
+            <div className="stat-value">{approvedCount}</div>
+          </div>
         </div>
 
-        <div className="ad-metric-card" style={{ background: "linear-gradient(135deg, #1e293b, #0f172a)", border: "1px solid rgba(255,255,255,0.08)", padding: "22px", borderRadius: "16px", flex: 1 }}>
-          <div className="card-icon" style={{ background: "rgba(59, 130, 246, 0.15)", color: "#3b82f6", padding: "12px", borderRadius: "12px", display: "inline-block", marginBottom: "8px" }}>
+        <div className="ad-metric-card">
+          <div className="card-icon" style={{ background: "rgba(59, 130, 246, 0.15)", color: "#3b82f6" }}>
             <DollarSign size={22} />
           </div>
-          <div style={{ fontSize: "0.82rem", color: "#94a3b8", fontWeight: 600 }}>Total Paid Amount (₹)</div>
-          <div style={{ fontSize: "1.7rem", fontWeight: 800, color: "#10b981", marginTop: "4px" }}>₹{totalApprovedAmount.toLocaleString()}</div>
+          <div>
+            <div className="stat-label">Total Paid Amount (₹)</div>
+            <div className="stat-value" style={{ color: "#10b981" }}>₹{totalApprovedAmount.toLocaleString()}</div>
+          </div>
         </div>
       </div>
 
       {/* Tabs & Search */}
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", overflow: "scroll", padding: "5px", gap: "16px", marginBottom: "20px" }}>
-        <div style={{ display: "flex", gap: "10px", }}>
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", overflow: "auto", padding: "5px 0", gap: "16px", marginBottom: "20px", flexWrap: "wrap" }}>
+        <div style={{ display: "flex", gap: "10px" }}>
           {["ALL", "PENDING", "APPROVED", "REJECTED"].map((tab) => (
             <button
               key={tab}
@@ -183,16 +191,8 @@ export default function RedeemRequests() {
                 setActiveTab(tab);
                 setPage(1);
               }}
-              style={{
-                padding: "8px 18px",
-                borderRadius: "10px",
-                fontWeight: 700,
-                fontSize: "0.85rem",
-                border: "none",
-                cursor: "pointer",
-                background: activeTab === tab ? "#f59e0b" : "#1e293b",
-                color: "#fff",
-              }}
+              className={`tab-btn ${activeTab === tab ? "active" : ""}`}
+              style={activeTab === tab ? { background: "#f59e0b", borderColor: "#f59e0b", color: "#fff" } : {}}
             >
               {tab}
             </button>
@@ -200,11 +200,12 @@ export default function RedeemRequests() {
         </div>
 
         <div style={{ position: "relative", minWidth: "260px" }}>
-          <Search size={16} style={{ position: "absolute", left: "12px", top: "50%", transform: "translateY(-50%)", color: "#64748b" }} />
+          <Search size={16} style={{ position: "absolute", left: "12px", top: "50%", transform: "translateY(-50%)", color: "var(--text-muted, #64748b)" }} />
           <input
             type="text"
+            className="form-control-input"
             placeholder="Search creator, phone, UPI..."
-            style={{ width: "100%", padding: "10px 14px 10px 36px", borderRadius: "10px", background: "#1e293b", border: "1px solid rgba(255,255,255,0.08)", color: "#fff", fontSize: "0.85rem" }}
+            style={{ width: "100%", paddingLeft: "36px" }}
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
           />
@@ -212,16 +213,16 @@ export default function RedeemRequests() {
       </div>
 
       {/* Requests Table */}
-      <div style={{ background: "#1e293b", borderRadius: "16px", border: "1px solid rgba(255,255,255,0.08)", overflow: "auto" }}>
-        <table style={{ width: "100%", borderCollapse: "collapse", textAlign: "left", fontSize: "0.88rem", overflowX: "auto", scrollbarWidth: "thin" }}>
+      <div className="table-card" style={{ overflow: "auto" }}>
+        <table className="ad-table">
           <thead>
-            <tr style={{ background: "rgba(255, 255, 255, 0.05)", color: "#94a3b8" }}>
-              <th style={{ padding: "16px 20px" }}>Creator Details</th>
-              <th style={{ padding: "16px 20px" }}>Requested Coins</th>
-              <th style={{ padding: "16px 20px" }}>Payment Account Details</th>
-              <th style={{ padding: "16px 20px" }}>Calculated Payout</th>
-              <th style={{ padding: "16px 20px" }}>Status</th>
-              <th style={{ padding: "16px 20px", textAlign: "right" }}>Actions</th>
+            <tr>
+              <th>Creator Details</th>
+              <th>Requested Coins</th>
+              <th>Payment Account Details</th>
+              <th>Calculated Payout</th>
+              <th>Status</th>
+              <th style={{ textAlign: "right" }}>Actions</th>
             </tr>
           </thead>
           <tbody>

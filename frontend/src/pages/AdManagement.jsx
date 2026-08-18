@@ -17,6 +17,8 @@ import {
   Trash2,
 } from "lucide-react";
 import "./AdManagement.css";
+import InfoModal, { InfoButton } from "../components/InfoModal";
+import { INFO_CONTENT } from "../data/infoModalContent";
 
 export default function AdManagement() {
   const { showToast } = useToast();
@@ -26,6 +28,7 @@ export default function AdManagement() {
   const [activeTab, setActiveTab] = useState("ALL");
   const [showModal, setShowModal] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [activeInfoKey, setActiveInfoKey] = useState(null);
 
   // Creative Media Option: "file" | "url"
   const [mediaUploadType, setMediaUploadType] = useState("file");
@@ -162,11 +165,17 @@ export default function AdManagement() {
   };
 
   return (
-    <div className="ad-management-container" style={{ padding: "24px", color: "#f8fafc" }}>
+    <div className="ad-management-container">
       {/* Header */}
-      <div className="ad-header" style={{ marginBottom: "24px" }}>
+      <div className="ad-header">
         <div>
-          <h2>Advertisement & Campaign Management</h2>
+          <div style={{ display: "flex", alignItems: "center" }}>
+            <h2>Advertisement & Campaign Management</h2>
+            <InfoButton
+              onClick={() => setActiveInfoKey("ad-campaign-management")}
+              title="Ad Lifecycle, Deduction Pipeline & Feed Injection Workflow"
+            />
+          </div>
           <p>Monitor real-time impressions, click-through rates (CTR), and create sponsored ad campaigns</p>
         </div>
         <button className="create-ad-btn" onClick={() => setShowModal(true)}>
@@ -175,9 +184,9 @@ export default function AdManagement() {
       </div>
 
       {/* Metrics Row (Responsive 4-Column Grid) */}
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: "16px", marginBottom: "24px" }}>
-        <div className="ad-stat-card" style={{ background: "#1e293b", border: "1px solid rgba(255,255,255,0.08)", borderRadius: "12px", padding: "20px", display: "flex", alignItems: "center", gap: "16px" }}>
-          <div className="stat-icon-wrap" style={{ background: "rgba(236, 72, 153, 0.15)", color: "#ec4899", width: "48px", height: "48px", borderRadius: "12px", display: "flex", alignItems: "center", justifyContent: "center" }}>
+      <div className="ad-stats-grid">
+        <div className="ad-stat-card">
+          <div className="stat-icon-wrap" style={{ background: "rgba(236, 72, 153, 0.15)", color: "#ec4899" }}>
             <Megaphone size={22} />
           </div>
           <div>
@@ -186,8 +195,8 @@ export default function AdManagement() {
           </div>
         </div>
 
-        <div className="ad-stat-card" style={{ background: "#1e293b", border: "1px solid rgba(255,255,255,0.08)", borderRadius: "12px", padding: "20px", display: "flex", alignItems: "center", gap: "16px" }}>
-          <div className="stat-icon-wrap" style={{ background: "rgba(59, 130, 246, 0.15)", color: "#3b82f6", width: "48px", height: "48px", borderRadius: "12px", display: "flex", alignItems: "center", justifyContent: "center" }}>
+        <div className="ad-stat-card">
+          <div className="stat-icon-wrap" style={{ background: "rgba(59, 130, 246, 0.15)", color: "#3b82f6" }}>
             <Eye size={22} />
           </div>
           <div>
@@ -196,8 +205,8 @@ export default function AdManagement() {
           </div>
         </div>
 
-        <div className="ad-stat-card" style={{ background: "#1e293b", border: "1px solid rgba(255,255,255,0.08)", borderRadius: "12px", padding: "20px", display: "flex", alignItems: "center", gap: "16px" }}>
-          <div className="stat-icon-wrap" style={{ background: "rgba(16, 185, 129, 0.15)", color: "#10b981", width: "48px", height: "48px", borderRadius: "12px", display: "flex", alignItems: "center", justifyContent: "center" }}>
+        <div className="ad-stat-card">
+          <div className="stat-icon-wrap" style={{ background: "rgba(16, 185, 129, 0.15)", color: "#10b981" }}>
             <Target size={22} />
           </div>
           <div>
@@ -206,8 +215,8 @@ export default function AdManagement() {
           </div>
         </div>
 
-        <div className="ad-stat-card" style={{ background: "#1e293b", border: "1px solid rgba(255,255,255,0.08)", borderRadius: "12px", padding: "20px", display: "flex", alignItems: "center", gap: "16px" }}>
-          <div className="stat-icon-wrap" style={{ background: "rgba(245, 158, 11, 0.15)", color: "#f59e0b", width: "48px", height: "48px", borderRadius: "12px", display: "flex", alignItems: "center", justifyContent: "center" }}>
+        <div className="ad-stat-card">
+          <div className="stat-icon-wrap" style={{ background: "rgba(245, 158, 11, 0.15)", color: "#f59e0b" }}>
             <TrendingUp size={22} />
           </div>
           <div>
@@ -218,26 +227,23 @@ export default function AdManagement() {
       </div>
 
       {/* Tabs */}
-      <div className="tab-navigation" style={{ display: "flex", gap: "8px", marginBottom: "20px", overflowX: "scroll" }}>
+      <div className="tab-navigation" style={{ alignItems: "center" }}>
         {["ALL", "ACTIVE", "PENDING", "PAUSED", "COMPLETED"].map((tab) => (
           <button
             key={tab}
             className={`tab-btn ${activeTab === tab ? "active" : ""}`}
             onClick={() => setActiveTab(tab)}
-            style={{
-              padding: "8px 18px",
-              borderRadius: "8px",
-              fontWeight: 700,
-              fontSize: "0.85rem",
-              border: "none",
-              cursor: "pointer",
-              background: activeTab === tab ? "#ec4899" : "#1e293b",
-              color: "#fff",
-            }}
           >
             {tab}
           </button>
         ))}
+        <div style={{ marginLeft: "auto" }}>
+          <InfoButton
+            onClick={() => setActiveInfoKey("ad-campaigns-table")}
+            title="Understanding Table Columns & Action Controls"
+            className="btn-blue"
+          />
+        </div>
       </div>
 
       {/* Table */}
@@ -510,6 +516,13 @@ export default function AdManagement() {
           </div>
         </div>
       )}
+
+      {/* Reusable Info Modal Overlay */}
+      <InfoModal
+        isOpen={!!activeInfoKey}
+        onClose={() => setActiveInfoKey(null)}
+        data={activeInfoKey ? INFO_CONTENT[activeInfoKey] : null}
+      />
     </div>
   );
 }

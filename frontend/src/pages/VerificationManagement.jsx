@@ -545,19 +545,19 @@ export default function VerificationManagement() {
       </div>
 
       {activeTab === "SETTINGS" ? (
-        <div style={{ background: "#1e293b", padding: "28px", borderRadius: "16px", border: "1px solid rgba(255,255,255,0.08)", color: "#fff" }}>
-          <div style={{ display: "flex", alignItems: "center", gap: "10px", marginBottom: "8px" }}>
+        <div className="verif-settings-card">
+          <div className="verif-settings-header">
             <UserCheck size={26} color="#3b82f6" />
-            <h2 style={{ fontSize: "1.3rem", margin: 0, fontWeight: 800 }}>Manually Verify User</h2>
+            <h2 className="verif-settings-title">Manually Verify User</h2>
           </div>
-          <p style={{ color: "#94a3b8", fontSize: "0.88rem", margin: "0 0 24px" }}>
+          <p className="verif-settings-desc">
             Search and select any registered user by their Name or Username to grant official Blue Tick verification status directly.
           </p>
 
-          <div style={{ display: "grid", gridTemplateColumns: "1.2fr 0.8fr", gap: "24px", alignItems: "start" }}>
+          <div className="verif-settings-grid">
             {/* Left Column: Search & Select Dropdown Menu */}
-            <div style={{ background: "#0f172a", padding: "20px", borderRadius: "14px", border: "1px solid rgba(255,255,255,0.08)" }}>
-              <label style={{ display: "block", fontSize: "0.85rem", fontWeight: 700, marginBottom: "8px", color: "#38bdf8" }}>
+            <div className="verif-settings-column">
+              <label className="verif-settings-label">
                 1. Search Registered Users (By Name or @username)
               </label>
               <div style={{ position: "relative", marginBottom: "16px" }}>
@@ -566,27 +566,18 @@ export default function VerificationManagement() {
                   placeholder="Type to search user name or username..."
                   value={userSearchQuery}
                   onChange={(e) => setUserSearchQuery(e.target.value)}
-                  style={{
-                    width: "100%",
-                    padding: "11px 14px",
-                    borderRadius: "10px",
-                    background: "#1e293b",
-                    border: "1px solid rgba(255,255,255,0.15)",
-                    color: "#fff",
-                    fontSize: "0.9rem",
-                    fontWeight: 600,
-                  }}
+                  className="verif-settings-input"
                 />
                 {isFetchingUsers && (
                   <RefreshCw
                     className="animate-spin"
                     size={16}
-                    style={{ position: "absolute", right: "12px", top: "12px", color: "#94a3b8" }}
+                    style={{ position: "absolute", right: "12px", top: "12px", color: "var(--text-muted, #94a3b8)" }}
                   />
                 )}
               </div>
 
-              <label style={{ display: "block", fontSize: "0.85rem", fontWeight: 700, marginBottom: "8px", color: "#38bdf8" }}>
+              <label className="verif-settings-label">
                 2. Select User from Dropdown ({usersList.length} users listed)
               </label>
               <select
@@ -599,20 +590,10 @@ export default function VerificationManagement() {
                     setManualVerifyUserId(u._id);
                   }
                 }}
-                style={{
-                  width: "100%",
-                  padding: "8px",
-                  borderRadius: "10px",
-                  background: "#1e293b",
-                  border: "1px solid rgba(255,255,255,0.15)",
-                  color: "#fff",
-                  fontSize: "0.88rem",
-                  minHeight: "200px",
-                  cursor: "pointer",
-                }}
+                className="verif-settings-select"
               >
                 {usersList.length === 0 ? (
-                  <option disabled style={{ padding: "10px", color: "#94a3b8" }}>
+                  <option disabled style={{ padding: "10px", color: "var(--text-muted, #94a3b8)" }}>
                     No matching active users found.
                   </option>
                 ) : (
@@ -627,7 +608,7 @@ export default function VerificationManagement() {
                           margin: "2px 0",
                           borderRadius: "6px",
                           background: selectedUser?._id === u._id ? "#3b82f6" : "transparent",
-                          color: selectedUser?._id === u._id ? "#fff" : "#cbd5e1",
+                          color: selectedUser?._id === u._id ? "#fff" : "inherit",
                           fontWeight: 600,
                         }}
                       >
@@ -640,35 +621,14 @@ export default function VerificationManagement() {
             </div>
 
             {/* Right Column: Selected User Card & Grant Action */}
-            <div
-              style={{
-                background: "#0f172a",
-                padding: "20px",
-                borderRadius: "14px",
-                border: "1px solid rgba(255,255,255,0.08)",
-                minHeight: "310px",
-                display: "flex",
-                flexDirection: "column",
-                justify: "space-between",
-              }}
-            >
+            <div className="verif-settings-column verif-user-preview-column">
               {selectedUser ? (
                 <div>
-                  <h3 style={{ fontSize: "0.85rem", color: "#94a3b8", textTransform: "uppercase", margin: "0 0 16px", fontWeight: 800, tracking: "wider" }}>
+                  <h3 className="verif-preview-heading">
                     Selected User Details
                   </h3>
 
-                  <div
-                    style={{
-                      display: "flex",
-                      alignItems: "center",
-                      gap: "14px",
-                      padding: "16px",
-                      background: "#1e293b",
-                      borderRadius: "12px",
-                      border: "1px solid rgba(255,255,255,0.1)",
-                    }}
-                  >
+                  <div className="verif-preview-user-card">
                     <img
                       src={getMediaUrl(selectedUser.profileImage)}
                       alt={selectedUser.name}
@@ -681,23 +641,23 @@ export default function VerificationManagement() {
                       }}
                     />
                     <div>
-                      <div style={{ fontSize: "1.05rem", fontWeight: 800, color: "#fff", display: "flex", alignItems: "center", gap: "6px" }}>
+                      <div className="verif-preview-user-name">
                         <span>{selectedUser.name}</span>
                         {(selectedUser.isVerified || selectedUser.verification?.isVerified || selectedUser.verification?.status === "VERIFIED") && (
                           <BadgeCheck size={20} color="#3b82f6" />
                         )}
                       </div>
-                      <div style={{ fontSize: "0.85rem", color: "#38bdf8", fontWeight: 700, marginTop: "2px" }}>
+                      <div className="verif-preview-user-handle">
                         {selectedUser.username ? (selectedUser.username.startsWith("@") ? selectedUser.username : `@${selectedUser.username}`) : "@user"}
                       </div>
-                      <div style={{ fontSize: "0.75rem", color: "#94a3b8", marginTop: "4px" }}>
+                      <div className="verif-preview-user-id">
                         ID: {selectedUser._id}
                       </div>
                     </div>
                   </div>
 
-                  <div style={{ marginTop: "16px", padding: "12px 14px", background: "rgba(255,255,255,0.03)", borderRadius: "8px", fontSize: "0.85rem" }}>
-                    <div style={{ color: "#94a3b8", marginBottom: "4px" }}>Current Verification Status:</div>
+                  <div className="verif-preview-status-box">
+                    <div className="verif-preview-status-lbl">Current Verification Status:</div>
                     <strong style={{ color: selectedUser.isVerified || selectedUser.verification?.isVerified || selectedUser.verification?.status === "VERIFIED" ? "#10b981" : "#f59e0b" }}>
                       {selectedUser.isVerified || selectedUser.verification?.isVerified || selectedUser.verification?.status === "VERIFIED"
                         ? "✔️ Official Blue Tick Active"
@@ -706,7 +666,7 @@ export default function VerificationManagement() {
                   </div>
                 </div>
               ) : (
-                <div style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", height: "100%", textAlign: "center", color: "#64748b", padding: "40px 20px" }}>
+                <div style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", height: "100%", textAlign: "center", color: "var(--text-muted, #64748b)", padding: "40px 20px" }}>
                   <UserCheck size={48} style={{ opacity: 0.3, marginBottom: "12px" }} />
                   <p style={{ margin: 0, fontWeight: 700, fontSize: "0.9rem" }}>Select a user from the dropdown list on the left to verify.</p>
                 </div>
@@ -766,7 +726,7 @@ export default function VerificationManagement() {
                           style={{ width: "38px", height: "38px", borderRadius: "50%", objectFit: "cover" }}
                         />
                         <div>
-                          <div style={{ fontWeight: 600, color: "#fff" }}>{req.creatorId?.name || "Creator"}</div>
+                          <div style={{ fontWeight: 600, color: "#94a3b8" }}>{req.creatorId?.name || "Creator"}</div>
                           <div style={{ fontSize: "0.75rem", color: "#94a3b8" }}>
                             {req.creatorId?.username || ""} • {req.creatorId?.phone || ""}
                           </div>
@@ -789,7 +749,7 @@ export default function VerificationManagement() {
                       ) : (
                         <div style={{ fontSize: "0.85rem", color: "#cbd5e1", background: "rgba(255,255,255,0.04)", padding: "6px 10px", borderRadius: "8px" }}>
                           <div style={{ color: "#38bdf8", fontWeight: 700 }}>⚡ UPI Payment</div>
-                          <div>UPI ID: <strong style={{ color: "#f59e0b" }}>{req.paymentDetails?.upiId || "UPI Submitted"}</strong></div>
+                          <div style={{ color: "#94a3b8" }}>UPI ID: <strong style={{ color: "#f59e0b" }}>{req.paymentDetails?.upiId || "UPI Submitted"}</strong></div>
                         </div>
                       )}
                     </td>

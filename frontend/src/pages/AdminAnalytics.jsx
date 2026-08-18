@@ -14,12 +14,15 @@ import {
   Film,
 } from "lucide-react";
 import "./AdManagement.css";
+import InfoModal, { InfoButton } from "../components/InfoModal";
+import { INFO_CONTENT } from "../data/infoModalContent";
 
 export default function AdminAnalytics() {
   const { showToast } = useToast();
   const [liveData, setLiveData] = useState(null);
   const [leaderboards, setLeaderboards] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [activeInfoKey, setActiveInfoKey] = useState(null);
 
   // Reward Simulator Form
   const [simForm, setSimForm] = useState({
@@ -75,7 +78,13 @@ export default function AdminAnalytics() {
       {/* Header */}
       <div className="ad-header">
         <div>
-          <h2>Live Monitoring & Platform Analytics</h2>
+          <div style={{ display: "flex", alignItems: "center" }}>
+            <h2>Live Monitoring & Platform Analytics</h2>
+            <InfoButton
+              onClick={() => setActiveInfoKey("live-analytics")}
+              title="Learn about Live Analytics & Telemetry Engine"
+            />
+          </div>
           <p>Real-time ecosystem metrics, leaderboards, and creator pool simulators</p>
         </div>
         <div className="header-actions">
@@ -86,7 +95,15 @@ export default function AdminAnalytics() {
       </div>
 
       {/* Live System Metrics Cards */}
-      <h3 style={{ fontSize: "1.1rem", marginBottom: "12px", color: "#e2e8f0" }}>Live System Metrics</h3>
+      <div style={{ display: "flex", alignItems: "center", marginBottom: "12px" }}>
+        <h3 className="page-section-title" style={{ margin: 0 }}>Live System Metrics</h3>
+        <InfoButton
+          onClick={() => setActiveInfoKey("live-metrics")}
+          title="How Live Metrics & Revenue are calculated"
+          className="btn-blue"
+        />
+      </div>
+
       <div className="ad-stats-grid">
         <div className="ad-stat-card">
           <div className="stat-icon-wrap" style={{ background: "rgba(16, 185, 129, 0.15)", color: "#10b981" }}>
@@ -140,65 +157,72 @@ export default function AdminAnalytics() {
       </div>
 
       {/* Simulator Section */}
-      {/* <div style={{ marginTop: "32px", marginBottom: "32px" }}>
-        <h3 style={{ fontSize: "1.1rem", marginBottom: "16px", color: "#e2e8f0", display: "flex", alignItems: "center", gap: "8px" }}>
-          <Calculator size={20} color="#ec4899" /> Monthly Creator Reward Simulator
-        </h3>
+      <div style={{ marginTop: "32px", marginBottom: "32px" }}>
+        <div style={{ display: "flex", alignItems: "center", marginBottom: "16px" }}>
+          <h3 className="page-section-title" style={{ margin: 0, display: "flex", alignItems: "center", gap: "8px" }}>
+            <Calculator size={20} color="#ec4899" /> Monthly Creator Reward Simulator
+          </h3>
+          <InfoButton
+            onClick={() => setActiveInfoKey("reward-simulator")}
+            title="Reward Pool Algorithm & Payout Multiplier Formula"
+            className="btn-amber"
+          />
+        </div>
 
         <div className="table-card" style={{ padding: "24px" }}>
           <form onSubmit={handleSimulate} style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: "16px" }}>
-            <div>
-              <label style={{ fontSize: "0.8rem", color: "#94a3b8", display: "block", marginBottom: "6px" }}>Qualified Views</label>
+            <div className="form-group" style={{ margin: 0 }}>
+              <label className="form-label">Qualified Views</label>
               <input
                 type="number"
+                className="form-control-input"
                 value={simForm.qualifiedViews}
                 onChange={(e) => setSimForm({ ...simForm, qualifiedViews: Number(e.target.value) })}
-                style={{ width: "100%", padding: "10px", borderRadius: "8px", background: "#0f172a", border: "1px solid rgba(255,255,255,0.1)", color: "#fff" }}
               />
             </div>
-            <div>
-              <label style={{ fontSize: "0.8rem", color: "#94a3b8", display: "block", marginBottom: "6px" }}>Watch Minutes</label>
+            <div className="form-group" style={{ margin: 0 }}>
+              <label className="form-label">Watch Minutes</label>
               <input
                 type="number"
+                className="form-control-input"
                 value={simForm.watchMinutes}
                 onChange={(e) => setSimForm({ ...simForm, watchMinutes: Number(e.target.value) })}
-                style={{ width: "100%", padding: "10px", borderRadius: "8px", background: "#0f172a", border: "1px solid rgba(255,255,255,0.1)", color: "#fff" }}
               />
             </div>
-            <div>
-              <label style={{ fontSize: "0.8rem", color: "#94a3b8", display: "block", marginBottom: "6px" }}>Completion Rate (%)</label>
+            <div className="form-group" style={{ margin: 0 }}>
+              <label className="form-label">Completion Rate (%)</label>
               <input
                 type="number"
+                className="form-control-input"
                 value={simForm.completionRate}
                 onChange={(e) => setSimForm({ ...simForm, completionRate: Number(e.target.value) })}
-                style={{ width: "100%", padding: "10px", borderRadius: "8px", background: "#0f172a", border: "1px solid rgba(255,255,255,0.1)", color: "#fff" }}
               />
             </div>
-            <div>
-              <label style={{ fontSize: "0.8rem", color: "#94a3b8", display: "block", marginBottom: "6px" }}>Total Shares</label>
+            <div className="form-group" style={{ margin: 0 }}>
+              <label className="form-label">Total Shares</label>
               <input
                 type="number"
+                className="form-control-input"
                 value={simForm.shares}
                 onChange={(e) => setSimForm({ ...simForm, shares: Number(e.target.value) })}
-                style={{ width: "100%", padding: "10px", borderRadius: "8px", background: "#0f172a", border: "1px solid rgba(255,255,255,0.1)", color: "#fff" }}
               />
             </div>
-            <div>
-              <label style={{ fontSize: "0.8rem", color: "#94a3b8", display: "block", marginBottom: "6px" }}>Total Likes</label>
+            <div className="form-group" style={{ margin: 0 }}>
+              <label className="form-label">Total Likes</label>
               <input
                 type="number"
+                className="form-control-input"
                 value={simForm.likes}
                 onChange={(e) => setSimForm({ ...simForm, likes: Number(e.target.value) })}
-                style={{ width: "100%", padding: "10px", borderRadius: "8px", background: "#0f172a", border: "1px solid rgba(255,255,255,0.1)", color: "#fff" }}
               />
             </div>
-            <div>
-              <label style={{ fontSize: "0.8rem", color: "#94a3b8", display: "block", marginBottom: "6px" }}>Total Comments</label>
+            <div className="form-group" style={{ margin: 0 }}>
+              <label className="form-label">Total Comments</label>
               <input
                 type="number"
+                className="form-control-input"
                 value={simForm.comments}
                 onChange={(e) => setSimForm({ ...simForm, comments: Number(e.target.value) })}
-                style={{ width: "100%", padding: "10px", borderRadius: "8px", background: "#0f172a", border: "1px solid rgba(255,255,255,0.1)", color: "#fff" }}
               />
             </div>
             <div style={{ gridColumn: "1 / -1", display: "flex", justifyContent: "flex-end" }}>
@@ -209,32 +233,40 @@ export default function AdminAnalytics() {
           </form>
 
           {simResult && (
-            <div style={{ marginTop: "24px", paddingTop: "24px", borderTop: "1px solid rgba(255,255,255,0.1)", display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))", gap: "16px" }}>
-              <div style={{ background: "rgba(255,255,255,0.03)", padding: "16px", borderRadius: "10px", textAlign: "center" }}>
-                <div style={{ fontSize: "0.75rem", color: "#94a3b8" }}>Quality Score</div>
+            <div style={{ marginTop: "24px", paddingTop: "24px", borderTop: "1px solid var(--border, rgba(255,255,255,0.1))", display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))", gap: "16px" }}>
+              <div className="sim-result-box" style={{ background: "var(--bg3, rgba(255,255,255,0.03))", padding: "16px", borderRadius: "10px", textAlign: "center", border: "1px solid var(--border, transparent)" }}>
+                <div style={{ fontSize: "0.75rem", color: "var(--text-muted, #94a3b8)", fontWeight: 600 }}>Quality Score</div>
                 <div style={{ fontSize: "1.6rem", fontWeight: 700, color: "#ec4899" }}>{simResult.creatorQualityScore} / 100</div>
               </div>
-              <div style={{ background: "rgba(255,255,255,0.03)", padding: "16px", borderRadius: "10px", textAlign: "center" }}>
-                <div style={{ fontSize: "0.75rem", color: "#94a3b8" }}>Engagement Score</div>
+              <div className="sim-result-box" style={{ background: "var(--bg3, rgba(255,255,255,0.03))", padding: "16px", borderRadius: "10px", textAlign: "center", border: "1px solid var(--border, transparent)" }}>
+                <div style={{ fontSize: "0.75rem", color: "var(--text-muted, #94a3b8)", fontWeight: 600 }}>Engagement Score</div>
                 <div style={{ fontSize: "1.6rem", fontWeight: 700, color: "#3b82f6" }}>{simResult.engagementScore.toLocaleString()}</div>
               </div>
-              <div style={{ background: "rgba(255,255,255,0.03)", padding: "16px", borderRadius: "10px", textAlign: "center" }}>
-                <div style={{ fontSize: "0.75rem", color: "#94a3b8" }}>Estimated Reward Pool</div>
+              <div className="sim-result-box" style={{ background: "var(--bg3, rgba(255,255,255,0.03))", padding: "16px", borderRadius: "10px", textAlign: "center", border: "1px solid var(--border, transparent)" }}>
+                <div style={{ fontSize: "0.75rem", color: "var(--text-muted, #94a3b8)", fontWeight: 600 }}>Estimated Reward Pool</div>
                 <div style={{ fontSize: "1.6rem", fontWeight: 700, color: "#10b981" }}>₹{simResult.estimatedRewardPool.toLocaleString()}</div>
               </div>
-              <div style={{ background: "rgba(255,255,255,0.03)", padding: "16px", borderRadius: "10px", textAlign: "center" }}>
-                <div style={{ fontSize: "0.75rem", color: "#94a3b8" }}>Avg Creator Payout</div>
+              <div className="sim-result-box" style={{ background: "var(--bg3, rgba(255,255,255,0.03))", padding: "16px", borderRadius: "10px", textAlign: "center", border: "1px solid var(--border, transparent)" }}>
+                <div style={{ fontSize: "0.75rem", color: "var(--text-muted, #94a3b8)", fontWeight: 600 }}>Avg Creator Payout</div>
                 <div style={{ fontSize: "1.6rem", fontWeight: 700, color: "#f59e0b" }}>₹{simResult.averageCreatorReward.toLocaleString()}</div>
               </div>
             </div>
           )}
         </div>
-      </div> */}
+      </div>
 
       {/* Leaderboards */}
-      <h3 style={{ fontSize: "1.1rem", marginBottom: "16px", color: "#e2e8f0", display: "flex", alignItems: "center", gap: "8px" }}>
-        <Crown size={20} color="#facc15" /> Top Platform Creators Leaderboard
-      </h3>
+      <div style={{ display: "flex", alignItems: "center", marginBottom: "16px" }}>
+        <h3 className="page-section-title" style={{ margin: 0, display: "flex", alignItems: "center", gap: "8px" }}>
+          <Crown size={20} color="#facc15" /> Top Platform Creators Leaderboard
+        </h3>
+        <InfoButton
+          onClick={() => setActiveInfoKey("top-creators-leaderboard")}
+          title="Creator Tiers, Ranking & Points Architecture"
+          className="btn-emerald"
+        />
+      </div>
+
       <div className="table-card" style={{overflow: "auto"}}>
         <table className="ad-table">
           <thead>
@@ -263,6 +295,13 @@ export default function AdminAnalytics() {
           </tbody>
         </table>
       </div>
+
+      {/* Reusable Info Modal Overlay */}
+      <InfoModal
+        isOpen={!!activeInfoKey}
+        onClose={() => setActiveInfoKey(null)}
+        data={activeInfoKey ? INFO_CONTENT[activeInfoKey] : null}
+      />
     </div>
   );
 }
