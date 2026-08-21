@@ -36,8 +36,9 @@ export const uploadChatMedia = async (formData) => {
   return res.data;
 };
 
-export const editMessage = async (messageId, text) => {
-  const res = await axiosInstance.put(`/chat/messages/${messageId}`, { text });
+export const editMessage = async (messageId, payloadOrText) => {
+  const body = typeof payloadOrText === "string" ? { text: payloadOrText } : payloadOrText;
+  const res = await axiosInstance.put(`/chat/messages/${messageId}`, body);
   return res.data;
 };
 

@@ -46,6 +46,7 @@ export const CallProvider = ({ children }) => {
   const [facingMode, setFacingMode] = useState("user");
   const [callDuration, setCallDuration] = useState(0);
   const [showCallHistoryModal, setShowCallHistoryModal] = useState(false);
+  const [localVideoTrack, setLocalVideoTrack] = useState(null);
 
   // Refs for tracks and timers
   const localAudioTrackRef = useRef(null);
@@ -306,16 +307,25 @@ export const CallProvider = ({ children }) => {
 
     // Incoming Call Triggered
     const handleIncomingCall = (data) => {
+      const incomingCallId = data.callId || data._id;
       if (activeCallRef.current) {
         // Automatically report busy if already in another call
-        busyCall(data.callId);
+        if (incomingCallId) busyCall(incomingCallId);
         return;
       }
 
+      const callerObj = data.caller || {
+        _id: data.callerId,
+        id: data.callerId,
+        name: data.callerName || "CatchWatch User",
+        username: data.callerUsername || "user",
+        profileImage: data.callerProfileImage || "",
+      };
+
       const callObj = {
-        _id: data.callId,
-        caller: data.caller,
-        type: data.type,
+        _id: incomingCallId,
+        caller: callerObj,
+        type: data.type || data.callType || "audio",
         channelName: data.channelName,
         isIncoming: true,
       };
@@ -326,7 +336,7 @@ export const CallProvider = ({ children }) => {
 
       // Auto missed call after 35s
       ringingTimeoutRef.current = setTimeout(() => {
-        declineIncomingCall(data.callId, true);
+        declineIncomingCall(incomingCallId, true);
       }, 35000);
     };
 
@@ -453,6 +463,7 @@ export const CallProvider = ({ children }) => {
         try {
           videoTrack = await AgoraRTC.createCameraVideoTrack();
           localVideoTrackRef.current = videoTrack;
+          setLocalVideoTrack(videoTrack);
         } catch (videoErr) {
           console.warn("Camera track creation error (falling back to audio):", videoErr);
           toast.warn("Camera unavailable. Continuing with audio.");
@@ -639,6 +650,7 @@ export const CallProvider = ({ children }) => {
           facingMode: nextMode,
         });
         localVideoTrackRef.current = newTrack;
+        setLocalVideoTrack(newTrack);
         await agoraClient.publish(newTrack);
         setFacingMode(nextMode);
         toast.success(`Switched camera to ${nextMode} mode`);
@@ -671,6 +683,7 @@ export const CallProvider = ({ children }) => {
       } catch (e) {}
       localVideoTrackRef.current = null;
     }
+    setLocalVideoTrack(null);
 
     // Leave Agora Channel safely
     try {
@@ -698,7 +711,7 @@ export const CallProvider = ({ children }) => {
         callDuration,
         showCallHistoryModal,
         setShowCallHistoryModal,
-        localVideoTrack: localVideoTrackRef.current,
+        localVideoTrack,
         initiateCall,
         answerIncomingCall,
         declineIncomingCall,

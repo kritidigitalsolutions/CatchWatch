@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { FaUserPlus, FaUserCheck, FaPlay, FaHeart, FaTimes } from "react-icons/fa";
+import { BiMessageRoundedDots } from "react-icons/bi";
 import Loader from "../components/Loader";
 import VerifiedBadge from "../components/VerifiedBadge";
 import ProfileVerificationSection from "../components/ProfileVerificationSection";
@@ -101,6 +102,18 @@ const UserProfilePage = () => {
     }
   };
 
+  // Open Direct Chat Message
+  const handleOpenMessage = () => {
+    if (!profileData?.user) return;
+    const token = localStorage.getItem("authToken") || localStorage.getItem("token");
+    if (!token) {
+      navigate("/login");
+      return;
+    }
+    const targetUserId = profileData.user._id || profileData.user.id;
+    navigate("/chat", { state: { userId: targetUserId, user: profileData.user } });
+  };
+
   // Open Followers/Following Modal
   const openListModal = async (type) => {
     if (!profileData?.user) return;
@@ -176,35 +189,48 @@ const UserProfilePage = () => {
                     </p>
                   </div>
 
-                  {/* Follow / Edit Button */}
-                  {profileData.isSelf ? (
-                    <button
-                      onClick={() => navigate("/profile/edit")}
-                      className="px-6 py-2.5 bg-gray-100 text-gray-800 font-bold text-sm rounded-xl border border-gray-300 hover:bg-gray-200 transition"
-                    >
-                      Edit Profile
-                    </button>
-                  ) : (
-                    <button
-                      onClick={handleFollowToggle}
-                      disabled={isFollowLoading}
-                      className={`px-6 py-2.5 rounded-xl text-sm font-extrabold flex items-center justify-center gap-2 transition shadow-sm ${
-                        profileData.isFollowing
-                          ? "bg-gray-100 text-gray-700 border border-gray-300 hover:bg-red-50 hover:text-red-600 hover:border-red-200"
-                          : "bg-brand-orange text-white hover:bg-orange-600"
-                      }`}
-                    >
-                      {profileData.isFollowing ? (
-                        <>
-                          <FaUserCheck /> Following
-                        </>
-                      ) : (
-                        <>
-                          <FaUserPlus /> Follow
-                        </>
-                      )}
-                    </button>
-                  )}
+                  {/* Follow / Edit / Message Buttons */}
+                  <div className="flex items-center gap-2.5 flex-wrap justify-center sm:justify-start">
+                    {profileData.isSelf ? (
+                      <button
+                        onClick={() => navigate("/profile/edit")}
+                        className="px-6 py-2.5 bg-gray-100 text-gray-800 font-bold text-sm rounded-xl border border-gray-300 hover:bg-gray-200 transition"
+                      >
+                        Edit Profile
+                      </button>
+                    ) : (
+                      <>
+                        <button
+                          onClick={handleFollowToggle}
+                          disabled={isFollowLoading}
+                          className={`px-5 py-2.5 rounded-xl text-sm font-extrabold flex items-center justify-center gap-2 transition shadow-sm ${
+                            profileData.isFollowing
+                              ? "bg-gray-100 text-gray-700 border border-gray-300 hover:bg-red-50 hover:text-red-600 hover:border-red-200"
+                              : "bg-brand-orange text-white hover:bg-orange-600"
+                          }`}
+                        >
+                          {profileData.isFollowing ? (
+                            <>
+                              <FaUserCheck /> Following
+                            </>
+                          ) : (
+                            <>
+                              <FaUserPlus /> Follow
+                            </>
+                          )}
+                        </button>
+
+                        <button
+                          onClick={handleOpenMessage}
+                          className="px-5 py-2.5 bg-gray-100 hover:bg-orange-50 text-gray-800 hover:text-brand-orange border border-gray-300 hover:border-orange-200 rounded-xl text-sm font-extrabold flex items-center justify-center gap-2 transition shadow-sm"
+                          title="Send Message"
+                        >
+                          <BiMessageRoundedDots className="text-lg text-brand-orange" />
+                          <span>Message</span>
+                        </button>
+                      </>
+                    )}
+                  </div>
                 </div>
 
                 {/* Bio */}

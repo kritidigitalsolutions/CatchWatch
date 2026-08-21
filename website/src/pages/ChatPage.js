@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import {
   FaSearch,
   FaPaperPlane,
@@ -222,6 +222,7 @@ export const getChatDateDivider = (dateStr) => {
 
 const ChatPage = () => {
   const navigate = useNavigate();
+  const location = useLocation();
   const { socket, fetchUnreadChatCount } = useSocket();
   const { initiateCall, setShowCallHistoryModal } = useCall();
   const currentUser = JSON.parse(localStorage.getItem("user") || "{}");
@@ -234,6 +235,31 @@ const ChatPage = () => {
       navigate(`/user/${identifier}`);
     }
   };
+
+  // Auto-open conversation when navigating from UserProfilePage or with userId parameter
+  useEffect(() => {
+    const targetUserId =
+      location.state?.userId ||
+      new URLSearchParams(location.search).get("userId");
+
+    if (
+      targetUserId &&
+      currentUserId &&
+      targetUserId.toString() !== currentUserId.toString()
+    ) {
+      startConversation(targetUserId)
+        .then((res) => {
+          if (res && res.data) {
+            setActiveConv(res.data);
+            loadConversations();
+          }
+        })
+        .catch((err) => {
+          console.error("Failed to auto-open conversation:", err);
+        });
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [location.state?.userId, location.search, currentUserId]);
 
   // Conversations & Search States
   const [conversations, setConversations] = useState([]);
@@ -971,10 +997,22 @@ const ChatPage = () => {
       fetchUnreadChatCount();
     };
 
-    const handleMessageEdited = (editedMsg) => {
-      setMessages((prev) =>
-        prev.map((m) => (m._id === editedMsg._id ? editedMsg : m)),
-      );
+    const handleMessageEdited = async (editedMsg) => {
+      if (
+        activeConv &&
+        editedMsg?.conversationId &&
+        editedMsg.conversationId.toString() === activeConv._id.toString()
+      ) {
+        const partnerKey = await getSharedKeyForPartner(activeConv.partner);
+        const decryptedMsg = await processDecryptMessage(editedMsg, partnerKey);
+        setMessages((prev) =>
+          prev.map((m) => (m._id === decryptedMsg._id ? decryptedMsg : m)),
+        );
+      } else {
+        setMessages((prev) =>
+          prev.map((m) => (m._id === editedMsg._id ? editedMsg : m)),
+        );
+      }
       loadConversations();
     };
 
@@ -1298,9 +1336,41 @@ const ChatPage = () => {
         setMessageText("");
         return;
       }
-      // Edit existing message
+      // Edit existing message with E2EE Encryption
       try {
-        await editMessage(editingMsg._id, messageText);
+        let textToSend = messageText.trim();
+        let isEncrypted = false;
+        let iv = "";
+        let encryption = null;
+
+        if (activeConv?.partner && textToSend) {
+          const encryptedPayload = await buildEncryptedMessagePayload(
+            textToSend,
+            activeConv.partner,
+          );
+          if (encryptedPayload?.isEncrypted && encryptedPayload?.encryption) {
+            textToSend = encryptedPayload.text;
+            iv = encryptedPayload.iv;
+            isEncrypted = true;
+            encryption = encryptedPayload.encryption;
+          }
+        }
+
+        const editPayload = {
+          text: textToSend,
+          isEncrypted,
+          iv,
+          encryption,
+        };
+
+        const res = await editMessage(editingMsg._id, editPayload);
+        if (res && res.data) {
+          const partnerKey = await getSharedKeyForPartner(activeConv?.partner);
+          const decryptedMsg = await processDecryptMessage(res.data, partnerKey);
+          setMessages((prev) =>
+            prev.map((m) => (m._id === decryptedMsg._id ? decryptedMsg : m)),
+          );
+        }
         setMessageText("");
         setEditingMsg(null);
         toast.success("Message edited");
@@ -1830,6 +1900,13 @@ const ChatPage = () => {
             >
               <FaUsers className="text-brand-orange text-lg" />
             </button>
+            <button
+              onClick={() => setShowCallHistoryModal(true)}
+              className="flex items-center gap-1 px-2.5 py-1.5 bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-200 rounded-xl text-xs font-bold transition shadow-sm"
+              title="View Call History"
+            >
+              <FaHistory className="text-brand-orange text-lg" />
+            </button>
           </div>
         </div>
 
@@ -2002,16 +2079,7 @@ const ChatPage = () => {
                         <span>View Profile</span>
                       </button>
 
-                      <button
-                        onClick={() => {
-                          setShowHeaderMenu(false);
-                          setShowCallHistoryModal(true);
-                        }}
-                        className="w-full flex items-center gap-2.5 px-3 py-2 text-xs font-bold text-gray-700 dark:text-gray-200 hover:bg-orange-50 dark:hover:bg-gray-800 hover:text-brand-orange rounded-xl transition"
-                      >
-                        <FaHistory className="text-gray-400 text-sm" />
-                        <span>Call History</span>
-                      </button>
+                      
 
                       <button
                         onClick={() => {
