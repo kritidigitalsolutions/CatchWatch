@@ -682,7 +682,7 @@ exports.editMessage = async (req, res) => {
   try {
     const currentUserId = req.user.id;
     const { messageId } = req.params;
-    const { text } = req.body;
+    const { text, isEncrypted, iv, encryption } = req.body;
 
     if (!text || !text.trim()) {
       return res.status(400).json({ success: false, message: "Text is required to edit message" });
@@ -710,7 +710,29 @@ exports.editMessage = async (req, res) => {
       });
     }
 
+    // Determine E2EE Encryption payload with validation if encrypted
+    let finalIsEncrypted = false;
+    let finalIv = "";
+    let finalEncryption = undefined;
+
+    if (isEncrypted || (encryption && Object.keys(encryption).length > 0)) {
+      const validation = validateEncryptedMessagePayload(encryption, text, iv, message.recipient);
+      if (!validation.valid) {
+        return res.status(400).json({
+          success: false,
+          message: "Invalid E2EE payload: Encrypted edit must include valid ciphertext, IV, and sender public key.",
+        });
+      }
+
+      finalIsEncrypted = true;
+      finalIv = iv.trim();
+      finalEncryption = validation.normalized;
+    }
+
     message.text = text.trim();
+    message.isEncrypted = finalIsEncrypted;
+    message.iv = finalIsEncrypted ? finalIv : undefined;
+    message.encryption = finalIsEncrypted ? finalEncryption : undefined;
     message.isEdited = true;
     message.editedAt = new Date();
     await message.save();

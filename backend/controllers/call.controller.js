@@ -6,13 +6,19 @@ const Conversation = require("../models/conversation.model");
 const Message = require("../models/message.model");
 const { generateRtcToken } = require("../services/agora.service");
 const { getIO } = require("../socket/chatSocket");
+const { sendPushNotification } = require("../utils/fcm.service");
 
-// Helper to convert Mongo ID string to numeric UID for Agora
+// Helper to convert Mongo ID string to deterministic numeric UID for Agora
 const getNumericUid = (idStr) => {
-  if (!idStr) return Math.floor(Math.random() * 1000000);
-  const digits = String(idStr).replace(/\D/g, "");
-  const num = parseInt(digits.slice(-8), 10);
-  return isNaN(num) ? Math.floor(Math.random() * 1000000) : num;
+  if (!idStr) return 1;
+  const str = idStr.toString();
+  let hash = 0;
+  for (let i = 0; i < str.length; i++) {
+    hash = (hash << 5) - hash + str.charCodeAt(i);
+    hash = hash & hash; // Convert to 32bit integer
+  }
+  const positiveUid = (Math.abs(hash) % 2147483647) + 1;
+  return positiveUid;
 };
 
 // Helper to write call logs to chat conversations
@@ -128,7 +134,7 @@ exports.startCall = async (req, res) => {
     }
 
     const receiver = await User.findById(receiverId).select(
-      "_id name username profileImage isOnline"
+      "_id name username profileImage isOnline fcmToken"
     );
     if (!receiver) {
       return res.status(404).json({
@@ -201,6 +207,7 @@ exports.startCall = async (req, res) => {
       if (io) {
         io.to(`user_${callerId}`).emit("call_busy", {
           callId: busyCall._id,
+          _id: busyCall._id,
           receiverId,
           message: "User is currently busy on another call",
         });
@@ -240,16 +247,43 @@ exports.startCall = async (req, res) => {
     if (io) {
       io.to(`user_${receiverId}`).emit("incoming_call", {
         callId: call._id,
+        _id: call._id,
+        callerId: caller._id,
         caller: {
           _id: caller._id,
+          id: caller._id,
           name: caller.name,
           username: caller.username,
           profileImage: caller.profileImage,
         },
+        receiverId: receiver._id,
         type,
+        callType: type,
         channelName,
         createdAt: call.createdAt,
       });
+    }
+
+    // Send High-Priority FCM Push Notification for mobile client
+    if (receiver.fcmToken) {
+      const typeLabel = type === "video" ? "Video" : "Voice";
+      const callerDisplayName = caller.name || caller.username || "CatchWatch User";
+      sendPushNotification({
+        token: receiver.fcmToken,
+        title: `Incoming ${typeLabel} Call`,
+        body: `${callerDisplayName} is calling you...`,
+        data: {
+          type: "INCOMING_CALL",
+          callId: call._id.toString(),
+          callerId: caller._id.toString(),
+          callerName: callerDisplayName,
+          callerUsername: caller.username || "",
+          callerProfileImage: caller.profileImage || "",
+          callType: type,
+          channelName,
+          createdAt: call.createdAt ? call.createdAt.toISOString() : new Date().toISOString(),
+        },
+      }).catch((err) => console.error("Incoming Call Push Notification Error:", err));
     }
 
     return res.status(201).json({
@@ -373,8 +407,23 @@ exports.rejectCall = async (req, res) => {
     if (io) {
       io.to(`user_${call.caller}`).emit("call_rejected", {
         callId: call._id,
+        _id: call._id,
         receiverId: userId,
       });
+    }
+
+    // Dismiss any ringing push on caller's mobile
+    const callerUser = await User.findById(call.caller).select("fcmToken");
+    if (callerUser && callerUser.fcmToken) {
+      sendPushNotification({
+        token: callerUser.fcmToken,
+        title: "Call Declined",
+        body: "Call was declined",
+        data: {
+          type: "CALL_REJECTED",
+          callId: call._id.toString(),
+        },
+      }).catch(() => {});
     }
 
     return res.status(200).json({
@@ -417,6 +466,7 @@ exports.busyCall = async (req, res) => {
     if (io) {
       io.to(`user_${call.caller}`).emit("call_busy", {
         callId: call._id,
+        _id: call._id,
         receiverId: userId,
       });
     }
@@ -468,8 +518,23 @@ exports.cancelCall = async (req, res) => {
     if (io) {
       io.to(`user_${call.receiver}`).emit("call_cancelled", {
         callId: call._id,
+        _id: call._id,
         callerId: userId,
       });
+    }
+
+    // Dismiss incoming call push on receiver's mobile
+    const receiverUser = await User.findById(call.receiver).select("fcmToken");
+    if (receiverUser && receiverUser.fcmToken) {
+      sendPushNotification({
+        token: receiverUser.fcmToken,
+        title: "Call Cancelled",
+        body: "The caller cancelled the call.",
+        data: {
+          type: "CALL_CANCELLED",
+          callId: call._id.toString(),
+        },
+      }).catch(() => {});
     }
 
     return res.status(200).json({
@@ -511,12 +576,28 @@ exports.missedCall = async (req, res) => {
     if (io) {
       io.to(`user_${call.receiver}`).emit("call_missed", {
         callId: call._id,
+        _id: call._id,
         callerId: call.caller,
       });
       io.to(`user_${call.caller}`).emit("call_missed", {
         callId: call._id,
+        _id: call._id,
         receiverId: call.receiver,
       });
+    }
+
+    // Dismiss incoming call push on receiver's mobile
+    const receiverUser = await User.findById(call.receiver).select("fcmToken");
+    if (receiverUser && receiverUser.fcmToken) {
+      sendPushNotification({
+        token: receiverUser.fcmToken,
+        title: "Missed Call",
+        body: "You missed a call.",
+        data: {
+          type: "CALL_MISSED",
+          callId: call._id.toString(),
+        },
+      }).catch(() => {});
     }
 
     return res.status(200).json({
@@ -577,9 +658,25 @@ exports.endCall = async (req, res) => {
     if (io) {
       io.to(`user_${targetUserId}`).emit("call_ended", {
         callId: call._id,
+        _id: call._id,
         endedBy: userId,
         duration,
       });
+    }
+
+    // Dismiss active/incoming call push if any
+    const otherUser = await User.findById(targetUserId).select("fcmToken");
+    if (otherUser && otherUser.fcmToken) {
+      sendPushNotification({
+        token: otherUser.fcmToken,
+        title: "Call Ended",
+        body: `Call ended (${Math.floor(duration / 60)}m ${duration % 60}s)`,
+        data: {
+          type: "CALL_ENDED",
+          callId: call._id.toString(),
+          duration: duration.toString(),
+        },
+      }).catch(() => {});
     }
 
     return res.status(200).json({
