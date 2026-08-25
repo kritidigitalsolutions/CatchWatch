@@ -269,4 +269,16 @@ export const getLeaderboard = async (timeframe = "all", limit = 50) => {
     console.error("Error fetching leaderboard:", error);
     throw error;
   }
-};
+};
+
+// Permanent Account Deletion API
+export const deleteAccountApi = async () => {
+  try {
+    const response = await axiosInstance.delete("/user/delete-account");
+    return response.data;
+  } catch (error) {
+    console.error("Error deleting account:", error);
+    throw error;
+  }
+};
+

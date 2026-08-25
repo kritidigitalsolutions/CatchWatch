@@ -55,11 +55,11 @@ const MoviesPage = () => {
     if (sortOrder === "newest") {
       return (b?.releaseYear || 0) - (a?.releaseYear || 0);
     }
-    // Default/Trending: priority (descending), then releaseYear (descending)
-    const priorityA = a?.priority || 0;
-    const priorityB = b?.priority || 0;
-    if (priorityB !== priorityA) {
-      return priorityB - priorityA;
+    // Default/Trending: priority ascending (Priority 1 first, then 2, 3, 4, 5...)
+    const priorityA = a?.priority && Number(a.priority) > 0 ? Number(a.priority) : 999;
+    const priorityB = b?.priority && Number(b.priority) > 0 ? Number(b.priority) : 999;
+    if (priorityA !== priorityB) {
+      return priorityA - priorityB;
     }
     return (b?.releaseYear || 0) - (a?.releaseYear || 0);
   });

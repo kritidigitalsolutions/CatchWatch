@@ -1,15 +1,16 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import Hls from 'hls.js';
-import {  MdSubtitles, MdAudiotrack } from "react-icons/md";
+import { MdSubtitles, MdAudiotrack } from "react-icons/md";
 import {
   FaPlay, FaPause, FaExpand, FaCompress,
   FaVolumeUp, FaVolumeMute, FaCog,
-  FaRegBookmark, FaBookmark
+  FaRegBookmark, FaBookmark, FaExternalLinkAlt
 } from "react-icons/fa";
 import { BiMoviePlay } from "react-icons/bi";
 
 // APIs Import
+import API from '../api/axiosConfig';
 import { getMovieBySlug } from '../api/movieApi';
 import { getShortFilmsBySlug } from '../api/shortApi';
 import { getEpisodeById } from '../api/episodesApi'; 
@@ -133,9 +134,130 @@ const VideoPlayerPage = () => {
   const [isBuffering, setIsBuffering] = useState(false);
   const [isDragging, setIsDragging] = useState(false);
 
-  let controlsTimeout;
+  // Video Pre-Roll Ad States
+  const [currentAd, setCurrentAd] = useState(null);
+  const [isAdPlaying, setIsAdPlaying] = useState(false);
+  const [adTimeRemaining, setAdTimeRemaining] = useState(15);
+  const [canSkipAd, setCanSkipAd] = useState(false);
+  const [skipCountdown, setSkipCountdown] = useState(5);
+  const adVideoRef = useRef(null);
+  const adTimerRef = useRef(null);
 
+  let controlsTimeout;
   const FALLBACK_AVATAR = "https://images.unsplash.com/photo-1534528741775-53994a69daeb?q=80&w=150&auto=format&fit=crop";
+
+  const lastSavedTimeRef = useRef(0);
+
+  const getContentKey = () => {
+    return mediaData?._id || mediaData?.id || slug || id || "current_media";
+  };
+
+  const fetchContentAd = async (contentType, customKey) => {
+    try {
+      const contentKey = customKey || getContentKey();
+      const storageKey = `cw_ad_last_seen_${contentKey}`;
+      const lastSeenStr = localStorage.getItem(storageKey);
+      const COOLDOWN_MS = 10 * 60 * 1000; // 10 minutes cooldown (refresh within 10 min skips ad, visiting after 10 min shows ad)
+
+      if (lastSeenStr) {
+        const lastSeenTime = parseInt(lastSeenStr, 10);
+        if (isFinite(lastSeenTime) && Date.now() - lastSeenTime < COOLDOWN_MS) {
+          const minutesRemaining = Math.ceil((COOLDOWN_MS - (Date.now() - lastSeenTime)) / 60000);
+          console.log(`[ADS ENGINE] Cooldown active for ${contentKey} (~${minutesRemaining}m remaining). Skipping pre-roll ad on refresh.`);
+          return;
+        }
+      }
+
+      console.log(`[ADS ENGINE] Fetching ad for placement: ${contentType}...`);
+      const res = await API.get(`/ads/content-ad?placement=${contentType}`);
+      console.log("[ADS ENGINE] API Response:", res.data);
+
+      if (res.data?.success && res.data?.hasAd && res.data?.ad) {
+        const ad = res.data.ad;
+        console.log("[ADS ENGINE] Playing pre-roll ad:", ad);
+        setCurrentAd(ad);
+        setIsAdPlaying(true);
+        setAdTimeRemaining(ad.durationSeconds || 15);
+        setSkipCountdown(5);
+        setCanSkipAd(false);
+
+        // Update timestamp so refresh within 10 min doesn't show ad again
+        localStorage.setItem(storageKey, String(Date.now()));
+
+        // Pause main movie video while ad is playing
+        if (videoRef.current) {
+          videoRef.current.pause();
+        }
+
+        // Record Impression
+        API.post("/ads/event", {
+          adId: ad._id,
+          campaignId: ad.campaignId,
+          eventType: "IMPRESSION",
+        }).catch((err) => console.log("Ad impression error:", err));
+      } else {
+        console.log(`[ADS ENGINE] No active ad returned for ${contentType}`);
+      }
+    } catch (err) {
+      console.log("No ad available for this content:", err);
+    }
+  };
+
+  // Pre-roll Ad Countdown Timer
+  useEffect(() => {
+    if (isAdPlaying && currentAd) {
+      adTimerRef.current = setInterval(() => {
+        setAdTimeRemaining((prev) => {
+          if (prev <= 1) {
+            handleFinishAd();
+            return 0;
+          }
+          return prev - 1;
+        });
+        setSkipCountdown((prev) => {
+          if (prev <= 1) {
+            setCanSkipAd(true);
+            return 0;
+          }
+          return prev - 1;
+        });
+      }, 1000);
+    } else {
+      if (adTimerRef.current) clearInterval(adTimerRef.current);
+    }
+    return () => {
+      if (adTimerRef.current) clearInterval(adTimerRef.current);
+    };
+  }, [isAdPlaying, currentAd]);
+
+  const handleFinishAd = () => {
+    if (adTimerRef.current) clearInterval(adTimerRef.current);
+    setIsAdPlaying(false);
+    setCurrentAd(null);
+    if (videoRef.current) {
+      videoRef.current.play().catch((e) => console.log("Auto play error:", e));
+    }
+  };
+
+  const handleSkipAd = (e) => {
+    e?.stopPropagation();
+    if (!canSkipAd) return;
+    handleFinishAd();
+  };
+
+  const handleAdCtaClick = (e) => {
+    e?.stopPropagation();
+    if (!currentAd) return;
+    API.post("/ads/event", {
+      adId: currentAd._id,
+      campaignId: currentAd.campaignId,
+      eventType: "CLICK",
+    }).catch((err) => console.log("Ad click error:", err));
+
+    if (currentAd.destinationUrl && currentAd.destinationUrl !== "#") {
+      window.open(currentAd.destinationUrl, "_blank", "noopener,noreferrer");
+    }
+  };
 
   useEffect(() => {
     const fetchMediaContent = async () => {
@@ -144,11 +266,13 @@ const VideoPlayerPage = () => {
       try {
         let response;
         let data;
+        let placement = "MOVIES";
 
         if (slug) {
           try {
             response = await getMovieBySlug(slug);
             data = response?.movie || response;
+            placement = "MOVIES";
           } catch (err) {
             console.log("Not a movie, trying short film:", err);
           }
@@ -156,6 +280,7 @@ const VideoPlayerPage = () => {
             try {
               response = await getShortFilmsBySlug(slug);
               data = response?.shortFilm || response;
+              placement = "SHORT_FILMS";
             } catch (err) {
               console.error("Short film fetch also failed:", err);
             }
@@ -163,6 +288,7 @@ const VideoPlayerPage = () => {
         } else if (id) {
           response = await getEpisodeById(id);
           data = response?.episode || response?.data || response;
+          placement = "TV_SHOWS";
         }
 
         if (data) {
@@ -186,6 +312,9 @@ const VideoPlayerPage = () => {
           }
           
           setMediaData(data);
+
+          // Fetch pre-roll Ad for this content placement
+          fetchContentAd(placement);
           
           // --- FETCH INITIAL WISHLIST STATUS ---
           const contentId = data._id || data.id;
@@ -213,6 +342,7 @@ const VideoPlayerPage = () => {
     };
 
     if (slug || id) fetchMediaContent();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [slug, id, navigate]);
 
   // Initialize video source once mediaData is loaded
@@ -338,6 +468,15 @@ const VideoPlayerPage = () => {
       setProgress((current / total) * 100);
       setCurrentTime(formatTime(current));
 
+      // Auto-save playback progress every 2 seconds
+      if (Math.abs(current - lastSavedTimeRef.current) >= 2) {
+        lastSavedTimeRef.current = current;
+        const key = getContentKey();
+        if (key && current > 2 && current < total - 5) {
+          localStorage.setItem(`cw_playback_pos_${key}`, String(Math.floor(current)));
+        }
+      }
+
       // Keep auxiliary audio track in sync
       if (selectedAudioTrack && audioRef.current && !audioRef.current.paused) {
         if (Math.abs(audioRef.current.currentTime - current) > 0.3) {
@@ -354,7 +493,9 @@ const VideoPlayerPage = () => {
       if (isFinite(durationVal)) {
         setDuration(formatTime(durationVal));
       }
-      
+
+      const key = getContentKey();
+
       // Safe time restoration after quality switch
       if (pendingSeekRef.current !== null && isFinite(pendingSeekRef.current) && pendingSeekRef.current > 0) {
         videoRef.current.currentTime = pendingSeekRef.current;
@@ -362,6 +503,13 @@ const VideoPlayerPage = () => {
           audioRef.current.currentTime = pendingSeekRef.current;
         }
         pendingSeekRef.current = null;
+      } else if (key) {
+        // Auto-resume from last saved position on page load / refresh
+        const savedPos = parseFloat(localStorage.getItem(`cw_playback_pos_${key}`));
+        if (isFinite(savedPos) && savedPos > 2 && savedPos < durationVal - 5) {
+          videoRef.current.currentTime = savedPos;
+          console.log(`[VIDEO RESUME] Resumed playback at ${savedPos}s for ${key}`);
+        }
       }
 
       // Resume playback if it was playing before quality change
@@ -378,6 +526,14 @@ const VideoPlayerPage = () => {
       }
 
       setIsBuffering(false);
+    }
+  };
+
+  const handleVideoEnded = () => {
+    setIsPlaying(false);
+    const key = getContentKey();
+    if (key) {
+      localStorage.removeItem(`cw_playback_pos_${key}`);
     }
   };
 
@@ -795,15 +951,98 @@ const VideoPlayerPage = () => {
           {/* Auxiliary Audio Element for Secondary Audio Tracks */}
           <audio ref={audioRef} preload="auto" className="hidden" />
 
+          {/* --- INTERACTIVE VIDEO PRE-ROLL AD LAYER --- */}
+          {isAdPlaying && currentAd && (() => {
+            const adSrc = resolveVideoUrl(currentAd.mediaUrl);
+            const isAdImage =
+              currentAd.adType === "IMAGE" ||
+              currentAd.adType === "BANNER" ||
+              (adSrc && adSrc.match(/\.(jpeg|jpg|png|webp|gif|svg)($|\?)/i));
+
+            return (
+              <div className="absolute inset-0 z-50 bg-black flex flex-col justify-between overflow-hidden">
+                {isAdImage ? (
+                  <div className="w-full h-full flex items-center justify-center bg-black">
+                    <img
+                      src={adSrc}
+                      alt={currentAd.title}
+                      className="w-full h-full object-contain"
+                    />
+                  </div>
+                ) : (
+                  <video
+                    ref={adVideoRef}
+                    src={adSrc}
+                    autoPlay
+                    playsInline
+                    className="w-full h-full object-contain"
+                    onEnded={handleFinishAd}
+                    onError={(e) => {
+                      console.warn("Ad video error, continuing countdown:", e);
+                    }}
+                  />
+                )}
+
+                {/* Top Ad Info Bar */}
+                <div className="absolute top-0 left-0 right-0 p-3 sm:p-4 bg-gradient-to-b from-black/80 to-transparent flex justify-between items-center z-10 pointer-events-auto">
+                  <div className="flex items-center gap-2">
+                    <span className="bg-amber-500 text-black text-[11px] font-black px-2.5 py-0.5 rounded shadow">
+                      Ad • 1 of 1
+                    </span>
+                    <span className="text-white text-xs font-semibold drop-shadow truncate max-w-[180px] sm:max-w-md">
+                      {currentAd.title}
+                    </span>
+                  </div>
+
+                  <div className="text-white/90 text-xs font-medium bg-black/50 px-2.5 py-1 rounded-md backdrop-blur-sm border border-white/10">
+                    Video starts in {adTimeRemaining}s
+                  </div>
+                </div>
+
+                {/* Bottom Ad CTA & Skip Controls */}
+                <div className="absolute bottom-0 left-0 right-0 p-3 sm:p-5 bg-gradient-to-t from-black/95 via-black/50 to-transparent flex justify-between items-end z-10 pointer-events-auto">
+                  {/* CTA Button */}
+                  <div>
+                    <button
+                      onClick={handleAdCtaClick}
+                      className="bg-orange-600 hover:bg-orange-500 text-white font-bold text-xs sm:text-sm px-4 py-2 sm:px-5 sm:py-2.5 rounded-xl shadow-lg transition flex items-center gap-2 transform active:scale-95 cursor-pointer"
+                    >
+                      <span>{currentAd.ctaText || "Learn More"}</span>
+                      <FaExternalLinkAlt size={11} />
+                    </button>
+                  </div>
+
+                  {/* Skip Ad Button */}
+                  <div>
+                    {canSkipAd ? (
+                      <button
+                        onClick={handleSkipAd}
+                        className="bg-white/20 hover:bg-white/30 text-white border border-white/40 font-bold text-xs sm:text-sm px-4 py-2 sm:px-5 sm:py-2.5 rounded-xl shadow-lg backdrop-blur-md transition flex items-center gap-2 transform active:scale-95 cursor-pointer"
+                      >
+                        <span>Skip Ad</span>
+                        <span className="text-base">⏭️</span>
+                      </button>
+                    ) : (
+                      <div className="bg-black/60 text-white/90 border border-white/20 text-xs sm:text-sm px-3.5 py-2 rounded-xl backdrop-blur-sm font-medium">
+                        Skip in {skipCountdown}s
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
+            );
+          })()}
+
           <video
             ref={videoRef}
+            crossOrigin="anonymous"
             src={hlsRef.current ? undefined : (videoSrc || undefined)}
             className="w-full h-full object-contain"
             onTimeUpdate={handleTimeUpdate}
             onLoadedMetadata={handleLoadedMetadata}
             onPlay={() => setIsPlaying(true)}
             onPause={() => setIsPlaying(false)}
-            onEnded={() => setIsPlaying(false)}
+            onEnded={handleVideoEnded}
             onError={handleVideoError}
             onLoadedData={() => setVideoLoadError(false)}
             onWaiting={handleWaiting}

@@ -18,6 +18,7 @@ const {
   getPublicUserProfile,
   getUserPosts,
   searchUsers,
+  deleteAccount,
 } = require("../../controllers/user.controller");
 
 const {
@@ -42,6 +43,21 @@ router.get(
   "/profile",
   isAuth,
   getProfile
+);
+
+// ========================================
+// DELETE ACCOUNT (SELF-DELETION & PURGE)
+// ========================================
+router.delete(
+  "/delete-account",
+  isAuth,
+  deleteAccount
+);
+
+router.delete(
+  "/profile",
+  isAuth,
+  deleteAccount
 );
 
 // ========================================

@@ -104,8 +104,10 @@ exports.getSingleUser = async (
 
 
 // ========================================
-// DELETE USER
+// DELETE USER (CASCADING PURGE & CDN CLEANUP)
 // ========================================
+const { purgeUserAccount } = require("../../utils/userCleanup.helper");
+
 exports.deleteUser = async (
     req,
     res
@@ -122,14 +124,12 @@ exports.deleteUser = async (
             });
         }
 
-        await User.findByIdAndDelete(
-            req.params.id
-        );
+        const result = await purgeUserAccount(req.params.id);
 
         res.status(200).json({
             success: true,
-            message:
-                "User deleted successfully",
+            message: result.message || "User and all associated content deleted successfully",
+            deletedReelsCount: result.deletedReelsCount,
         });
 
     } catch (error) {

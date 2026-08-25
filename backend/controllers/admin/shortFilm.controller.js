@@ -187,16 +187,17 @@ const addShortFilm = async (req, res) => {
       encodingStatus: streamInfo.encodingStatus || ""
     });
     try {
-  await notifyNewContent({
-    title: "🎞️ New Short Film Added",
-    message: `${shortFilm.title} is now available.`,
-    type: "NEW_SHORT_FILM",
-    actionUrl: `/short-films/${shortFilm._id}`,
-    createdBy: req.user.id,
-  });
-} catch (err) {
-  console.error("Short Film notification failed:", err.message);
-}
+      const { notifyNewContentUpload } = require("../../utils/notificationDispatcher.helper");
+      notifyNewContentUpload({
+        type: "shortFilm",
+        title: shortFilm.title,
+        actionUrl: `/watch/${shortFilm.slug || shortFilm._id}`,
+        posterUrl: shortFilm.poster || shortFilm.banner || shortFilm.thumbnail || "",
+        contentId: shortFilm._id,
+      }).catch((e) => console.log("Short Film notif err:", e.message));
+    } catch (err) {
+      console.error("Short Film notification failed:", err.message);
+    }
 
     return res.status(201).json({
       success: true,
@@ -241,7 +242,7 @@ const getAllShortFilms = async (
     const shortFilms =
       await ShortFilm.find()
         .sort({
-          priority: -1,
+          priority: 1,
           createdAt: -1,
         })
         .skip(skip)

@@ -8,8 +8,11 @@ import {
   Megaphone,
   Award,
   RefreshCw,
+  SlidersHorizontal,
+  Settings as SettingsIcon,
+  CheckCircle2
 } from "lucide-react";
-import "./AdManagement.css";
+import "./AdminSettings.css";
 import InfoModal, { InfoButton } from "../components/InfoModal";
 import { INFO_CONTENT } from "../data/infoModalContent";
 
@@ -24,7 +27,7 @@ export default function AdminSettings() {
     try {
       setLoading(true);
       const res = await API.get("/admin/settings");
-      if (res.data.success) {
+      if (res.data?.success) {
         setSettings(res.data.settings);
       }
     } catch (err) {
@@ -40,12 +43,12 @@ export default function AdminSettings() {
   }, []);
 
   const handleSave = async (e) => {
-    e.preventDefault();
+    if (e) e.preventDefault();
     try {
       setSaving(true);
       const res = await API.put("/admin/settings", settings);
-      if (res.data.success) {
-        showToast("System settings updated successfully!");
+      if (res.data?.success) {
+        showToast("System engine settings updated successfully!");
         setSettings(res.data.settings);
       }
     } catch (err) {
@@ -56,39 +59,77 @@ export default function AdminSettings() {
   };
 
   if (loading || !settings) {
-    return <div className="ad-management-container"><div className="loading-state">Loading settings...</div></div>;
+    return (
+      <div className="settings-container">
+        <div style={{ textAlign: "center", padding: "60px 0", color: "#94a3b8" }}>
+          Loading engine settings...
+        </div>
+      </div>
+    );
   }
 
+  // Calculate sum of Quality Score weights
+  const totalWeight =
+    (settings.qualityScoreWeights?.qualifiedWatchTime || 0) +
+    (settings.qualityScoreWeights?.completionRate || 0) +
+    (settings.qualityScoreWeights?.shares || 0) +
+    (settings.qualityScoreWeights?.saves || 0) +
+    (settings.qualityScoreWeights?.comments || 0) +
+    (settings.qualityScoreWeights?.likes || 0) +
+    (settings.qualityScoreWeights?.newFollowers || 0);
+
   return (
-    <div className="ad-management-container">
+    <div className="settings-container">
       {/* Header */}
-      <div className="ad-header">
-        <div>
-          <div style={{ display: "flex", alignItems: "center" }}>
-            <h2>System Engine & Rules Settings</h2>
-            <InfoButton
-              onClick={() => setActiveInfoKey("system-settings-engine")}
-              title="Overview of Platform Configuration Engine"
-            />
+      <div className="settings-header">
+        <div className="settings-header-left">
+          <div className="settings-icon-box">
+            <SettingsIcon size={24} />
           </div>
-          <p>Configure scoring weights, engagement point matrix, ad placement intervals & fraud rules</p>
+          <div className="settings-titles">
+            <h2>
+              <span>System Engine & Rules Settings</span>
+              <InfoButton
+                onClick={() => setActiveInfoKey("system-settings-engine")}
+                title="Overview of Platform Configuration Engine"
+              />
+            </h2>
+            <p>Configure scoring weights, engagement point matrix, ad placement intervals & fraud rules</p>
+          </div>
         </div>
-        <div className="header-actions">
-          <button className="refresh-btn" onClick={fetchSettings}>
-            <RefreshCw size={16} /> Reset
+
+        <div className="settings-header-actions">
+          <button type="button" className="btn-reset-settings" onClick={fetchSettings} disabled={saving}>
+            <RefreshCw size={16} />
+            <span>Reset</span>
           </button>
-          <button className="create-ad-btn" onClick={handleSave} disabled={saving}>
-            <Save size={18} /> {saving ? "Saving..." : "Save Settings"}
+          <button type="button" className="btn-save-settings" onClick={handleSave} disabled={saving}>
+            <Save size={18} />
+            <span>{saving ? "Saving..." : "Save Settings"}</span>
           </button>
         </div>
       </div>
 
       <form onSubmit={handleSave}>
         {/* Section 1: Quality Score Formula Weights */}
-        <div className="table-card" style={{ padding: "24px", marginBottom: "24px" }}>
-          <div style={{ display: "flex", alignItems: "center", marginBottom: "16px" }}>
-            <h3 style={{ fontSize: "1.1rem", margin: 0, color: "#ec4899", display: "flex", alignItems: "center", gap: "8px" }}>
-              <Sliders size={20} /> Creator Quality Score Formula Weights (Total: 100%)
+        <div className="settings-section-card">
+          <div className="settings-section-header">
+            <h3 className="settings-section-title" style={{ color: "#ec4899" }}>
+              <Sliders size={20} />
+              <span>Creator Quality Score Formula Weights</span>
+              <span
+                style={{
+                  fontSize: "0.75rem",
+                  padding: "3px 10px",
+                  borderRadius: "12px",
+                  background: totalWeight === 100 ? "rgba(16, 185, 129, 0.15)" : "rgba(239, 68, 68, 0.15)",
+                  color: totalWeight === 100 ? "#34d399" : "#f87171",
+                  border: `1px solid ${totalWeight === 100 ? "rgba(16,185,129,0.3)" : "rgba(239,68,68,0.3)"}`,
+                  fontWeight: 800,
+                }}
+              >
+                Total: {totalWeight}% {totalWeight === 100 ? "✔ Valid" : "⚠ Must equal 100%"}
+              </span>
             </h3>
             <InfoButton
               onClick={() => setActiveInfoKey("quality-score-weights")}
@@ -96,12 +137,13 @@ export default function AdminSettings() {
               className="btn-amber"
             />
           </div>
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: "16px" }}>
-            <div className="form-group" style={{ margin: 0 }}>
-              <label className="form-label">Qualified Watch Time (%)</label>
+
+          <div className="settings-grid">
+            <div className="settings-field-group">
+              <label className="settings-label">Qualified Watch Time (%)</label>
               <input
                 type="number"
-                className="form-control-input"
+                className="settings-input"
                 value={settings.qualityScoreWeights?.qualifiedWatchTime || 35}
                 onChange={(e) =>
                   setSettings({
@@ -111,11 +153,12 @@ export default function AdminSettings() {
                 }
               />
             </div>
-            <div className="form-group" style={{ margin: 0 }}>
-              <label className="form-label">Completion Rate (%)</label>
+
+            <div className="settings-field-group">
+              <label className="settings-label">Completion Rate (%)</label>
               <input
                 type="number"
-                className="form-control-input"
+                className="settings-input"
                 value={settings.qualityScoreWeights?.completionRate || 20}
                 onChange={(e) =>
                   setSettings({
@@ -125,11 +168,12 @@ export default function AdminSettings() {
                 }
               />
             </div>
-            <div className="form-group" style={{ margin: 0 }}>
-              <label className="form-label">Shares (%)</label>
+
+            <div className="settings-field-group">
+              <label className="settings-label">Shares (%)</label>
               <input
                 type="number"
-                className="form-control-input"
+                className="settings-input"
                 value={settings.qualityScoreWeights?.shares || 15}
                 onChange={(e) =>
                   setSettings({
@@ -139,11 +183,12 @@ export default function AdminSettings() {
                 }
               />
             </div>
-            <div className="form-group" style={{ margin: 0 }}>
-              <label className="form-label">Saves (%)</label>
+
+            <div className="settings-field-group">
+              <label className="settings-label">Saves (%)</label>
               <input
                 type="number"
-                className="form-control-input"
+                className="settings-input"
                 value={settings.qualityScoreWeights?.saves || 10}
                 onChange={(e) =>
                   setSettings({
@@ -153,11 +198,12 @@ export default function AdminSettings() {
                 }
               />
             </div>
-            <div className="form-group" style={{ margin: 0 }}>
-              <label className="form-label">Comments (%)</label>
+
+            <div className="settings-field-group">
+              <label className="settings-label">Comments (%)</label>
               <input
                 type="number"
-                className="form-control-input"
+                className="settings-input"
                 value={settings.qualityScoreWeights?.comments || 10}
                 onChange={(e) =>
                   setSettings({
@@ -167,11 +213,12 @@ export default function AdminSettings() {
                 }
               />
             </div>
-            <div className="form-group" style={{ margin: 0 }}>
-              <label className="form-label">Likes (%)</label>
+
+            <div className="settings-field-group">
+              <label className="settings-label">Likes (%)</label>
               <input
                 type="number"
-                className="form-control-input"
+                className="settings-input"
                 value={settings.qualityScoreWeights?.likes || 5}
                 onChange={(e) =>
                   setSettings({
@@ -181,11 +228,12 @@ export default function AdminSettings() {
                 }
               />
             </div>
-            <div className="form-group" style={{ margin: 0 }}>
-              <label className="form-label">New Followers (%)</label>
+
+            <div className="settings-field-group">
+              <label className="settings-label">New Followers (%)</label>
               <input
                 type="number"
-                className="form-control-input"
+                className="settings-input"
                 value={settings.qualityScoreWeights?.newFollowers || 5}
                 onChange={(e) =>
                   setSettings({
@@ -199,10 +247,11 @@ export default function AdminSettings() {
         </div>
 
         {/* Section 2: Engagement Points Matrix */}
-        <div className="table-card" style={{ padding: "24px", marginBottom: "24px" }}>
-          <div style={{ display: "flex", alignItems: "center", marginBottom: "16px" }}>
-            <h3 style={{ fontSize: "1.1rem", margin: 0, color: "#3b82f6", display: "flex", alignItems: "center", gap: "8px" }}>
-              <Award size={20} /> Engagement Point Matrix (Action Points)
+        <div className="settings-section-card">
+          <div className="settings-section-header">
+            <h3 className="settings-section-title" style={{ color: "#3b82f6" }}>
+              <Award size={20} />
+              <span>Engagement Point Matrix (Action Points)</span>
             </h3>
             <InfoButton
               onClick={() => setActiveInfoKey("engagement-matrix")}
@@ -210,12 +259,13 @@ export default function AdminSettings() {
               className="btn-blue"
             />
           </div>
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))", gap: "16px" }}>
-            <div className="form-group" style={{ margin: 0 }}>
-              <label className="form-label">Like Points</label>
+
+          <div className="settings-grid">
+            <div className="settings-field-group">
+              <label className="settings-label">Like Points</label>
               <input
                 type="number"
-                className="form-control-input"
+                className="settings-input"
                 value={settings.engagementPoints?.like || 1}
                 onChange={(e) =>
                   setSettings({
@@ -225,11 +275,12 @@ export default function AdminSettings() {
                 }
               />
             </div>
-            <div className="form-group" style={{ margin: 0 }}>
-              <label className="form-label">Comment Points</label>
+
+            <div className="settings-field-group">
+              <label className="settings-label">Comment Points</label>
               <input
                 type="number"
-                className="form-control-input"
+                className="settings-input"
                 value={settings.engagementPoints?.comment || 3}
                 onChange={(e) =>
                   setSettings({
@@ -239,11 +290,12 @@ export default function AdminSettings() {
                 }
               />
             </div>
-            <div className="form-group" style={{ margin: 0 }}>
-              <label className="form-label">Share Points</label>
+
+            <div className="settings-field-group">
+              <label className="settings-label">Share Points</label>
               <input
                 type="number"
-                className="form-control-input"
+                className="settings-input"
                 value={settings.engagementPoints?.share || 5}
                 onChange={(e) =>
                   setSettings({
@@ -253,11 +305,12 @@ export default function AdminSettings() {
                 }
               />
             </div>
-            <div className="form-group" style={{ margin: 0 }}>
-              <label className="form-label">Save Points</label>
+
+            <div className="settings-field-group">
+              <label className="settings-label">Save Points</label>
               <input
                 type="number"
-                className="form-control-input"
+                className="settings-input"
                 value={settings.engagementPoints?.save || 4}
                 onChange={(e) =>
                   setSettings({
@@ -267,11 +320,12 @@ export default function AdminSettings() {
                 }
               />
             </div>
-            <div className="form-group" style={{ margin: 0 }}>
-              <label className="form-label">Follow Points</label>
+
+            <div className="settings-field-group">
+              <label className="settings-label">Follow Points</label>
               <input
                 type="number"
-                className="form-control-input"
+                className="settings-input"
                 value={settings.engagementPoints?.follow || 8}
                 onChange={(e) =>
                   setSettings({
@@ -285,10 +339,11 @@ export default function AdminSettings() {
         </div>
 
         {/* Section 3: Ad Placement & Frequency */}
-        <div className="table-card" style={{ padding: "24px", marginBottom: "24px" }}>
-          <div style={{ display: "flex", alignItems: "center", marginBottom: "16px" }}>
-            <h3 style={{ fontSize: "1.1rem", margin: 0, color: "#10b981", display: "flex", alignItems: "center", gap: "8px" }}>
-              <Megaphone size={20} /> Ad Placement & Frequency Capping
+        <div className="settings-section-card">
+          <div className="settings-section-header">
+            <h3 className="settings-section-title" style={{ color: "#10b981" }}>
+              <Megaphone size={20} />
+              <span>Ad Placement & Frequency Capping</span>
             </h3>
             <InfoButton
               onClick={() => setActiveInfoKey("ad-placement-rules")}
@@ -296,11 +351,12 @@ export default function AdminSettings() {
               className="btn-emerald"
             />
           </div>
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: "16px" }}>
-            <div className="form-group" style={{ margin: 0 }}>
-              <label className="form-label">Show Ad Every N Reels</label>
+
+          <div className="settings-grid">
+            <div className="settings-field-group">
+              <label className="settings-label">Show Ad Every N Reels</label>
               <select
-                className="form-control-input"
+                className="settings-select"
                 value={settings.adSettings?.adFrequency || 3}
                 onChange={(e) =>
                   setSettings({
@@ -317,11 +373,11 @@ export default function AdminSettings() {
               </select>
             </div>
 
-            <div className="form-group" style={{ margin: 0 }}>
-              <label className="form-label">Max Impressions / User / Day / Campaign</label>
+            <div className="settings-field-group">
+              <label className="settings-label">Max Impressions / User / Day / Campaign</label>
               <input
                 type="number"
-                className="form-control-input"
+                className="settings-input"
                 value={settings.adSettings?.frequencyCapPerUserPerDay || 5}
                 onChange={(e) =>
                   setSettings({
@@ -332,11 +388,11 @@ export default function AdminSettings() {
               />
             </div>
 
-            <div className="form-group" style={{ margin: 0 }}>
-              <label className="form-label">Minimum Watch Time for Qualified View (sec)</label>
+            <div className="settings-field-group">
+              <label className="settings-label">Minimum Watch Time for Qualified View (sec)</label>
               <input
                 type="number"
-                className="form-control-input"
+                className="settings-input"
                 value={settings.adSettings?.minWatchTimeSeconds || 3}
                 onChange={(e) =>
                   setSettings({
@@ -347,6 +403,14 @@ export default function AdminSettings() {
               />
             </div>
           </div>
+        </div>
+
+        {/* Section 4: Bottom Save Actions */}
+        <div className="settings-footer-actions">
+          <button type="submit" className="btn-save-settings" disabled={saving}>
+            <Save size={18} />
+            <span>{saving ? "Saving Changes..." : "Save All Settings"}</span>
+          </button>
         </div>
       </form>
 

@@ -11,7 +11,7 @@ const getAllShortFilms = async (req, res) => {
     const skip = (page - 1) * limit;
  
     const shortFilms = await ShortFilm.find({})
-      .sort({ priority: -1, createdAt: -1 })
+      .sort({ priority: 1, createdAt: -1 })
       .skip(skip)
       .limit(limit)
       .lean();

@@ -210,13 +210,14 @@ console.log({
     });
 
     try {
-      await notifyNewContent({
-        title: "🎬 New Movie Added",
-        message: `${movie.title} is now available to watch.`,
-        type: "NEW_MOVIE",
-        actionUrl: `/watch/${movie._id}`,
-        createdBy: req.user?.id || req.user?._id,
-      });
+      const { notifyNewContentUpload } = require("../../utils/notificationDispatcher.helper");
+      notifyNewContentUpload({
+        type: "movie",
+        title: movie.title,
+        actionUrl: `/watch/${movie.slug || movie._id}`,
+        posterUrl: movie.poster || movie.banner || "",
+        contentId: movie._id,
+      }).catch((e) => console.log("Movie notif err:", e.message));
     } catch (err) {
       console.error("Movie notification failed:", err.message);
     }
@@ -270,7 +271,7 @@ const getAllMovies = async (req, res) => {
 
     const movies = await Movie.find()
       .sort({
-        priority: -1,
+        priority: 1,
         createdAt: -1
       })
       .skip(skip)

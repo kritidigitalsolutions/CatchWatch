@@ -15,8 +15,40 @@ const notificationSchema = new mongoose.Schema(
 
         type: {
             type: String,
-            // enum: ["GENERAL", "PROPERTY", "LEAD", "PLAN", "SYSTEM", "PROMOTIONAL"],
             default: "GENERAL"
+            // "GENERAL", "PROMOTIONAL", "SYSTEM", "CONTENT_ALERT", "SUBSCRIPTION", "BLUETICK", "CHAT", "CALL", "REEL", "FOLLOW", "ACCOUNT"
+        },
+
+        imageUrl: {
+            type: String,
+            default: ""
+        },
+
+        actionUrl: {
+            type: String,
+            default: ""
+        },
+
+        attachmentType: {
+            type: String,
+            enum: ["NONE", "CONTENT", "SUBSCRIPTION_PLAN"],
+            default: "NONE"
+        },
+
+        contentId: {
+            type: mongoose.Schema.Types.ObjectId,
+            default: null
+        },
+
+        contentType: {
+            type: String,
+            default: ""
+        },
+
+        planId: {
+            type: mongoose.Schema.Types.ObjectId,
+            ref: "Plan",
+            default: null
         },
 
         // If null, notification is for all users
@@ -29,8 +61,7 @@ const notificationSchema = new mongoose.Schema(
         // Target specific user types (if targetUser is null)
         targetUserType: {
             type: String,
-            // enum: ["ALL", "AGENT", "BUILDER", "INDIVIDUAL"],
-            default: "ALL"
+            default: "ALL" // "ALL", "SUBSCRIBERS", "NON_SUBSCRIBERS", "EXPIRING_SOON", "CREATORS"
         },
 
         // Track who has read this notification (for broadcast notifications)
@@ -68,21 +99,31 @@ const notificationSchema = new mongoose.Schema(
             default: null
         },
 
+        // Delivery reporting stats
+        deliveryStats: {
+            totalSent: {
+                type: Number,
+                default: 0
+            },
+            delivered: {
+                type: Number,
+                default: 0
+            },
+            failed: {
+                type: Number,
+                default: 0
+            }
+        },
+
         // Optional metadata for linking to specific resources
         metadata: {
-            propertyId: {
-                type: mongoose.Schema.Types.ObjectId,
-                ref: "Property"
-            },
-            leadId: {
-                type: mongoose.Schema.Types.ObjectId,
-                ref: "Lead"
-            },
-            planId: {
-                type: mongoose.Schema.Types.ObjectId,
-                ref: "Plan"
-            },
-            actionUrl: String
+            propertyId: mongoose.Schema.Types.ObjectId,
+            leadId: mongoose.Schema.Types.ObjectId,
+            planId: mongoose.Schema.Types.ObjectId,
+            contentId: mongoose.Schema.Types.ObjectId,
+            actionUrl: String,
+            imageUrl: String,
+            extraData: mongoose.Schema.Types.Mixed
         },
 
         // Who created this notification

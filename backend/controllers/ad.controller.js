@@ -2,87 +2,18 @@ const mongoose = require("mongoose");
 const AdCampaign = require("../models/adCampaign.model");
 const Ad = require("../models/ad.model");
 const AdAnalytics = require("../models/adAnalytics.model");
-const Advertiser = require("../models/advertiser.model");
 const SystemSettings = require("../models/systemSettings.model");
 const User = require("../models/user.model");
 const Notification = require("../models/notification.model");
 
 /**
- * Register or get Advertiser profile
- */
-exports.registerAdvertiser = async (req, res) => {
-  try {
-    const userId = req.user?.id || req.user?._id;
-    const { businessName, companyName, gstNumber, email, phone, website } = req.body;
-
-    let advertiser = await Advertiser.findOne({ userId });
-    if (!advertiser) {
-      advertiser = await Advertiser.create({
-        userId,
-        businessName: businessName || req.user.name || "Advertiser",
-        companyName: companyName || businessName || req.user.name || "Company",
-        gstNumber: gstNumber || "",
-        email: email || (req.user.phone ? req.user.phone + "@catchwatch.com" : "ads@catchwatch.com"),
-        phone: phone || req.user.phone || "",
-        website: website || "",
-      });
-    } else {
-      if (businessName) advertiser.businessName = businessName;
-      if (companyName) advertiser.companyName = companyName;
-      if (gstNumber) advertiser.gstNumber = gstNumber;
-      if (email) advertiser.email = email;
-      if (phone) advertiser.phone = phone;
-      if (website) advertiser.website = website;
-      await advertiser.save();
-    }
-
-    return res.status(200).json({
-      success: true,
-      message: "Advertiser profile updated successfully",
-      advertiser,
-    });
-  } catch (error) {
-    console.error("REGISTER ADVERTISER ERROR:", error);
-    return res.status(500).json({ success: false, message: "Server error" });
-  }
-};
-
-/**
- * Get Advertiser profile for logged in user
- */
-exports.getAdvertiserProfile = async (req, res) => {
-  try {
-    const userId = req.user?.id || req.user?._id;
-    let advertiser = await Advertiser.findOne({ userId });
-    if (!advertiser) {
-      advertiser = await Advertiser.create({
-        userId,
-        businessName: req.user.name || "Business",
-        companyName: req.user.name || "Business",
-        email: (req.user.phone ? req.user.phone + "@catchwatch.com" : "ads@catchwatch.com"),
-        phone: req.user.phone || "",
-      });
-    }
-
-    return res.status(200).json({
-      success: true,
-      advertiser,
-    });
-  } catch (error) {
-    console.error("GET ADVERTISER PROFILE ERROR:", error);
-    return res.status(500).json({ success: false, message: "Server error" });
-  }
-};
-
-/**
- * Create Ad Campaign
+ * Create Ad Campaign (Direct Admin & System Campaign Creation)
  */
 exports.createCampaign = async (req, res) => {
   try {
     const userId = req.user?.id || req.user?._id;
     let {
       campaignName,
-      advertiserId,
       businessName,
       companyName,
       email,
@@ -114,62 +45,39 @@ exports.createCampaign = async (req, res) => {
       thumbnailUrl = thumbnailFile.cdnUrl || thumbnailFile.path || thumbnailUrl;
     }
 
-    // Find or create advertiser
-    let advertiser;
-    if (advertiserId && mongoose.Types.ObjectId.isValid(advertiserId)) {
-      advertiser = await Advertiser.findById(advertiserId);
-    }
-
-    if (!advertiser && (businessName || companyName)) {
-      advertiser = await Advertiser.findOne({
-        $or: [
-          { businessName: businessName },
-          { companyName: companyName || businessName }
-        ]
-      });
-    }
-
-    if (!advertiser && userId) {
-      advertiser = await Advertiser.findOne({ userId });
-    }
-
-    if (!advertiser) {
-      advertiser = await Advertiser.create({
-        userId: userId || new mongoose.Types.ObjectId(),
-        businessName: businessName || req.user?.name || "CatchWatch Advertiser",
-        companyName: companyName || businessName || "CatchWatch Advertiser",
-        email: email || "ads@catchwatch.com",
-        phone: phone || "0000000000",
-      });
-    }
-
     const campaign = await AdCampaign.create({
       campaignName: campaignName || "New Campaign",
-      advertiserId: advertiser._id,
+      businessName: businessName || req.user?.name || "CatchWatch Advertiser",
+      companyName: companyName || businessName || "CatchWatch Advertiser",
+      email: email || "ads@catchwatch.com",
+      phone: phone || "0000000000",
+      adType: adType || (mediaFile?.mimetype?.startsWith("image/") ? "IMAGE" : "SPONSORED_REELS"),
+      mediaUrl: mediaUrl || "",
+      destinationUrl: destinationUrl || "#",
       budget: budget || 1000,
       dailyLimit: dailyLimit || 0,
       startDate: startDate ? new Date(startDate) : new Date(),
       endDate: endDate ? new Date(endDate) : new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
       priority: priority || 1,
       targetAudience: targetAudience || {},
-      status: req.user?.role === "ADMIN" ? "ACTIVE" : "PENDING",
-      paymentStatus: req.user?.role === "ADMIN" ? "PAID" : "PENDING",
+      status: req.user?.role === "ADMIN" ? "ACTIVE" : "ACTIVE",
+      paymentStatus: "PAID",
     });
 
-    // If creative media or file included, create initial Ad
+    // If creative media or file included, create initial Ad creative
     if (mediaUrl || title || mediaFile) {
       await Ad.create({
         title: title || campaignName,
         campaignId: campaign._id,
-        advertiserId: advertiser._id,
-        adType: adType || (mediaFile?.mimetype?.startsWith("image/") ? "IMAGE" : "VIDEO"),
+        adType: adType || (mediaFile?.mimetype?.startsWith("image/") ? "IMAGE" : "SPONSORED_REELS"),
         mediaUrl: mediaUrl || "",
         thumbnailUrl: thumbnailUrl || "",
         ctaText: ctaText || "Learn More",
         destinationUrl: destinationUrl || "#",
         durationSeconds: durationSeconds || 15,
         category: category || "General",
-        status: campaign.status === "ACTIVE" ? "ACTIVE" : "PENDING",
+        priority: priority ? Number(priority) : 1,
+        status: "ACTIVE",
       });
     }
 
@@ -192,30 +100,18 @@ exports.getCampaigns = async (req, res) => {
     const page = parseInt(req.query.page) || 1;
     const limit = parseInt(req.query.limit) || 10;
     const skip = (page - 1) * limit;
-    const { status, search, advertiserId } = req.query;
+    const { status, search } = req.query;
 
     let query = {};
     if (status && status !== "ALL") {
       query.status = status;
     }
-    if (advertiserId) {
-      query.advertiserId = advertiserId;
-    }
     if (search) {
       query.campaignName = new RegExp(search.trim(), "i");
     }
 
-    // If user is Advertiser (not Admin), restrict to their advertiser profile
-    if (req.user && req.user.role !== "ADMIN") {
-      const advertiser = await Advertiser.findOne({ userId: req.user._id });
-      if (advertiser) {
-        query.advertiserId = advertiser._id;
-      }
-    }
-
     const total = await AdCampaign.countDocuments(query);
     const campaigns = await AdCampaign.find(query)
-      .populate("advertiserId", "businessName companyName email phone")
       .sort({ createdAt: -1 })
       .skip(skip)
       .limit(limit)
@@ -363,21 +259,40 @@ exports.duplicateCampaign = async (req, res) => {
 };
 
 /**
- * Reel Feed Ad Placement Server
- * Returns an active Ad creative for insertion into the viewer's Reels feed
+ * Universal Content Ad Placement Server (Movies, Short Films, TV Shows, Banners, Reels)
+ * Returns an active Ad creative for insertion into Movies, Short Films, TV Shows, Banners, or Reels
  */
-exports.getReelFeedAd = async (req, res) => {
+exports.getContentAd = async (req, res) => {
   try {
-    const settings = await SystemSettings.getSettings();
+    const { placement = "ALL" } = req.query; // "MOVIES", "SHORT_FILMS", "TV_SHOWS", "BANNER", "SPONSORED_REELS", "ALL"
+    const upperPlacement = String(placement || "ALL").toUpperCase();
     const now = new Date();
 
-    // Query active campaigns with available budget and valid date range
-    const activeCampaigns = await AdCampaign.find({
-      status: "ACTIVE",
-      startDate: { $lte: now },
-      endDate: { $gte: now },
-      $expr: { $gt: ["$budget", "$spent"] },
-    }).sort({ priority: -1 });
+    // Query active campaigns (resilient to date/budget/casing)
+    let activeCampaigns = await AdCampaign.find({
+      $or: [
+        { status: "ACTIVE" },
+        { status: "active" },
+        { status: { $exists: false } },
+      ],
+    }).sort({ priority: -1, createdAt: -1 });
+
+    // Filter by budget & dates if present
+    activeCampaigns = activeCampaigns.filter((c) => {
+      // If budget and spent are numbers and spent >= budget, skip
+      if (typeof c.budget === "number" && typeof c.spent === "number" && c.budget > 0 && c.spent >= c.budget) {
+        return false;
+      }
+      // If startDate is set and in future, skip
+      if (c.startDate && new Date(c.startDate) > now) {
+        return false;
+      }
+      // If endDate is set and in past, skip
+      if (c.endDate && new Date(c.endDate) < now) {
+        return false;
+      }
+      return true;
+    });
 
     if (!activeCampaigns || activeCampaigns.length === 0) {
       return res.status(200).json({
@@ -387,16 +302,111 @@ exports.getReelFeedAd = async (req, res) => {
       });
     }
 
-    // Pick random active campaign weighted by priority
-    const selectedCampaign = activeCampaigns[Math.floor(Math.random() * activeCampaigns.length)];
+    let targetTypes = [];
+    if (upperPlacement === "MOVIES" || upperPlacement === "MOVIE") {
+      targetTypes = ["MOVIES", "ALL_CONTENT"];
+    } else if (upperPlacement === "SHORT_FILMS" || upperPlacement === "SHORT_FILM" || upperPlacement === "SHORTS") {
+      targetTypes = ["SHORT_FILMS", "ALL_CONTENT"];
+    } else if (upperPlacement === "TV_SHOWS" || upperPlacement === "TV_SHOW" || upperPlacement === "SERIES" || upperPlacement === "EPISODE") {
+      targetTypes = ["TV_SHOWS", "ALL_CONTENT"];
+    } else if (upperPlacement === "BANNER" || upperPlacement === "IMAGE" || upperPlacement === "DISPLAY") {
+      targetTypes = ["BANNER", "IMAGE", "ALL_CONTENT"];
+    } else if (upperPlacement === "REELS" || upperPlacement === "SPONSORED_REELS") {
+      targetTypes = ["SPONSORED_REELS", "SPONSORED_SHORTS", "ALL_CONTENT"];
+    } else {
+      targetTypes = ["MOVIES", "SHORT_FILMS", "TV_SHOWS", "SPONSORED_REELS", "SPONSORED_SHORTS", "ALL_CONTENT", "VIDEO", "IMAGE", "BANNER"];
+    }
 
-    // Get an active ad creative for campaign
-    const adCreative = await Ad.findOne({
-      campaignId: selectedCampaign._id,
-      status: "ACTIVE",
+    // Filter campaigns matching placement or ALL_CONTENT
+    const matchingCampaigns = activeCampaigns.filter((c) => {
+      if (!c.adType || c.adType === "ALL_CONTENT") return true;
+      return targetTypes.includes(c.adType);
     });
 
-    if (!adCreative) {
+    if (matchingCampaigns.length === 0) {
+      return res.status(200).json({
+        success: true,
+        hasAd: false,
+        ad: null,
+      });
+    }
+
+    const campaignIds = matchingCampaigns.map((c) => c._id);
+
+    // Find active ads matching the placement strictly
+    let adCreatives = await Ad.find({
+      campaignId: { $in: campaignIds },
+      adType: { $in: targetTypes },
+      $or: [{ status: "ACTIVE" }, { status: "active" }, { status: { $exists: false } }],
+    });
+
+    let selectedAd = null;
+    let parentCampaign = null;
+
+    if (adCreatives && adCreatives.length > 0) {
+      // Weighted Random Selection: Higher priority ads have proportionally higher chance to be chosen
+      const weights = adCreatives.map((ad) => {
+        let p = ad.priority;
+        if (!p && ad.campaignId) {
+          const parent = matchingCampaigns.find((c) => String(c._id) === String(ad.campaignId));
+          if (parent && parent.priority) p = parent.priority;
+        }
+        return Math.max(1, Number(p) || 1);
+      });
+
+      const totalWeight = weights.reduce((sum, w) => sum + w, 0);
+      let randomVal = Math.random() * totalWeight;
+      let chosenIdx = 0;
+
+      for (let i = 0; i < adCreatives.length; i++) {
+        if (randomVal < weights[i]) {
+          chosenIdx = i;
+          break;
+        }
+        randomVal -= weights[i];
+      }
+
+      selectedAd = adCreatives[chosenIdx];
+      parentCampaign = matchingCampaigns.find(
+        (c) => String(c._id) === String(selectedAd.campaignId)
+      ) || matchingCampaigns[0];
+    } else {
+      // Fallback directly to matching campaigns with mediaUrl (also weighted by campaign priority)
+      const validCampaignsWithMedia = matchingCampaigns.filter(
+        (c) => c.mediaUrl && c.mediaUrl.trim() !== "" && (!c.adType || targetTypes.includes(c.adType))
+      );
+
+      if (validCampaignsWithMedia.length > 0) {
+        const weights = validCampaignsWithMedia.map((c) => Math.max(1, Number(c.priority) || 1));
+        const totalWeight = weights.reduce((sum, w) => sum + w, 0);
+        let randomVal = Math.random() * totalWeight;
+        let chosenIdx = 0;
+
+        for (let i = 0; i < validCampaignsWithMedia.length; i++) {
+          if (randomVal < weights[i]) {
+            chosenIdx = i;
+            break;
+          }
+          randomVal -= weights[i];
+        }
+
+        const campaignWithMedia = validCampaignsWithMedia[chosenIdx];
+        parentCampaign = campaignWithMedia;
+        selectedAd = {
+          _id: campaignWithMedia._id,
+          campaignId: campaignWithMedia._id,
+          title: campaignWithMedia.campaignName || campaignWithMedia.businessName || "Featured Ad",
+          adType: campaignWithMedia.adType || (upperPlacement === "BANNER" ? "BANNER" : "VIDEO"),
+          mediaUrl: campaignWithMedia.mediaUrl,
+          thumbnailUrl: campaignWithMedia.mediaUrl,
+          ctaText: "Learn More",
+          destinationUrl: campaignWithMedia.destinationUrl || "#",
+          durationSeconds: 15,
+        };
+      }
+    }
+
+    if (!selectedAd || !selectedAd.mediaUrl) {
       return res.status(200).json({
         success: true,
         hasAd: false,
@@ -408,23 +418,32 @@ exports.getReelFeedAd = async (req, res) => {
       success: true,
       hasAd: true,
       ad: {
-        _id: adCreative._id,
-        campaignId: selectedCampaign._id,
-        advertiserId: selectedCampaign.advertiserId,
-        title: adCreative.title,
-        adType: adCreative.adType,
-        mediaUrl: adCreative.mediaUrl,
-        thumbnailUrl: adCreative.thumbnailUrl,
-        ctaText: adCreative.ctaText,
-        destinationUrl: adCreative.destinationUrl,
-        durationSeconds: adCreative.durationSeconds,
+        _id: selectedAd._id,
+        campaignId: selectedAd.campaignId || parentCampaign?._id,
+        title: selectedAd.title || parentCampaign?.campaignName || "Featured Ad",
+        businessName: parentCampaign?.businessName || "CatchWatch Sponsored",
+        adType: selectedAd.adType || parentCampaign?.adType || "VIDEO",
+        mediaUrl: selectedAd.mediaUrl || parentCampaign?.mediaUrl,
+        thumbnailUrl: selectedAd.thumbnailUrl || selectedAd.mediaUrl || parentCampaign?.mediaUrl,
+        ctaText: selectedAd.ctaText || "Learn More",
+        destinationUrl: selectedAd.destinationUrl || parentCampaign?.destinationUrl || "#",
+        durationSeconds: selectedAd.durationSeconds || 15,
         isAd: true,
       },
     });
   } catch (error) {
-    console.error("GET REEL FEED AD ERROR:", error);
+    console.error("GET CONTENT AD ERROR:", error);
     return res.status(200).json({ success: true, hasAd: false, ad: null });
   }
+};
+
+/**
+ * Reel Feed Ad Placement Server
+ * Returns an active Ad creative for insertion into the viewer's Reels feed
+ */
+exports.getReelFeedAd = async (req, res) => {
+  req.query.placement = "SPONSORED_REELS";
+  return exports.getContentAd(req, res);
 };
 
 /**
@@ -531,7 +550,6 @@ exports.recordAdEvent = async (req, res) => {
  */
 exports.getAdminAdDashboard = async (req, res) => {
   try {
-    const totalAdvertisers = await Advertiser.countDocuments();
     const runningCampaigns = await AdCampaign.countDocuments({ status: "ACTIVE" });
     const pendingCampaigns = await AdCampaign.countDocuments({ status: "PENDING" });
     const completedCampaigns = await AdCampaign.countDocuments({ status: "COMPLETED" });
@@ -561,7 +579,7 @@ exports.getAdminAdDashboard = async (req, res) => {
 
     return res.status(200).json({
       success: true,
-      totalAdvertisers,
+      totalAdvertisers: runningCampaigns + pendingCampaigns + completedCampaigns,
       runningCampaigns,
       pendingCampaigns,
       completedCampaigns,
@@ -575,63 +593,6 @@ exports.getAdminAdDashboard = async (req, res) => {
     });
   } catch (error) {
     console.error("GET ADMIN AD DASHBOARD ERROR:", error);
-    return res.status(500).json({ success: false, message: "Server error" });
-  }
-};
-
-/**
- * Advertiser Dashboard overview for individual businesses
- */
-exports.getAdvertiserDashboard = async (req, res) => {
-  try {
-    const userId = req.user?.id || req.user?._id;
-    let advertiser = await Advertiser.findOne({ userId });
-    if (!advertiser && userId) {
-      advertiser = await Advertiser.create({
-        userId,
-        businessName: req.user.name || "Business",
-        companyName: req.user.name || "Business",
-        email: req.user.phone ? req.user.phone + "@catchwatch.com" : "ads@catchwatch.com",
-        phone: req.user.phone || "",
-      });
-    }
-
-    const campaigns = await AdCampaign.find({ advertiserId: advertiser._id });
-    let totalBudget = 0;
-    let totalSpent = 0;
-    let totalImpressions = 0;
-    let totalClicks = 0;
-    let totalViews = 0;
-    let totalConversions = 0;
-
-    campaigns.forEach((c) => {
-      totalBudget += c.budget || 0;
-      totalSpent += c.spent || 0;
-      totalImpressions += c.totalImpressions || 0;
-      totalClicks += c.totalClicks || 0;
-      totalViews += c.totalViews || 0;
-      totalConversions += c.totalConversions || 0;
-    });
-
-    const ctr = totalImpressions > 0 ? ((totalClicks / totalImpressions) * 100).toFixed(2) : "0.00";
-    const reach = Math.round(totalImpressions * 0.85);
-
-    return res.status(200).json({
-      success: true,
-      advertiser,
-      activeCampaignsCount: campaigns.filter((c) => c.status === "ACTIVE").length,
-      totalCampaignsCount: campaigns.length,
-      totalBudget,
-      spent: Math.round(totalSpent),
-      remainingBudget: Math.max(0, Math.round(totalBudget - totalSpent)),
-      ctr,
-      reach,
-      conversions: totalConversions,
-      views: totalViews,
-      clicks: totalClicks,
-    });
-  } catch (error) {
-    console.error("GET ADVERTISER DASHBOARD ERROR:", error);
     return res.status(500).json({ success: false, message: "Server error" });
   }
 };

@@ -118,13 +118,14 @@ const addSeries = async (req, res) => {
       priority,
     });
     try {
-      await notifyNewContent({
-        title: "📺 New Series Added",
-        message: `${series.title} is now available to watch.`,
-        type: "NEW_SERIES",
-        actionUrl: `/series/${series._id}`,
-        createdBy: req.user?.id || req.user?._id,
-      });
+      const { notifyNewContentUpload } = require("../../utils/notificationDispatcher.helper");
+      notifyNewContentUpload({
+        type: "series",
+        title: series.title,
+        actionUrl: `/watch/${series.slug || series._id}`,
+        posterUrl: series.poster || series.banner || "",
+        contentId: series._id,
+      }).catch((e) => console.log("Series notif err:", e.message));
     } catch (err) {
       console.error("Series notification failed:", err.message);
     }
@@ -151,7 +152,7 @@ const getAllSeries = async (req, res) => {
     const skip = (page - 1) * limit;
 
     const series = await Series.find()
-      .sort({ priority: -1, createdAt: -1 })
+      .sort({ priority: 1, createdAt: -1 })
       .skip(skip)
       .limit(limit)
       .lean();

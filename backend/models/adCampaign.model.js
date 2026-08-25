@@ -7,10 +7,54 @@ const adCampaignSchema = new mongoose.Schema(
       required: true,
       trim: true,
     },
+    businessName: {
+      type: String,
+      default: "CatchWatch Advertiser",
+      trim: true,
+    },
+    companyName: {
+      type: String,
+      default: "",
+      trim: true,
+    },
+    email: {
+      type: String,
+      default: "",
+      trim: true,
+    },
+    phone: {
+      type: String,
+      default: "",
+      trim: true,
+    },
+    adType: {
+      type: String,
+      enum: [
+        "VIDEO",
+        "IMAGE",
+        "BANNER",
+        "CAROUSEL",
+        "SPONSORED_REELS",
+        "SPONSORED_SHORTS",
+        "MOVIES",
+        "SHORT_FILMS",
+        "TV_SHOWS",
+        "ALL_CONTENT",
+        "SPLASH",
+      ],
+      default: "SPONSORED_REELS",
+    },
+    mediaUrl: {
+      type: String,
+      default: "",
+    },
+    destinationUrl: {
+      type: String,
+      default: "#",
+    },
     advertiserId: {
       type: mongoose.Schema.Types.ObjectId,
-      ref: "Advertiser",
-      required: true,
+      default: null,
       index: true,
     },
     budget: {

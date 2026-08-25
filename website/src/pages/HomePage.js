@@ -164,7 +164,7 @@ const HomePage = () => {
     const slugLower = (catSlug || "").toLowerCase().trim();
     const nameLower = (catName || "").toLowerCase().trim();
 
-    return moviesList.filter((item) => {
+    const filtered = moviesList.filter((item) => {
       if (!item?.category) return false;
       const cats = Array.isArray(item.category) ? item.category : [item.category];
       return cats.some((c) => {
@@ -172,6 +172,14 @@ const HomePage = () => {
         const cLower = String(c).toLowerCase().trim();
         return cLower === slugLower || cLower === nameLower;
       });
+    });
+
+    // Sort by Priority ascending (Priority 1 on the left, then 2, 3, 4, 5...)
+    return [...filtered].sort((a, b) => {
+      const pA = a.priority && Number(a.priority) > 0 ? Number(a.priority) : 999;
+      const pB = b.priority && Number(b.priority) > 0 ? Number(b.priority) : 999;
+      if (pA !== pB) return pA - pB;
+      return new Date(b.createdAt || 0) - new Date(a.createdAt || 0);
     });
   };
 

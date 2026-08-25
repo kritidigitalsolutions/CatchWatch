@@ -18,7 +18,7 @@ const getAllTvShows =
       const dramas =
         await TvShow.find()
           .sort({
-            priority: -1,
+            priority: 1,
             createdAt: -1,
           });
 

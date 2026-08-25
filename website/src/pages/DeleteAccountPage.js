@@ -2,6 +2,8 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { FaArrowLeft, FaExclamationTriangle, FaTrashAlt, FaShieldAlt, FaCheckCircle, FaLock } from 'react-icons/fa';
 
+import { deleteAccountApi } from '../api/userApi';
+
 const DeleteAccountPage = () => {
   const navigate = useNavigate();
 
@@ -24,8 +26,8 @@ const DeleteAccountPage = () => {
     { id: 'other', label: 'Other (Please specify below)' }
   ];
 
-  // Static Form Submit Handler
-  const handleSubmit = (e) => {
+  // Form Submit Handler
+  const handleSubmit = async (e) => {
     e.preventDefault();
     setErrorMessage('');
 
@@ -49,12 +51,23 @@ const DeleteAccountPage = () => {
       return;
     }
 
-    // Simulate request submission
-    setIsSubmitting(true);
-    setTimeout(() => {
+    try {
+      setIsSubmitting(true);
+      await deleteAccountApi();
+      
+      // Clear all local auth credentials & storage
+      localStorage.removeItem('token');
+      localStorage.removeItem('user');
+      localStorage.removeItem('auth');
+      sessionStorage.clear();
+
       setIsSubmitting(false);
       setIsSubmitted(true);
-    }, 1200);
+    } catch (err) {
+      console.error("Account deletion failed:", err);
+      setIsSubmitting(false);
+      setErrorMessage(err.response?.data?.message || 'Failed to delete account. Please check your connection and try again.');
+    }
   };
 
   return (

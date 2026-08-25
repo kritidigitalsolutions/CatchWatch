@@ -15,8 +15,7 @@ const adSchema = new mongoose.Schema(
     },
     advertiserId: {
       type: mongoose.Schema.Types.ObjectId,
-      ref: "Advertiser",
-      required: true,
+      default: null,
       index: true,
     },
     adType: {
@@ -28,9 +27,13 @@ const adSchema = new mongoose.Schema(
         "CAROUSEL",
         "SPONSORED_REELS",
         "SPONSORED_SHORTS",
+        "MOVIES",
+        "SHORT_FILMS",
+        "TV_SHOWS",
+        "ALL_CONTENT",
         "SPLASH",
       ],
-      default: "VIDEO",
+      default: "SPONSORED_REELS",
     },
     mediaUrl: {
       type: String,

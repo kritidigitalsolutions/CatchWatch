@@ -59,14 +59,11 @@ exports.uploadReel = async (req, res) => {
     });
 
     try {
-      const { notifyNewContent } = require("../utils/contentNotification");
-      await notifyNewContent({
-        title: "🔥 New Reel Uploaded",
-        message: caption ? `${caption.slice(0, 50)}...` : "A new short reel has been uploaded.",
-        type: "NEW_REEL",
-        actionUrl: `/reels-feed`,
-        createdBy: req.user?.id || req.user?._id,
-      });
+      const { notifyReelUploaded } = require("../utils/notificationDispatcher.helper");
+      const creatorUser = await User.findById(req.user.id).select("name username avatar profileImage");
+      if (creatorUser) {
+        notifyReelUploaded(creatorUser, reel).catch((e) => console.log("Reel follower notif err:", e.message));
+      }
     } catch (err) {
       console.error("Reel notification failed:", err.message);
     }
@@ -238,21 +235,34 @@ exports.getReelsFeed = async (req, res) => {
       const adFrequency = settings.adSettings?.adFrequency || 3;
       const now = new Date();
 
-      // Query active ad campaigns
+      // Query active ad campaigns (Filtered strictly for Reels)
       const activeCampaigns = await AdCampaign.find({
-        status: "ACTIVE",
-        startDate: { $lte: now },
-        endDate: { $gte: now },
-        $expr: { $gt: ["$budget", "$spent"] },
+        $or: [
+          { status: "ACTIVE" },
+          { status: "active" },
+          { status: { $exists: false } },
+        ],
+        adType: { $in: ["SPONSORED_REELS", "SPONSORED_SHORTS", "ALL_CONTENT", "VIDEO", null, undefined] },
       })
         .sort({ priority: -1 })
         .lean();
 
-      if (activeCampaigns.length > 0) {
-        const campaignIds = activeCampaigns.map((c) => c._id);
+      // Filter by budget & dates
+      const validCampaigns = activeCampaigns.filter((c) => {
+        if (typeof c.budget === "number" && typeof c.spent === "number" && c.budget > 0 && c.spent >= c.budget) {
+          return false;
+        }
+        if (c.startDate && new Date(c.startDate) > now) return false;
+        if (c.endDate && new Date(c.endDate) < now) return false;
+        return true;
+      });
+
+      if (validCampaigns.length > 0) {
+        const campaignIds = validCampaigns.map((c) => c._id);
         const activeAds = await Ad.find({
           campaignId: { $in: campaignIds },
-          status: "ACTIVE",
+          adType: { $in: ["SPONSORED_REELS", "SPONSORED_SHORTS", "ALL_CONTENT"] },
+          $or: [{ status: "ACTIVE" }, { status: "active" }, { status: { $exists: false } }],
         }).lean();
 
         if (activeAds.length > 0) {
@@ -264,9 +274,29 @@ exports.getReelsFeed = async (req, res) => {
             if (reelItem.allowAds !== false) {
               reelCounter++;
               if (reelCounter % adFrequency === 0) {
-                // Pick random active ad creative
-                const selectedAd =
-                  activeAds[Math.floor(Math.random() * activeAds.length)];
+                // Pick priority-weighted active ad creative
+                const weights = activeAds.map((ad) => {
+                  let p = ad.priority;
+                  if (!p && ad.campaignId) {
+                    const parent = validCampaigns.find((c) => String(c._id) === String(ad.campaignId));
+                    if (parent && parent.priority) p = parent.priority;
+                  }
+                  return Math.max(1, Number(p) || 1);
+                });
+
+                const totalWeight = weights.reduce((sum, w) => sum + w, 0);
+                let randomVal = Math.random() * totalWeight;
+                let chosenIdx = 0;
+
+                for (let i = 0; i < activeAds.length; i++) {
+                  if (randomVal < weights[i]) {
+                    chosenIdx = i;
+                    break;
+                  }
+                  randomVal -= weights[i];
+                }
+
+                const selectedAd = activeAds[chosenIdx];
                 finalFeed.push({
                   _id: `ad_${reelCounter}_${selectedAd._id}`,
                   adId: selectedAd._id,

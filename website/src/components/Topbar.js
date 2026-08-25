@@ -14,6 +14,7 @@ import {
   markAsRead as markSingleAsReadApi
 } from '../api/notificationApi';
 import { getUserProfile } from '../api/userApi';
+import NotificationDetailModal from './NotificationDetailModal';
 
 const Topbar = () => {
   const navigate = useNavigate();
@@ -32,6 +33,7 @@ const Topbar = () => {
   const [notifications, setNotifications] = useState([]);
   const [unreadCount, setUnreadCount] = useState(0);
   const [userProfile, setUserProfile] = useState(null);
+  const [selectedNotifForModal, setSelectedNotifForModal] = useState(null);
 
   // Background polling for unread count & profile fetch
   useEffect(() => {
@@ -123,9 +125,9 @@ const Topbar = () => {
       }
     }
 
-    // Close dropdown and navigate to notifications page
+    // Close dropdown and open center modal
     setIsNotifOpen(false);
-    navigate("/notifications");
+    setSelectedNotifForModal(notif);
   };
 
   // Formatting timestamp
@@ -138,76 +140,70 @@ const Topbar = () => {
   const navLinks = [
     { name: "All Shows", path: "/" },
     { name: "Movies", path: "/movies" },
-    { name: "Short Films", path: "/shorts" },
-    { name: "TV Shows", path: "/tvshows" },
-    { name: "Reels", path: "/reels-feed" },
-    // { name: "VIP Support", path: "/vip-support" },
-    // { name: "Creator Studio", path: "/creator/dashboard" },
-    // { name: "Leaderboard", path: "/leaderboard" },
+    { name: "TV Shows", path: "/tv-shows" },
+    { name: "Short Films", path: "/short-films" },
+    { name: "Web Series", path: "/series" },
+    { name: "Reels", path: "/reels" },
   ];
 
-
   return (
-    <header className="sticky top-0 w-full bg-white border-b border-gray-200 z-50 shadow-sm">
-      <div className="max-w-[1600px] w-full mx-auto px-4 sm:px-6 lg:px-8 h-16 md:h-20 flex justify-between items-center gap-2 sm:gap-4">
+    <header className="sticky top-0 z-40 bg-white border-b border-gray-100 shadow-sm transition-all">
+      {selectedNotifForModal && (
+        <NotificationDetailModal
+          notification={selectedNotifForModal}
+          onClose={() => setSelectedNotifForModal(null)}
+        />
+      )}
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between gap-4">
 
-        {/* Brand Logo */}
-        <div onClick={() => navigate("/")} className="flex items-center cursor-pointer flex-shrink-0 py-1">
-          <img
-            src="/logo192.png"
-            className="h-8 sm:h-10 md:h-12 w-auto object-contain"
-            alt="CatchWatch Logo"
-          />
-        </div>
+        {/* LOGO & DESKTOP NAVIGATION */}
+        <div className="flex items-center gap-8">
+          <NavLink to="/" className="flex items-center gap-2">
+            <span className="text-xl sm:text-2xl font-black italic tracking-tighter text-brand-orange">
+              <img
+                src="/logo512.png"
+                className="h-10 sm:h-12 w-auto object-contain"
+                alt="CatchWatch Logo"
+              />            </span>
+          </NavLink>
 
-        {/* Desktop Links (Visible on lg screens and up) */}
-        {isAuthenticated && (
-          <nav className="hidden lg:flex items-center gap-3 xl:gap-5 2xl:gap-7 flex-shrink-0">
-            {navLinks.map((link, index) => (
+          <nav className="hidden lg:flex items-center gap-6">
+            {navLinks.map((link) => (
               <NavLink
-                key={index}
+                key={link.path}
                 to={link.path}
                 className={({ isActive }) =>
-                  `text-xs xl:text-sm font-bold tracking-wide uppercase transition-colors whitespace-nowrap ${isActive ? "text-brand-orange" : "text-gray-600 hover:text-gray-900"}`
+                  `text-xs font-bold uppercase tracking-wider transition-colors hover:text-brand-orange ${isActive ? "text-brand-orange font-black" : "text-gray-600"
+                  }`
                 }
               >
                 {link.name}
               </NavLink>
             ))}
           </nav>
-        )}
+        </div>
 
-        {/* Desktop Action Trigger Panels (Visible on lg screens and up) */}
-        <div className="hidden lg:flex items-center gap-3 xl:gap-4 flex-shrink-0">
+        {/* DESKTOP RIGHT ACTIONS */}
+        <div className="hidden lg:flex items-center gap-5">
+          <NavLink
+            to="/search"
+            className={({ isActive }) =>
+              `text-gray-500 hover:text-gray-900 text-base p-2 transition-colors ${isActive ? "text-brand-orange font-bold" : ""
+              }`
+            }
+            title="Search"
+          >
+            <FaSearch />
+          </NavLink>
+
           {isAuthenticated ? (
             <>
-              <div>
-                <NavLink
-                  to="/upload"
-                  className={({ isActive }) =>
-                    `flex flex-row bg-gray-100 hover:bg-orange-200 shadow-md uppercase px-3 py-1.5 rounded-2xl items-center gap-1.5 text-xs font-bold tracking-wide whitespace-nowrap transition-colors ${isActive ? "text-brand-orange" : "text-gray-700 hover:text-gray-900"}`
-                  }
-                >
-                  <span>Upload reels</span>
-                  <MdCamera className="text-base" />
-                </NavLink>
-              </div>
-
-              <NavLink
-                to="/search"
-                className={({ isActive }) =>
-                  `text-lg font-bold p-1.5 transition-colors ${isActive ? "text-brand-orange" : "text-gray-500 hover:text-gray-900"}`
-                }
-                title="Search"
-              >
-                <FaSearch />
-              </NavLink>
-
               {/* DESKTOP CHAT ICON */}
               <NavLink
                 to="/chat"
                 className={({ isActive }) =>
-                  `relative text-lg p-1.5 transition-colors ${isActive ? "text-brand-orange" : "text-gray-500 hover:text-gray-900"}`
+                  `relative text-gray-500 hover:text-gray-900 text-lg p-1.5 transition-colors ${isActive ? "text-brand-orange font-bold" : ""
+                  }`
                 }
                 title="Chats"
               >
@@ -223,7 +219,7 @@ const Topbar = () => {
               <div className="relative" ref={desktopNotifRef}>
                 <button
                   onClick={toggleNotificationDropdown}
-                  className={`relative text-lg p-1.5 transition-colors ${isNotifOpen ? "text-brand-orange" : "text-gray-500 hover:text-gray-900"}`}
+                  className={`relative text-gray-500 hover:text-gray-900 text-lg p-1.5 transition-colors ${isNotifOpen ? "text-brand-orange" : ""}`}
                   title="Notifications"
                 >
                   <FaBell />
@@ -235,7 +231,7 @@ const Topbar = () => {
                 </button>
 
                 {isNotifOpen && (
-                  <div className="absolute right-0 mt-3 w-80 bg-white border border-gray-100 rounded-2xl shadow-xl z-50 overflow-hidden animate-fade-in-down origin-top-right">
+                  <div className="absolute right-0 mt-3 w-88 sm:w-96 bg-white border border-gray-100 rounded-2xl shadow-2xl z-50 overflow-hidden animate-fade-in-down origin-top-right">
                     {/* Header */}
                     <div className="px-4 py-3 border-b border-gray-100 flex justify-between items-center bg-gray-50">
                       <h3 className="text-sm font-extrabold text-gray-800">
@@ -252,20 +248,41 @@ const Topbar = () => {
                     </div>
 
                     {/* Notifications List */}
-                    <div className="max-h-72 overflow-y-auto">
+                    <div className="max-h-80 overflow-y-auto divide-y divide-gray-50">
                       {notifications.length > 0 ? (
                         notifications.map((notif) => {
                           const isReadStatus = notif.isRead || notif.read;
+                          const thumb = notif.imageUrl || notif.image || notif.metadata?.imageUrl;
                           return (
                             <div
                               key={notif._id || notif.id}
                               onClick={() => handleNotificationClick(notif)}
-                              className={`p-4 border-b border-gray-50 cursor-pointer transition flex gap-3 ${!isReadStatus ? "bg-brand-orange/5 hover:bg-brand-orange/10" : "hover:bg-gray-50"}`}
+                              className={`p-3.5 cursor-pointer transition flex items-start gap-3 ${!isReadStatus ? "bg-orange-50/60 hover:bg-orange-100/50" : "hover:bg-gray-50"}`}
                             >
-                              <div className={`w-2 h-2 mt-1.5 rounded-full flex-shrink-0 ${!isReadStatus ? "bg-brand-orange" : "bg-gray-300"}`}></div>
-                              <div>
-                                <p className={`text-xs ${!isReadStatus ? "font-bold text-gray-900" : "font-medium text-gray-600"}`}>
-                                  {notif.message || notif.title || notif.text}
+                              {thumb ? (
+                                <div className="w-11 h-11 rounded-lg overflow-hidden border border-gray-200 bg-black flex-shrink-0">
+                                  <img
+                                    src={thumb}
+                                    alt=""
+                                    className="w-full h-full object-cover"
+                                    onError={(e) => { e.target.style.display = 'none'; }}
+                                  />
+                                </div>
+                              ) : (
+                                <div className={`w-8 h-8 rounded-full flex-shrink-0 flex items-center justify-center text-xs mt-0.5 ${!isReadStatus ? "bg-brand-orange text-white" : "bg-gray-100 text-gray-400"}`}>
+                                  <FaBell />
+                                </div>
+                              )}
+
+                              <div className="flex-1 min-w-0">
+                                <div className="flex items-center justify-between gap-1">
+                                  <p className={`text-xs truncate ${!isReadStatus ? "font-black text-gray-900" : "font-bold text-gray-700"}`}>
+                                    {notif.title || "Notification"}
+                                  </p>
+                                  {!isReadStatus && <span className="w-2 h-2 rounded-full bg-brand-orange shrink-0"></span>}
+                                </div>
+                                <p className="text-[11px] text-gray-500 line-clamp-2 mt-0.5 leading-snug">
+                                  {notif.message || notif.text}
                                 </p>
                                 <span className="text-[10px] text-gray-400 mt-1 block font-semibold">
                                   {formatTime(notif.createdAt || notif.time)}
@@ -288,9 +305,10 @@ const Topbar = () => {
                           setIsNotifOpen(false);
                           navigate("/notifications");
                         }}
-                        className="text-xs font-bold text-brand-orange hover:text-orange-600 hover:underline w-full transition"
+                        className="text-xs font-bold text-brand-orange hover:text-orange-600 hover:underline w-full transition flex items-center justify-center gap-1.5"
                       >
-                        View All Notifications
+                        <span>View All Notifications</span>
+                        <span>➔</span>
                       </button>
                     </div>
                   </div>
@@ -339,7 +357,6 @@ const Topbar = () => {
                 <FaSearch />
               </NavLink>
 
-              {/* MOBILE CHAT ICON */}
               <NavLink
                 to="/chat"
                 className={({ isActive }) =>
@@ -355,7 +372,6 @@ const Topbar = () => {
                 )}
               </NavLink>
 
-              {/* MOBILE NOTIFICATION DROPDOWN */}
               <div className="relative" ref={mobileNotifRef}>
                 <button
                   onClick={toggleNotificationDropdown}
@@ -380,20 +396,38 @@ const Topbar = () => {
                       )}
                     </div>
 
-                    <div className="max-h-72 overflow-y-auto">
+                    <div className="max-h-72 overflow-y-auto divide-y divide-gray-50">
                       {notifications.length > 0 ? (
                         notifications.map((notif) => {
                           const isReadStatus = notif.isRead || notif.read;
+                          const thumb = notif.imageUrl || notif.image || notif.metadata?.imageUrl;
                           return (
                             <div
                               key={notif._id || notif.id}
                               onClick={() => handleNotificationClick(notif)}
-                              className={`p-4 border-b border-gray-50 cursor-pointer transition flex gap-3 ${!isReadStatus ? "bg-brand-orange/5 hover:bg-brand-orange/10" : "hover:bg-gray-50"}`}
+                              className={`p-3.5 cursor-pointer transition flex items-start gap-3 ${!isReadStatus ? "bg-orange-50/60 hover:bg-orange-100/50" : "hover:bg-gray-50"}`}
                             >
-                              <div className={`w-2 h-2 mt-1.5 rounded-full flex-shrink-0 ${!isReadStatus ? "bg-brand-orange" : "bg-gray-300"}`}></div>
-                              <div>
-                                <p className={`text-xs ${!isReadStatus ? "font-bold text-gray-900" : "font-medium text-gray-600"}`}>
-                                  {notif.message || notif.title || notif.text}
+                              {thumb ? (
+                                <div className="w-10 h-10 rounded-lg overflow-hidden border border-gray-200 bg-black flex-shrink-0">
+                                  <img
+                                    src={thumb}
+                                    alt=""
+                                    className="w-full h-full object-cover"
+                                    onError={(e) => { e.target.style.display = 'none'; }}
+                                  />
+                                </div>
+                              ) : (
+                                <div className={`w-7 h-7 rounded-full flex-shrink-0 flex items-center justify-center text-xs mt-0.5 ${!isReadStatus ? "bg-brand-orange text-white" : "bg-gray-100 text-gray-400"}`}>
+                                  <FaBell />
+                                </div>
+                              )}
+
+                              <div className="flex-1 min-w-0">
+                                <p className={`text-xs truncate ${!isReadStatus ? "font-black text-gray-900" : "font-bold text-gray-700"}`}>
+                                  {notif.title || "Notification"}
+                                </p>
+                                <p className="text-[11px] text-gray-500 line-clamp-2 mt-0.5 leading-snug">
+                                  {notif.message || notif.text}
                                 </p>
                                 <span className="text-[10px] text-gray-400 mt-1 block font-semibold">{formatTime(notif.createdAt || notif.time)}</span>
                               </div>

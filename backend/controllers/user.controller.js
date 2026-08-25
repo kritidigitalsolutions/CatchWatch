@@ -395,6 +395,13 @@ exports.updateProfile = async (
 
     await user.save();
 
+    try {
+      const { notifyProfileCompleted } = require("../utils/notificationDispatcher.helper");
+      notifyProfileCompleted(user).catch((e) => console.log("Profile complete notif err:", e.message));
+    } catch (e) {
+      console.log("Profile notif error:", e.message);
+    }
+
     const decoratedUser = await decorateUserWithSubscription(user);
 
     res.status(200).json({
@@ -781,4 +788,33 @@ exports.searchUsers = async (req, res) => {
   }
 };
 
+// ========================================
+// DELETE MY ACCOUNT (USER SELF-DELETION)
+// ========================================
+const { purgeUserAccount } = require("../utils/userCleanup.helper");
 
+exports.deleteAccount = async (req, res) => {
+  try {
+    const userId = req.user?.id || req.user?._id;
+    if (!userId) {
+      return res.status(401).json({
+        success: false,
+        message: "Unauthorized",
+      });
+    }
+
+    const result = await purgeUserAccount(userId);
+
+    return res.status(200).json({
+      success: true,
+      message: result.message || "Your account and all associated content have been permanently deleted",
+      deletedReelsCount: result.deletedReelsCount,
+    });
+  } catch (error) {
+    console.error("DELETE ACCOUNT ERROR:", error);
+    return res.status(500).json({
+      success: false,
+      message: "Failed to delete account. Please try again.",
+    });
+  }
+};

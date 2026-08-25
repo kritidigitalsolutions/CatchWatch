@@ -7,6 +7,8 @@ const {
   getIncomeStats,
   getAllSubscriptions,
   extendSubscription,
+  cancelSubscription,
+  deleteSubscription,
 } = require("../../controllers/admin/subscription.controller"); 
 const { isAdmin } = require("../../middlewares/admin.middleware");
 
@@ -15,5 +17,8 @@ router.get("/stats", isAdmin, getSubscriptionStats);
 router.get("/income-stats", isAdmin, getIncomeStats);
 router.get("/all", isAdmin, getAllSubscriptions);
 router.patch("/:id/extend", isAdmin, extendSubscription);
+router.patch("/:id/cancel", isAdmin, cancelSubscription);
+router.delete("/:id", isAdmin, deleteSubscription);
 
 module.exports = router;
+

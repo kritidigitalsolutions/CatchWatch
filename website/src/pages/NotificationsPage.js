@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { FaArrowLeft, FaBell, FaTrashAlt, FaCheckDouble } from 'react-icons/fa';
 import Loader from '../components/Loader';
 import VerifiedBadge from '../components/VerifiedBadge';
+import NotificationDetailModal from '../components/NotificationDetailModal';
 
 // APIs import karein
 import { 
@@ -12,6 +13,23 @@ import {
   deleteNotification 
 } from '../api/notificationApi';
 
+const TYPE_TAGS = {
+  CONTENT_ALERT: { label: "Content Alert", color: "bg-purple-100 text-purple-700 border-purple-200" },
+  NEW_MOVIE: { label: "Movie", color: "bg-amber-100 text-amber-700 border-amber-200" },
+  NEW_SERIES: { label: "Series", color: "bg-pink-100 text-pink-700 border-pink-200" },
+  NEW_TV_SHOW: { label: "TV Show", color: "bg-blue-100 text-blue-700 border-blue-200" },
+  NEW_SHORT_FILM: { label: "Short Film", color: "bg-cyan-100 text-cyan-700 border-cyan-200" },
+  SUBSCRIPTION: { label: "Subscription", color: "bg-amber-100 text-amber-700 border-amber-200" },
+  BLUETICK: { label: "Blue Tick", color: "bg-sky-100 text-sky-700 border-sky-200" },
+  VERIFICATION: { label: "Verification", color: "bg-sky-100 text-sky-700 border-sky-200" },
+  PROMOTIONAL: { label: "Promotion", color: "bg-orange-100 text-orange-700 border-orange-200" },
+  REEL: { label: "Reel", color: "bg-rose-100 text-rose-700 border-rose-200" },
+  CHAT: { label: "Chat", color: "bg-emerald-100 text-emerald-700 border-emerald-200" },
+  CALL: { label: "Call", color: "bg-orange-100 text-orange-700 border-orange-200" },
+  GENERAL: { label: "Update", color: "bg-gray-100 text-gray-700 border-gray-200" },
+  SYSTEM: { label: "System", color: "bg-blue-100 text-blue-700 border-blue-200" },
+};
+
 const NotificationsPage = () => {
   const navigate = useNavigate();
 
@@ -19,6 +37,7 @@ const NotificationsPage = () => {
   const [notifications, setNotifications] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [selectedNotifForModal, setSelectedNotifForModal] = useState(null);
 
   // 1. Fetch Notifications on Mount
   useEffect(() => {
@@ -35,7 +54,6 @@ const NotificationsPage = () => {
       setError(null);
       
       try {
-        // Fetching with a limit to get recent messages
         const response = await getNotifications({ limit: 50 });
         const fetchedData = response?.notifications || response?.data || response || [];
         setNotifications(Array.isArray(fetchedData) ? fetchedData : []);
@@ -57,56 +75,43 @@ const NotificationsPage = () => {
   // 2. Handle Mark All As Read
   const handleMarkAllAsRead = async () => {
     try {
-      // Optimistic UI Update: Frontend par turant sabko read mark karein
       setNotifications(prev => prev.map(n => ({ ...n, isRead: true, read: true })));
-      
-      // Backend API Call
       await markAllAsRead();
     } catch (error) {
       console.error("Failed to mark all as read:", error);
     }
   };
 
-  // 3. Handle Single Item Click (Mark as Read & Navigate)
+  // 3. Handle Single Item Click (Mark as Read & Open Center Pop-up)
   const handleNotificationClick = async (notif) => {
     const id = notif._id || notif.id;
     const isReadStatus = notif.isRead || notif.read;
 
-    // Agar unread है, toh read mark karein
     if (!isReadStatus) {
       try {
-        // Optimistic UI Update
         setNotifications(prev => prev.map(n => 
           (n._id === id || n.id === id) ? { ...n, isRead: true, read: true } : n
         ));
-        
-        // Backend API Call
         await markAsRead(id);
       } catch (error) {
         console.error(`Failed to mark notification ${id} as read:`, error);
       }
     }
 
-    // Navigate logic agar notification me link maujood ho
-    if (notif.link || notif.actionUrl) {
-      navigate(notif.link || notif.actionUrl);
-    }
+    // Open center modal popup with full details
+    setSelectedNotifForModal(notif);
   };
 
   // 4. Handle Delete Notification
   const handleDelete = async (e, id) => {
-    e.stopPropagation(); // Card click event trigger hone se rokein
-    
-    // Optimistic UI Update: Turant list se hata dein
+    e.stopPropagation();
     const previousNotifications = [...notifications];
     setNotifications(prev => prev.filter(n => n._id !== id && n.id !== id));
 
     try {
-      // Backend API Call
       await deleteNotification(id);
     } catch (error) {
       console.error(`Failed to delete notification ${id}:`, error);
-      // Agar API fail ho jaye, toh deleted item wapas le aayein
       setNotifications(previousNotifications);
     }
   };
@@ -115,13 +120,12 @@ const NotificationsPage = () => {
   const formatTime = (dateString) => {
     if (!dateString) return "Just now";
     const date = new Date(dateString);
-    return date.toLocaleDateString("en-US", { 
+    return date.toLocaleDateString("en-IN", { 
       year: 'numeric', month: 'short', day: 'numeric', 
       hour: '2-digit', minute: '2-digit' 
     });
   };
 
-  // Check if any unread notification exists to show the "Mark all as read" button
   const unreadExist = notifications.some(n => !(n.isRead || n.read));
 
   if (isLoading) return <Loader />;
@@ -129,6 +133,14 @@ const NotificationsPage = () => {
   return (
     <div className="max-w-4xl mx-auto w-full space-y-6 py-6 px-4 sm:px-6">
       
+      {/* Center Pop-up Modal */}
+      {selectedNotifForModal && (
+        <NotificationDetailModal
+          notification={selectedNotifForModal}
+          onClose={() => setSelectedNotifForModal(null)}
+        />
+      )}
+
       {/* Page Header */}
       <div className="bg-brand-orange text-white p-5 sm:p-6 rounded-2xl flex items-center justify-between shadow-md">
         <div className="flex items-center gap-4">
@@ -177,6 +189,8 @@ const NotificationsPage = () => {
             {notifications.map((notif) => {
               const id = notif._id || notif.id;
               const isReadStatus = notif.isRead || notif.read;
+              const thumb = notif.imageUrl || notif.image || notif.metadata?.imageUrl;
+              const tagCfg = TYPE_TAGS[notif.type] || TYPE_TAGS.GENERAL;
 
               return (
                 <div 
@@ -184,31 +198,60 @@ const NotificationsPage = () => {
                   onClick={() => handleNotificationClick(notif)}
                   className={`relative flex items-start gap-4 p-4 sm:p-5 rounded-2xl border transition group cursor-pointer ${
                     !isReadStatus 
-                      ? 'bg-brand-orange/5 border-brand-orange/20 hover:bg-brand-orange/10' 
+                      ? 'bg-orange-50/60 border-orange-200/80 hover:bg-orange-100/60 shadow-sm' 
                       : 'bg-gray-50 border-gray-100 hover:bg-gray-100/80'
                   }`}
                 >
-                  {/* Status Indicator / Icon */}
-                  <div className={`w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0 mt-1 ${
-                    !isReadStatus ? 'bg-brand-orange text-white shadow-sm' : 'bg-gray-200 text-gray-500'
-                  }`}>
-                    <FaBell className="text-lg" />
-                  </div>
+                  {/* Status Indicator / Thumbnail Image */}
+                  {thumb ? (
+                    <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-xl overflow-hidden border border-gray-200 bg-black flex-shrink-0 shadow-sm">
+                      <img 
+                        src={thumb} 
+                        alt="" 
+                        className="w-full h-full object-cover group-hover:scale-105 transition duration-300"
+                        onError={(e) => { e.target.style.display = 'none'; }}
+                      />
+                    </div>
+                  ) : (
+                    <div className={`w-12 h-12 rounded-xl flex items-center justify-center flex-shrink-0 mt-0.5 ${
+                      !isReadStatus ? 'bg-brand-orange text-white shadow-sm' : 'bg-gray-200 text-gray-500'
+                    }`}>
+                      <FaBell className="text-xl" />
+                    </div>
+                  )}
 
                   {/* Content */}
                   <div className="flex-1 min-w-0 pr-8">
-                    <h4 className={`text-sm sm:text-base mb-1 flex items-center gap-1.5 ${!isReadStatus ? 'font-extrabold text-gray-900' : 'font-bold text-gray-700'}`}>
-                      <span>{notif.title || "New Update"}</span>
-                      {(notif.type === "VERIFICATION" || notif.title?.includes("Verified") || notif.title?.includes("Congratulations")) && (
-                        <VerifiedBadge isVerified={true} size="sm" />
+                    <div className="flex items-center gap-2 flex-wrap mb-1">
+                      <h4 className={`text-sm sm:text-base flex items-center gap-1.5 ${!isReadStatus ? 'font-black text-gray-900' : 'font-bold text-gray-700'}`}>
+                        <span>{notif.title || "New Update"}</span>
+                        {(notif.type === "VERIFICATION" || notif.type === "BLUETICK" || notif.title?.includes("Verified")) && (
+                          <VerifiedBadge isVerified={true} size="sm" />
+                        )}
+                      </h4>
+                      
+                      {notif.type && (
+                        <span className={`text-[10px] font-extrabold uppercase px-2 py-0.5 rounded-full border ${tagCfg.color}`}>
+                          {tagCfg.label}
+                        </span>
                       )}
-                    </h4>
-                    <p className="text-xs sm:text-sm text-gray-500 font-medium leading-relaxed line-clamp-2">
+                    </div>
+
+                    <p className="text-xs sm:text-sm text-gray-600 font-medium leading-relaxed line-clamp-2">
                       {notif.message || notif.text}
                     </p>
-                    <span className="text-[10px] text-gray-400 font-bold mt-2 block">
-                      {formatTime(notif.createdAt || notif.time)}
-                    </span>
+
+                    <div className="flex items-center gap-3 mt-2">
+                      <span className="text-[11px] text-gray-400 font-semibold">
+                        {formatTime(notif.createdAt || notif.time)}
+                      </span>
+
+                      {notif.actionUrl && (
+                        <span className="text-[11px] text-brand-orange font-bold flex items-center gap-1">
+                          View details ➔
+                        </span>
+                      )}
+                    </div>
                   </div>
 
                   {/* Delete Button (Visible on Hover) */}

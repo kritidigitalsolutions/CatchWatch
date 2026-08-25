@@ -245,13 +245,14 @@ function App() {
               }
             />
             <Route
-              path="pricing"
+              path="subscribed-users"
               element={
                 <PermissionGuard pageKey="pricing">
                   <SubscriptionPage />
                 </PermissionGuard>
               }
             />
+
             <Route
               path="notifications"
               element={

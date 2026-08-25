@@ -151,6 +151,15 @@ exports.applyVerification = async (req, res) => {
     };
     await user.save();
 
+    try {
+      const { notifyBlueTickStatus } = require("../utils/notificationDispatcher.helper");
+      notifyBlueTickStatus(user._id, "SUBMITTED", selectedPlanData?.name || "Blue Tick Badge").catch((e) =>
+        console.log("BlueTick submitted notif err:", e.message)
+      );
+    } catch (e) {
+      console.log("BlueTick notif error:", e.message);
+    }
+
     return res.status(201).json({
       success: true,
       message: "Verification request submitted successfully",
@@ -461,6 +470,13 @@ exports.approveVerification = async (req, res) => {
       };
       await user.save();
 
+      try {
+        const { notifyBlueTickStatus } = require("../utils/notificationDispatcher.helper");
+        notifyBlueTickStatus(user._id, "APPROVED").catch((e) => console.log("BlueTick approve notif err:", e.message));
+      } catch (e) {
+        console.log("BlueTick notif error:", e.message);
+      }
+
       // Create Notification
       await Notification.create({
         title: "Congratulations!",
@@ -516,6 +532,15 @@ exports.rejectVerification = async (req, res) => {
         rejectionReason: rejectionReason,
       };
       await user.save();
+
+      try {
+        const { notifyBlueTickStatus } = require("../utils/notificationDispatcher.helper");
+        notifyBlueTickStatus(user._id, "REJECTED", "Blue Tick Badge", rejectionReason).catch((e) =>
+          console.log("BlueTick reject notif err:", e.message)
+        );
+      } catch (e) {
+        console.log("BlueTick notif error:", e.message);
+      }
 
       // Send notification
       await Notification.create({
@@ -577,6 +602,15 @@ exports.suspendVerification = async (req, res) => {
     };
     await targetUser.save();
 
+    try {
+      const { notifyBlueTickStatus } = require("../utils/notificationDispatcher.helper");
+      notifyBlueTickStatus(targetUser._id, "REJECTED", "Blue Tick Badge", suspensionReason).catch((e) =>
+        console.log("BlueTick suspend notif err:", e.message)
+      );
+    } catch (e) {
+      console.log("BlueTick notif error:", e.message);
+    }
+
     // Send notification
     await Notification.create({
       title: "Verification Badge Suspended",
@@ -589,6 +623,7 @@ exports.suspendVerification = async (req, res) => {
     return res.status(200).json({
       success: true,
       message: "User verification suspended successfully",
+      user: targetUser,
     });
   } catch (error) {
     console.error("SUSPEND VERIFICATION ERROR:", error);
@@ -636,7 +671,7 @@ exports.removeVerification = async (req, res) => {
 exports.getUsersForSelection = async (req, res) => {
   try {
     const { search } = req.query;
-    let query = { status: "Active" };
+    const query = {};
     if (search && search.trim()) {
       const searchRegex = new RegExp(search.trim().replace(/^@/, ""), "i");
       query.$or = [{ name: searchRegex }, { username: searchRegex }];
@@ -687,6 +722,13 @@ exports.manuallyVerifyUser = async (req, res) => {
     };
     user.isVerified = true;
     await user.save();
+
+    try {
+      const { notifyBlueTickStatus } = require("../utils/notificationDispatcher.helper");
+      notifyBlueTickStatus(user._id, "APPROVED").catch((e) => console.log("BlueTick manual verify err:", e.message));
+    } catch (e) {
+      console.log("BlueTick notif error:", e.message);
+    }
 
     // Create Notification
     await Notification.create({

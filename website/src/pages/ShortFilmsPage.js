@@ -82,13 +82,19 @@ const ShortFilmsPage = () => {
     }
   };
 
+  // Sort short films by priority ascending (Priority 1 first, then 2, 3, 4, 5...)
+  const sortedShortFilms = [...shortFilms].sort((a, b) => {
+    const pA = a.priority && Number(a.priority) > 0 ? Number(a.priority) : 999;
+    const pB = b.priority && Number(b.priority) > 0 ? Number(b.priority) : 999;
+    if (pA !== pB) return pA - pB;
+    return new Date(b.createdAt || 0) - new Date(a.createdAt || 0);
+  });
+
   // Split short films into "Short & Sweet" and "Trending Shorts"
-  // Logic: Check if the film has category containing 'shortAndSweet' / 'trending'. 
-  // Fallback: If no categories are tagged, partition the list (first 4 to Short & Sweet, rest to Trending)
-  const taggedShortAndSweet = shortFilms.filter(
+  const taggedShortAndSweet = sortedShortFilms.filter(
     (film) => film.category?.some((c) => c.toLowerCase() === "shortandsweet" || c.toLowerCase() === "short & sweet")
   );
-  const taggedTrending = shortFilms.filter(
+  const taggedTrending = sortedShortFilms.filter(
     (film) => film.category?.some((c) => c.toLowerCase() === "trending" || c.toLowerCase() === "trending shorts")
   );
 
@@ -100,12 +106,12 @@ const ShortFilmsPage = () => {
     trendingShortsList = taggedTrending;
     // Put anything untagged into trending fallback
     const taggedIds = new Set([...taggedShortAndSweet, ...taggedTrending].map((f) => f._id));
-    const untagged = shortFilms.filter((film) => !taggedIds.has(film._id));
+    const untagged = sortedShortFilms.filter((film) => !taggedIds.has(film._id));
     trendingShortsList = [...trendingShortsList, ...untagged];
   } else {
     // Fallback split
-    shortAndSweetList = shortFilms.slice(0, 4);
-    trendingShortsList = shortFilms.slice(4);
+    shortAndSweetList = sortedShortFilms.slice(0, 4);
+    trendingShortsList = sortedShortFilms.slice(4);
   }
 
   if (isLoading) return <Loader />;

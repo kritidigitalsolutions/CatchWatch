@@ -169,16 +169,17 @@ const addTvShow = async (
         priority,
       });
       try {
-  await notifyNewContent({
-    title: "📺 New TV Show Added",
-    message: `${tvShow.title} is now available.`,
-    type: "NEW_TV_SHOW",
-    actionUrl: `/tv-shows/${tvShow._id}`,
-    createdBy: req.user.id,
-  });
-} catch (err) {
-  console.error("TV Show notification failed:", err.message);
-}
+        const { notifyNewContentUpload } = require("../../utils/notificationDispatcher.helper");
+        notifyNewContentUpload({
+          type: "tvShow",
+          title: tvShow.title,
+          actionUrl: `/tv-shows/${tvShow._id}`,
+          posterUrl: tvShow.poster || tvShow.banner || tvShow.thumbnail || "",
+          contentId: tvShow._id,
+        }).catch((e) => console.log("TV Show notif err:", e.message));
+      } catch (err) {
+        console.error("TV Show notification failed:", err.message);
+      }
 
     return res.status(201).json({
       success: true,
@@ -215,7 +216,7 @@ const getAllTvShows =
 
       const [tvShows, total] = await Promise.all([
         TvShow.find()
-          .sort({ priority: -1, createdAt: -1 })
+          .sort({ priority: 1, createdAt: -1 })
           .skip(skip)
           .limit(limit),
         TvShow.countDocuments(),

@@ -176,6 +176,13 @@ exports.verifySubscription = async (req, res) => {
         status: "active",
       });
 
+    try {
+      const { notifySubscriptionStatus } = require("../utils/notificationDispatcher.helper");
+      notifySubscriptionStatus(userId, "ACTIVE", plan.name).catch((e) => console.log("Sub active notif err:", e.message));
+    } catch (e) {
+      console.log("Sub notif error:", e.message);
+    }
+
     res.status(200).json({
       success: true,
       subscription,
@@ -226,7 +233,7 @@ exports.cancelSubscription = async (
       await Subscription.findOne({
         _id: subscriptionId,
         user: userId,
-      });
+      }).populate("plan");
 
     if (!subscription) {
       return res.status(404).json({
@@ -240,6 +247,15 @@ exports.cancelSubscription = async (
       "cancelled";
 
     await subscription.save();
+
+    try {
+      const { notifySubscriptionStatus } = require("../utils/notificationDispatcher.helper");
+      notifySubscriptionStatus(userId, "CANCELLED", subscription.plan?.name || "Subscription Plan").catch((e) =>
+        console.log("Sub cancel notif err:", e.message)
+      );
+    } catch (e) {
+      console.log("Sub cancel notif error:", e.message);
+    }
 
     res.status(200).json({
       success: true,

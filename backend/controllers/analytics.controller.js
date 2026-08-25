@@ -1,7 +1,6 @@
 const User = require("../models/user.model");
 const Reel = require("../models/reel.model");
 const AdCampaign = require("../models/adCampaign.model");
-const Advertiser = require("../models/advertiser.model");
 const CreatorAnalytics = require("../models/creatorAnalytics.model");
 const SystemSettings = require("../models/systemSettings.model");
 const { calculateQualityScore } = require("../utils/creator.helper");
@@ -115,14 +114,8 @@ exports.getLeaderboards = async (req, res) => {
       .limit(10)
       .lean();
 
-    const topAdvertisers = await Advertiser.find()
-      .select("businessName companyName totalSpent walletBalance status")
-      .sort({ totalSpent: -1 })
-      .limit(10)
-      .lean();
-
     const topCampaigns = await AdCampaign.find()
-      .populate("advertiserId", "businessName")
+      .select("campaignName businessName spent totalImpressions totalClicks status")
       .sort({ spent: -1, totalImpressions: -1 })
       .limit(10)
       .lean();
@@ -131,7 +124,6 @@ exports.getLeaderboards = async (req, res) => {
       success: true,
       topCreators,
       topReels,
-      topAdvertisers,
       topCampaigns,
     });
   } catch (error) {

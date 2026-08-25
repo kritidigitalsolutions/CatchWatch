@@ -247,6 +247,31 @@ exports.getIncomeStats =
         amount: { $gt: 0 },
       };
 
+      const countSubs = async (match) => {
+        return await Subscription.countDocuments(match);
+      };
+
+      const countDistinctUsers = async (match) => {
+        const users = await Subscription.distinct("user", match);
+        return users.length;
+      };
+
+      const matchToday = {
+        ...baseMatch,
+        createdAt: {
+          $gte: startOfToday,
+          $lt: startOfTomorrow,
+        },
+      };
+
+      const matchYesterday = {
+        ...baseMatch,
+        createdAt: {
+          $gte: startOfYesterday,
+          $lt: startOfToday,
+        },
+      };
+
       const [
         todayIncome,
         yesterdayIncome,
@@ -254,59 +279,45 @@ exports.getIncomeStats =
         monthlyIncome,
         yearlyIncome,
         totalIncome,
+        todaySubsCount,
+        yesterdaySubsCount,
+        todayUsersCount,
+        yesterdayUsersCount,
+        totalSubsCount,
       ] = await Promise.all([
+        sumAmount(matchToday),
+        sumAmount(matchYesterday),
         sumAmount({
           ...baseMatch,
-
-          createdAt: {
-            $gte: startOfToday,
-            $lt: startOfTomorrow,
-          },
-        }),
-
-        sumAmount({
-          ...baseMatch,
-
-          createdAt: {
-            $gte:
-              startOfYesterday,
-            $lt: startOfToday,
-          },
-        }),
-
-        sumAmount({
-          ...baseMatch,
-
           createdAt: {
             $gte: startOfWeek,
             $lt: startOfTomorrow,
           },
         }),
-
         sumAmount({
           ...baseMatch,
-
           createdAt: {
             $gte: startOfMonth,
             $lt: startOfTomorrow,
           },
         }),
-
         sumAmount({
           ...baseMatch,
-
           createdAt: {
             $gte: startOfYear,
             $lt: startOfTomorrow,
           },
         }),
-
         sumAmount(baseMatch),
+        countSubs(matchToday),
+        countSubs(matchYesterday),
+        countDistinctUsers(matchToday),
+        countDistinctUsers(matchYesterday),
+        countSubs(baseMatch),
       ]);
 
       res.status(200).json({
         success: true,
-
         data: {
           todayIncome,
           yesterdayIncome,
@@ -314,11 +325,15 @@ exports.getIncomeStats =
           monthlyIncome,
           yearlyIncome,
           totalIncome,
+          todaySubsCount,
+          yesterdaySubsCount,
+          todayUsersCount,
+          yesterdayUsersCount,
+          totalSubsCount,
         },
       });
 
     } catch (err) {
-
       console.error(
         "Income Stats Error:",
         err
@@ -338,7 +353,6 @@ exports.getIncomeStats =
 exports.getAllSubscriptions =
   async (req, res) => {
     try {
-
       // auto cleanup
       await expireOldSubscriptions();
 
@@ -346,7 +360,7 @@ exports.getAllSubscriptions =
         await Subscription.find()
           .populate(
             "user",
-            "name email"
+            "name email phone username profileImage"
           )
           .populate("plan")
           .sort({
@@ -359,7 +373,6 @@ exports.getAllSubscriptions =
       });
 
     } catch (error) {
-
       console.error(
         "Get All Subscriptions Error:",
         error
@@ -371,6 +384,64 @@ exports.getAllSubscriptions =
       });
     }
   };
+
+// =====================================================
+// 🚫 CANCEL SUBSCRIPTION (ADMIN)
+// =====================================================
+exports.cancelSubscription = async (req, res) => {
+  try {
+    const subscription = await Subscription.findById(req.params.id);
+    if (!subscription) {
+      return res.status(404).json({
+        success: false,
+        message: "Subscription not found",
+      });
+    }
+
+    subscription.status = "cancelled";
+    await subscription.save();
+
+    res.status(200).json({
+      success: true,
+      message: "Subscription cancelled successfully",
+      subscription,
+    });
+  } catch (error) {
+    console.error("Cancel Subscription Error:", error);
+    res.status(500).json({
+      success: false,
+      message: error.message,
+    });
+  }
+};
+
+// =====================================================
+// 🗑️ DELETE SUBSCRIPTION (ADMIN)
+// =====================================================
+exports.deleteSubscription = async (req, res) => {
+  try {
+    const subscription = await Subscription.findById(req.params.id);
+    if (!subscription) {
+      return res.status(404).json({
+        success: false,
+        message: "Subscription not found",
+      });
+    }
+
+    await Subscription.findByIdAndDelete(req.params.id);
+
+    res.status(200).json({
+      success: true,
+      message: "Subscription deleted successfully",
+    });
+  } catch (error) {
+    console.error("Delete Subscription Error:", error);
+    res.status(500).json({
+      success: false,
+      message: error.message,
+    });
+  }
+};
 
 // =====================================================
 // ⏳ EXTEND SUBSCRIPTION (ADMIN)

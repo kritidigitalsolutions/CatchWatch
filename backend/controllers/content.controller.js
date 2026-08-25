@@ -164,10 +164,10 @@ const User = require("../models/user.model");
 // ========================================
 const getHomeContent = async (req, res) => {
   try {
-    const movies = await Movie.find().sort({ priority: -1, createdAt: -1 }).limit(20).lean();
-    const series = await Series.find().sort({ priority: -1, createdAt: -1 }).limit(20).lean();
-    const shortFilms = await ShortFilm.find().sort({ priority: -1, createdAt: -1 }).limit(20).lean();
-    const tvShows = await TvShow.find().sort({ priority: -1, createdAt: -1 }).limit(20).lean();
+    const movies = await Movie.find().sort({ priority: 1, createdAt: -1 }).limit(30).lean();
+    const series = await Series.find().sort({ priority: 1, createdAt: -1 }).limit(30).lean();
+    const shortFilms = await ShortFilm.find().sort({ priority: 1, createdAt: -1 }).limit(30).lean();
+    const tvShows = await TvShow.find().sort({ priority: 1, createdAt: -1 }).limit(30).lean();
 
     const [
       moviesCount,
@@ -197,12 +197,25 @@ const getHomeContent = async (req, res) => {
       isTrending: s.category?.includes("trending") || false
     }));
 
-    // Combine and sort by priority, then date
-    const content = [...formattedMovies, ...formattedSeries].sort(
+    const formattedShortFilms = shortFilms.map((sf) => ({
+      ...sf,
+      type: "shortFilm",
+      isTrending: sf.category?.includes("trending") || false
+    }));
+
+    const formattedTvShows = tvShows.map((tv) => ({
+      ...tv,
+      type: "tvShow",
+      isTrending: tv.category?.includes("trending") || false
+    }));
+
+    // Combine and sort by priority ascending (1 first, then 2, 3, 4, 5...)
+    const content = [...formattedMovies, ...formattedSeries, ...formattedShortFilms, ...formattedTvShows].sort(
       (a, b) => {
-        const priorityDiff = (b.priority || 0) - (a.priority || 0);
-        if (priorityDiff !== 0) return priorityDiff;
-        return new Date(b.createdAt) - new Date(a.createdAt);
+        const pA = a.priority && Number(a.priority) > 0 ? Number(a.priority) : 999;
+        const pB = b.priority && Number(b.priority) > 0 ? Number(b.priority) : 999;
+        if (pA !== pB) return pA - pB;
+        return new Date(b.createdAt || 0) - new Date(a.createdAt || 0);
       }
     );
 

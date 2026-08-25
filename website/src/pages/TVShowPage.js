@@ -1,7 +1,6 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Loader from '../components/Loader';
-// Make sure to adjust the import path based on where you saved your TV Shows API functions
 import { getTvShows } from '../api/tvShowsAps'; 
 
 const TVShowsPage = () => {
@@ -55,6 +54,11 @@ const TVShowsPage = () => {
     if (selectedNetwork !== 'All' && showNetwork !== selectedNetwork) return false;
     
     return true;
+  }).sort((a, b) => {
+    const pA = a.priority && Number(a.priority) > 0 ? Number(a.priority) : 999;
+    const pB = b.priority && Number(b.priority) > 0 ? Number(b.priority) : 999;
+    if (pA !== pB) return pA - pB;
+    return new Date(b.createdAt || 0) - new Date(a.createdAt || 0);
   });
 
   if (isLoading) return <Loader />;

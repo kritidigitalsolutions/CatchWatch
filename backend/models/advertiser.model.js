@@ -1,60 +1,14 @@
 const mongoose = require("mongoose");
 
+// Deprecated model kept for backward DB compatibility
 const advertiserSchema = new mongoose.Schema(
   {
-    userId: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: "User",
-      required: true,
-      index: true,
-    },
-    businessName: {
-      type: String,
-      required: true,
-      trim: true,
-    },
-    companyName: {
-      type: String,
-      required: true,
-      trim: true,
-    },
-    gstNumber: {
-      type: String,
-      default: "",
-      trim: true,
-    },
-    email: {
-      type: String,
-      required: true,
-      trim: true,
-    },
-    phone: {
-      type: String,
-      required: true,
-      trim: true,
-    },
-    website: {
-      type: String,
-      default: "",
-      trim: true,
-    },
-    status: {
-      type: String,
-      enum: ["ACTIVE", "PENDING", "SUSPENDED"],
-      default: "ACTIVE",
-    },
-    walletBalance: {
-      type: Number,
-      default: 0,
-    },
-    totalSpent: {
-      type: Number,
-      default: 0,
-    },
+    businessName: { type: String, default: "" },
+    companyName: { type: String, default: "" },
+    email: { type: String, default: "" },
+    phone: { type: String, default: "" },
   },
-  {
-    timestamps: true,
-  }
+  { timestamps: true }
 );
 
 module.exports =

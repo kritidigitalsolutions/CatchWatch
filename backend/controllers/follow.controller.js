@@ -41,6 +41,19 @@ exports.followUser = async (req, res) => {
     const followersCount = await Follow.countDocuments({ following: targetUserId });
     const followingCount = await Follow.countDocuments({ follower: targetUserId });
 
+    // Trigger Notification to target user
+    try {
+      const { notifyNewFollower } = require("../utils/notificationDispatcher.helper");
+      const followerUser = await User.findById(followerId).select("name username avatar profileImage");
+      if (followerUser) {
+        notifyNewFollower(targetUserId, followerUser).catch((e) =>
+          console.error("Follow notification error:", e.message)
+        );
+      }
+    } catch (notifErr) {
+      console.error("Follow notification error:", notifErr.message);
+    }
+
     return res.status(200).json({
       success: true,
       message: `You are now following ${targetUser.name || "user"}`,
