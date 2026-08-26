@@ -132,10 +132,20 @@ const App = () => {
           <Layout>
             <Routes>
               <Route path="/login" element={<LoginPage />} />
-              <Route path="/:type" element={<LegalPage />} />
+              <Route path="/legal/:type" element={<LegalPage />} />
+              <Route path="/privacy-policy" element={<LegalPage />} />
+              <Route path="/terms-conditions" element={<LegalPage />} />
+              <Route path="/terms" element={<LegalPage />} />
+              <Route path="/refund-policy" element={<LegalPage />} />
               <Route element={<ProtectedRoute />}>
                 <Route path="/" element={<HomePage />} />
+                <Route path="/movies" element={<MoviePage />} />
+                <Route path="/tv-shows" element={<TVShowsPage />} />
+                <Route path="/tvshows" element={<TVShowsPage />} />
+                <Route path="/series" element={<TVShowsPage />} />
+                <Route path="/short-films" element={<ShortFilmsPage />} />
                 <Route path="/shorts" element={<ShortFilmsPage />} />
+                <Route path="/reels" element={<ShortsPage />} />
                 <Route path="/reels-feed" element={<ShortsPage />} />
                 <Route path="/upload" element={<SelectVideoPage />} />
                 <Route path="/search" element={<SearchMoviesPage />} />
@@ -149,10 +159,8 @@ const App = () => {
                 <Route path="/explore" element={<ContentExplorerPage />} />
                 <Route path="/recommended" element={<RecommendedPage />} />
                 <Route path="/charts" element={<TopChartPage />} />
-                <Route path='/movies' element={<MoviePage />} />
                 <Route path="/wishlist" element={<WishlistPage />} />
                 <Route path="/support" element={<HelpSupportPage />} />
-                <Route path="/tvshows" element={<TVShowsPage />} />
                 <Route path="/watch/:slug" element={<VideoPlayerPage />} /> 
                 <Route path="/watch-episode/:id" element={<VideoPlayerPage />} /> 
                 <Route path="/notifications" element={<NotificationsPage />} />
@@ -168,6 +176,8 @@ const App = () => {
                 <Route path="/verification" element={<VerificationPage />} />
                 <Route path="/vip-support" element={<VipSupportPage />} />
               </Route>
+              {/* Dynamic Legal Document fallback */}
+              <Route path="/:type" element={<LegalPage />} />
             </Routes>
           </Layout>
           <CallModal />

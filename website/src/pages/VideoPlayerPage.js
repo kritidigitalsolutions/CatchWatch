@@ -8,6 +8,7 @@ import {
   FaRegBookmark, FaBookmark, FaExternalLinkAlt
 } from "react-icons/fa";
 import { BiMoviePlay } from "react-icons/bi";
+import { BsFillSkipForwardFill } from "react-icons/bs";
 
 // APIs Import
 import API from '../api/axiosConfig';
@@ -1020,7 +1021,7 @@ const VideoPlayerPage = () => {
                         className="bg-white/20 hover:bg-white/30 text-white border border-white/40 font-bold text-xs sm:text-sm px-4 py-2 sm:px-5 sm:py-2.5 rounded-xl shadow-lg backdrop-blur-md transition flex items-center gap-2 transform active:scale-95 cursor-pointer"
                       >
                         <span>Skip Ad</span>
-                        <span className="text-base">⏭️</span>
+                        <BsFillSkipForwardFill className="text-base" />
                       </button>
                     ) : (
                       <div className="bg-black/60 text-white/90 border border-white/20 text-xs sm:text-sm px-3.5 py-2 rounded-xl backdrop-blur-sm font-medium">

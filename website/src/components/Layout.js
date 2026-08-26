@@ -12,11 +12,12 @@ const Layout = ({ children }) => {
     path === '/chat' ||
     path === '/upload' ||
     path === '/reels-feed' ||
+    path === '/reels' ||
     path.startsWith('/reels');
 
   const hideFooter = isFullHeightPage;
   const isChatPage = path === '/chat';
-  const isReelsPage = path === '/reels-feed' || path.startsWith('/reels');
+  const isReelsPage = path === '/reels-feed' || path === '/reels' || path.startsWith('/reels');
 
   return (
     <div className="min-h-screen bg-brand-light-bg flex flex-col justify-between font-sans">

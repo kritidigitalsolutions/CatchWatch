@@ -9,8 +9,12 @@ const {
   getCreatorPoints,
   getPointHistory,
   getCreatorDashboard,
+  getCreatorProfile,
   getLeaderboard,
 } = require("../../controllers/creator.controller");
+
+// Profile API
+router.get("/profile", isAuth, getCreatorProfile);
 
 // Wallet API
 router.get("/wallet", isAuth, getCreatorWallet);

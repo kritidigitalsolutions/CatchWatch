@@ -1,13 +1,23 @@
 import React, { useState, useEffect } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { FaArrowLeft, FaFileContract } from 'react-icons/fa';
 import Loader from '../components/Loader';
 import { getLegalDocByType, getLegalDocs } from '../api/legalApi';
 
+const NON_LEGAL_KEYWORDS = new Set([
+  'tv-shows', 'tvshows', 'short-films', 'shorts', 'series', 'reels', 'reels-feed',
+  'movies', 'explore', 'search', 'login', 'upload', 'profile', 'subscription',
+  'wishlist', 'support', 'chat', 'notifications', 'charts', 'recommended',
+  'leaderboard', 'verification', 'vip-support', 'my-videos'
+]);
+
 const LegalPage = () => {
-  // URL se dynamic 'type' extract karein (e.g., 'terms', 'privacy-policy')
-  const { type } = useParams(); 
+  const { type: paramType } = useParams(); 
+  const location = useLocation();
   const navigate = useNavigate();
+
+  // Resolve type from params or pathname (e.g. /privacy-policy -> privacy-policy)
+  const type = (paramType || location.pathname.replace(/^\/(legal\/)?/, '')).replace(/\/$/, '');
 
   const [legalData, setLegalData] = useState(null);
   const [allLegalDocs, setAllLegalDocs] = useState([]);
@@ -15,11 +25,16 @@ const LegalPage = () => {
   const [error, setError] = useState(null);
 
   useEffect(() => {
+    if (!type || NON_LEGAL_KEYWORDS.has(type.toLowerCase())) {
+      setIsLoading(false);
+      setError(`The requested document is not available.`);
+      return;
+    }
+
     const fetchLegalData = async () => {
       setIsLoading(true);
       setError(null);
       try {
-        // API call with dynamic type
         const response = await getLegalDocByType(type); 
         const data = response?.document || response?.data || response;
         
@@ -29,7 +44,7 @@ const LegalPage = () => {
           setError(`Document for ${type} is empty or not formatted correctly.`);
         }
       } catch (err) {
-        console.error(`API Error fetching ${type}:`, err);
+        console.warn(`Legal document not found for "${type}":`, err?.message || err);
         setError(`The document for ${(type || '').replace('-', ' ')} is currently unavailable.`);
       } finally {
         setIsLoading(false);
@@ -43,14 +58,12 @@ const LegalPage = () => {
           setAllLegalDocs(res.documents);
         }
       } catch (err) {
-        console.error("Fetch all legal docs error:", err);
+        console.warn("Fetch all legal docs error:", err?.message || err);
       }
     };
 
-    if (type) {
-      fetchLegalData();
-      fetchAllDocs();
-    }
+    fetchLegalData();
+    fetchAllDocs();
   }, [type]);
 
   // Dynamic Title generation for fallback

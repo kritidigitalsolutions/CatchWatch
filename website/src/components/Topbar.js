@@ -154,37 +154,38 @@ const Topbar = () => {
           onClose={() => setSelectedNotifForModal(null)}
         />
       )}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between gap-4">
+      <div className="max-w-[1600px] w-full mx-auto px-4 sm:px-6 lg:px-8 h-16 md:h-20 flex items-center justify-between gap-4">
 
-        {/* LOGO & DESKTOP NAVIGATION */}
-        <div className="flex items-center gap-8">
+        {/* LOGO */}
+        <div className="flex items-center flex-shrink-0">
           <NavLink to="/" className="flex items-center gap-2">
-            <span className="text-xl sm:text-2xl font-black italic tracking-tighter text-brand-orange">
-              <img
-                src="/logo512.png"
-                className="h-10 sm:h-12 w-auto object-contain"
-                alt="CatchWatch Logo"
-              />            </span>
+            <img
+              src="/logo512.png"
+              className="h-10 sm:h-12 w-auto object-contain"
+              alt="CatchWatch Logo"
+            />
           </NavLink>
-
-          <nav className="hidden lg:flex items-center gap-6">
-            {navLinks.map((link) => (
-              <NavLink
-                key={link.path}
-                to={link.path}
-                className={({ isActive }) =>
-                  `text-xs font-bold uppercase tracking-wider transition-colors hover:text-brand-orange ${isActive ? "text-brand-orange font-black" : "text-gray-600"
-                  }`
-                }
-              >
-                {link.name}
-              </NavLink>
-            ))}
-          </nav>
         </div>
 
+        {/* CENTER: DESKTOP NAVIGATION TABS */}
+        <nav className="hidden lg:flex items-center justify-center gap-6 xl:gap-8 flex-1">
+          {navLinks.map((link) => (
+            <NavLink
+              key={link.path}
+              to={link.path}
+              className={({ isActive }) =>
+                `text-xs xl:text-sm font-bold uppercase tracking-wider transition-colors hover:text-brand-orange ${
+                  isActive ? "text-brand-orange font-black" : "text-gray-600"
+                }`
+              }
+            >
+              {link.name}
+            </NavLink>
+          ))}
+        </nav>
+
         {/* DESKTOP RIGHT ACTIONS */}
-        <div className="hidden lg:flex items-center gap-5">
+        <div className="hidden lg:flex items-center justify-end gap-5 flex-shrink-0">
           <NavLink
             to="/search"
             className={({ isActive }) =>

@@ -647,3 +647,58 @@ exports.getLeaderboard = async (req, res) => {
     return res.status(500).json({ success: false, message: "Server error" });
   }
 };
+
+// ========================================
+// GET CREATOR PROFILE API
+// GET /api/creator/profile
+// ========================================
+exports.getCreatorProfile = async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const user = await User.findById(userId)
+      .select("_id name username email phone profileImage avatar bio verification isVerified isCreator qualityScore creatorLevel totalEngagementPoints totalQualifiedViews totalWatchMinutes createdAt")
+      .lean();
+
+    if (!user) {
+      return res.status(404).json({ success: false, message: "User not found" });
+    }
+
+    const decoratedUser = decorateUserWithBlueTick(user);
+    const creatorLevel = determineCreatorLevel(user.totalEngagementPoints || 0);
+
+    const followersCount = await Follow.countDocuments({ following: userId });
+    const followingCount = await Follow.countDocuments({ follower: userId });
+    const reelsCount = await Reel.countDocuments({ user: userId, status: { $ne: "DELETED" } });
+
+    let wallet = await CreatorWallet.findOne({ creatorId: userId }).lean();
+    if (!wallet) {
+      wallet = {
+        totalPoints: user.totalEngagementPoints || 0,
+        availablePoints: user.totalEngagementPoints || 0,
+        redeemedPoints: 0,
+      };
+    }
+
+    const creatorPayload = {
+      ...user,
+      profileImage: user.profileImage || user.avatar || "",
+      isVerified: Boolean(decoratedUser.blueTick),
+      blueTick: Boolean(decoratedUser.blueTick),
+      creatorLevel: user.creatorLevel || creatorLevel,
+      qualityScore: user.qualityScore || 0,
+      followersCount,
+      followingCount,
+      reelsCount,
+      wallet,
+    };
+
+    return res.status(200).json({
+      success: true,
+      user: creatorPayload,
+      creator: creatorPayload,
+    });
+  } catch (error) {
+    console.error("GET CREATOR PROFILE ERROR:", error);
+    return res.status(500).json({ success: false, message: "Server error" });
+  }
+};
