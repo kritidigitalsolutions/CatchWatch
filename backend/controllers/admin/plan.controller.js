@@ -3,7 +3,7 @@ const Plan = require("../../models/plan.model");
 // CREATE PLAN
 exports.createPlan = async (req, res) => {
   try {
-    const { name, price, duration, features, isActive, category, planType, sortOrder, isRecommended } = req.body;
+    const { name, price, duration, features, isActive, category, planType, sortOrder, isRecommended, appleProductId } = req.body;
 
     const plan = await Plan.create({
       name,
@@ -15,6 +15,7 @@ exports.createPlan = async (req, res) => {
       planType: planType || "monthly",
       sortOrder: sortOrder || 0,
       isRecommended: !!isRecommended,
+      appleProductId: typeof appleProductId === "string" ? appleProductId.trim() : "",
     });
 
     res.status(201).json({
@@ -34,6 +35,9 @@ exports.createPlan = async (req, res) => {
 // UPDATE PLAN
 exports.updatePlan = async (req, res) => {
   try {
+    if (typeof req.body.appleProductId === "string") {
+      req.body.appleProductId = req.body.appleProductId.trim();
+    }
     const plan = await Plan.findByIdAndUpdate(
       req.params.id,
       req.body,
@@ -95,7 +99,11 @@ exports.getAllPlans = async (req, res) => {
     const { category } = req.query;
     let query = {};
     if (category) {
-      query.category = category;
+      if (category === "ORANGETICK" || category === "BLUETICK") {
+        query.category = { $in: ["ORANGETICK", "BLUETICK"] };
+      } else {
+        query.category = category;
+      }
     }
     const plans = await Plan.find(query).sort({ sortOrder: 1, createdAt: -1 });
 

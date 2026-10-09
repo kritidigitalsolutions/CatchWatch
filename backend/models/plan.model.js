@@ -67,18 +67,26 @@ const planSchema =
       // OPTIONAL FUTURE SUPPORT
       // ========================================
 
-      // monthly / yearly / lifetime
+      // weekly / monthly / quarterly / 3month / yearly / lifetime
       planType: {
         type: String,
 
         enum: [
+          "weekly",
           "monthly",
           "quarterly",
+          "3month",
           "yearly",
-          "lifetime",
         ],
 
         default: "monthly",
+      },
+
+      // Apple In-App Purchase Product ID for iOS StoreKit
+      appleProductId: {
+        type: String,
+        default: "",
+        trim: true,
       },
 
       // display sorting
@@ -98,7 +106,7 @@ const planSchema =
       // plan category (SUBSCRIPTION vs BLUETICK)
       category: {
         type: String,
-        enum: ["SUBSCRIPTION", "BLUETICK"],
+        enum: ["SUBSCRIPTION", "BLUETICK", "ORANGETICK"],
         default: "SUBSCRIPTION",
         index: true,
       },
@@ -113,10 +121,6 @@ const planSchema =
 // ========================================
 // INDEXES
 // ========================================
-
-planSchema.index({
-  isActive: 1,
-});
 
 planSchema.index({
   sortOrder: 1,

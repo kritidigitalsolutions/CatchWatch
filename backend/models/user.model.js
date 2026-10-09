@@ -249,7 +249,7 @@ const userSchema = new mongoose.Schema(
       },
       badgeType: {
         type: String,
-        default: "BLUE"
+        default: "ORANGE"
       },
       verifiedAt: Date,
       verifiedBy: {
@@ -331,6 +331,21 @@ const userSchema = new mongoose.Schema(
     toObject: { virtuals: true },
   }
 );
+
+
+userSchema.virtual("blueTick").get(function () {
+  return Boolean(
+    this.isVerified ||
+    (this.verification && (this.verification.isVerified || this.verification.status === "VERIFIED"))
+  );
+});
+
+userSchema.virtual("orangeTick").get(function () {
+  return Boolean(
+    this.isVerified ||
+    (this.verification && (this.verification.isVerified || this.verification.status === "VERIFIED"))
+  );
+});
 
 module.exports =
   mongoose.models.User ||

@@ -13,5 +13,6 @@ router.get("/", getPlans);
 
 // Get active bluetick / verification plans
 router.get("/bluetick", getBluetickPlans);
+router.get("/orangetick", getBluetickPlans);
 
 module.exports = router;

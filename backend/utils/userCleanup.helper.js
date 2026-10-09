@@ -21,13 +21,21 @@ const SupportMessage = require("../models/supportMessage.model");
 const Subscription = require("../models/subscription.model");
 const UserOtp = require("../models/user.otp.model");
 const AdCampaign = require("../models/adCampaign.model");
+const Ad = require("../models/ad.model");
+const AdAnalytics = require("../models/adAnalytics.model");
+const FraudLog = require("../models/fraudLog.model");
+const Voucher = require("../models/voucher.model");
+const Movie = require("../models/movie.model");
+const Series = require("../models/series.model");
+const Report = require("../models/report.model");
 
 const { deleteMedia, deleteMediaFiles } = require("./mediaUrl");
 const { deleteVideo } = require("../cdn/bunnyCDN");
 
 /**
  * Permanently purges a user and cascadingly deletes all associated content,
- * interactions, reels, files from Bunny CDN / Bunny Stream, and DB records.
+ * interactions, reels, media files from Bunny CDN / Bunny Stream, KYC docs,
+ * chat media, support files, and DB records.
  *
  * @param {string|mongoose.Types.ObjectId} userId - User ID to purge
  * @returns {Promise<{success: boolean, message: string, deletedReelsCount: number}>}
@@ -43,7 +51,7 @@ const purgeUserAccount = async (userId) => {
       return { success: false, message: "User not found" };
     }
 
-    console.log(`[USER PURGE] Starting complete purge for user: ${user._id} (${user.name} / ${user.phone})`);
+    console.log(`[USER PURGE] Starting complete purge for user: ${user._id} (${user.name || "N/A"} / ${user.phone})`);
 
     // -------------------------------------------------------------
     // 1. REELS & MEDIA FILES CLEANUP (DB + Bunny Stream + Bunny CDN)
@@ -110,7 +118,7 @@ const purgeUserAccount = async (userId) => {
     await Comment.deleteMany({ user: user._id });
 
     // -------------------------------------------------------------
-    // 3. USER INTERACTIONS (Likes, Bookmarks, Saves, Follows)
+    // 3. USER INTERACTIONS & CONTENT LIKES/DISLIKES
     // -------------------------------------------------------------
     await Interaction.deleteMany({
       $or: [
@@ -124,16 +132,62 @@ const purgeUserAccount = async (userId) => {
       $or: [{ follower: user._id }, { following: user._id }],
     });
 
-    // -------------------------------------------------------------
-    // 4. NOTIFICATIONS
-    // -------------------------------------------------------------
-    await Notification.deleteMany({
-      $or: [{ recipient: user._id }, { sender: user._id }],
-    });
+    // Remove user references from Movie & Series likes/dislikes arrays
+    await Movie.updateMany(
+      { $or: [{ likes: user._id }, { dislikes: user._id }] },
+      { $pull: { likes: user._id, dislikes: user._id } }
+    ).catch(() => {});
+
+    await Series.updateMany(
+      { $or: [{ likes: user._id }, { dislikes: user._id }] },
+      { $pull: { likes: user._id, dislikes: user._id } }
+    ).catch(() => {});
 
     // -------------------------------------------------------------
-    // 5. CHAT, MESSAGES, CALLS & BLOCKS
+    // 4. NOTIFICATIONS (Direct targeted + broadcast read/deleted)
     // -------------------------------------------------------------
+    await Notification.deleteMany({
+      $or: [
+        { targetUser: user._id },
+        { recipient: user._id }, // fallback for any legacy data
+        { sender: user._id },
+      ],
+    });
+
+    // Pull user from broadcast notification tracking lists
+    await Notification.updateMany(
+      {
+        $or: [
+          { "readBy.user": user._id },
+          { "deletedBy.user": user._id },
+        ],
+      },
+      {
+        $pull: {
+          readBy: { user: user._id },
+          deletedBy: { user: user._id },
+        },
+      }
+    ).catch(() => {});
+
+    // -------------------------------------------------------------
+    // 5. CHAT, MESSAGES, CALLS & BLOCKS (Including Message Media files)
+    // -------------------------------------------------------------
+    const messagesWithMedia = await Message.find({
+      $or: [{ sender: user._id }, { recipient: user._id }],
+      mediaUrl: { $exists: true, $ne: "" },
+    }).select("mediaUrl");
+
+    for (const msg of messagesWithMedia) {
+      if (msg.mediaUrl) {
+        try {
+          await deleteMedia(msg.mediaUrl);
+        } catch (mErr) {
+          console.warn(`[USER PURGE] Error deleting chat media ${msg.mediaUrl}:`, mErr.message);
+        }
+      }
+    }
+
     await Message.deleteMany({
       $or: [{ sender: user._id }, { recipient: user._id }],
     });
@@ -144,9 +198,34 @@ const purgeUserAccount = async (userId) => {
     await UserBlock.deleteMany({
       $or: [{ blocker: user._id }, { blocked: user._id }],
     });
+    await Report.deleteMany({
+      $or: [{ reporter: user._id }, { reportedUser: user._id }],
+    }).catch(() => {});
 
     // -------------------------------------------------------------
-    // 6. CREATOR ANALYTICS, POINTS, WALLET & REWARDS
+    // 6. QUALIFIED VIEWS (Both Creator & Viewer)
+    // -------------------------------------------------------------
+    await QualifiedView.deleteMany({
+      $or: [
+        { creatorId: user._id },
+        { viewerId: user._id },
+        ...(reelIds.length > 0 ? [{ reelId: { $in: reelIds } }] : []),
+      ],
+    });
+
+    // -------------------------------------------------------------
+    // 7. FRAUD LOGS
+    // -------------------------------------------------------------
+    await FraudLog.deleteMany({
+      $or: [
+        { viewerId: user._id },
+        { creatorId: user._id },
+        ...(reelIds.length > 0 ? [{ reelId: { $in: reelIds } }] : []),
+      ],
+    }).catch(() => {});
+
+    // -------------------------------------------------------------
+    // 8. CREATOR ANALYTICS, POINTS, WALLET & REWARDS
     // -------------------------------------------------------------
     await CreatorAnalytics.deleteMany({ creatorId: user._id });
     await CreatorPointHistory.deleteMany({
@@ -154,37 +233,117 @@ const purgeUserAccount = async (userId) => {
     });
     await CreatorWallet.deleteMany({ creatorId: user._id });
     await RedeemRequest.deleteMany({ creatorId: user._id });
+
+    // -------------------------------------------------------------
+    // 9. VERIFICATION REQUESTS & KYC MEDIA (Aadhaar, PAN, Selfie)
+    // -------------------------------------------------------------
+    const verifications = await VerificationRequest.find({ userId: user._id });
+    for (const vReq of verifications) {
+      if (vReq.idFront) await deleteMedia(vReq.idFront).catch(() => {});
+      if (vReq.idBack) await deleteMedia(vReq.idBack).catch(() => {});
+      if (vReq.selfie) await deleteMedia(vReq.selfie).catch(() => {});
+    }
     await VerificationRequest.deleteMany({ userId: user._id });
 
     // -------------------------------------------------------------
-    // 7. USER WATCHLIST, RATINGS, SUPPORT & SUBSCRIPTIONS
+    // 10. USER WATCHLIST, RATINGS, SUBSCRIPTIONS, OTP & VOUCHERS
     // -------------------------------------------------------------
     await Watchlist.deleteMany({ user: user._id });
     await Rating.deleteMany({ user: user._id });
-    await SupportMessage.deleteMany({ senderId: user._id });
-    await SupportTicket.deleteMany({ user: user._id });
     await Subscription.deleteMany({ user: user._id });
     if (user.phone) {
       await UserOtp.deleteMany({ phone: user.phone });
     }
+    // Unlink user from any redeemed vouchers
+    await Voucher.updateMany(
+      { usedBy: user._id },
+      { $set: { usedBy: null } }
+    ).catch(() => {});
 
     // -------------------------------------------------------------
-    // 8. AD CAMPAIGNS (If created by user / advertiser)
+    // 11. SUPPORT TICKETS, MESSAGES & ATTACHMENTS
+    // -------------------------------------------------------------
+    const userTickets = await SupportTicket.find({ user: user._id });
+    const userTicketIds = userTickets.map((t) => t._id);
+
+    // Delete ticket attachments
+    for (const ticket of userTickets) {
+      if (Array.isArray(ticket.attachments)) {
+        for (const att of ticket.attachments) {
+          await deleteMedia(att).catch(() => {});
+        }
+      }
+    }
+
+    // Find and delete all messages in user tickets OR sent by user, and their attachments
+    const supportMsgs = await SupportMessage.find({
+      $or: [
+        { ticket: { $in: userTicketIds } },
+        { senderId: user._id },
+      ],
+    });
+    for (const sMsg of supportMsgs) {
+      if (Array.isArray(sMsg.attachments)) {
+        for (const att of sMsg.attachments) {
+          await deleteMedia(att).catch(() => {});
+        }
+      }
+    }
+
+    await SupportMessage.deleteMany({
+      $or: [
+        { ticket: { $in: userTicketIds } },
+        { senderId: user._id },
+      ],
+    });
+    await SupportTicket.deleteMany({ user: user._id });
+
+    // -------------------------------------------------------------
+    // 12. AD CAMPAIGNS, CHILD ADS, MEDIA & ANALYTICS
     // -------------------------------------------------------------
     const userCampaigns = await AdCampaign.find({
       $or: [{ advertiserId: user._id }, { email: user.email }, { phone: user.phone }],
     });
+    const campaignIds = userCampaigns.map((c) => c._id);
+
     for (const campaign of userCampaigns) {
       if (campaign.mediaUrl) {
-        await deleteMedia(campaign.mediaUrl);
+        await deleteMedia(campaign.mediaUrl).catch(() => {});
       }
     }
+
+    // Find and delete child ads & media files
+    const childAds = await Ad.find({
+      $or: [
+        { campaignId: { $in: campaignIds } },
+        { advertiserId: user._id },
+      ],
+    });
+    for (const ad of childAds) {
+      if (ad.mediaUrl) await deleteMedia(ad.mediaUrl).catch(() => {});
+      if (ad.thumbnailUrl) await deleteMedia(ad.thumbnailUrl).catch(() => {});
+    }
+
+    await Ad.deleteMany({
+      $or: [
+        { campaignId: { $in: campaignIds } },
+        { advertiserId: user._id },
+      ],
+    });
+
+    await AdAnalytics.deleteMany({
+      $or: [
+        { campaignId: { $in: campaignIds } },
+        { advertiserId: user._id },
+      ],
+    });
+
     await AdCampaign.deleteMany({
       $or: [{ advertiserId: user._id }, { email: user.email }, { phone: user.phone }],
     });
 
     // -------------------------------------------------------------
-    // 9. PROFILE IMAGE FROM BUNNY CDN
+    // 13. PROFILE IMAGE FROM BUNNY CDN
     // -------------------------------------------------------------
     if (user.profileImage) {
       try {
@@ -196,7 +355,19 @@ const purgeUserAccount = async (userId) => {
     }
 
     // -------------------------------------------------------------
-    // 10. DELETE USER DOCUMENT
+    // 14. DISCONNECT ACTIVE WEBSOCKETS (If connected)
+    // -------------------------------------------------------------
+    try {
+      const { disconnectUserSockets } = require("../socket/chatSocket");
+      if (typeof disconnectUserSockets === "function") {
+        disconnectUserSockets(user._id);
+      }
+    } catch (wsErr) {
+      console.warn(`[USER PURGE] Error disconnecting sockets:`, wsErr.message);
+    }
+
+    // -------------------------------------------------------------
+    // 15. DELETE USER DOCUMENT
     // -------------------------------------------------------------
     await User.findByIdAndDelete(user._id);
 

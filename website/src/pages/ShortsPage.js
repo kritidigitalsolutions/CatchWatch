@@ -9,6 +9,7 @@ import Loader from '../components/Loader';
 import VerifiedBadge from '../components/VerifiedBadge';
 import ShareReelModal from '../components/ShareReelModal';
 import { HiSpeakerphone } from "react-icons/hi";
+import { MdCamera } from "react-icons/md";
 
 // APIs Import
 import API from '../api/axiosConfig';
@@ -39,6 +40,33 @@ const ShortVideo = ({ video, isActive }) => {
   const videoRef = useRef(null);
   const hlsRef = useRef(null);
   const [isPlaying, setIsPlaying] = useState(false);
+  const [isMuted, setIsMuted] = useState(() => {
+    try {
+      return localStorage.getItem("reelsMuted") === "true";
+    } catch (e) {
+      return false;
+    }
+  });
+  const isMutedRef = useRef(isMuted);
+
+  useEffect(() => {
+    isMutedRef.current = isMuted;
+    if (videoRef.current) {
+      videoRef.current.muted = isMuted;
+    }
+  }, [isMuted]);
+
+  const toggleSound = (e) => {
+    if (e && e.stopPropagation) e.stopPropagation();
+    if (videoRef.current) {
+      const nextMuted = !isMuted;
+      videoRef.current.muted = nextMuted;
+      setIsMuted(nextMuted);
+      try {
+        localStorage.setItem("reelsMuted", nextMuted ? "true" : "false");
+      } catch (err) {}
+    }
+  };
 
   // Interactive States
   const [liked, setLiked] = useState(Boolean(video.isLiked || video.userInteraction === "like"));
@@ -129,6 +157,30 @@ const ShortVideo = ({ video, isActive }) => {
     const isHls = rawSrc.toLowerCase().includes(".m3u8");
     const canNativeHLS = videoElement.canPlayType('application/x-mpegURL') || videoElement.canPlayType('application/vnd.apple.mpegurl');
 
+    const safePlay = () => {
+      if (!videoElement) return;
+      videoElement.muted = isMutedRef.current;
+      const playPromise = videoElement.play();
+      if (playPromise !== undefined) {
+        playPromise
+          .then(() => setIsPlaying(true))
+          .catch((err) => {
+            if (err.name === "NotAllowedError" && !videoElement.muted) {
+              videoElement.muted = true;
+              setIsMuted(true);
+              videoElement.play()
+                .then(() => setIsPlaying(true))
+                .catch(() => setIsPlaying(false));
+            } else if (err.name === "AbortError") {
+              // Harmless interruption when scrolling quickly
+            } else {
+              console.log("Autoplay prevented:", err?.name, err?.message);
+              setIsPlaying(false);
+            }
+          });
+      }
+    };
+
     if (isHls && Hls.isSupported() && !canNativeHLS) {
       const hls = new Hls({
         enableWorker: true,
@@ -139,18 +191,22 @@ const ShortVideo = ({ video, isActive }) => {
       hlsRef.current = hls;
 
       hls.on(Hls.Events.MANIFEST_PARSED, () => {
-        if (isActive) {
-          videoElement.play()
-            .then(() => setIsPlaying(true))
-            .catch((e) => console.log("Autoplay prevented:", e));
-        }
+        if (isActive) safePlay();
       });
     } else {
-      videoElement.src = rawSrc;
+      if (!videoElement.src || (!videoElement.src.endsWith(rawSrc) && videoElement.src !== rawSrc)) {
+        videoElement.src = rawSrc;
+      }
       if (isActive) {
-        videoElement.play()
-          .then(() => setIsPlaying(true))
-          .catch((e) => console.log("Autoplay prevented:", e));
+        if (videoElement.readyState >= 2) {
+          safePlay();
+        } else {
+          const handleCanPlay = () => {
+            safePlay();
+          };
+          videoElement.addEventListener("canplay", handleCanPlay, { once: true });
+          safePlay();
+        }
       } else {
         videoElement.pause();
         videoElement.currentTime = 0;
@@ -257,13 +313,29 @@ const ShortVideo = ({ video, isActive }) => {
   // };
 
   const togglePlay = () => {
-    if (videoRef.current) {
-      if (isPlaying) {
-        videoRef.current.pause();
-      } else {
-        videoRef.current.play();
+    const videoElement = videoRef.current;
+    if (!videoElement) return;
+
+    if (isPlaying) {
+      videoElement.pause();
+      setIsPlaying(false);
+    } else {
+      videoElement.muted = isMutedRef.current;
+      const playPromise = videoElement.play();
+      if (playPromise !== undefined) {
+        playPromise
+          .then(() => setIsPlaying(true))
+          .catch((err) => {
+            console.log("Play failed:", err?.name, err?.message);
+            if (err.name === "NotAllowedError" && !videoElement.muted) {
+              videoElement.muted = true;
+              setIsMuted(true);
+              videoElement.play().then(() => setIsPlaying(true)).catch(() => setIsPlaying(false));
+            } else {
+              setIsPlaying(false);
+            }
+          });
       }
-      setIsPlaying(!isPlaying);
     }
   };
 
@@ -398,8 +470,23 @@ const ShortVideo = ({ video, isActive }) => {
           className="w-full h-full object-cover cursor-pointer"
           loop
           playsInline
+          muted={isMuted}
+          preload="metadata"
           onClick={togglePlay}
+          onPlay={() => setIsPlaying(true)}
+          onPause={() => setIsPlaying(false)}
         />
+      )}
+
+      {/* Mute/Unmute Audio Button */}
+      {!isImageAd && !bunnyEmbedUrl && (
+        <button
+          onClick={toggleSound}
+          className="absolute top-16 right-4 z-30 bg-black/60 backdrop-blur-md text-white p-2.5 rounded-full hover:bg-black/80 transition shadow-lg"
+          title={isMuted ? "Unmute Audio" : "Mute Audio"}
+        >
+          {isMuted ? <FaVolumeMute size={16} /> : <FaVolumeUp size={16} />}
+        </button>
       )}
 
       {/* Play Icon Overlay (Visible when paused manually) */}
@@ -876,8 +963,16 @@ const ShortsPage = () => {
     <div className="mx-auto w-auto max-w-full bg-black rounded-2xl overflow-hidden relative shadow-2xl aspect-[9/16] h-[calc(100dvh-136px)] max-h-[calc(100dvh-136px)] md:h-[calc(100vh-120px)] md:max-h-[780px] my-auto">
 
       {/* Absolute Transparent Frame Header */}
-      <div className="absolute top-0 left-0 right-0 p-3 sm:p-4 flex justify-between items-center bg-gradient-to-b from-black/80 to-transparent z-40 text-white pointer-events-none">
+      <div className="absolute top-0 left-0 right-0 p-3 sm:p-4 flex justify-between items-center bg-gradient-to-b from-black/80 to-transparent z-40 text-white">
         <h1 className="text-base sm:text-xl font-black tracking-wide drop-shadow-md">Reels</h1>
+        <button
+          onClick={() => navigate('/upload')}
+          className="bg-brand-orange hover:bg-orange-600 text-white text-xs font-bold px-3.5 py-1.5 rounded-full shadow-lg flex items-center gap-1.5 transition active:scale-95"
+          title="Upload Reel"
+        >
+          <MdCamera className="text-sm sm:text-base" />
+          <span>Upload Reel</span>
+        </button>
       </div>
 
       {/* Scrollable Video Feed Container */}

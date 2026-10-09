@@ -20,8 +20,22 @@ const verificationRequestSchema = new mongoose.Schema(
     },
     governmentIdType: {
       type: String,
-      enum: ["Aadhar", "Passport", "Driving License", "PAN"],
+      // enum: [
+      //   "Aadhaar",
+      //   "Aadhar",
+      //   "Aadhaar Card",
+      //   "Aadhar Card",
+      //   "Passport",
+      //   "Driving License",
+      //   "Driving Licence",
+      //   "PAN",
+      //   "PAN Card",
+      //   "Voter ID",
+      //   "Voter Card",
+      //   "Other",
+      // ],
       required: true,
+      trim: true,
     },
     governmentIdNumber: {
       type: String,

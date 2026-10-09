@@ -27,7 +27,7 @@ exports.getPlans = async (req, res) => {
 // GET ACTIVE BLUETICK / VERIFICATION PLANS
 exports.getBluetickPlans = async (req, res) => {
   try {
-    const plans = await Plan.find({ isActive: true, category: "BLUETICK" }).sort({
+    const plans = await Plan.find({ isActive: true, category: { $in: ["ORANGETICK", "BLUETICK"] } }).sort({
       sortOrder: 1,
       createdAt: -1,
     });
@@ -44,3 +44,4 @@ exports.getBluetickPlans = async (req, res) => {
     });
   }
 };
+exports.getOrangeTickPlans = exports.getBluetickPlans;

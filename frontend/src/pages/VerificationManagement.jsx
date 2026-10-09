@@ -261,11 +261,11 @@ export default function VerificationManagement() {
   };
 
   const handleRemoveVerification = async (userId) => {
-    if (!window.confirm("Remove blue tick verification badge from this user?")) return;
+    if (!window.confirm("Remove orange tick verification badge from this user?")) return;
     try {
       const res = await API.patch("/admin/verification/remove", { userId });
       if (res.data?.success) {
-        alert("Blue tick verification badge removed.");
+        alert("Orange tick verification badge removed.");
         setViewRequest(null);
         fetchStats();
         fetchRequests();
@@ -314,7 +314,7 @@ export default function VerificationManagement() {
       });
 
       if (res.data?.success) {
-        const successMsg = res.data.message || `🎉 Blue Tick granted successfully to ${selectedUser?.name || 'User'}!`;
+        const successMsg = res.data.message || `🎉 Orange Tick granted successfully to ${selectedUser?.name || 'User'}!`;
         
         // 1. Show Toast Notification instantly
         showToast(successMsg, "success");
@@ -415,9 +415,9 @@ export default function VerificationManagement() {
       {/* ── Page Header ── */}
       <div className="verif-header">
         <div className="verif-header-title">
-          <BadgeCheck size={28} color="#3b82f6" />
+          <BadgeCheck size={28} color="#f97316" />
           <div>
-            <h1>Verification Management</h1>
+            <h1>Orange Tick & Verification Management</h1>
             <p style={{ color: "#94a3b8", fontSize: "0.85rem", margin: "2px 0 0" }}>
               Review, approve, reject, and manage profile verification requests.
             </p>
@@ -437,12 +437,12 @@ export default function VerificationManagement() {
       {/* ── Dashboard Statistics Cards ── */}
       <div className="verif-stats-grid">
         <div className="verif-stat-card">
-          <div className="verif-stat-icon" style={{ background: "rgba(59, 130, 246, 0.15)", color: "#3b82f6" }}>
+          <div className="verif-stat-icon" style={{ background: "rgba(249, 115, 22, 0.15)", color: "#f97316" }}>
             <BadgeCheck size={24} />
           </div>
           <div>
             <div className="verif-stat-val">{stats.totalVerifiedUsers}</div>
-            <div className="verif-stat-lbl">Total Verified Users</div>
+            <div className="verif-stat-lbl">Total Verified Users (Orange Tick)</div>
           </div>
         </div>
 
@@ -547,11 +547,11 @@ export default function VerificationManagement() {
       {activeTab === "SETTINGS" ? (
         <div className="verif-settings-card">
           <div className="verif-settings-header">
-            <UserCheck size={26} color="#3b82f6" />
+            <UserCheck size={26} color="#f97316" />
             <h2 className="verif-settings-title">Manually Verify User</h2>
           </div>
           <p className="verif-settings-desc">
-            Search and select any registered user by their Name or Username to grant official Blue Tick verification status directly.
+            Search and select any registered user by their Name or Username to grant official Orange Tick verification status directly.
           </p>
 
           <div className="verif-settings-grid">
@@ -607,7 +607,7 @@ export default function VerificationManagement() {
                           padding: "10px 12px",
                           margin: "2px 0",
                           borderRadius: "6px",
-                          background: selectedUser?._id === u._id ? "#3b82f6" : "transparent",
+                          background: selectedUser?._id === u._id ? "#f97316" : "transparent",
                           color: selectedUser?._id === u._id ? "#fff" : "inherit",
                           fontWeight: 600,
                         }}
@@ -637,14 +637,14 @@ export default function VerificationManagement() {
                         height: "56px",
                         borderRadius: "50%",
                         objectFit: "cover",
-                        border: "2px solid #3b82f6",
+                        border: "2px solid #f97316",
                       }}
                     />
                     <div>
                       <div className="verif-preview-user-name">
                         <span>{selectedUser.name}</span>
                         {(selectedUser.isVerified || selectedUser.verification?.isVerified || selectedUser.verification?.status === "VERIFIED") && (
-                          <BadgeCheck size={20} color="#3b82f6" />
+                          <BadgeCheck size={20} color="#f97316" />
                         )}
                       </div>
                       <div className="verif-preview-user-handle">
@@ -660,7 +660,7 @@ export default function VerificationManagement() {
                     <div className="verif-preview-status-lbl">Current Verification Status:</div>
                     <strong style={{ color: selectedUser.isVerified || selectedUser.verification?.isVerified || selectedUser.verification?.status === "VERIFIED" ? "#10b981" : "#f59e0b" }}>
                       {selectedUser.isVerified || selectedUser.verification?.isVerified || selectedUser.verification?.status === "VERIFIED"
-                        ? "✔️ Official Blue Tick Active"
+                        ? "✔️ Official Orange Tick Active"
                         : "⚠️ Unverified User"}
                     </strong>
                   </div>
@@ -684,10 +684,10 @@ export default function VerificationManagement() {
                     borderRadius: "10px",
                     justifyContent: "center",
                     marginTop: "20px",
-                    background: "#3b82f6",
+                    background: "#f97316",
                   }}
                 >
-                  <BadgeCheck size={20} /> Grant Blue Tick to {selectedUser.name}
+                  <BadgeCheck size={20} /> Grant Orange Tick to {selectedUser.name}
                 </button>
               )}
             </div>
@@ -858,7 +858,7 @@ export default function VerificationManagement() {
                               <div className="verif-user-name">
                                 {reqItem.fullName}{" "}
                                 {(u.verification?.isVerified || reqItem.status === "VERIFIED") && (
-                                  <BadgeCheck size={16} color="#3b82f6" />
+                                  <BadgeCheck size={16} color="#f97316" />
                                 )}
                               </div>
                               <div className="verif-user-uname">{reqItem.username || u.username || "@user"}</div>
@@ -973,7 +973,7 @@ export default function VerificationManagement() {
               <div>
                 <h3 style={{ margin: 0, color: "#fff", display: "flex", alignItems: "center", gap: "6px" }}>
                   {viewRequest.fullName}
-                  {viewRequest.status === "VERIFIED" && <BadgeCheck size={20} color="#3b82f6" />}
+                  {viewRequest.status === "VERIFIED" && <BadgeCheck size={20} color="#f97316" />}
                 </h3>
                 <p style={{ margin: "2px 0 0", color: "#94a3b8", fontSize: "0.88rem" }}>
                   {viewRequest.username} · Applied on {new Date(viewRequest.createdAt).toLocaleString()}
@@ -1018,7 +1018,7 @@ export default function VerificationManagement() {
             {viewRequest.selectedPlan?.name && (
               <div className="verif-info-row">
                 <span className="verif-info-label">Selected Plan</span>
-                <span className="verif-info-val" style={{ color: "#3b82f6", fontWeight: 700 }}>
+                <span className="verif-info-val" style={{ color: "#f97316", fontWeight: 700 }}>
                   {viewRequest.selectedPlan.name} — ₹{viewRequest.selectedPlan.price} ({viewRequest.selectedPlan.duration} days)
                 </span>
               </div>
@@ -1115,7 +1115,7 @@ export default function VerificationManagement() {
                     className="verif-btn reject"
                     onClick={() => handleRemoveVerification(viewRequest.userId?._id || viewRequest.userId)}
                   >
-                    <Trash2 size={16} /> Remove Blue Tick
+                    <Trash2 size={16} /> Remove Orange Tick
                   </button>
                 </>
               )}

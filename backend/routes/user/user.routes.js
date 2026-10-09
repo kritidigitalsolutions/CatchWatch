@@ -19,6 +19,10 @@ const {
   getUserPosts,
   searchUsers,
   deleteAccount,
+  blockUser,
+  unblockUser,
+  getBlockedUsers,
+  checkBlockStatus,
 } = require("../../controllers/user.controller");
 
 const {
@@ -87,6 +91,16 @@ router.post("/toggle-follow/:id", isAuth, toggleFollow);
 router.get("/follow-status/:id", optionalAuth, checkFollowStatus);
 router.get("/followers/:userId", optionalAuth, getFollowers);
 router.get("/following/:userId", optionalAuth, getFollowing);
+
+// ========================================
+// UGC BLOCK / UNBLOCK SYSTEM (APPLE GUIDELINE 1.2)
+// ========================================
+router.post("/block/:id", isAuth, blockUser);
+router.post("/block", isAuth, blockUser);
+router.post("/unblock/:id", isAuth, unblockUser);
+router.delete("/block/:id", isAuth, unblockUser);
+router.get("/blocked-users", isAuth, getBlockedUsers);
+router.get("/block-status/:id", isAuth, checkBlockStatus);
 
 // ========================================
 // COMPLETE PROFILE

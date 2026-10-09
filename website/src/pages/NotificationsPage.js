@@ -20,7 +20,8 @@ const TYPE_TAGS = {
   NEW_TV_SHOW: { label: "TV Show", color: "bg-blue-100 text-blue-700 border-blue-200" },
   NEW_SHORT_FILM: { label: "Short Film", color: "bg-cyan-100 text-cyan-700 border-cyan-200" },
   SUBSCRIPTION: { label: "Subscription", color: "bg-amber-100 text-amber-700 border-amber-200" },
-  BLUETICK: { label: "Blue Tick", color: "bg-sky-100 text-sky-700 border-sky-200" },
+  ORANGETICK: { label: "Orange Tick", color: "bg-orange-100 text-orange-700 border-orange-200" },
+  BLUETICK: { label: "Orange Tick", color: "bg-orange-100 text-orange-700 border-orange-200" },
   VERIFICATION: { label: "Verification", color: "bg-sky-100 text-sky-700 border-sky-200" },
   PROMOTIONAL: { label: "Promotion", color: "bg-orange-100 text-orange-700 border-orange-200" },
   REEL: { label: "Reel", color: "bg-rose-100 text-rose-700 border-rose-200" },
@@ -225,7 +226,7 @@ const NotificationsPage = () => {
                     <div className="flex items-center gap-2 flex-wrap mb-1">
                       <h4 className={`text-sm sm:text-base flex items-center gap-1.5 ${!isReadStatus ? 'font-black text-gray-900' : 'font-bold text-gray-700'}`}>
                         <span>{notif.title || "New Update"}</span>
-                        {(notif.type === "VERIFICATION" || notif.type === "BLUETICK" || notif.title?.includes("Verified")) && (
+                        {(notif.type === "VERIFICATION" || notif.type === "ORANGETICK" || notif.type === "BLUETICK" || notif.title?.includes("Verified")) && (
                           <VerifiedBadge isVerified={true} size="sm" />
                         )}
                       </h4>

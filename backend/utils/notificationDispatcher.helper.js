@@ -495,6 +495,7 @@ module.exports = {
   broadcastPushNotification,
   notifyProfileCompleted,
   notifyBlueTickStatus,
+  notifyOrangeTickStatus: notifyBlueTickStatus,
   notifySubscriptionStatus,
   notifyReelUploaded,
   notifyChatMessage,

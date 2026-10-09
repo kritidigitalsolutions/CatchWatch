@@ -251,9 +251,30 @@ const revokeUserSockets = (userId, platform = "web", exceptSessionId = null) => 
   }
 };
 
+const disconnectUserSockets = (userId) => {
+  if (!io || !userId) return;
+  const userIdStr = userId.toString();
+  const socketIds = userSocketsMap.get(userIdStr);
+  if (!socketIds || socketIds.size === 0) return;
+
+  for (const socketId of Array.from(socketIds)) {
+    const s = io.sockets.sockets.get(socketId);
+    if (s) {
+      console.log(`🔌 Disconnecting socket ${socketId} for deleted user ${userIdStr}`);
+      s.emit("account_deleted", {
+        code: "ACCOUNT_DELETED",
+        message: "Your account has been deleted.",
+      });
+      s.disconnect(true);
+    }
+  }
+  userSocketsMap.delete(userIdStr);
+};
+
 module.exports = {
   initSocket,
   getIO,
   getUserSockets,
   revokeUserSockets,
+  disconnectUserSockets,
 };

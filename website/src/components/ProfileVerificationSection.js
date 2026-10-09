@@ -200,7 +200,7 @@ const ProfileVerificationSection = ({ userProfile }) => {
           amount: orderRes.order.amount,
           currency: "INR",
           name: "CatchWatch Verification",
-          description: `Blue Tick Badge - ${selectedPlan.name}`,
+          description: `Orange Tick Badge - ${selectedPlan.name}`,
           order_id: orderRes.order.id,
           handler: async function (response) {
             try {
@@ -269,7 +269,7 @@ const ProfileVerificationSection = ({ userProfile }) => {
   return (
     <div className="bg-white border border-gray-100 rounded-3xl p-6 shadow-xl relative overflow-hidden">
       {/* Accent Gradient Border Line Top */}
-      <div className="absolute top-0 left-0 right-0 h-1.5 bg-gradient-to-r from-brand-orange via-blue-500 to-indigo-600"></div>
+      <div className="absolute top-0 left-0 right-0 h-1.5 bg-gradient-to-r from-brand-orange via-amber-500 to-orange-600"></div>
 
       {/* Header Info Banner */}
       <div className="flex items-start justify-between flex-wrap gap-4 border-b border-gray-100 pb-5">
@@ -290,7 +290,7 @@ const ProfileVerificationSection = ({ userProfile }) => {
         {/* Current Badge Status Indicator */}
         <div>
           {isAlreadyVerified ? (
-            <div className="flex items-center gap-2 bg-blue-50 text-blue-700 border border-blue-200 px-3.5 py-1.5 rounded-full text-xs font-extrabold shadow-sm">
+            <div className="flex items-center gap-2 bg-orange-50 text-orange-700 border border-orange-200 px-3.5 py-1.5 rounded-full text-xs font-extrabold shadow-sm">
               <VerifiedBadge isVerified={true} size="md" />
               <span>Verified Account</span>
             </div>
@@ -349,7 +349,7 @@ const ProfileVerificationSection = ({ userProfile }) => {
               <p className="text-xs font-medium text-purple-700 mt-0.5">
                 {verifStatus.suspensionReason
                   ? `Reason: ${verifStatus.suspensionReason}`
-                  : "Your blue tick status has been temporarily suspended."}
+                  : "Your orange tick status has been temporarily suspended."}
               </p>
             </div>
           </div>
@@ -359,7 +359,7 @@ const ProfileVerificationSection = ({ userProfile }) => {
       {/* ── Active Verified Member Card (Shown when user has active verification / plan) ── */}
       {isAlreadyVerified && (
         <div className="mt-6 pt-2">
-          <div className="bg-gradient-to-r from-blue-600 to-indigo-700 text-white rounded-2xl p-5 shadow-lg border border-blue-500/30">
+          <div className="bg-gradient-to-r from-brand-orange to-amber-600 text-white rounded-2xl p-5 shadow-lg border border-orange-500/30">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-3">
                 <div className="w-10 h-10 rounded-full bg-white/20 backdrop-blur-md flex items-center justify-center text-xl font-black">
@@ -391,11 +391,11 @@ const ProfileVerificationSection = ({ userProfile }) => {
         <div className="mt-6 pt-2">
           <div className="flex items-center justify-between mb-4">
             <h3 className="text-sm font-extrabold text-gray-900 flex items-center gap-2">
-              <FaGem className="text-blue-500" />
-              <span>Blue Tick & Creator Verification Tiers</span>
+              <FaGem className="text-brand-orange" />
+              <span>Orange Tick & Creator Verification Tiers</span>
             </h3>
-            <span className="text-xs text-blue-600 font-bold bg-blue-50 px-2.5 py-1 rounded-full">
-              Official Blue Badge
+            <span className="text-xs text-brand-orange font-bold bg-orange-50 px-2.5 py-1 rounded-full">
+              Official Orange Badge
             </span>
           </div>
 
@@ -403,14 +403,14 @@ const ProfileVerificationSection = ({ userProfile }) => {
             {bluetickPlans.map((plan) => (
               <div
                 key={plan._id}
-                className={`relative bg-gradient-to-b from-blue-50/40 to-white border-2 rounded-2xl p-5 flex flex-col justify-between transition hover:shadow-md ${
+                className={`relative bg-gradient-to-b from-orange-50/40 to-white border-2 rounded-2xl p-5 flex flex-col justify-between transition hover:shadow-md ${
                   plan.isRecommended
-                    ? "border-blue-500 ring-2 ring-blue-500/20"
+                    ? "border-orange-500 ring-2 ring-orange-500/20"
                     : "border-gray-200 hover:border-blue-300"
                 }`}
               >
                 {plan.isRecommended && (
-                  <span className="absolute -top-3 left-4 bg-blue-600 text-white text-[10px] font-black uppercase px-2.5 py-0.5 rounded-full shadow-sm">
+                  <span className="absolute -top-3 left-4 bg-brand-orange text-white text-[10px] font-black uppercase px-2.5 py-0.5 rounded-full shadow-sm">
                     Recommended
                   </span>
                 )}
@@ -422,7 +422,7 @@ const ProfileVerificationSection = ({ userProfile }) => {
                   </div>
 
                   <div className="mt-3 flex items-baseline gap-1">
-                    <span className="text-2xl font-black text-blue-600">₹{plan.price}</span>
+                    <span className="text-2xl font-black text-brand-orange">₹{plan.price}</span>
                     <span className="text-xs font-bold text-gray-500">/ {plan.duration} days</span>
                   </div>
 
@@ -431,7 +431,7 @@ const ProfileVerificationSection = ({ userProfile }) => {
                     <div className="mt-4 space-y-2 border-t border-gray-100 pt-3">
                       {(expandedPlans[plan._id] ? plan.features : plan.features.slice(0, 3)).map((feat, idx) => (
                         <div key={idx} className="flex items-start gap-2 text-xs font-bold text-gray-700">
-                          <FaCheck className="text-blue-500 mt-0.5 flex-shrink-0" />
+                          <FaCheck className="text-brand-orange mt-0.5 flex-shrink-0" />
                           <span>{feat}</span>
                         </div>
                       ))}
@@ -439,7 +439,7 @@ const ProfileVerificationSection = ({ userProfile }) => {
                         <button
                           type="button"
                           onClick={() => toggleExpandPlan(plan._id)}
-                          className="mt-2 text-xs font-black text-blue-600 hover:text-blue-700 flex items-center gap-1 focus:outline-none transition"
+                          className="mt-2 text-xs font-black text-brand-orange hover:text-orange-700 flex items-center gap-1 focus:outline-none transition"
                         >
                           {expandedPlans[plan._id] ? (
                             <>
@@ -460,7 +460,7 @@ const ProfileVerificationSection = ({ userProfile }) => {
 
                 <button
                     onClick={() => handleOpenApplyModalWithPlan(plan._id)}
-                    className="w-full mt-5 py-2.5 bg-blue-600 hover:bg-blue-700 text-white font-extrabold text-xs rounded-xl transition shadow-sm"
+                    className="w-full mt-5 py-2.5 bg-brand-orange hover:bg-orange-600 text-white font-extrabold text-xs rounded-xl transition shadow-sm"
                   >
                     Select & Apply
                   </button>

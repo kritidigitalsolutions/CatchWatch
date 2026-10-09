@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { FaUserPlus, FaUserCheck, FaPlay, FaHeart, FaTimes } from "react-icons/fa";
 import { BiMessageRoundedDots } from "react-icons/bi";
+import { MdCamera } from "react-icons/md";
 import Loader from "../components/Loader";
 import VerifiedBadge from "../components/VerifiedBadge";
 import ProfileVerificationSection from "../components/ProfileVerificationSection";
@@ -192,12 +193,21 @@ const UserProfilePage = () => {
                   {/* Follow / Edit / Message Buttons */}
                   <div className="flex items-center gap-2.5 flex-wrap justify-center sm:justify-start">
                     {profileData.isSelf ? (
-                      <button
-                        onClick={() => navigate("/profile/edit")}
-                        className="px-6 py-2.5 bg-gray-100 text-gray-800 font-bold text-sm rounded-xl border border-gray-300 hover:bg-gray-200 transition"
-                      >
-                        Edit Profile
-                      </button>
+                      <div className="flex items-center gap-2">
+                        <button
+                          onClick={() => navigate("/upload")}
+                          className="px-5 py-2.5 bg-brand-orange text-white font-bold text-sm rounded-xl hover:bg-orange-600 transition shadow-sm flex items-center gap-2"
+                        >
+                          <MdCamera className="text-base" />
+                          <span>Upload Reel</span>
+                        </button>
+                        <button
+                          onClick={() => navigate("/profile/edit")}
+                          className="px-5 py-2.5 bg-gray-100 text-gray-800 font-bold text-sm rounded-xl border border-gray-300 hover:bg-gray-200 transition"
+                        >
+                          Edit Profile
+                        </button>
+                      </div>
                     ) : (
                       <>
                         <button

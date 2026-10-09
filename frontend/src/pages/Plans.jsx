@@ -4,7 +4,7 @@ import API from "../api/axios";
 import "./Dashboard.css";
 
 export default function PlansPage() {
-  const [activeTab, setActiveTab] = useState("SUBSCRIPTION"); // 'SUBSCRIPTION' | 'BLUETICK'
+  const [activeTab, setActiveTab] = useState("SUBSCRIPTION"); // 'SUBSCRIPTION' | 'ORANGETICK'
 
   const [form, setForm] = useState({
     name: "",
@@ -12,6 +12,7 @@ export default function PlansPage() {
     duration: "",
     features: "",
     planType: "monthly",
+    appleProductId: "",
     sortOrder: 0,
     isRecommended: false,
     isActive: true,
@@ -59,6 +60,7 @@ export default function PlansPage() {
       duration: "",
       features: "",
       planType: "monthly",
+      appleProductId: "",
       sortOrder: 0,
       isRecommended: false,
       isActive: true,
@@ -82,6 +84,7 @@ export default function PlansPage() {
           .map((f) => f.trim())
           .filter(Boolean),
         planType: form.planType,
+        appleProductId: (form.appleProductId || "").trim(),
         sortOrder: Number(form.sortOrder),
         isRecommended: form.isRecommended,
         isActive: form.isActive,
@@ -102,6 +105,7 @@ export default function PlansPage() {
         duration: "",
         features: "",
         planType: "monthly",
+        appleProductId: "",
         sortOrder: 0,
         isRecommended: false,
         isActive: true,
@@ -141,6 +145,7 @@ export default function PlansPage() {
       duration: plan.duration,
       features: plan.features ? plan.features.join(", ") : "",
       planType: plan.planType || "monthly",
+      appleProductId: plan.appleProductId || "",
       sortOrder: plan.sortOrder || 0,
       isRecommended: plan.isRecommended || false,
       isActive: plan.isActive !== false,
@@ -178,12 +183,12 @@ export default function PlansPage() {
         </button>
 
         <button
-          onClick={() => handleTabChange("BLUETICK")}
+          onClick={() => handleTabChange("ORANGETICK")}
           style={{
             padding: "10px 20px",
             borderRadius: "10px",
             border: "none",
-            background: activeTab === "BLUETICK" ? "#3b82f6" : "rgba(255,255,255,0.05)",
+            background: activeTab === "ORANGETICK" ? "#f97316" : "rgba(255,255,255,0.05)",
             color: "#fff",
             fontWeight: 700,
             cursor: "pointer",
@@ -193,7 +198,7 @@ export default function PlansPage() {
             fontSize: "0.95rem",
           }}
         >
-          <BadgeCheck size={18} /> Blue Tick & Verification Plans
+          <BadgeCheck size={18} color={activeTab === "ORANGETICK" ? "#fff" : "#f97316"} /> Orange Tick & Verification Plans
         </button>
       </div>
 
@@ -202,15 +207,15 @@ export default function PlansPage() {
         <div className="form-card">
           <h3>
             {editId
-              ? `Edit ${activeTab === "BLUETICK" ? "Blue Tick" : "Subscription"} Plan`
-              : `Create New ${activeTab === "BLUETICK" ? "Blue Tick Verification" : "Subscription"} Plan`}
+              ? `Edit ${activeTab === "ORANGETICK" ? "Orange Tick" : "Subscription"} Plan`
+              : `Create New ${activeTab === "ORANGETICK" ? "Orange Tick Verification" : "Subscription"} Plan`}
           </h3>
 
           <div className="form-2col">
             <input
               className="form-input-styled"
               name="name"
-              placeholder={activeTab === "BLUETICK" ? "Plan Name (e.g. Monthly Blue Tick, Pro Verified)" : "Plan Name (e.g. Basic, VIP Premium)"}
+              placeholder={activeTab === "ORANGETICK" ? "Plan Name (e.g. Monthly Orange Tick, ₹299 Creator Badge)" : "Plan Name (e.g. Basic, VIP Premium)"}
               value={form.name}
               onChange={ch}
               required
@@ -239,7 +244,7 @@ export default function PlansPage() {
             <input
               className="form-input-styled form-full"
               name="features"
-              placeholder="Features list (comma separated, e.g. Official Blue Tick Badge, Higher Search Priority, Dedicated Support)"
+              placeholder="Features list (comma separated, e.g. Official Orange Tick Badge, Higher Search Priority, Dedicated Support)"
               value={form.features}
               onChange={ch}
             />
@@ -250,11 +255,19 @@ export default function PlansPage() {
               value={form.planType}
               onChange={ch}
             >
+              <option value="weekly">Weekly</option>
               <option value="monthly">Monthly</option>
-              <option value="quarterly">Quarterly</option>
+              <option value="quarterly">Quarterly (3 Month)</option>
               <option value="yearly">Yearly</option>
-              <option value="lifetime">Lifetime</option>
             </select>
+
+            <input
+              className="form-input-styled"
+              name="appleProductId"
+              placeholder="Apple Product ID (e.g. com.app.catchWatch.sub.premium.monthly)"
+              value={form.appleProductId}
+              onChange={ch}
+            />
 
             <input
               className="form-input-styled"
@@ -291,7 +304,7 @@ export default function PlansPage() {
             type="submit"
             style={{
               marginTop: 16,
-              background: activeTab === "BLUETICK" ? "#3b82f6" : undefined,
+              background: activeTab === "ORANGETICK" ? "#f97316" : undefined,
             }}
             disabled={loading}
           >
@@ -299,7 +312,7 @@ export default function PlansPage() {
               ? "Processing..."
               : editId
               ? "Update Plan"
-              : `Create ${activeTab === "BLUETICK" ? "Blue Tick" : "Subscription"} Plan`}
+              : `Create ${activeTab === "ORANGETICK" ? "Orange Tick" : "Subscription"} Plan`}
           </button>
         </div>
       </form>
@@ -307,7 +320,7 @@ export default function PlansPage() {
       {/* ================= TABLE ================= */}
       <div className="content-box" style={{ marginTop: 24 }}>
         <h3>
-          {activeTab === "BLUETICK" ? "✔️ All Blue Tick & Verification Plans" : "💳 All Standard Subscription Plans"}
+          {activeTab === "ORANGETICK" ? "✔️ All Orange Tick & Verification Plans" : "💳 All Standard Subscription Plans"}
         </h3>
 
         <div className="tbl-wrap">
@@ -315,6 +328,7 @@ export default function PlansPage() {
             <thead>
               <tr>
                 <th>Plan Name</th>
+                <th>Apple Product ID</th>
                 <th>Price</th>
                 <th>Validity</th>
                 <th>Type</th>
@@ -327,8 +341,8 @@ export default function PlansPage() {
             <tbody>
               {plans.length === 0 ? (
                 <tr>
-                  <td colSpan="7" style={{ textAlign: "center", padding: "30px 0", color: "#94a3b8" }}>
-                    No {activeTab === "BLUETICK" ? "Blue Tick" : "subscription"} plans created yet. Use the form above to add one.
+                  <td colSpan="8" style={{ textAlign: "center", padding: "30px 0", color: "#94a3b8" }}>
+                    No {activeTab === "ORANGETICK" ? "Orange Tick" : "subscription"} plans created yet. Use the form above to add one.
                   </td>
                 </tr>
               ) : (
@@ -336,7 +350,10 @@ export default function PlansPage() {
                   <tr key={p._id}>
                     <td style={{ fontWeight: 600 }}>
                       {p.name}{" "}
-                      {p.category === "BLUETICK" && <BadgeCheck size={16} color="#3b82f6" style={{ verticalAlign: "middle" }} />}
+                      {(p.category === "ORANGETICK" || p.category === "BLUETICK") && <BadgeCheck size={16} color="#f97316" style={{ verticalAlign: "middle" }} />}
+                    </td>
+                    <td style={{ fontSize: "0.85rem", color: p.appleProductId ? "#38bdf8" : "#94a3b8", fontFamily: "monospace" }}>
+                      {p.appleProductId || "-"}
                     </td>
                     <td>₹{p.price}</td>
                     <td>{p.duration} days</td>
@@ -387,7 +404,7 @@ export default function PlansPage() {
           <div className="modal-box modal-box-view" onClick={(e) => e.stopPropagation()}>
             <div className="modal-head">
               <h3>
-                {viewPlan.category === "BLUETICK" ? "✔️ Blue Tick Plan Details" : "💳 Subscription Plan Details"}
+                {(viewPlan.category === "ORANGETICK" || viewPlan.category === "BLUETICK") ? "✔️ Orange Tick Plan Details" : "💳 Subscription Plan Details"}
               </h3>
               <button className="modal-close" onClick={() => setViewPlan(null)}>
                 <X size={24} />
@@ -432,6 +449,15 @@ export default function PlansPage() {
                   </span>
                 </div>
 
+                <div className="p-detail-card" style={{ background: "var(--bg-card-soft)", padding: "16px", borderRadius: "8px" }}>
+                  <span className="p-detail-label" style={{ display: "block", fontSize: "0.8rem", color: "var(--text-muted)", marginBottom: "4px" }}>
+                    Apple Product ID (StoreKit)
+                  </span>
+                  <span className="p-detail-value" style={{ fontWeight: 600, fontSize: "0.95rem", color: "#38bdf8", fontFamily: "monospace" }}>
+                    {viewPlan.appleProductId || "None"}
+                  </span>
+                </div>
+
                 <div className="p-detail-card" style={{ background: "var(--bg-card-soft)", padding: "16px", borderRadius: "8px", gridColumn: "1 / -1" }}>
                   <span className="p-detail-label" style={{ display: "block", fontSize: "0.8rem", color: "var(--text-muted)", marginBottom: "8px" }}>
                     Included Features
@@ -440,7 +466,7 @@ export default function PlansPage() {
                     {viewPlan.features && viewPlan.features.length > 0
                       ? viewPlan.features.map((f, i) => (
                           <div key={i} style={{ display: "flex", alignItems: "center", gap: "8px", fontSize: "0.95rem" }}>
-                            <span style={{ color: viewPlan.category === "BLUETICK" ? "#3b82f6" : "var(--primary-color)" }}>✓</span> {f}
+                            <span style={{ color: (viewPlan.category === "ORANGETICK" || viewPlan.category === "BLUETICK") ? "#f97316" : "var(--primary-color)" }}>✓</span> {f}
                           </div>
                         ))
                       : "No features specified"}

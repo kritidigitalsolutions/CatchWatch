@@ -647,15 +647,24 @@ exports.getPublicUserProfile = async (req, res) => {
     // Check if current logged in user is following target user
     let isFollowing = false;
     let isSelf = false;
+    let isBlocked = false;
+    let isBlockedBy = false;
 
     if (currentUserId) {
       isSelf = currentUserId.toString() === targetUserId.toString();
       if (!isSelf) {
-        const followExists = await Follow.exists({
-          follower: currentUserId,
-          following: targetUserId,
-        });
+        const UserBlock = require("../models/userBlock.model");
+        const [followExists, blockedTarget, blockedByTarget] = await Promise.all([
+          Follow.exists({
+            follower: currentUserId,
+            following: targetUserId,
+          }),
+          UserBlock.exists({ blocker: currentUserId, blocked: targetUserId }),
+          UserBlock.exists({ blocker: targetUserId, blocked: currentUserId }),
+        ]);
         isFollowing = !!followExists;
+        isBlocked = !!blockedTarget;
+        isBlockedBy = !!blockedByTarget;
       }
     }
 
@@ -670,6 +679,8 @@ exports.getPublicUserProfile = async (req, res) => {
       totalLikes,
       isFollowing,
       isSelf,
+      isBlocked,
+      isBlockedBy,
     });
   } catch (error) {
     console.error("Get Public Profile Error:", error);
@@ -816,5 +827,147 @@ exports.deleteAccount = async (req, res) => {
       success: false,
       message: "Failed to delete account. Please try again.",
     });
+  }
+};
+
+// ========================================
+// UGC BLOCK / UNBLOCK SYSTEM (APPLE GUIDELINE 1.2)
+// ========================================
+const UserBlock = require("../models/userBlock.model");
+const Follow = require("../models/follow.model");
+
+exports.blockUser = async (req, res) => {
+  try {
+    const mongoose = require("mongoose");
+    const blockerId = req.user?.id || req.user?._id;
+    const targetUserId = req.params.id || req.body.userId;
+
+    if (!targetUserId || !mongoose.Types.ObjectId.isValid(targetUserId)) {
+      return res.status(400).json({ success: false, message: "Valid target user ID is required" });
+    }
+
+    if (String(blockerId) === String(targetUserId)) {
+      return res.status(400).json({ success: false, message: "You cannot block yourself" });
+    }
+
+    const targetUser = await User.findById(targetUserId);
+    if (!targetUser) {
+      return res.status(404).json({ success: false, message: "User not found" });
+    }
+
+    await UserBlock.findOneAndUpdate(
+      { blocker: blockerId, blocked: targetUserId },
+      { blocker: blockerId, blocked: targetUserId },
+      { upsert: true, new: true }
+    );
+
+    // Mutual unfollow when blocked
+    await Promise.all([
+      Follow.deleteOne({ follower: blockerId, following: targetUserId }),
+      Follow.deleteOne({ follower: targetUserId, following: blockerId }),
+    ]);
+
+    // Socket notification
+    try {
+      const { getIO, getUserSockets } = require("../socket/chatSocket");
+      const io = getIO();
+      if (io) {
+        const targetSockets = getUserSockets(targetUserId) || [];
+        const blockerSockets = getUserSockets(blockerId) || [];
+        [...targetSockets, ...blockerSockets].forEach((sId) => {
+          io.to(sId).emit("user_blocked", { blockerId, blockedId: targetUserId });
+        });
+      }
+    } catch (e) {}
+
+    return res.status(200).json({
+      success: true,
+      message: "User blocked successfully. Their content will no longer be visible to you.",
+      isBlocked: true,
+    });
+  } catch (error) {
+    console.error("BLOCK USER ERROR:", error);
+    return res.status(500).json({ success: false, message: "Failed to block user", error: error.message });
+  }
+};
+
+exports.unblockUser = async (req, res) => {
+  try {
+    const mongoose = require("mongoose");
+    const blockerId = req.user?.id || req.user?._id;
+    const targetUserId = req.params.id || req.body.userId;
+
+    if (!targetUserId || !mongoose.Types.ObjectId.isValid(targetUserId)) {
+      return res.status(400).json({ success: false, message: "Valid target user ID is required" });
+    }
+
+    await UserBlock.findOneAndDelete({ blocker: blockerId, blocked: targetUserId });
+
+    // Socket notification
+    try {
+      const { getIO, getUserSockets } = require("../socket/chatSocket");
+      const io = getIO();
+      if (io) {
+        const targetSockets = getUserSockets(targetUserId) || [];
+        const blockerSockets = getUserSockets(blockerId) || [];
+        [...targetSockets, ...blockerSockets].forEach((sId) => {
+          io.to(sId).emit("user_unblocked", { unblockerId: blockerId, unblockedId: targetUserId });
+        });
+      }
+    } catch (e) {}
+
+    return res.status(200).json({
+      success: true,
+      message: "User unblocked successfully",
+      isBlocked: false,
+    });
+  } catch (error) {
+    console.error("UNBLOCK USER ERROR:", error);
+    return res.status(500).json({ success: false, message: "Failed to unblock user", error: error.message });
+  }
+};
+
+exports.getBlockedUsers = async (req, res) => {
+  try {
+    const blockerId = req.user?.id || req.user?._id;
+    const blocks = await UserBlock.find({ blocker: blockerId }).populate(
+      "blocked",
+      "_id name username profileImage bio phone status"
+    );
+
+    return res.status(200).json({
+      success: true,
+      count: blocks.length,
+      blockedUsers: blocks.map((b) => b.blocked).filter(Boolean),
+    });
+  } catch (error) {
+    console.error("GET BLOCKED USERS ERROR:", error);
+    return res.status(500).json({ success: false, message: "Failed to fetch blocked users", error: error.message });
+  }
+};
+
+exports.checkBlockStatus = async (req, res) => {
+  try {
+    const mongoose = require("mongoose");
+    const blockerId = req.user?.id || req.user?._id;
+    const targetUserId = req.params.id;
+
+    if (!targetUserId || !mongoose.Types.ObjectId.isValid(targetUserId)) {
+      return res.status(400).json({ success: false, message: "Valid target user ID is required" });
+    }
+
+    const [isBlocked, isBlockedBy] = await Promise.all([
+      UserBlock.exists({ blocker: blockerId, blocked: targetUserId }),
+      UserBlock.exists({ blocker: targetUserId, blocked: blockerId }),
+    ]);
+
+    return res.status(200).json({
+      success: true,
+      isBlocked: !!isBlocked,
+      isBlockedBy: !!isBlockedBy,
+    });
+  } catch (error) {
+    console.error("CHECK BLOCK STATUS ERROR:", error);
+    return res.status(500).json({ success: false, message: "Server error", error: error.message });
   }
 };

@@ -19,6 +19,7 @@ import {
   MdWorkspacePremium,
   MdPrivacyTip,
   MdHelpCenter,
+  MdCamera,
 } from "react-icons/md";
 import { HiReceiptRefund } from "react-icons/hi";
 import { IoLogOut } from "react-icons/io5";
@@ -325,6 +326,7 @@ const ProfileMenuPage = () => {
         { label: "Verification", route: "/verification", icon: <FaTrophy /> },
         { label: "Creator Leaderboard", route: "/leaderboard", icon: <FaTrophy /> },
         { label: "Subscription Plans", route: "/subscription", icon: <MdWorkspacePremium /> },
+        { label: "Upload Reel", route: "/upload", icon: <MdCamera /> },
         { label: "My Videos", route: "/my-videos", icon: <BiSolidVideos /> },
         // { label: "My Downloads", route: "/downloads", icon: <MdDownload /> },
         { label: "Personal Wish List", route: "/wishlist", icon: <FaBookmark /> },

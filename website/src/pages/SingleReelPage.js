@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import Hls from 'hls.js';
-import { FaArrowLeft, FaRegHeart, FaHeart, FaItunesNote, FaPlay, FaEye, FaTimes, FaTrash, FaThumbtack } from "react-icons/fa";
+import { FaArrowLeft, FaRegHeart, FaHeart, FaItunesNote, FaPlay, FaEye, FaTimes, FaTrash, FaThumbtack, FaVolumeMute, FaVolumeUp } from "react-icons/fa";
 import { FaShareNodes } from "react-icons/fa6";
 import { LuMessageCircleMore } from "react-icons/lu";
 import { GiSaveArrow } from "react-icons/gi";
@@ -39,6 +39,33 @@ const SingleReelPage = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
   const [isPlaying, setIsPlaying] = useState(true);
+  const [isMuted, setIsMuted] = useState(() => {
+    try {
+      return localStorage.getItem("reelsMuted") === "true";
+    } catch (e) {
+      return false;
+    }
+  });
+  const isMutedRef = useRef(isMuted);
+
+  useEffect(() => {
+    isMutedRef.current = isMuted;
+    if (videoRef.current) {
+      videoRef.current.muted = isMuted;
+    }
+  }, [isMuted]);
+
+  const toggleSound = (e) => {
+    if (e && e.stopPropagation) e.stopPropagation();
+    if (videoRef.current) {
+      const nextMuted = !isMuted;
+      videoRef.current.muted = nextMuted;
+      setIsMuted(nextMuted);
+      try {
+        localStorage.setItem("reelsMuted", nextMuted ? "true" : "false");
+      } catch (err) {}
+    }
+  };
 
   // Interactive States
   const [liked, setLiked] = useState(false);
@@ -105,17 +132,51 @@ const SingleReelPage = () => {
     const isHls = rawSrc.toLowerCase().includes(".m3u8");
     const canNativeHLS = videoElement.canPlayType('application/x-mpegURL') || videoElement.canPlayType('application/vnd.apple.mpegurl');
 
+    const safePlay = () => {
+      if (!videoElement) return;
+      videoElement.muted = isMutedRef.current;
+      const playPromise = videoElement.play();
+      if (playPromise !== undefined) {
+        playPromise
+          .then(() => setIsPlaying(true))
+          .catch((err) => {
+            if (err.name === "NotAllowedError" && !videoElement.muted) {
+              videoElement.muted = true;
+              setIsMuted(true);
+              videoElement.play()
+                .then(() => setIsPlaying(true))
+                .catch(() => setIsPlaying(false));
+            } else if (err.name === "AbortError") {
+              // Harmless interruption by load request
+            } else {
+              console.log("Autoplay prevented:", err?.name, err?.message);
+              setIsPlaying(false);
+            }
+          });
+      }
+    };
+
     if (isHls && Hls.isSupported() && !canNativeHLS) {
       const hls = new Hls({ enableWorker: true, lowLatencyMode: true });
       hls.loadSource(rawSrc);
       hls.attachMedia(videoElement);
       hlsRef.current = hls;
       hls.on(Hls.Events.MANIFEST_PARSED, () => {
-        videoElement.play().then(() => setIsPlaying(true)).catch(e => console.log("Autoplay prevented:", e));
+        safePlay();
       });
     } else {
-      videoElement.src = rawSrc;
-      videoElement.play().then(() => setIsPlaying(true)).catch(e => console.log("Autoplay prevented:", e));
+      if (!videoElement.src || (!videoElement.src.endsWith(rawSrc) && videoElement.src !== rawSrc)) {
+        videoElement.src = rawSrc;
+      }
+      if (videoElement.readyState >= 2) {
+        safePlay();
+      } else {
+        const onCanPlay = () => {
+          safePlay();
+        };
+        videoElement.addEventListener("canplay", onCanPlay, { once: true });
+        safePlay();
+      }
     }
 
     return () => {
@@ -202,24 +263,31 @@ const SingleReelPage = () => {
     }
   };
 
-  // Autoplay handler
-  useEffect(() => {
-    if (reel && videoRef.current) {
-      videoRef.current.play()
-        .then(() => setIsPlaying(true))
-        .catch(() => setIsPlaying(false)); // Browser block kare toh pause dikhayein
-    }
-  }, [reel]);
-
   // Video Play/Pause Toggle
   const togglePlay = () => {
-    if (videoRef.current) {
-      if (isPlaying) {
-        videoRef.current.pause();
-      } else {
-        videoRef.current.play();
+    const videoElement = videoRef.current;
+    if (!videoElement) return;
+
+    if (isPlaying) {
+      videoElement.pause();
+      setIsPlaying(false);
+    } else {
+      videoElement.muted = isMutedRef.current;
+      const playPromise = videoElement.play();
+      if (playPromise !== undefined) {
+        playPromise
+          .then(() => setIsPlaying(true))
+          .catch((err) => {
+            console.log("Play failed:", err?.name, err?.message);
+            if (err.name === "NotAllowedError" && !videoElement.muted) {
+              videoElement.muted = true;
+              setIsMuted(true);
+              videoElement.play().then(() => setIsPlaying(true)).catch(() => setIsPlaying(false));
+            } else {
+              setIsPlaying(false);
+            }
+          });
       }
-      setIsPlaying(!isPlaying);
     }
   };
 
@@ -364,8 +432,23 @@ const SingleReelPage = () => {
             className="w-full h-full object-cover cursor-pointer"
             loop
             playsInline
+            muted={isMuted}
+            preload="metadata"
             onClick={togglePlay}
+            onPlay={() => setIsPlaying(true)}
+            onPause={() => setIsPlaying(false)}
           />
+        )}
+
+        {/* Mute/Unmute Audio Button */}
+        {!bunnyEmbedUrl && (
+          <button
+            onClick={toggleSound}
+            className="absolute top-16 right-4 z-30 bg-black/60 backdrop-blur-md text-white p-2.5 rounded-full hover:bg-black/80 transition shadow-lg"
+            title={isMuted ? "Unmute Audio" : "Mute Audio"}
+          >
+            {isMuted ? <FaVolumeMute size={16} /> : <FaVolumeUp size={16} />}
+          </button>
         )}
 
         {/* Big Play Icon when paused */}

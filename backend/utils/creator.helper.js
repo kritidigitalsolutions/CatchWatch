@@ -22,7 +22,13 @@ const decorateUserWithBlueTick = (userObj) => {
 
   user.isVerified = isVerified;
   user.verificationType = user.verificationType || "OFFICIAL";
+  const rawBadge = (user.verification && user.verification.badgeType) || "ORANGE";
+  const badgeType = rawBadge === "BLUE" ? "ORANGE" : rawBadge;
+
   user.blueTick = isVerified;
+  user.orangeTick = isVerified;
+  user.badgeType = badgeType;
+  user.badgeColor = "#FF7A1A";
 
   if (user.verification) {
     user.verification.isVerified = isVerified;
@@ -268,6 +274,7 @@ const recordEngagementEvent = async ({
 
 module.exports = {
   decorateUserWithBlueTick,
+  decorateUserWithOrangeTick: decorateUserWithBlueTick,
   determineCreatorLevel,
   calculateQualityScore,
   validateQualifiedView,

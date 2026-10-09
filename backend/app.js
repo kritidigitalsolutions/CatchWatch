@@ -284,6 +284,13 @@ const adminRedeemRoutes = require("./routes/admin/redeem.routes");
 
 app.use("/api/reels", reelRoutes);
 app.use("/api/comments", commentRoutes);
+
+// UGC REPORT ROUTES (Apple Guideline 1.2)
+const userReportRoutes = require("./routes/user/report.routes");
+const adminReportRoutes = require("./routes/admin/report.routes");
+app.use("/api/reports", userReportRoutes);
+app.use("/api/admin/reports", adminReportRoutes);
+
 app.use("/api/creator", userCreatorRoutes);
 app.use("/api/admin/creator", adminCreatorRoutes);
 app.use("/api/admin/redeem", adminRedeemRoutes);

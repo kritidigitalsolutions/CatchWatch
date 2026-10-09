@@ -10,6 +10,18 @@ const getFilePath = (file) => {
   return "";
 };
 
+const normalizeGovernmentIdType = (type) => {
+  if (!type) return "Aadhaar";
+  const str = String(type).trim();
+  const lower = str.toLowerCase();
+  if (lower.includes("aadha") || lower.includes("adhar")) return "Aadhaar";
+  if (lower.includes("pan")) return "PAN";
+  if (lower.includes("passport")) return "Passport";
+  if (lower.includes("driving") || lower.includes("license") || lower.includes("licence")) return "Driving License";
+  if (lower.includes("voter")) return "Voter ID";
+  return str;
+};
+
 // ========================================
 // USER: APPLY VERIFICATION
 // ========================================
@@ -101,12 +113,27 @@ exports.applyVerification = async (req, res) => {
       userUsername = "@" + userUsername;
     }
 
-    const paymentId = req.body.paymentId || req.body.razorpay_payment_id || "";
-    const orderId = req.body.orderId || req.body.razorpay_order_id || "";
+    const paymentId =
+      req.body.paymentId ||
+      req.body.razorpay_payment_id ||
+      req.body.transactionId ||
+      "";
+    const orderId =
+      req.body.orderId ||
+      req.body.razorpay_order_id ||
+      req.body.originalTransactionId ||
+      "";
 
     const Plan = require("../models/plan.model");
     let selectedPlanData = null;
-    const planId = req.body.planId;
+    let planId = req.body.planId;
+
+    if ((!planId || !mongoose.Types.ObjectId.isValid(planId)) && (req.body.appleProductId || req.body.productId)) {
+      const appleProd = req.body.appleProductId || req.body.productId;
+      const foundPlan = await Plan.findOne({ appleProductId: appleProd });
+      if (foundPlan) planId = foundPlan._id;
+    }
+
     if (planId && mongoose.Types.ObjectId.isValid(planId)) {
       const planDoc = await Plan.findById(planId);
       if (planDoc) {
@@ -121,11 +148,13 @@ exports.applyVerification = async (req, res) => {
       }
     }
 
+    const finalGovIdType = normalizeGovernmentIdType(governmentIdType);
+
     const verificationReq = await VerificationRequest.create({
       userId,
       fullName: fullName.trim(),
       username: userUsername,
-      governmentIdType,
+      governmentIdType: finalGovIdType,
       governmentIdNumber: governmentIdNumber ? String(governmentIdNumber).trim() : "",
       idFront,
       idBack,
@@ -143,17 +172,17 @@ exports.applyVerification = async (req, res) => {
       orderId,
     });
 
-    // Update user status to PENDING
-    user.verification = {
-      ...user.verification,
-      status: "PENDING",
-      isVerified: false,
-    };
-    await user.save();
+    // Update user status to PENDING safely without full-document validation errors
+    await User.findByIdAndUpdate(userId, {
+      $set: {
+        "verification.status": "PENDING",
+        "verification.isVerified": false,
+      },
+    });
 
     try {
       const { notifyBlueTickStatus } = require("../utils/notificationDispatcher.helper");
-      notifyBlueTickStatus(user._id, "SUBMITTED", selectedPlanData?.name || "Blue Tick Badge").catch((e) =>
+      notifyBlueTickStatus(user._id, "SUBMITTED", selectedPlanData?.name || "Orange Tick Badge").catch((e) =>
         console.log("BlueTick submitted notif err:", e.message)
       );
     } catch (e) {
@@ -169,7 +198,8 @@ exports.applyVerification = async (req, res) => {
     console.error("APPLY VERIFICATION ERROR:", error);
     return res.status(500).json({
       success: false,
-      message: "Server error",
+      message: error.message || "Failed to submit verification request",
+      error: error.message,
     });
   }
 };
@@ -260,7 +290,7 @@ exports.updatePendingVerification = async (req, res) => {
     } = req.body;
 
     if (fullName) pendingReq.fullName = fullName.trim();
-    if (governmentIdType) pendingReq.governmentIdType = governmentIdType;
+    if (governmentIdType) pendingReq.governmentIdType = normalizeGovernmentIdType(governmentIdType);
     if (governmentIdNumber !== undefined) pendingReq.governmentIdNumber = String(governmentIdNumber).trim();
     if (website !== undefined) pendingReq.website = website;
     if (instagram !== undefined) pendingReq.instagram = instagram;
@@ -460,7 +490,7 @@ exports.approveVerification = async (req, res) => {
     if (user) {
       user.verification = {
         status: "VERIFIED",
-        badgeType: "BLUE",
+        badgeType: "ORANGE",
         verifiedAt: new Date(),
         verifiedBy: req.user.id,
         expiryDate: expiryDate ? new Date(expiryDate) : null,
@@ -480,7 +510,7 @@ exports.approveVerification = async (req, res) => {
       // Create Notification
       await Notification.create({
         title: "Congratulations!",
-        message: "Your Catch & Watch Profile has been officially verified. Your Blue Tick has been activated.",
+        message: "Your Catch & Watch Profile has been officially verified. Your Orange Tick has been activated.",
         type: "VERIFICATION",
         targetUser: user._id,
         createdBy: req.user.id,
@@ -535,7 +565,7 @@ exports.rejectVerification = async (req, res) => {
 
       try {
         const { notifyBlueTickStatus } = require("../utils/notificationDispatcher.helper");
-        notifyBlueTickStatus(user._id, "REJECTED", "Blue Tick Badge", rejectionReason).catch((e) =>
+        notifyBlueTickStatus(user._id, "REJECTED", "Orange Tick Badge", rejectionReason).catch((e) =>
           console.log("BlueTick reject notif err:", e.message)
         );
       } catch (e) {
@@ -604,7 +634,7 @@ exports.suspendVerification = async (req, res) => {
 
     try {
       const { notifyBlueTickStatus } = require("../utils/notificationDispatcher.helper");
-      notifyBlueTickStatus(targetUser._id, "REJECTED", "Blue Tick Badge", suspensionReason).catch((e) =>
+      notifyBlueTickStatus(targetUser._id, "REJECTED", "Orange Tick Badge", suspensionReason).catch((e) =>
         console.log("BlueTick suspend notif err:", e.message)
       );
     } catch (e) {
@@ -648,7 +678,7 @@ exports.removeVerification = async (req, res) => {
 
     user.verification = {
       status: "NOT_VERIFIED",
-      badgeType: "BLUE",
+      badgeType: "ORANGE",
       isVerified: false,
       rejectionReason: "",
       suspensionReason: "",
@@ -713,7 +743,7 @@ exports.manuallyVerifyUser = async (req, res) => {
 
     user.verification = {
       status: "VERIFIED",
-      badgeType: "BLUE",
+      badgeType: "ORANGE",
       verifiedAt: new Date(),
       verifiedBy: req.user.id,
       isVerified: true,
@@ -733,7 +763,7 @@ exports.manuallyVerifyUser = async (req, res) => {
     // Create Notification
     await Notification.create({
       title: "Congratulations!",
-      message: "Your Catch & Watch Profile has been officially verified by Admin. Your Blue Tick has been activated.",
+      message: "Your Catch & Watch Profile has been officially verified by Admin. Your Orange Tick has been activated.",
       type: "VERIFICATION",
       targetUser: user._id,
       createdBy: req.user.id,
@@ -741,7 +771,7 @@ exports.manuallyVerifyUser = async (req, res) => {
 
     return res.status(200).json({
       success: true,
-      message: `Blue Tick granted successfully to ${user.name} (@${user.username})!`,
+      message: `Orange Tick granted successfully to ${user.name} (@${user.username})!`,
       user,
     });
   } catch (error) {

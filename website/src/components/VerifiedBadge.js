@@ -20,8 +20,8 @@ const VerifiedBadge = ({ user, isVerified, size = "md", className = "" }) => {
 
   return (
     <span
-      className={`inline-flex items-center justify-center text-blue-500 flex-shrink-0 align-middle ${className}`}
-      title="Verified Account"
+      className={`inline-flex items-center justify-center text-[#FF7A1A] flex-shrink-0 align-middle ${className}`}
+      title="Verified Creator (Orange Tick)"
     >
       {/* <svg
         className={`${currentSizeClass} fill-current`}

@@ -58,3 +58,8 @@ export const verifyPayment = async (data) => {
   const response = await axiosInstance.post("/payment/verify", data);
   return response.data;
 };
+
+export const verifyApplePayment = async (data) => {
+  const response = await axiosInstance.post("/payment/verify-apple", data);
+  return response.data;
+};

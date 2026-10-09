@@ -15,7 +15,8 @@ const TYPE_COLORS = {
   SYSTEM: { bg: "rgba(59,130,246,0.15)", color: "#3b82f6" },
   CONTENT_ALERT: { bg: "rgba(168,85,247,0.15)", color: "#a855f7" },
   SUBSCRIPTION: { bg: "rgba(236,72,153,0.15)", color: "#ec4899" },
-  BLUETICK: { bg: "rgba(6,182,212,0.15)", color: "#06b6d4" },
+  ORANGETICK: { bg: "rgba(249,115,22,0.15)", color: "#f97316" },
+  BLUETICK: { bg: "rgba(249,115,22,0.15)", color: "#f97316" },
   REEL: { bg: "rgba(239,68,68,0.15)", color: "#ef4444" },
   CHAT: { bg: "rgba(34,197,94,0.15)", color: "#22c55e" },
   CALL: { bg: "rgba(249,115,22,0.15)", color: "#f97316" },
@@ -476,7 +477,8 @@ export default function NotificationsPage() {
                 <option value="PROMOTIONAL">PROMOTIONAL / SPECIAL OFFER</option>
                 <option value="CONTENT_ALERT">CONTENT ALERT (Movies & Shows)</option>
                 <option value="SUBSCRIPTION">SUBSCRIPTION & BILLING</option>
-                <option value="BLUETICK">BLUE TICK VERIFICATION</option>
+                <option value="ORANGETICK">ORANGE TICK VERIFICATION</option>
+                <option value="BLUETICK">BLUE TICK (LEGACY)</option>
                 <option value="SYSTEM">SYSTEM UPDATE</option>
               </select>
             </div>
@@ -838,6 +840,7 @@ export default function NotificationsPage() {
               <option value="PROMOTIONAL">Promotional</option>
               <option value="CONTENT_ALERT">Content Alert</option>
               <option value="SUBSCRIPTION">Subscription</option>
+              <option value="ORANGETICK">OrangeTick</option>
               <option value="BLUETICK">BlueTick</option>
               <option value="REEL">Reel</option>
               <option value="CHAT">Chat</option>

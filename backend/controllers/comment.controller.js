@@ -97,23 +97,43 @@ exports.getComments = async (req, res) => {
     const skip =
       (page - 1) * limit;
 
-    const total =
-      await Comment.countDocuments({
-        reel: reelId,
-      });
+    // Check optional viewer auth token to filter blocked users
+    let viewerId = req.user?.id || req.user?._id || null;
+    const authHeader = req.headers.authorization;
+    if (!viewerId && authHeader && authHeader.startsWith("Bearer ")) {
+      try {
+        const jwt = require("jsonwebtoken");
+        const token = authHeader.split(" ")[1];
+        const decoded = jwt.verify(token, process.env.JWT_SECRET);
+        viewerId = decoded.id || decoded._id;
+      } catch (err) {}
+    }
 
-    const comments =
-      await Comment.find({
-        reel: reelId,
+    let commentQuery = { reel: reelId };
+    if (viewerId) {
+      const UserBlock = require("../models/userBlock.model");
+      const blocks = await UserBlock.find({
+        $or: [{ blocker: viewerId }, { blocked: viewerId }],
+      }).select("blocker blocked").lean();
+      const blockedUserIds = blocks.map((b) =>
+        b.blocker.toString() === viewerId.toString() ? b.blocked : b.blocker
+      );
+      if (blockedUserIds.length > 0) {
+        commentQuery.user = { $nin: blockedUserIds };
+      }
+    }
+
+    const total = await Comment.countDocuments(commentQuery);
+
+    const comments = await Comment.find(commentQuery)
+      .populate(
+        "user",
+        "_id name username profileImage verification"
+      )
+      .sort({
+        createdAt: -1,
       })
-        .populate(
-          "user",
-          "_id name username profileImage verification"
-        )
-        .sort({
-          createdAt: -1,
-        })
-        .lean();
+      .lean();
 
     // Sort so comments from verified users appear higher
     const { decorateUserWithBlueTick } = require("../utils/creator.helper");

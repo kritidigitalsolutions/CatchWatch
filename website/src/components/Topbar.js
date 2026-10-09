@@ -144,6 +144,7 @@ const Topbar = () => {
     { name: "Short Films", path: "/short-films" },
     { name: "Web Series", path: "/series" },
     { name: "Reels", path: "/reels" },
+    { name: "Upload Reel", path: "/upload" },
   ];
 
   return (
@@ -168,7 +169,7 @@ const Topbar = () => {
         </div>
 
         {/* CENTER: DESKTOP NAVIGATION TABS */}
-        <nav className="hidden lg:flex items-center justify-center gap-6 xl:gap-8 flex-1">
+        <nav className="hidden lg:flex items-center justify-center gap-4 xl:gap-7 flex-1">
           {navLinks.map((link) => (
             <NavLink
               key={link.path}
@@ -185,7 +186,23 @@ const Topbar = () => {
         </nav>
 
         {/* DESKTOP RIGHT ACTIONS */}
-        <div className="hidden lg:flex items-center justify-end gap-5 flex-shrink-0">
+        <div className="hidden lg:flex items-center justify-end gap-3.5 xl:gap-5 flex-shrink-0">
+          {/* UPLOAD REEL BUTTON & ICON */}
+          <NavLink
+            to="/upload"
+            className={({ isActive }) =>
+              `flex items-center gap-2 px-3.5 py-1.5 rounded-full text-xs font-bold transition shadow-sm ${
+                isActive
+                  ? "bg-brand-orange text-white shadow-orange-500/20"
+                  : "bg-orange-50 text-brand-orange hover:bg-brand-orange hover:text-white border border-orange-200/70"
+              }`
+            }
+            title="Upload Reel"
+          >
+            <MdCamera className="text-base" />
+            <span>Upload Reel</span>
+          </NavLink>
+
           <NavLink
             to="/search"
             className={({ isActive }) =>
@@ -346,7 +363,17 @@ const Topbar = () => {
         </div>
 
         {/* MOBILE & TABLET VIEW CONTROLS (< lg screens) */}
-        <div className="flex lg:hidden items-center gap-3 flex-shrink-0">
+        <div className="flex lg:hidden items-center gap-2.5 sm:gap-3 flex-shrink-0">
+          <NavLink
+            to="/upload"
+            className={({ isActive }) =>
+              `text-xl p-1 transition-colors ${isActive ? "text-brand-orange" : "text-gray-500 hover:text-gray-900"}`
+            }
+            title="Upload Reel"
+          >
+            <MdCamera />
+          </NavLink>
+
           {isAuthenticated ? (
             <>
               <NavLink
