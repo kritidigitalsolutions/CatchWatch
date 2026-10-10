@@ -644,11 +644,11 @@ const ShortVideo = ({ video, isActive }) => {
                   );
 
                   const isVerifiedCreator = isReelCreator && (
-                    Boolean(authorObj?.blueTick || authorObj?.isVerified || authorObj?.verification?.isVerified || authorObj?.verification?.status === "VERIFIED" || authorObj?.verification?.status === "APPROVED") ||
+                    Boolean(authorObj?.orangeTick || authorObj?.blueTick || authorObj?.isVerified || authorObj?.verification?.isVerified || authorObj?.verification?.status === "VERIFIED" || authorObj?.verification?.status === "APPROVED") ||
                     (() => {
                       try {
                         const u = JSON.parse(localStorage.getItem("user") || localStorage.getItem("userInfo") || "{}");
-                        return Boolean(u?.blueTick || u?.isVerified || u?.verification?.isVerified || u?.verification?.status === "VERIFIED" || u?.verification?.status === "APPROVED");
+                        return Boolean(u?.orangeTick || u?.blueTick || u?.isVerified || u?.verification?.isVerified || u?.verification?.status === "VERIFIED" || u?.verification?.status === "APPROVED");
                       } catch (e) { return false; }
                     })()
                   );
@@ -660,7 +660,7 @@ const ShortVideo = ({ video, isActive }) => {
                         c.isPinned
                           ? "bg-amber-950/40 border-amber-500/50 shadow-sm"
                           : isVerifiedUser
-                          ? "bg-blue-950/40 border-blue-500/40 shadow-sm"
+                          ? "bg-orange-950/40 border-orange-500/40 shadow-sm"
                           : "bg-white/5 border-white/5"
                       }`}
                     >
@@ -695,7 +695,7 @@ const ShortVideo = ({ video, isActive }) => {
                       </div>
 
                       <div className="flex items-center gap-1 flex-shrink-0">
-                        {/* Pin Button ONLY for Verified Blue Tick Reel Creator */}
+                        {/* Pin Button ONLY for Verified Orange Tick Reel Creator */}
                         {isVerifiedCreator && (
                           <button
                             onClick={(e) => handleCommentPin(c._id, c.isPinned, e)}

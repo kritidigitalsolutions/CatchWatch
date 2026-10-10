@@ -384,7 +384,7 @@ exports.removeCreatorPoints = async (req, res) => {
 };
 
 // ========================================
-// ADMIN: VERIFY CREATOR (BLUE TICK)
+// ADMIN: VERIFY CREATOR (ORANGE TICK)
 // PUT /api/admin/creator/verify
 // ========================================
 exports.verifyCreator = async (req, res) => {
@@ -405,7 +405,7 @@ exports.verifyCreator = async (req, res) => {
     user.isCreator = true;
     user.verification = {
       status: "VERIFIED",
-      badgeType: "BLUE",
+      badgeType: "ORANGE",
       verifiedAt: new Date(),
       verifiedBy: req.user.id,
       isVerified: true,
@@ -415,7 +415,7 @@ exports.verifyCreator = async (req, res) => {
     await user.save();
 
     await Notification.create({
-      title: "Congratulations! 💙",
+      title: "Congratulations! 🧡",
       message: "Your profile has been verified by Admin. Creator Dashboard and Rewards are now unlocked!",
       type: "VERIFICATION",
       targetUser: user._id,
@@ -426,7 +426,7 @@ exports.verifyCreator = async (req, res) => {
 
     return res.status(200).json({
       success: true,
-      message: "Creator verified and Blue Tick badge granted",
+      message: "Creator verified and Orange Tick badge granted",
       user: decoratedUser,
     });
   } catch (error) {
@@ -436,7 +436,7 @@ exports.verifyCreator = async (req, res) => {
 };
 
 // ========================================
-// ADMIN: REMOVE VERIFICATION (BLUE TICK)
+// ADMIN: REMOVE VERIFICATION (ORANGE TICK)
 // PUT /api/admin/creator/remove-verification
 // ========================================
 exports.removeCreatorVerification = async (req, res) => {
@@ -456,7 +456,7 @@ exports.removeCreatorVerification = async (req, res) => {
     user.isVerified = false;
     user.verification = {
       status: "NOT_VERIFIED",
-      badgeType: "BLUE",
+      badgeType: "ORANGE",
       isVerified: false,
       rejectionReason: "",
       suspensionReason: "",
@@ -467,7 +467,7 @@ exports.removeCreatorVerification = async (req, res) => {
 
     return res.status(200).json({
       success: true,
-      message: "Creator verification and Blue Tick badge removed",
+      message: "Creator verification and Orange Tick badge removed",
       user: decoratedUser,
     });
   } catch (error) {

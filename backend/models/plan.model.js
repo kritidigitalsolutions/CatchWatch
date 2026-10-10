@@ -89,6 +89,58 @@ const planSchema =
         trim: true,
       },
 
+      // Apple App Store Connect Internal Subscription ID
+      appleSubscriptionId: {
+        type: String,
+        default: "",
+        trim: true,
+      },
+
+      // Apple App Store Connect live customer price (INR)
+      appleCurrentPrice: {
+        type: Number,
+        default: null,
+      },
+
+      // Apple scheduled future price change (INR)
+      appleScheduledPrice: {
+        type: Number,
+        default: null,
+      },
+
+      // Apple scheduled price change effective date (e.g. YYYY-MM-DD)
+      appleScheduledDate: {
+        type: String,
+        default: "",
+      },
+
+      // Apple scheduled price record ID (for cancellation)
+      appleScheduledPriceId: {
+        type: String,
+        default: "",
+      },
+
+      // Apple pricing status flow
+      applePriceStatus: {
+        type: String,
+        enum: [
+          "NOT_SYNCED",
+          "DRAFT",
+          "PENDING_CONFIRMATION",
+          "SCHEDULED",
+          "ACTIVE",
+          "FAILED",
+          "CANCELLED",
+        ],
+        default: "NOT_SYNCED",
+      },
+
+      // Timestamp of last Apple IAP price scan/sync
+      appleLastSyncedAt: {
+        type: Date,
+        default: null,
+      },
+
       // display sorting
       sortOrder: {
         type: Number,
@@ -103,7 +155,7 @@ const planSchema =
         default: false,
       },
 
-      // plan category (SUBSCRIPTION vs BLUETICK)
+      // plan category (SUBSCRIPTION vs BLUETICK / ORANGETICK)
       category: {
         type: String,
         enum: ["SUBSCRIPTION", "BLUETICK", "ORANGETICK"],

@@ -1,7 +1,7 @@
 const User = require("../models/user.model");
 
 /**
- * Middleware to require Blue-Tick verification for VIP Support APIs.
+ * Middleware to require Orange-Tick verification for VIP Support APIs.
  * Checks user's isVerified flag and verification.status in MongoDB.
  */
 const requireVipVerification = async (req, res, next) => {
@@ -24,6 +24,8 @@ const requireVipVerification = async (req, res, next) => {
 
     const isVerifiedUser =
       dbUser.isVerified === true ||
+      dbUser.orangeTick === true ||
+      dbUser.blueTick === true ||
       dbUser.verification?.isVerified === true ||
       dbUser.verification?.status === "VERIFIED";
 
@@ -32,7 +34,7 @@ const requireVipVerification = async (req, res, next) => {
         success: false,
         isVerified: false,
         message:
-          "Access denied. VIP Support is exclusively available for Blue Tick verified creators and users. Please apply for profile verification to unlock direct support access.",
+          "Access denied. VIP Support is exclusively available for Orange Tick verified creators and users. Please apply for profile verification to unlock direct support access.",
       });
     }
 

@@ -747,7 +747,7 @@ export default function NotificationsPage() {
                   <input
                     type="text"
                     className="notif-input-text"
-                    placeholder="Search plan name (e.g. VIP, Premium, Blue Tick)..."
+                    placeholder="Search plan name (e.g. VIP, Premium, Orange Tick)..."
                     value={planSearch}
                     onChange={(e) => {
                       setPlanSearch(e.target.value);
@@ -841,7 +841,7 @@ export default function NotificationsPage() {
               <option value="CONTENT_ALERT">Content Alert</option>
               <option value="SUBSCRIPTION">Subscription</option>
               <option value="ORANGETICK">OrangeTick</option>
-              <option value="BLUETICK">BlueTick</option>
+              <option value="BLUETICK">BlueTick (Legacy)</option>
               <option value="REEL">Reel</option>
               <option value="CHAT">Chat</option>
               <option value="CALL">Call</option>
@@ -897,7 +897,7 @@ export default function NotificationsPage() {
                           className="type-pill"
                           style={{ backgroundColor: typeCfg.bg, color: typeCfg.color }}
                         >
-                          {n.type}
+                          {n.type === "BLUETICK" ? "ORANGETICK" : n.type}
                         </span>
                       </td>
 

@@ -146,8 +146,8 @@ exports.getComments = async (req, res) => {
       const bPinned = b.isPinned ? 1 : 0;
       if (aPinned !== bPinned) return bPinned - aPinned;
 
-      const aVerified = a.user?.blueTick || a.user?.verification?.isVerified || a.user?.verification?.status === "VERIFIED" ? 1 : 0;
-      const bVerified = b.user?.blueTick || b.user?.verification?.isVerified || b.user?.verification?.status === "VERIFIED" ? 1 : 0;
+      const aVerified = a.user?.orangeTick || a.user?.blueTick || a.user?.verification?.isVerified || a.user?.verification?.status === "VERIFIED" ? 1 : 0;
+      const bVerified = b.user?.orangeTick || b.user?.blueTick || b.user?.verification?.isVerified || b.user?.verification?.status === "VERIFIED" ? 1 : 0;
       if (aVerified !== bVerified) return bVerified - aVerified;
       return new Date(b.createdAt) - new Date(a.createdAt);
     });
@@ -295,17 +295,17 @@ exports.togglePinComment = async (req, res) => {
       });
     }
 
-    // Verified Blue Tick check: Only verified creators can pin comments
+    // Verified Orange Tick check: Only verified creators can pin comments
     const User = require("../models/user.model");
     const { decorateUserWithBlueTick } = require("../utils/creator.helper");
     const requestingUser = await User.findById(req.user.id).lean();
     const decoratedUser = requestingUser ? decorateUserWithBlueTick(requestingUser) : null;
-    const isVerifiedCreator = Boolean(decoratedUser && decoratedUser.blueTick);
+    const isVerifiedCreator = Boolean(decoratedUser && (decoratedUser.orangeTick || decoratedUser.blueTick));
 
     if (!isVerifiedCreator) {
       return res.status(403).json({
         success: false,
-        message: "Forbidden: Only verified Blue Tick creators can pin comments on reels",
+        message: "Forbidden: Only verified Orange Tick creators can pin comments on reels",
       });
     }
 

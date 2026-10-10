@@ -243,14 +243,38 @@ const purgeUserAccount = async (userId) => {
       if (vReq.idBack) await deleteMedia(vReq.idBack).catch(() => {});
       if (vReq.selfie) await deleteMedia(vReq.selfie).catch(() => {});
     }
-    await VerificationRequest.deleteMany({ userId: user._id });
+    // Delete KYC sensitive media for privacy, but preserve audit record marked as cancelled/purged
+    await VerificationRequest.updateMany(
+      { userId: user._id },
+      {
+        $set: {
+          status: "CANCELLED",
+          adminRemark: "Account purged by user",
+          idFront: "",
+          idBack: "",
+          selfie: "",
+          userPurgedAt: new Date(),
+        },
+      }
+    );
 
     // -------------------------------------------------------------
     // 10. USER WATCHLIST, RATINGS, SUBSCRIPTIONS, OTP & VOUCHERS
     // -------------------------------------------------------------
     await Watchlist.deleteMany({ user: user._id });
     await Rating.deleteMany({ user: user._id });
-    await Subscription.deleteMany({ user: user._id });
+
+    // Preserve financial audit records: mark subscription as account_deleted instead of hard deleting
+    await Subscription.updateMany(
+      { user: user._id },
+      {
+        $set: {
+          status: "account_deleted",
+          userPurgedAt: new Date(),
+        },
+      }
+    );
+
     if (user.phone) {
       await UserOtp.deleteMany({ phone: user.phone });
     }

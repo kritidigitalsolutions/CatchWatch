@@ -25,7 +25,7 @@ const {
 
 
 // ========================================
-// VIP SUPPORT ROUTES (BLUETICK RESTRICTED)
+// VIP SUPPORT ROUTES (ORANGETICK RESTRICTED)
 // ========================================
 
 // Check VIP access status (returns verification status)
@@ -35,7 +35,7 @@ router.get(
   checkVipAccess
 );
 
-// Create VIP Ticket (strictly protected by blue-tick verification)
+// Create VIP Ticket (strictly protected by orange-tick verification)
 router.post(
   "/vip",
   isAuth,
@@ -44,7 +44,7 @@ router.post(
   createVipTicket
 );
 
-// Get My VIP Tickets (strictly protected by blue-tick verification)
+// Get My VIP Tickets (strictly protected by orange-tick verification)
 router.get(
   "/vip",
   isAuth,
@@ -52,7 +52,7 @@ router.get(
   getMyVipTickets
 );
 
-// Get Single VIP Ticket Conversation (strictly protected by blue-tick verification)
+// Get Single VIP Ticket Conversation (strictly protected by orange-tick verification)
 router.get(
   "/vip/:id",
   isAuth,
@@ -60,7 +60,7 @@ router.get(
   getSingleTicket
 );
 
-// Reply to VIP Ticket (strictly protected by blue-tick verification)
+// Reply to VIP Ticket (strictly protected by orange-tick verification)
 router.post(
   "/vip/reply/:id",
   isAuth,

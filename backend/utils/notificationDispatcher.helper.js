@@ -146,7 +146,13 @@ const broadcastPushNotification = async ({
       case "Verified Creators": {
         resolvedUserType = "CREATORS";
         targetUsers = await User.find({
-          $or: [{ role: "creator" }, { isVerified: true }, { isBlueTick: true }],
+          $or: [
+            { role: "creator" },
+            { isVerified: true },
+            { isOrangeTick: true },
+            { isBlueTick: true },
+            { "verification.status": "VERIFIED" },
+          ],
         }).select("_id fcmToken").lean();
         break;
       }
@@ -263,38 +269,40 @@ const notifyProfileCompleted = async (user) => {
 };
 
 /**
- * 2. BlueTick Plan Purchase & All Status (Submitted, Approved, Rejected)
+ * 2. Orange Tick Plan Purchase & All Status (Submitted, Approved, Rejected)
  */
-const notifyBlueTickStatus = async (userId, status, planName = "Blue Tick Badge", reason = "") => {
+const notifyOrangeTickStatus = async (userId, status, planName = "Orange Tick Badge", reason = "") => {
   if (!userId) return;
   const statusUpper = (status || "").toUpperCase();
 
-  let title = "🌟 Blue Tick Update";
+  let title = "🌟 Orange Tick Update";
   let message = `Your verification status for ${planName} has been updated.`;
   let actionUrl = "/verification-badge";
 
   if (statusUpper === "APPROVED" || statusUpper === "ACTIVE" || statusUpper === "SUCCESS") {
-    title = "🌟 Blue Tick Badge Verified!";
-    message = `Congratulations! Your account has been officially verified with the Blue Tick Badge. Your verified status is now live!`;
+    title = "🌟 Orange Tick Badge Verified!";
+    message = `Congratulations! Your account has been officially verified with the Orange Tick Badge. Your verified status is now live!`;
   } else if (statusUpper === "SUBMITTED" || statusUpper === "PENDING") {
     title = "⏳ Verification Request Received";
-    message = `Your Blue Tick verification application (${planName}) has been submitted successfully and is under review.`;
+    message = `Your Orange Tick verification application (${planName}) has been submitted successfully and is under review.`;
   } else if (statusUpper === "REJECTED") {
     title = "⚠️ Verification Request Update";
     message = reason
-      ? `Your Blue Tick application was not approved: ${reason}`
-      : `Your Blue Tick verification application could not be approved at this time.`;
+      ? `Your Orange Tick application was not approved: ${reason}`
+      : `Your Orange Tick verification application could not be approved at this time.`;
   }
 
   return sendUserPushNotification({
     userId,
     title,
     message,
-    type: "BLUETICK",
+    type: "ORANGETICK",
     actionUrl,
-    data: { event: "BLUETICK_STATUS", status: statusUpper },
+    data: { event: "ORANGETICK_STATUS", status: statusUpper },
   });
 };
+
+const notifyBlueTickStatus = notifyOrangeTickStatus;
 
 /**
  * 3. Subscription Plan Purchase & All Status (Active, Cancelled, Expired)

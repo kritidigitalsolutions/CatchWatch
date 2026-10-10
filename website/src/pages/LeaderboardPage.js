@@ -134,7 +134,7 @@ export default function LeaderboardPage() {
                     />
                   </div>
                   <h3 className="podium-name">
-                    {top2.name} {top2.blueTick && <VerifiedBadge />}
+                    {top2.name} {(top2.orangeTick || top2.blueTick) && <VerifiedBadge />}
                   </h3>
                   <p className="podium-username">{top2.username}</p>
                   <div className="podium-score-pill">
@@ -169,7 +169,7 @@ export default function LeaderboardPage() {
                     />
                   </div>
                   <h3 className="podium-name champion-name">
-                    {top1.name} {top1.blueTick && <VerifiedBadge />}
+                    {top1.name} {(top1.orangeTick || top1.blueTick) && <VerifiedBadge />}
                   </h3>
                   <p className="podium-username">{top1.username}</p>
                   <div className="podium-score-pill gold-score">
@@ -204,7 +204,7 @@ export default function LeaderboardPage() {
                     />
                   </div>
                   <h3 className="podium-name">
-                    {top3.name} {top3.blueTick && <VerifiedBadge />}
+                    {top3.name} {(top3.orangeTick || top3.blueTick) && <VerifiedBadge />}
                   </h3>
                   <p className="podium-username">{top3.username}</p>
                   <div className="podium-score-pill">
@@ -297,7 +297,7 @@ export default function LeaderboardPage() {
                             />
                             <div>
                               <div className="creator-table-name">
-                                {item.name} {item.blueTick && <VerifiedBadge />}
+                                {item.name} {(item.orangeTick || item.blueTick) && <VerifiedBadge />}
                               </div>
                               <div className="creator-table-handle">{item.username}</div>
                             </div>
@@ -383,7 +383,7 @@ export default function LeaderboardPage() {
                 />
                 <div>
                   <div className="user-rank-name">
-                    {currentUserRank.name} {currentUserRank.blueTick && <VerifiedBadge />}
+                    {currentUserRank.name} {(currentUserRank.orangeTick || currentUserRank.blueTick) && <VerifiedBadge />}
                   </div>
                   <div className="user-rank-sub">
                     {currentUserRank.creatorLevel} • {currentUserRank.totalPoints.toLocaleString()} Points

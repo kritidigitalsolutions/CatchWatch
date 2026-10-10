@@ -58,7 +58,7 @@ export default function CreatorDashboard() {
 
   const score = dashboardData?.qualityScore || profile?.qualityScore || 0;
   const level = dashboardData?.creatorLevel || profile?.creatorLevel || "Beginner";
-  const isVerified = Boolean(dashboardData?.blueTick || profile?.isVerified);
+  const isVerified = Boolean(dashboardData?.orangeTick || dashboardData?.blueTick || profile?.orangeTick || profile?.blueTick || profile?.isVerified);
 
   const getBadgeColor = (lvl) => {
     if (lvl === "Premium Creator" || lvl === "Diamond") return "linear-gradient(135deg, #9333ea, #ec4899)";

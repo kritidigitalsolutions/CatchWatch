@@ -2,7 +2,7 @@ import React, { useState, useEffect } from "react";
 import { FaClock, FaExclamationCircle, FaShieldAlt, FaIdCard, FaTimes, FaCheck, FaGem, FaChevronDown, FaChevronUp } from "react-icons/fa";
 import VerifiedBadge from "./VerifiedBadge";
 import { getVerificationStatus, applyVerification } from "../api/userApi";
-import { getBluetickPlans, createPaymentOrder, verifyPayment } from "../api/subscriptionApi";
+import { getOrangeTickPlans, createPaymentOrder, verifyPayment } from "../api/subscriptionApi";
 
 const ProfileVerificationSection = ({ userProfile }) => {
   const [verifStatus, setVerifStatus] = useState(userProfile?.verification || { status: "NOT_VERIFIED", isVerified: false });
@@ -10,8 +10,8 @@ const ProfileVerificationSection = ({ userProfile }) => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [feedback, setFeedback] = useState({ type: "", message: "" });
 
-  // Bluetick Plans state
-  const [bluetickPlans, setBluetickPlans] = useState([]);
+  // Orange Tick Verification Plans state
+  const [orangeTickPlans, setOrangeTickPlans] = useState([]);
   const [selectedPlanId, setSelectedPlanId] = useState(null);
   const [expandedPlans, setExpandedPlans] = useState({});
 
@@ -70,17 +70,17 @@ const ProfileVerificationSection = ({ userProfile }) => {
 
   const fetchPlans = async () => {
     try {
-      const res = await getBluetickPlans();
+      const res = await getOrangeTickPlans();
       if (res && res.success) {
         const fetched = res.plans || [];
-        setBluetickPlans(fetched);
+        setOrangeTickPlans(fetched);
         if (fetched.length > 0) {
           setSelectedPlanId(fetched[0]._id);
         }
       }
     } catch (err) {
-      console.error("Fetch bluetick plans error:", err);
-      setBluetickPlans([]);
+      console.error("Fetch orange tick plans error:", err);
+      setOrangeTickPlans([]);
     }
   };
 
@@ -126,7 +126,7 @@ const ProfileVerificationSection = ({ userProfile }) => {
       return;
     }
 
-    const selectedPlan = bluetickPlans.find((p) => p._id === selectedPlanId);
+    const selectedPlan = orangeTickPlans.find((p) => p._id === selectedPlanId);
 
     // Helper to submit verification request with optional payment details
     const submitVerificationRequest = async (paymentDetails = {}) => {
@@ -370,13 +370,13 @@ const ProfileVerificationSection = ({ userProfile }) => {
                     <span>Active Verified Profile</span>
                     <VerifiedBadge isVerified={true} size="md" />
                   </h4>
-                  <p className="text-xs text-blue-100 font-medium mt-0.5">
+                  <p className="text-xs text-orange-100 font-medium mt-0.5">
                     Your profile is officially authenticated & protected on CatchWatch.
                   </p>
                 </div>
               </div>
             </div>
-            <div className="mt-4 pt-3 border-t border-white/20 grid grid-cols-2 gap-2.5 text-xs font-bold text-blue-50">
+            <div className="mt-4 pt-3 border-t border-white/20 grid grid-cols-2 gap-2.5 text-xs font-bold text-orange-50">
               <div className="flex items-center gap-1.5">⚡ Search Ranking Boost</div>
               <div className="flex items-center gap-1.5">🛡️ Impersonation Protection</div>
               <div className="flex items-center gap-1.5">💬 Pinned & Highlighted Comments</div>
@@ -386,8 +386,8 @@ const ProfileVerificationSection = ({ userProfile }) => {
         </div>
       )}
 
-      {/* ── Bluetick Verification Plans Section (Only shown for unverified users who have not applied) ── */}
-      {!isAlreadyVerified && !isPendingReview && bluetickPlans.length > 0 && (
+      {/* ── Orange Tick Verification Plans Section (Only shown for unverified users who have not applied) ── */}
+      {!isAlreadyVerified && !isPendingReview && orangeTickPlans.length > 0 && (
         <div className="mt-6 pt-2">
           <div className="flex items-center justify-between mb-4">
             <h3 className="text-sm font-extrabold text-gray-900 flex items-center gap-2">
@@ -400,13 +400,13 @@ const ProfileVerificationSection = ({ userProfile }) => {
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-1 xl:grid-cols-1 gap-4">
-            {bluetickPlans.map((plan) => (
+            {orangeTickPlans.map((plan) => (
               <div
                 key={plan._id}
                 className={`relative bg-gradient-to-b from-orange-50/40 to-white border-2 rounded-2xl p-5 flex flex-col justify-between transition hover:shadow-md ${
                   plan.isRecommended
                     ? "border-orange-500 ring-2 ring-orange-500/20"
-                    : "border-gray-200 hover:border-blue-300"
+                    : "border-gray-200 hover:border-orange-300"
                 }`}
               >
                 {plan.isRecommended && (
@@ -479,8 +479,8 @@ const ProfileVerificationSection = ({ userProfile }) => {
           {[
             {
               title: "Official Verified Badge",
-              desc: "Blue Tick displayed everywhere across CatchWatch.",
-              icon: "🔵",
+              desc: "Orange Tick displayed everywhere across CatchWatch.",
+              icon: "🧡",
             },
             {
               title: "Advanced Account Protection",
@@ -509,7 +509,7 @@ const ProfileVerificationSection = ({ userProfile }) => {
             },
             {
               title: "Highlighted Comments",
-              desc: "Your comments stand out with a blue tick badge and top placement.",
+              desc: "Your comments stand out with an orange tick badge and top placement.",
               icon: "💬",
             },
             {
@@ -554,7 +554,7 @@ const ProfileVerificationSection = ({ userProfile }) => {
                   <span>Apply for Profile Verification</span>
                 </h3>
                 <p className="text-xs text-gray-500 font-medium mt-0.5">
-                  Select a verification tier and submit genuine documents to request your official blue tick.
+                  Select a verification tier and submit genuine documents to request your official orange tick.
                 </p>
               </div>
               <button
@@ -579,19 +579,19 @@ const ProfileVerificationSection = ({ userProfile }) => {
 
             <form onSubmit={handleSubmit} className="space-y-5 text-left">
               {/* Plan Selection in Modal */}
-              {bluetickPlans.length > 0 && (
+              {orangeTickPlans.length > 0 && (
                 <div>
                   <label className="block text-xs font-bold text-gray-700 mb-2">
                     Select Verification Plan <span className="text-red-500">*</span>
                   </label>
                   <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                    {bluetickPlans.map((plan) => (
+                    {orangeTickPlans.map((plan) => (
                       <div
                         key={plan._id}
                         onClick={() => setSelectedPlanId(plan._id)}
                         className={`p-3.5 rounded-2xl border-2 cursor-pointer transition flex flex-col justify-between ${
                           selectedPlanId === plan._id
-                            ? "border-blue-600 bg-blue-50/50 ring-2 ring-blue-500/20"
+                            ? "border-orange-500 bg-orange-50/50 ring-2 ring-orange-500/20"
                             : "border-gray-200 hover:border-gray-300"
                         }`}
                       >
@@ -599,7 +599,7 @@ const ProfileVerificationSection = ({ userProfile }) => {
                           <span className="text-xs font-black text-gray-900">{plan.name}</span>
                           <VerifiedBadge isVerified={true} size="sm" />
                         </div>
-                        <div className="text-lg font-black text-blue-600">₹{plan.price}</div>
+                        <div className="text-lg font-black text-brand-orange">₹{plan.price}</div>
                         <div className="text-[11px] font-bold text-gray-400">{plan.duration} days validity</div>
                       </div>
                     ))}

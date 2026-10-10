@@ -409,7 +409,7 @@ export default function UsersPage() {
                 <div className="p-detail-card">
                   <span className="p-detail-label">Verification Badge</span>
                   <span className="p-detail-value">
-                    {selected.verification?.badgeType || (selected.isVerified ? "BLUE TICK" : "None")}
+                    {(selected.verification?.badgeType === "BLUE" ? "ORANGE TICK" : selected.verification?.badgeType) || (selected.isVerified ? "ORANGE TICK" : "None")}
                   </span>
                 </div>
                 <div className="p-detail-card">

@@ -218,9 +218,11 @@ exports.getReelsFeed = async (req, res) => {
     }
 
     // ── VERIFIED CREATOR ALGORITHMIC RECOMMENDATION BOOST ──
-    // Verified (Blue Tick) creators get higher recommendation priority in the feed
+    // Verified (Orange Tick) creators get higher recommendation priority in the feed
     reels.sort((a, b) => {
       const aVerified =
+        a.user?.orangeTick ||
+        a.user?.blueTick ||
         a.user?.isVerified ||
         a.user?.verification?.isVerified ||
         a.user?.verification?.status === "VERIFIED" ||
@@ -228,6 +230,8 @@ exports.getReelsFeed = async (req, res) => {
           ? 1
           : 0;
       const bVerified =
+        b.user?.orangeTick ||
+        b.user?.blueTick ||
         b.user?.isVerified ||
         b.user?.verification?.isVerified ||
         b.user?.verification?.status === "VERIFIED" ||

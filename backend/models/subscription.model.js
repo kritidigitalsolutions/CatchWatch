@@ -78,6 +78,26 @@ const subscriptionSchema =
       },
 
       // ========================================
+      // PAYMENT GATEWAY & APPLE DETAILS
+      // ========================================
+
+      paymentGateway: {
+        type: String,
+        enum: ["razorpay", "apple", "manual", "other"],
+        default: "razorpay",
+        index: true,
+      },
+
+      appleDetails: {
+        transactionId: { type: String, default: "" },
+        originalTransactionId: { type: String, default: "" },
+        productId: { type: String, default: "" },
+        environment: { type: String, default: "" },
+        purchaseDate: { type: Date, default: null },
+        expiresDate: { type: Date, default: null },
+      },
+
+      // ========================================
       // AMOUNT
       // ========================================
 
@@ -153,6 +173,11 @@ subscriptionSchema.index({
 // admin analytics
 subscriptionSchema.index({
   createdAt: -1,
+});
+
+// subscriptionId (Razorpay order ID / Apple originalTransactionId) lookup
+subscriptionSchema.index({
+  subscriptionId: 1,
 });
 
 

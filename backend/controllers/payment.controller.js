@@ -6,6 +6,7 @@ const razorpay = require("../config/razorpay");
 const Plan = require("../models/plan.model");
 const Promo = require("../models/promocode.model");
 const Subscription = require("../models/subscription.model");
+const VerificationRequest = require("../models/verificationRequest.model");
 
 const {
   expireSubscriptionIfNeeded,
@@ -306,19 +307,19 @@ exports.verifyPayment = async (
       });
     }
 
-    const isBlueTick =
-      plan.category === "BLUETICK" ||
+    const isOrangeOrBlueTick =
       plan.category === "ORANGETICK" ||
-      plan.type === "BLUETICK" ||
+      plan.category === "BLUETICK" ||
       plan.type === "ORANGETICK" ||
-      plan.planType === "BLUETICK" ||
-      plan.planType === "ORANGETICK";
+      plan.type === "BLUETICK" ||
+      plan.planType === "ORANGETICK" ||
+      plan.planType === "BLUETICK";
 
     // ========================================
-    // CHECK EXISTING SUBSCRIPTION (Only for video streaming plans, skip for BLUETICK)
+    // CHECK EXISTING SUBSCRIPTION (Only for video streaming plans, skip for ORANGETICK / BLUETICK)
     // ========================================
 
-    if (!isBlueTick) {
+    if (!isOrangeOrBlueTick) {
       let existing =
         await Subscription.findOne({
           user: userId,
@@ -512,7 +513,7 @@ exports.verifyApplePayment = async (req, res) => {
       return res.status(400).json({
         success: false,
         message:
-          "Missing Apple purchase data (serverVerificationData, transactionId, productId, or planId required)",
+          "Missing Apple purchase verification data (serverVerificationData or App Store receipt is required)",
       });
     }
 
@@ -524,7 +525,7 @@ exports.verifyApplePayment = async (req, res) => {
       });
     }
 
-    // 1. Verify Apple transaction using StoreKit helper
+    // 1. Cryptographically Verify Apple transaction using StoreKit helper
     const verification = await verifyApplePurchase({
       serverVerificationData: verificationPayload,
       productId: clientProductId,
@@ -539,60 +540,101 @@ exports.verifyApplePayment = async (req, res) => {
       });
     }
 
-    const resolvedTransactionId = String(
-      verification.transactionId || clientTransactionId || ""
-    );
+    const resolvedTransactionId = String(verification.transactionId || "").trim();
     const resolvedOriginalTransactionId = String(
-      verification.originalTransactionId ||
-        clientOriginalTxId ||
-        resolvedTransactionId ||
-        ""
-    );
-    const resolvedProductId =
-      verification.productId || clientProductId || "";
+      verification.originalTransactionId || resolvedTransactionId || ""
+    ).trim();
+    const verifiedProductId = String(verification.productId || "").trim();
 
-    // 2. Prevent Duplicate Payment (Idempotency)
-    if (resolvedTransactionId) {
-      const alreadyPaid = await Subscription.findOne({
-        paymentId: resolvedTransactionId,
-      }).populate("plan");
+    if (!resolvedTransactionId) {
+      return res.status(400).json({
+        success: false,
+        message: "Could not resolve valid transaction ID from Apple verification",
+      });
+    }
 
-      if (alreadyPaid) {
+    // 2. Prevent Duplicate Payment & Verify Transaction Ownership
+    const existingTx = await Subscription.findOne({
+      paymentId: resolvedTransactionId,
+    }).populate("plan");
+
+    if (existingTx) {
+      // Idempotent retry for the same authenticated user
+      if (existingTx.user.toString() === userId.toString()) {
         return res.status(200).json({
           success: true,
-          message: "Payment already processed",
-          subscription: alreadyPaid,
+          message: "Payment already verified",
+          subscription: existingTx,
+          verification: {
+            transactionId: resolvedTransactionId,
+            originalTransactionId: resolvedOriginalTransactionId,
+            productId: verifiedProductId,
+            environment: verification.environment || "Production",
+          },
+        });
+      }
+
+      // Conflict: Transaction belongs to a different account
+      return res.status(409).json({
+        success: false,
+        code: "TRANSACTION_OWNED_BY_ANOTHER_ACCOUNT",
+        message:
+          "This Apple transaction is already associated with another Catch & Watch account. Cross-account transfer is not permitted.",
+      });
+    }
+
+    // Verify originalTransactionId ownership across active subscriptions
+    if (
+      resolvedOriginalTransactionId &&
+      resolvedOriginalTransactionId !== resolvedTransactionId
+    ) {
+      const existingOriginalTx = await Subscription.findOne({
+        subscriptionId: resolvedOriginalTransactionId,
+        status: "active",
+      }).populate("plan");
+
+      if (existingOriginalTx) {
+        if (existingOriginalTx.user.toString() !== userId.toString()) {
+          return res.status(409).json({
+            success: false,
+            code: "ORIGINAL_TRANSACTION_OWNED_BY_ANOTHER_ACCOUNT",
+            message:
+              "The original Apple subscription is already associated with another active Catch & Watch account.",
+          });
+        }
+      }
+    }
+
+    // 3. Resolve & Verify Plan against Verified Product ID
+    let plan = null;
+    if (planId && mongoose.Types.ObjectId.isValid(planId)) {
+      plan = await Plan.findById(planId);
+      if (plan && plan.appleProductId && plan.appleProductId !== verifiedProductId) {
+        return res.status(400).json({
+          success: false,
+          message: `Requested plan '${plan.name}' appleProductId (${plan.appleProductId}) does not match verified Apple product ID (${verifiedProductId}).`,
         });
       }
     }
 
-    // 3. Resolve Plan
-    let plan = null;
-    if (planId && mongoose.Types.ObjectId.isValid(planId)) {
-      plan = await Plan.findById(planId);
-    }
-
-    if (!plan && resolvedProductId) {
+    if (!plan && verifiedProductId) {
       plan = await Plan.findOne({
-        $or: [
-          { appleProductId: resolvedProductId },
-          { name: resolvedProductId },
-        ],
+        appleProductId: verifiedProductId,
+        isActive: true,
       });
-    }
-
-    if (!plan && resolvedProductId && mongoose.Types.ObjectId.isValid(resolvedProductId)) {
-      plan = await Plan.findById(resolvedProductId);
+      if (!plan) {
+        plan = await Plan.findOne({ appleProductId: verifiedProductId });
+      }
     }
 
     if (!plan) {
       return res.status(404).json({
         success: false,
-        message: `Plan not found for Apple product ID '${resolvedProductId || planId}'. Please configure appleProductId in Admin panel.`,
+        message: `Plan not found for Apple product ID '${verifiedProductId || planId}'. Please configure appleProductId in Admin panel.`,
       });
     }
 
-    const isBlueTick =
+    const isOrangeOrBlueTick =
       plan.category === "BLUETICK" ||
       plan.category === "ORANGETICK" ||
       plan.type === "BLUETICK" ||
@@ -600,8 +642,8 @@ exports.verifyApplePayment = async (req, res) => {
       plan.planType === "BLUETICK" ||
       plan.planType === "ORANGETICK";
 
-    // 4. Check existing subscription (for video streaming plans)
-    if (!isBlueTick) {
+    // 4. Check existing subscription (for regular video streaming plans)
+    if (!isOrangeOrBlueTick) {
       let existing = await Subscription.findOne({
         user: userId,
         status: "active",
@@ -629,7 +671,7 @@ exports.verifyApplePayment = async (req, res) => {
       }
     }
 
-    // 5. Apply Promo (if applicable)
+    // 5. Apply Promo atomically (if applicable)
     let finalAmount = plan.price;
     if (promoCode) {
       const promo = await Promo.findOne({
@@ -637,19 +679,20 @@ exports.verifyApplePayment = async (req, res) => {
         isActive: true,
       });
 
-      if (promo) {
-        if (!promo.expiryDate || promo.expiryDate >= new Date()) {
-          if (promo.usedCount < promo.maxUses) {
-            let discount = 0;
-            if (promo.discountType === "percentage") {
-              discount = (plan.price * promo.discountValue) / 100;
-            } else {
-              discount = promo.discountValue;
-            }
-            finalAmount = Math.max(plan.price - discount, 0);
-            promo.usedCount = (promo.usedCount || 0) + 1;
-            await promo.save();
+      if (promo && (!promo.expiryDate || promo.expiryDate >= new Date())) {
+        const updatedPromo = await Promo.findOneAndUpdate(
+          { _id: promo._id, usedCount: { $lt: promo.maxUses } },
+          { $inc: { usedCount: 1 } },
+          { new: true }
+        );
+        if (updatedPromo) {
+          let discount = 0;
+          if (promo.discountType === "percentage") {
+            discount = (plan.price * promo.discountValue) / 100;
+          } else {
+            discount = promo.discountValue;
           }
+          finalAmount = Math.max(plan.price - discount, 0);
         }
       }
     }
@@ -666,20 +709,95 @@ exports.verifyApplePayment = async (req, res) => {
       );
     }
 
-    // 7. Create Subscription record
-    const subscription = await Subscription.create({
-      user: userId,
-      plan: plan._id,
-      status: "active",
-      paymentId: resolvedTransactionId || `apple_${Date.now()}`,
-      subscriptionId: resolvedOriginalTransactionId || `apple_sub_${Date.now()}`,
-      amount: finalAmount,
-      currency: "INR",
-      startDate,
-      endDate,
-    });
+    // 7. Create Subscription record with Concurrency / Duplicate-key protection
+    let subscription;
+    try {
+      subscription = await Subscription.create({
+        user: userId,
+        plan: plan._id,
+        status: "active",
+        paymentGateway: "apple",
+        paymentId: resolvedTransactionId,
+        subscriptionId: resolvedOriginalTransactionId,
+        appleDetails: {
+          transactionId: resolvedTransactionId,
+          originalTransactionId: resolvedOriginalTransactionId,
+          productId: verifiedProductId,
+          environment: verification.environment || "Production",
+          purchaseDate: startDate,
+          expiresDate: endDate,
+        },
+        amount: finalAmount,
+        currency: "INR",
+        startDate,
+        endDate,
+      });
+    } catch (createErr) {
+      if (createErr.code === 11000 || createErr.name === "MongoServerError") {
+        const retrySub = await Subscription.findOne({
+          paymentId: resolvedTransactionId,
+        }).populate("plan");
 
-    // 8. Trigger Notification
+        if (retrySub) {
+          if (retrySub.user.toString() === userId.toString()) {
+            return res.status(200).json({
+              success: true,
+              message: "Payment verified successfully",
+              subscription: retrySub,
+              verification: {
+                transactionId: resolvedTransactionId,
+                originalTransactionId: resolvedOriginalTransactionId,
+                productId: verifiedProductId,
+                environment: verification.environment || "Production",
+              },
+            });
+          }
+          return res.status(409).json({
+            success: false,
+            code: "TRANSACTION_OWNED_BY_ANOTHER_ACCOUNT",
+            message:
+              "This Apple transaction is already associated with another Catch & Watch account.",
+          });
+        }
+      }
+      throw createErr;
+    }
+
+    // 8. Link to Pending Verification Request if this is Orange Tick / Blue Tick
+    if (isOrangeOrBlueTick) {
+      try {
+        const pendingVR = await VerificationRequest.findOne({
+          userId,
+          status: "PENDING",
+        });
+        if (pendingVR) {
+          pendingVR.paymentId = resolvedTransactionId;
+          pendingVR.orderId = resolvedOriginalTransactionId;
+          pendingVR.paymentGateway = "apple";
+          pendingVR.paymentStatus = "PAID";
+          pendingVR.appleDetails = {
+            transactionId: resolvedTransactionId,
+            originalTransactionId: resolvedOriginalTransactionId,
+            productId: verifiedProductId,
+            environment: verification.environment || "Production",
+            purchaseDate: startDate,
+          };
+          pendingVR.selectedPlan = {
+            planId: plan._id,
+            name: plan.name,
+            price: plan.price,
+            duration: plan.duration,
+            paymentId: resolvedTransactionId,
+            orderId: resolvedOriginalTransactionId,
+          };
+          await pendingVR.save();
+        }
+      } catch (vrErr) {
+        console.warn("Could not link verification request with Apple payment:", vrErr.message);
+      }
+    }
+
+    // 9. Trigger Notification
     try {
       const { notifySubscriptionStatus } = require("../utils/notificationDispatcher.helper");
       if (notifySubscriptionStatus) {
@@ -698,7 +816,7 @@ exports.verifyApplePayment = async (req, res) => {
       verification: {
         transactionId: resolvedTransactionId,
         originalTransactionId: resolvedOriginalTransactionId,
-        productId: resolvedProductId,
+        productId: verifiedProductId,
         environment: verification.environment || "Production",
       },
     });

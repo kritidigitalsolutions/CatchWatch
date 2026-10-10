@@ -463,7 +463,7 @@ export default function SupportDetails({ ticketId }) {
               <small>
                 {item.user?.name || "Unknown User"}
                 {item.user?.isVerified && (
-                  <span title="Verified Blue Tick Creator" style={{ color: "#3b82f6", marginLeft: 4, display: "inline-flex", alignItems: "center" }}>
+                  <span title="Verified Orange Tick Creator" style={{ color: "#f97316", marginLeft: 4, display: "inline-flex", alignItems: "center" }}>
                     ✓
                   </span>
                 )} ·{" "}

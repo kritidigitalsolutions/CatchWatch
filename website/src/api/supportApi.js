@@ -36,7 +36,7 @@ export const getTicketConversation = async (id) => {
 };
 
 // ========================================
-// VIP SUPPORT API (BLUETICK RESTRICTED)
+// VIP SUPPORT API (ORANGE TICK RESTRICTED)
 // ========================================
 export const checkVipAccess = async () => {
   const response = await axiosInstance.get("/support/vip/access-check");

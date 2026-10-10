@@ -844,3 +844,277 @@ body.light .verif-payment-box {
     justify-content: center;
   }
 }
+
+/* =========================================================
+   RICH VERIFICATION APPLICATION DETAILS MODAL STYLES
+========================================================= */
+
+.verif-modal-card.rich-details {
+  max-width: 820px;
+  padding: 26px;
+  background: #1e293b;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  border-radius: 20px;
+}
+
+.verif-modal-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 20px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.verif-title-group {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.verif-title-icon {
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
+  background: rgba(249, 115, 22, 0.15);
+  color: #f97316;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.verif-section-card {
+  background: rgba(15, 23, 42, 0.6);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 14px;
+  padding: 16px;
+  margin-bottom: 18px;
+}
+
+.verif-section-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+}
+
+.verif-section-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.84rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: #94a3b8;
+  margin: 0;
+}
+
+.verif-user-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 12px;
+  margin-top: 14px;
+}
+
+.user-meta-field {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  background: rgba(30, 41, 59, 0.5);
+  padding: 8px 12px;
+  border-radius: 8px;
+  border: 1px solid rgba(255, 255, 255, 0.04);
+}
+
+.meta-field-label {
+  font-size: 0.72rem;
+  color: #94a3b8;
+  text-transform: uppercase;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.meta-field-val {
+  font-size: 0.86rem;
+  color: #f1f5f9;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  word-break: break-all;
+}
+
+.meta-field-val.code {
+  font-family: monospace;
+}
+
+/* Payment Section in Modal */
+.verif-payment-card {
+  border-color: rgba(56, 189, 248, 0.2);
+  background: linear-gradient(135deg, rgba(15, 23, 42, 0.8), rgba(30, 41, 59, 0.6));
+}
+
+.payment-gateway-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.8rem;
+  font-weight: 700;
+  padding: 4px 10px;
+  border-radius: 8px;
+}
+
+.payment-gateway-pill.apple {
+  background: rgba(56, 189, 248, 0.15);
+  color: #38bdf8;
+  border: 1px solid rgba(56, 189, 248, 0.3);
+}
+
+.payment-gateway-pill.razorpay {
+  background: rgba(59, 130, 246, 0.15);
+  color: #60a5fa;
+  border: 1px solid rgba(59, 130, 246, 0.3);
+}
+
+.payment-gateway-pill.manual {
+  background: rgba(148, 163, 184, 0.15);
+  color: #94a3b8;
+  border: 1px solid rgba(148, 163, 184, 0.3);
+}
+
+.verif-payment-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 10px;
+  margin-top: 12px;
+}
+
+.apple-live-verify-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: #38bdf8;
+  color: #0f172a;
+  border: none;
+  border-radius: 8px;
+  padding: 8px 16px;
+  font-size: 0.84rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.apple-live-verify-btn:hover:not(:disabled) {
+  background: #7dd3fc;
+  box-shadow: 0 4px 12px rgba(56, 189, 248, 0.35);
+}
+
+.apple-live-verify-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.live-verify-banner {
+  margin-top: 14px;
+  padding: 12px 16px;
+  border-radius: 10px;
+  font-size: 0.84rem;
+}
+
+.live-verify-banner.success {
+  background: rgba(16, 185, 129, 0.1);
+  border: 1px solid rgba(16, 185, 129, 0.3);
+  color: #10b981;
+}
+
+.live-verify-banner.error {
+  background: rgba(239, 68, 68, 0.1);
+  border: 1px solid rgba(239, 68, 68, 0.3);
+  color: #ef4444;
+}
+
+.live-verify-banner-content {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+/* Social links pill */
+.verif-social-chips {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-top: 8px;
+}
+
+.social-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  border-radius: 8px;
+  font-size: 0.82rem;
+  font-weight: 600;
+  text-decoration: none;
+  transition: transform 0.2s ease, opacity 0.2s ease;
+}
+
+.social-chip:hover {
+  transform: translateY(-1px);
+  opacity: 0.9;
+}
+
+.social-chip.website {
+  background: rgba(59, 130, 246, 0.15);
+  color: #60a5fa;
+  border: 1px solid rgba(59, 130, 246, 0.3);
+}
+
+.social-chip.instagram {
+  background: rgba(225, 48, 108, 0.15);
+  color: #f472b6;
+  border: 1px solid rgba(225, 48, 108, 0.3);
+}
+
+.social-chip.facebook {
+  background: rgba(24, 119, 242, 0.15);
+  color: #3b82f6;
+  border: 1px solid rgba(24, 119, 242, 0.3);
+}
+
+.social-chip.youtube {
+  background: rgba(239, 68, 68, 0.15);
+  color: #f87171;
+  border: 1px solid rgba(239, 68, 68, 0.3);
+}
+
+.social-chip.twitter {
+  background: rgba(14, 165, 233, 0.15);
+  color: #38bdf8;
+  border: 1px solid rgba(14, 165, 233, 0.3);
+}
+
+.social-chip.linkedin {
+  background: rgba(10, 102, 194, 0.15);
+  color: #60a5fa;
+  border: 1px solid rgba(10, 102, 194, 0.3);
+}
+
+.copy-inline-btn {
+  background: transparent;
+  border: none;
+  color: #64748b;
+  cursor: pointer;
+  padding: 0 2px;
+  display: inline-flex;
+  align-items: center;
+}
+
+.copy-inline-btn:hover {
+  color: #38bdf8;
+}
+

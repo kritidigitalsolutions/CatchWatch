@@ -33,9 +33,15 @@ function decodeBase64Json(str) {
 /**
  * Decode and verify StoreKit 2 JWS token
  * @param {string} jwsToken
+ * @param {object} options
  * @returns {object}
  */
-function parseAndVerifyStoreKit2JWS(jwsToken) {
+function parseAndVerifyStoreKit2JWS(jwsToken, options = {}) {
+  const expectedBundleId =
+    options.expectedBundleId ||
+    process.env.APPLE_BUNDLE_ID ||
+    "com.app.catchWatch";
+
   if (!jwsToken || typeof jwsToken !== "string") {
     return { success: false, message: "Empty or invalid JWS string" };
   }
@@ -48,8 +54,8 @@ function parseAndVerifyStoreKit2JWS(jwsToken) {
   const header = decodeBase64Json(parts[0]);
   const payload = decodeBase64Json(parts[1]);
 
-  if (!payload) {
-    return { success: false, message: "Unable to parse JWS payload JSON" };
+  if (!header || !payload) {
+    return { success: false, message: "Unable to parse JWS header or payload JSON" };
   }
 
   let signatureValid = false;
@@ -61,17 +67,35 @@ function parseAndVerifyStoreKit2JWS(jwsToken) {
   try {
     if (header && Array.isArray(header.x5c) && header.x5c.length > 0) {
       const leafPem = toCertPem(header.x5c[0]);
-      const x509 = new crypto.X509Certificate(leafPem);
-      certSubject = x509.subject || "";
-      certIssuer = x509.issuer || "";
+      const leafX509 = new crypto.X509Certificate(leafPem);
+      certSubject = leafX509.subject || "";
+      certIssuer = leafX509.issuer || "";
 
-      // Ensure leaf certificate is issued by Apple
-      if (
-        certSubject.includes("Apple") ||
-        certIssuer.includes("Apple") ||
-        certIssuer.includes("Apple Worldwide Developer Relations")
-      ) {
-        certVerified = true;
+      // Verify certificate chain if intermediate cert is provided
+      if (header.x5c.length > 1) {
+        const intermediatePem = toCertPem(header.x5c[1]);
+        const intermediateX509 = new crypto.X509Certificate(intermediatePem);
+
+        const isSignedByIntermediate = leafX509.verify(intermediateX509.publicKey);
+        const intermediateIsApple =
+          intermediateX509.subject.includes("Apple Worldwide Developer Relations") ||
+          intermediateX509.subject.includes("Apple Root CA") ||
+          intermediateX509.issuer.includes("Apple Root CA") ||
+          intermediateX509.issuer.includes("Apple");
+
+        if (isSignedByIntermediate && intermediateIsApple) {
+          certVerified = true;
+        } else {
+          notes.push("Intermediate certificate validation failed");
+        }
+      } else {
+        if (
+          certSubject.includes("Apple") ||
+          certIssuer.includes("Apple") ||
+          certIssuer.includes("Apple Worldwide Developer Relations")
+        ) {
+          certVerified = true;
+        }
       }
 
       // Verify ES256 signature using leaf certificate's public key
@@ -80,7 +104,7 @@ function parseAndVerifyStoreKit2JWS(jwsToken) {
       const sigBuffer = Buffer.from(parts[2], "base64url");
       signatureValid = verifier.verify(
         {
-          key: leafPem,
+          key: leafX509.publicKey,
           dsaEncoding: "ieee-p1363",
         },
         sigBuffer
@@ -88,6 +112,48 @@ function parseAndVerifyStoreKit2JWS(jwsToken) {
     }
   } catch (err) {
     notes.push(`Crypto verify error: ${err.message}`);
+  }
+
+  if (!certVerified || !signatureValid) {
+    return {
+      success: false,
+      message: `StoreKit 2 signature or certificate chain verification failed: ${
+        notes.join("; ") || "Invalid signature"
+      }`,
+      signatureValid,
+      certVerified,
+    };
+  }
+
+  // Verify bundleId
+  const tokenBundleId = String(payload.bundleId || "");
+  if (
+    expectedBundleId &&
+    tokenBundleId &&
+    expectedBundleId.toLowerCase() !== tokenBundleId.toLowerCase()
+  ) {
+    return {
+      success: false,
+      message: `StoreKit 2 bundle ID mismatch: expected '${expectedBundleId}', got '${tokenBundleId}'`,
+    };
+  }
+
+  // Check revocation status
+  if (payload.revocationDate) {
+    return {
+      success: false,
+      isRevoked: true,
+      message: "Apple transaction has been revoked or refunded by Apple",
+    };
+  }
+
+  // Check expiration for auto-renewable subscriptions
+  let isExpired = false;
+  if (payload.expiresDate) {
+    const expDate = new Date(Number(payload.expiresDate));
+    if (!isNaN(expDate.getTime()) && expDate < new Date()) {
+      isExpired = true;
+    }
   }
 
   return {
@@ -106,12 +172,13 @@ function parseAndVerifyStoreKit2JWS(jwsToken) {
         ? String(payload.transactionId)
         : "",
       productId: payload.productId || "",
-      bundleId: payload.bundleId || "",
-      purchaseDate: payload.purchaseDate ? new Date(payload.purchaseDate) : null,
+      bundleId: tokenBundleId,
+      purchaseDate: payload.purchaseDate ? new Date(Number(payload.purchaseDate)) : new Date(),
       originalPurchaseDate: payload.originalPurchaseDate
-        ? new Date(payload.originalPurchaseDate)
+        ? new Date(Number(payload.originalPurchaseDate))
         : null,
-      expiresDate: payload.expiresDate ? new Date(payload.expiresDate) : null,
+      expiresDate: payload.expiresDate ? new Date(Number(payload.expiresDate)) : null,
+      isExpired,
       environment: payload.environment || (payload.signedDate ? "Sandbox" : "Production"),
       type: payload.type || "",
       quantity: payload.quantity || 1,
@@ -157,6 +224,37 @@ async function verifyLegacyAppleReceipt(receiptData, password = process.env.APPL
         ? receiptList[receiptList.length - 1]
         : {};
 
+      // Check bundle ID if present
+      const receiptBundleId = response.data.receipt?.bundle_id || "";
+      const expectedBundleId = process.env.APPLE_BUNDLE_ID || "com.app.catchWatch";
+      if (
+        receiptBundleId &&
+        expectedBundleId &&
+        receiptBundleId.toLowerCase() !== expectedBundleId.toLowerCase()
+      ) {
+        return {
+          success: false,
+          message: `Legacy receipt bundle ID mismatch: expected '${expectedBundleId}', got '${receiptBundleId}'`,
+        };
+      }
+
+      // Check revocation / cancellation
+      if (latest.cancellation_date_ms) {
+        return {
+          success: false,
+          isRevoked: true,
+          message: "Apple legacy transaction was cancelled or refunded",
+        };
+      }
+
+      let isExpired = false;
+      if (latest.expires_date_ms) {
+        const expDate = new Date(Number(latest.expires_date_ms));
+        if (!isNaN(expDate.getTime()) && expDate < new Date()) {
+          isExpired = true;
+        }
+      }
+
       return {
         success: true,
         isLegacy: true,
@@ -168,12 +266,14 @@ async function verifyLegacyAppleReceipt(receiptData, password = process.env.APPL
             ? String(latest.transaction_id)
             : "",
           productId: latest.product_id || "",
+          bundleId: receiptBundleId,
           purchaseDate: latest.purchase_date_ms
             ? new Date(Number(latest.purchase_date_ms))
-            : null,
+            : new Date(),
           expiresDate: latest.expires_date_ms
             ? new Date(Number(latest.expires_date_ms))
             : null,
+          isExpired,
           environment: response.data.environment || "Production",
         },
         rawResponse: response.data,
@@ -195,79 +295,89 @@ async function verifyLegacyAppleReceipt(receiptData, password = process.env.APPL
 
 /**
  * Universal Apple Purchase Verifier
- * Supports StoreKit 2 JWS tokens, StoreKit 1 receipts, and client fallback.
+ * Supports StoreKit 2 JWS tokens and StoreKit 1 receipts.
+ * Strictly verifies cryptographic proof and never trusts unverified client assertions.
  */
 async function verifyApplePurchase({
   serverVerificationData,
   productId,
   transactionId,
   originalTransactionId,
+  expectedBundleId = process.env.APPLE_BUNDLE_ID || "com.app.catchWatch",
 }) {
   const trimmedData = (serverVerificationData || "").trim();
 
   // 1. Try StoreKit 2 JWS format (contains 2 dots separating 3 parts)
   if (trimmedData.includes(".")) {
-    const jwsResult = parseAndVerifyStoreKit2JWS(trimmedData);
-    if (jwsResult.success) {
+    const jwsResult = parseAndVerifyStoreKit2JWS(trimmedData, { expectedBundleId });
+    if (!jwsResult.success) {
       return {
-        verified: true,
-        isJWS: true,
-        signatureValid: jwsResult.signatureValid,
-        certVerified: jwsResult.certVerified,
-        transactionId: jwsResult.data.transactionId || transactionId,
-        originalTransactionId:
-          jwsResult.data.originalTransactionId ||
-          originalTransactionId ||
-          jwsResult.data.transactionId ||
-          transactionId,
-        productId: jwsResult.data.productId || productId,
-        purchaseDate: jwsResult.data.purchaseDate || new Date(),
-        expiresDate: jwsResult.data.expiresDate || null,
-        environment: jwsResult.data.environment,
-        bundleId: jwsResult.data.bundleId,
-        rawPayload: jwsResult.rawPayload,
+        verified: false,
+        message: jwsResult.message || "StoreKit 2 JWS verification failed",
       };
     }
+
+    if (jwsResult.data.isExpired) {
+      return {
+        verified: false,
+        isExpired: true,
+        message: "Apple subscription has already expired",
+        ...jwsResult.data,
+      };
+    }
+
+    return {
+      verified: true,
+      isJWS: true,
+      signatureValid: jwsResult.signatureValid,
+      certVerified: jwsResult.certVerified,
+      transactionId: jwsResult.data.transactionId,
+      originalTransactionId: jwsResult.data.originalTransactionId,
+      productId: jwsResult.data.productId,
+      purchaseDate: jwsResult.data.purchaseDate || new Date(),
+      expiresDate: jwsResult.data.expiresDate || null,
+      environment: jwsResult.data.environment,
+      bundleId: jwsResult.data.bundleId,
+      rawPayload: jwsResult.rawPayload,
+    };
   }
 
   // 2. Try legacy receipt validation if non-empty string without dots
   if (trimmedData.length > 50 && !trimmedData.includes(".")) {
     const legacyResult = await verifyLegacyAppleReceipt(trimmedData);
-    if (legacyResult.success && legacyResult.data) {
+    if (!legacyResult.success || !legacyResult.data) {
       return {
-        verified: true,
-        isLegacy: true,
-        transactionId: legacyResult.data.transactionId || transactionId,
-        originalTransactionId:
-          legacyResult.data.originalTransactionId ||
-          originalTransactionId ||
-          legacyResult.data.transactionId ||
-          transactionId,
-        productId: legacyResult.data.productId || productId,
-        purchaseDate: legacyResult.data.purchaseDate || new Date(),
-        expiresDate: legacyResult.data.expiresDate || null,
-        environment: legacyResult.data.environment,
+        verified: false,
+        message: legacyResult.message || "Apple legacy verifyReceipt failed",
       };
     }
-  }
 
-  // 3. Fallback to authenticated client-provided identifiers
-  if (transactionId || productId) {
+    if (legacyResult.data.isExpired) {
+      return {
+        verified: false,
+        isExpired: true,
+        message: "Apple subscription has already expired",
+        ...legacyResult.data,
+      };
+    }
+
     return {
       verified: true,
-      isFallback: true,
-      transactionId: String(transactionId || ""),
-      originalTransactionId: String(originalTransactionId || transactionId || ""),
-      productId: String(productId || ""),
-      purchaseDate: new Date(),
-      expiresDate: null,
-      environment: "Unknown",
+      isLegacy: true,
+      transactionId: legacyResult.data.transactionId,
+      originalTransactionId: legacyResult.data.originalTransactionId,
+      productId: legacyResult.data.productId,
+      purchaseDate: legacyResult.data.purchaseDate || new Date(),
+      expiresDate: legacyResult.data.expiresDate || null,
+      environment: legacyResult.data.environment,
     };
   }
 
+  // 3. Reject unverified client claims
   return {
     verified: false,
-    message: "Missing transaction data or verification receipt",
+    message:
+      "Missing or invalid Apple verification data. A signed StoreKit 2 JWS token or valid App Store receipt is required.",
   };
 }
 

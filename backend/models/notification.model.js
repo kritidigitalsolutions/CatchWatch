@@ -16,7 +16,7 @@ const notificationSchema = new mongoose.Schema(
         type: {
             type: String,
             default: "GENERAL"
-            // "GENERAL", "PROMOTIONAL", "SYSTEM", "CONTENT_ALERT", "SUBSCRIPTION", "BLUETICK", "CHAT", "CALL", "REEL", "FOLLOW", "ACCOUNT"
+            // "GENERAL", "PROMOTIONAL", "SYSTEM", "CONTENT_ALERT", "SUBSCRIPTION", "ORANGETICK", "BLUETICK", "CHAT", "CALL", "REEL", "FOLLOW", "ACCOUNT"
         },
 
         imageUrl: {

@@ -458,6 +458,7 @@ exports.getCreatorDashboard = async (req, res) => {
       sharesByTime,
       timeStats,
       redeemablePoints: wallet.availablePoints || 0,
+      orangeTick: isVerified,
       blueTick: isVerified,
       pointHistory: recentHistoryDocs.map((item) => ({
         _id: item._id,
@@ -572,7 +573,7 @@ exports.getLeaderboard = async (req, res) => {
         else if (rank === 2) badges.push("🥈 #2 Runner Up");
         else if (rank === 3) badges.push("🥉 #3 Podium Finish");
 
-        if (decorated.blueTick) badges.push("Verified Official");
+        if (decorated.orangeTick || decorated.blueTick) badges.push("Verified Official (Orange Tick)");
         if ((creator.qualityScore || 0) >= 81) badges.push("Premium Creator");
         if (reelsCount >= 5) badges.push("Top Publisher");
         if (followersCount >= 10) badges.push("Popular Creator");
@@ -583,7 +584,8 @@ exports.getLeaderboard = async (req, res) => {
           name: creator.name || "Anonymous Creator",
           username: creator.username || `@creator_${creator._id.toString().slice(-4)}`,
           profileImage: creator.profileImage || "",
-          blueTick: Boolean(decorated.blueTick),
+          orangeTick: Boolean(decorated.orangeTick || decorated.blueTick),
+          blueTick: Boolean(decorated.orangeTick || decorated.blueTick),
           qualityScore: creator.qualityScore || 0,
           creatorLevel: creator.creatorLevel || determineCreatorLevel(creator.qualityScore || 0),
           totalPoints: creator.totalEngagementPoints || 0,
@@ -620,7 +622,8 @@ exports.getLeaderboard = async (req, res) => {
             name: viewerDoc.name || "You",
             username: viewerDoc.username || "@you",
             profileImage: viewerDoc.profileImage || "",
-            blueTick: Boolean(decoratedViewer.blueTick),
+            orangeTick: Boolean(decoratedViewer.orangeTick || decoratedViewer.blueTick),
+            blueTick: Boolean(decoratedViewer.orangeTick || decoratedViewer.blueTick),
             qualityScore: viewerDoc.qualityScore || 0,
             creatorLevel: viewerDoc.creatorLevel || determineCreatorLevel(viewerDoc.qualityScore || 0),
             totalPoints: viewerDoc.totalEngagementPoints || 0,
@@ -682,8 +685,9 @@ exports.getCreatorProfile = async (req, res) => {
     const creatorPayload = {
       ...user,
       profileImage: user.profileImage || user.avatar || "",
-      isVerified: Boolean(decoratedUser.blueTick),
-      blueTick: Boolean(decoratedUser.blueTick),
+      isVerified: Boolean(decoratedUser.orangeTick || decoratedUser.blueTick),
+      orangeTick: Boolean(decoratedUser.orangeTick || decoratedUser.blueTick),
+      blueTick: Boolean(decoratedUser.orangeTick || decoratedUser.blueTick),
       creatorLevel: user.creatorLevel || creatorLevel,
       qualityScore: user.qualityScore || 0,
       followersCount,

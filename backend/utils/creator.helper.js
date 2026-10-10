@@ -6,7 +6,7 @@ const CreatorPointHistory = require("../models/creatorPointHistory.model");
 const CreatorWallet = require("../models/creatorWallet.model");
 
 /**
- * Decorates any User object with Blue Tick verification details.
+ * Decorates any User object with Orange Tick verification details.
  */
 const decorateUserWithBlueTick = (userObj) => {
   if (!userObj) return userObj;

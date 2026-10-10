@@ -2,6 +2,8 @@ const mongoose = require("mongoose");
 const User = require("../models/user.model");
 const VerificationRequest = require("../models/verificationRequest.model");
 const Notification = require("../models/notification.model");
+const Subscription = require("../models/subscription.model");
+const Plan = require("../models/plan.model");
 
 const getFilePath = (file) => {
   if (!file) return "";
@@ -21,6 +23,94 @@ const normalizeGovernmentIdType = (type) => {
   if (lower.includes("voter")) return "Voter ID";
   return str;
 };
+
+/**
+ * Helper to dynamically enrich a VerificationRequest with linked Subscription
+ * and complete Apple IAP or Razorpay payment details.
+ */
+async function enrichVerificationWithPaymentDetails(requestDoc) {
+  if (!requestDoc) return null;
+  const doc = requestDoc.toObject ? requestDoc.toObject() : { ...requestDoc };
+  const userId = doc.userId?._id || doc.userId;
+
+  let sub = null;
+  const txId = doc.appleDetails?.transactionId || doc.paymentId;
+  if (txId) {
+    sub = await Subscription.findOne({
+      $or: [
+        { paymentId: txId },
+        { subscriptionId: txId },
+        { "appleDetails.transactionId": txId },
+      ],
+    })
+      .populate("plan", "name price duration appleProductId category")
+      .lean();
+  }
+
+  if (!sub && userId) {
+    sub = await Subscription.findOne({
+      user: userId,
+    })
+      .populate("plan", "name price duration appleProductId category")
+      .sort({ createdAt: -1 })
+      .lean();
+  }
+
+  const rawGateway =
+    doc.paymentGateway ||
+    sub?.paymentGateway ||
+    (doc.paymentId?.startsWith("pay_") ? "razorpay" : doc.paymentId ? "apple" : "manual");
+
+  const isApple =
+    rawGateway === "apple" ||
+    Boolean(doc.appleDetails?.transactionId) ||
+    Boolean(sub?.appleDetails?.transactionId) ||
+    Boolean(doc.paymentId && /^\d{10,}$/.test(String(doc.paymentId).trim()));
+
+  const resolvedTxId =
+    doc.appleDetails?.transactionId ||
+    doc.paymentId ||
+    sub?.appleDetails?.transactionId ||
+    sub?.paymentId ||
+    "";
+
+  const resolvedOrigTxId =
+    doc.appleDetails?.originalTransactionId ||
+    doc.orderId ||
+    sub?.appleDetails?.originalTransactionId ||
+    sub?.subscriptionId ||
+    "";
+
+  const resolvedProductId =
+    doc.appleDetails?.productId ||
+    sub?.appleDetails?.productId ||
+    doc.selectedPlan?.planId?.appleProductId ||
+    sub?.plan?.appleProductId ||
+    "";
+
+  const resolvedEnv =
+    doc.appleDetails?.environment ||
+    sub?.appleDetails?.environment ||
+    (resolvedTxId && String(resolvedTxId).startsWith("2") ? "Production" : "Sandbox");
+
+  doc.paymentInfo = {
+    paymentGateway: isApple ? "apple" : rawGateway,
+    paymentStatus: doc.paymentStatus || (sub ? "PAID" : doc.paymentId ? "PAID" : "UNPAID"),
+    transactionId: resolvedTxId,
+    originalTransactionId: resolvedOrigTxId,
+    appleProductId: resolvedProductId,
+    environment: resolvedEnv,
+    amount: doc.selectedPlan?.price || sub?.amount || sub?.plan?.price || 0,
+    currency: sub?.currency || "INR",
+    purchaseDate: doc.appleDetails?.purchaseDate || sub?.startDate || doc.createdAt,
+    expiresDate: sub?.endDate || null,
+    isApple,
+    subscriptionStatus: sub?.status || (doc.paymentStatus === "PAID" ? "active" : "unpaid"),
+    linkedSubscriptionId: sub?._id || null,
+  };
+
+  return doc;
+}
 
 // ========================================
 // USER: APPLY VERIFICATION
@@ -113,18 +203,50 @@ exports.applyVerification = async (req, res) => {
       userUsername = "@" + userUsername;
     }
 
-    const paymentId =
+    let paymentId =
       req.body.paymentId ||
       req.body.razorpay_payment_id ||
       req.body.transactionId ||
       "";
-    const orderId =
+    let orderId =
       req.body.orderId ||
       req.body.razorpay_order_id ||
       req.body.originalTransactionId ||
       "";
 
     const Plan = require("../models/plan.model");
+    const Subscription = require("../models/subscription.model");
+
+    // Validate payment ownership if paymentId is provided
+    if (paymentId) {
+      const existingSub = await Subscription.findOne({ paymentId });
+      if (existingSub && existingSub.user.toString() !== userId.toString()) {
+        return res.status(409).json({
+          success: false,
+          message: "This payment transaction is already associated with another account.",
+        });
+      }
+      if (existingSub && !orderId && existingSub.subscriptionId) {
+        orderId = existingSub.subscriptionId;
+      }
+    } else {
+      // If paymentId not passed, auto-link user's active Orange Tick subscription if exists
+      const activeOrangeSub = await Subscription.findOne({
+        user: userId,
+        status: "active",
+      }).populate("plan");
+
+      if (
+        activeOrangeSub &&
+        activeOrangeSub.plan &&
+        (activeOrangeSub.plan.category === "ORANGETICK" ||
+          activeOrangeSub.plan.category === "BLUETICK")
+      ) {
+        paymentId = activeOrangeSub.paymentId || "";
+        orderId = activeOrangeSub.subscriptionId || "";
+      }
+    }
+
     let selectedPlanData = null;
     let planId = req.body.planId;
 
@@ -181,12 +303,12 @@ exports.applyVerification = async (req, res) => {
     });
 
     try {
-      const { notifyBlueTickStatus } = require("../utils/notificationDispatcher.helper");
-      notifyBlueTickStatus(user._id, "SUBMITTED", selectedPlanData?.name || "Orange Tick Badge").catch((e) =>
-        console.log("BlueTick submitted notif err:", e.message)
+      const { notifyOrangeTickStatus } = require("../utils/notificationDispatcher.helper");
+      notifyOrangeTickStatus(user._id, "SUBMITTED", selectedPlanData?.name || "Orange Tick Badge").catch((e) =>
+        console.log("OrangeTick submitted notif err:", e.message)
       );
     } catch (e) {
-      console.log("BlueTick notif error:", e.message);
+      console.log("OrangeTick notif error:", e.message);
     }
 
     return res.status(201).json({
@@ -351,18 +473,26 @@ exports.getAllVerificationRequests = async (req, res) => {
 
     const total = await VerificationRequest.countDocuments(query);
     const requests = await VerificationRequest.find(query)
-      .populate("userId", "_id name username phone profileImage verification status")
+      .populate(
+        "userId",
+        "_id name username email phone profileImage verification status role isCreator createdAt"
+      )
       .populate("reviewedBy", "_id name email")
+      .populate("selectedPlan.planId", "_id name price duration appleProductId category type planType")
       .sort({ createdAt: -1 })
       .skip(skip)
       .limit(limit);
+
+    const enrichedRequests = await Promise.all(
+      requests.map((r) => enrichVerificationWithPaymentDetails(r))
+    );
 
     return res.status(200).json({
       success: true,
       total,
       page,
       totalPages: Math.ceil(total / limit),
-      requests,
+      requests: enrichedRequests,
     });
   } catch (error) {
     console.error("ADMIN GET ALL VERIFICATION REQUESTS ERROR:", error);
@@ -441,13 +571,19 @@ exports.getVerificationRequestById = async (req, res) => {
       return res.status(400).json({ success: false, message: "Invalid request ID" });
     }
 
-    const request = await VerificationRequest.findById(id)
-      .populate("userId", "_id name username phone profileImage verification status createdAt")
-      .populate("reviewedBy", "_id name email");
+    const rawRequest = await VerificationRequest.findById(id)
+      .populate(
+        "userId",
+        "_id name username email phone profileImage verification status role isCreator createdAt"
+      )
+      .populate("reviewedBy", "_id name email")
+      .populate("selectedPlan.planId", "_id name price duration appleProductId category type planType");
 
-    if (!request) {
+    if (!rawRequest) {
       return res.status(404).json({ success: false, message: "Verification request not found" });
     }
+
+    const request = await enrichVerificationWithPaymentDetails(rawRequest);
 
     const history = await VerificationRequest.find({ userId: request.userId?._id || request.userId })
       .sort({ createdAt: -1 });
@@ -501,10 +637,10 @@ exports.approveVerification = async (req, res) => {
       await user.save();
 
       try {
-        const { notifyBlueTickStatus } = require("../utils/notificationDispatcher.helper");
-        notifyBlueTickStatus(user._id, "APPROVED").catch((e) => console.log("BlueTick approve notif err:", e.message));
+        const { notifyOrangeTickStatus } = require("../utils/notificationDispatcher.helper");
+        notifyOrangeTickStatus(user._id, "APPROVED").catch((e) => console.log("OrangeTick approve notif err:", e.message));
       } catch (e) {
-        console.log("BlueTick notif error:", e.message);
+        console.log("OrangeTick notif error:", e.message);
       }
 
       // Create Notification
@@ -564,12 +700,12 @@ exports.rejectVerification = async (req, res) => {
       await user.save();
 
       try {
-        const { notifyBlueTickStatus } = require("../utils/notificationDispatcher.helper");
-        notifyBlueTickStatus(user._id, "REJECTED", "Orange Tick Badge", rejectionReason).catch((e) =>
-          console.log("BlueTick reject notif err:", e.message)
+        const { notifyOrangeTickStatus } = require("../utils/notificationDispatcher.helper");
+        notifyOrangeTickStatus(user._id, "REJECTED", "Orange Tick Badge", rejectionReason).catch((e) =>
+          console.log("OrangeTick reject notif err:", e.message)
         );
       } catch (e) {
-        console.log("BlueTick notif error:", e.message);
+        console.log("OrangeTick notif error:", e.message);
       }
 
       // Send notification
@@ -633,12 +769,12 @@ exports.suspendVerification = async (req, res) => {
     await targetUser.save();
 
     try {
-      const { notifyBlueTickStatus } = require("../utils/notificationDispatcher.helper");
-      notifyBlueTickStatus(targetUser._id, "REJECTED", "Orange Tick Badge", suspensionReason).catch((e) =>
-        console.log("BlueTick suspend notif err:", e.message)
+      const { notifyOrangeTickStatus } = require("../utils/notificationDispatcher.helper");
+      notifyOrangeTickStatus(targetUser._id, "REJECTED", "Orange Tick Badge", suspensionReason).catch((e) =>
+        console.log("OrangeTick suspend notif err:", e.message)
       );
     } catch (e) {
-      console.log("BlueTick notif error:", e.message);
+      console.log("OrangeTick notif error:", e.message);
     }
 
     // Send notification
@@ -662,7 +798,7 @@ exports.suspendVerification = async (req, res) => {
 };
 
 // ========================================
-// ADMIN: REMOVE VERIFICATION (BLUE TICK)
+// ADMIN: REMOVE VERIFICATION (ORANGE TICK)
 // ========================================
 exports.removeVerification = async (req, res) => {
   try {
@@ -754,10 +890,10 @@ exports.manuallyVerifyUser = async (req, res) => {
     await user.save();
 
     try {
-      const { notifyBlueTickStatus } = require("../utils/notificationDispatcher.helper");
-      notifyBlueTickStatus(user._id, "APPROVED").catch((e) => console.log("BlueTick manual verify err:", e.message));
+      const { notifyOrangeTickStatus } = require("../utils/notificationDispatcher.helper");
+      notifyOrangeTickStatus(user._id, "APPROVED").catch((e) => console.log("OrangeTick manual verify err:", e.message));
     } catch (e) {
-      console.log("BlueTick notif error:", e.message);
+      console.log("OrangeTick notif error:", e.message);
     }
 
     // Create Notification

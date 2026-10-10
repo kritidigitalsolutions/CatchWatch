@@ -1,7 +1,6 @@
 import "./Sidebar.css";
 import { NavLink } from "react-router-dom";
-// import { BarChart3, Users, Plus, Film, FileText, HelpCircle, CreditCard, Settings, LogOut } from "lucide-react";
-import { X, BarChart3, Users, Plus, Film, FileText, HelpCircle, CreditCard, Settings, LogOut, Star, Bell, MessageSquare, Clapperboard, Play, Layers, ShieldCheck, BadgeCheck, Megaphone, ShieldAlert, Activity, DollarSign } from "lucide-react";
+import { X, BarChart3, Users, Plus, Film, FileText, HelpCircle, CreditCard, Settings, LogOut, Star, Bell, MessageSquare, Clapperboard, Play, Layers, ShieldCheck, BadgeCheck, Megaphone, ShieldAlert, Activity, DollarSign, Apple } from "lucide-react";
 
 const NAV = [
   { id: "dashboard", label: "Dashboard", icon: BarChart3, color: "#FF7A1A" },
@@ -11,6 +10,7 @@ const NAV = [
   { id: "content", label: "Content Library", icon: Film, color: "#f59e0b" },
   { id: "ad-management", label: "Advertisement & Campaigns", icon: Megaphone, color: "#ec4899" },
   { id: "verification", label: "Orange Tick Management", icon: BadgeCheck, color: "#FF7A1A" },
+  { id: "apple-payments", label: "Apple In-App Payments", icon: Apple, color: "#38bdf8" },
   { id: "redeem-requests", label: "Coins Redeem Requests", icon: DollarSign, color: "#f59e0b" },
   { id: "subscribed-users", label: "Subscrived Users", icon: Users, color: "#ec4899" },
   { id: "promo", label: "Promo & Voucher", icon: CreditCard, color: "#ec4899" },

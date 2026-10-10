@@ -6,10 +6,12 @@ export const getPlans = async () => {
   return response.data;
 };
 
-export const getBluetickPlans = async () => {
-  const response = await axiosInstance.get("/plan/bluetick");
+export const getOrangeTickPlans = async () => {
+  const response = await axiosInstance.get("/plan/orangetick");
   return response.data;
 };
+
+export const getBluetickPlans = getOrangeTickPlans;
 
 // Subscriptions
 export const createPlan = async (data) => {

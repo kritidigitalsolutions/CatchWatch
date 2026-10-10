@@ -249,6 +249,10 @@ const userSubscriptionRoutes = require("./routes/user/subscription.routes");
 app.use("/api/admin/subscription", adminSubscriptionRoutes);
 app.use("/api/subscription", userSubscriptionRoutes);
 
+//apple in-app payments routes for admin
+const adminApplePaymentRoutes = require("./routes/admin/applePayment.routes");
+app.use("/api/admin/apple-payments", adminApplePaymentRoutes);
+
 //watchlist routes
 const watchlistRoutes = require("./routes/user/watchlist.routes");
 app.use("/api/watchlist", watchlistRoutes);

@@ -144,7 +144,6 @@ const Topbar = () => {
     { name: "Short Films", path: "/short-films" },
     { name: "Web Series", path: "/series" },
     { name: "Reels", path: "/reels" },
-    { name: "Upload Reel", path: "/upload" },
   ];
 
   return (

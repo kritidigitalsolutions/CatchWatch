@@ -143,7 +143,7 @@ const VipSupportPage = () => {
     if (!isVerified) {
       setFeedback({
         type: "error",
-        text: "Access denied. VIP Support is exclusively available for Blue Tick verified users.",
+        text: "Access denied. VIP Support is exclusively available for Orange Tick verified users.",
       });
       return;
     }
@@ -274,14 +274,14 @@ const VipSupportPage = () => {
           {/* User Status Ribbon */}
           <div className="pt-2 flex items-center gap-3">
             {isVerified ? (
-              <div className="inline-flex items-center gap-2 px-4 py-2 bg-blue-500/20 border border-blue-400/40 text-blue-300 rounded-2xl text-xs font-black shadow-inner">
+              <div className="inline-flex items-center gap-2 px-4 py-2 bg-orange-500/20 border border-orange-400/40 text-orange-300 rounded-2xl text-xs font-black shadow-inner">
                 <VerifiedBadge isVerified={true} size="md" />
                 <span>Verified Creator Access Unlocked ({userData?.name || userData?.username || "VIP Member"})</span>
               </div>
             ) : (
               <div className="inline-flex items-center gap-2 px-4 py-2 bg-amber-500/20 border border-amber-400/40 text-amber-300 rounded-2xl text-xs font-extrabold shadow-inner">
                 <FaLock className="text-amber-400" />
-                <span>VIP Restricted — Blue Tick Verification Required</span>
+                <span>VIP Restricted — Orange Tick Verification Required</span>
               </div>
             )}
           </div>
@@ -316,11 +316,11 @@ const VipSupportPage = () => {
             </div>
             <div className="space-y-1 flex-1">
               <h3 className="text-lg font-black text-amber-950 flex items-center gap-2">
-                <span>Blue Tick Verification Required for Live Query Desk</span>
+                <span>Orange Tick Verification Required for Live Query Desk</span>
                 <FaShieldAlt className="text-amber-600" />
               </h3>
               <p className="text-xs sm:text-sm font-semibold text-amber-800 leading-relaxed">
-                Website visitors can explore VIP Support services above. However, direct human ticket submission and priority queue access are exclusively reserved for verified creators holding the Catch & Watch Blue Tick badge.
+                Website visitors can explore VIP Support services above. However, direct human ticket submission and priority queue access are exclusively reserved for verified creators holding the Catch & Watch Orange Tick badge.
               </p>
             </div>
           </div>
@@ -333,7 +333,7 @@ const VipSupportPage = () => {
               onClick={() => navigate("/verification")}
               className="w-full sm:w-auto px-6 py-3 bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white font-extrabold text-xs rounded-2xl shadow-lg transition transform hover:scale-[1.02] flex items-center justify-center gap-2"
             >
-              <FaShieldAlt /> Apply for Blue Tick Verification
+              <FaShieldAlt /> Apply for Orange Tick Verification
             </button>
           </div>
         </div>

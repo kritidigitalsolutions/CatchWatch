@@ -545,11 +545,11 @@ const SingleReelPage = () => {
                   );
 
                   const isVerifiedCreator = isReelCreator && (
-                    Boolean(reel?.user?.blueTick || reel?.user?.isVerified || reel?.user?.verification?.isVerified || reel?.user?.verification?.status === "VERIFIED" || reel?.user?.verification?.status === "APPROVED") ||
+                    Boolean(reel?.user?.orangeTick || reel?.user?.blueTick || reel?.user?.isVerified || reel?.user?.verification?.isVerified || reel?.user?.verification?.status === "VERIFIED" || reel?.user?.verification?.status === "APPROVED") ||
                     (() => {
                       try {
                         const u = JSON.parse(localStorage.getItem("user") || localStorage.getItem("userInfo") || "{}");
-                        return Boolean(u?.blueTick || u?.isVerified || u?.verification?.isVerified || u?.verification?.status === "VERIFIED" || u?.verification?.status === "APPROVED");
+                        return Boolean(u?.orangeTick || u?.blueTick || u?.isVerified || u?.verification?.isVerified || u?.verification?.status === "VERIFIED" || u?.verification?.status === "APPROVED");
                       } catch (e) { return false; }
                     })()
                   );
@@ -593,7 +593,7 @@ const SingleReelPage = () => {
                       </div>
 
                       <div className="flex items-center gap-1 flex-shrink-0">
-                        {/* Pin Button ONLY for Verified Blue Tick Reel Creator */}
+                        {/* Pin Button ONLY for Verified Orange Tick Reel Creator */}
                         {isVerifiedCreator && (
                           <button
                             onClick={(e) => handleCommentPin(c._id, c.isPinned, e)}

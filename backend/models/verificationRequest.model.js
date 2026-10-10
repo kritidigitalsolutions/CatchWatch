@@ -126,6 +126,21 @@ const verificationRequestSchema = new mongoose.Schema(
       type: String,
       default: "",
     },
+    paymentGateway: {
+      type: String,
+      default: "",
+    },
+    paymentStatus: {
+      type: String,
+      default: "UNPAID",
+    },
+    appleDetails: {
+      transactionId: { type: String, default: "" },
+      originalTransactionId: { type: String, default: "" },
+      productId: { type: String, default: "" },
+      environment: { type: String, default: "" },
+      purchaseDate: { type: Date, default: null },
+    },
   },
   {
     timestamps: true,

@@ -18,6 +18,17 @@ import {
   ShieldCheck,
   UserCheck,
   Coins,
+  Apple,
+  Copy,
+  CheckCircle2,
+  Shield,
+  Calendar,
+  Phone,
+  Mail,
+  Hash,
+  User,
+  CreditCard,
+  Zap,
 } from "lucide-react";
 import "./VerificationManagement.css";
 
@@ -47,6 +58,43 @@ export default function VerificationManagement() {
   const [suspendReason, setSuspendReason] = useState("");
   const [imagePreview, setImagePreview] = useState(null);
   const [manualVerifyUserId, setManualVerifyUserId] = useState("");
+
+  // Live Apple Verification inside Modal & Copy state
+  const [copiedKey, setCopiedKey] = useState(null);
+  const [modalVerifying, setModalVerifying] = useState(false);
+  const [modalVerifyResult, setModalVerifyResult] = useState(null);
+  const [modalVerifyError, setModalVerifyError] = useState("");
+
+  const handleCopy = (text, key) => {
+    if (!text || text === "—") return;
+    navigator.clipboard.writeText(text);
+    setCopiedKey(key);
+    setTimeout(() => setCopiedKey(null), 2000);
+  };
+
+  const handleLiveAppleVerifyInModal = async (txId) => {
+    if (!txId) return;
+    setModalVerifying(true);
+    setModalVerifyError("");
+    setModalVerifyResult(null);
+    try {
+      const res = await API.post("/admin/apple-payments/verify-single", {
+        transactionId: txId,
+      });
+      if (res.data?.success) {
+        setModalVerifyResult(res.data);
+      } else {
+        setModalVerifyError(res.data?.message || "Verification failed");
+      }
+    } catch (err) {
+      setModalVerifyError(
+        err.response?.data?.message ||
+          "Could not verify transaction with Apple StoreKit 2."
+      );
+    } finally {
+      setModalVerifying(false);
+    }
+  };
 
   // User Selection for Manual Verification
   const [usersList, setUsersList] = useState([]);
@@ -356,7 +404,7 @@ export default function VerificationManagement() {
         fetchRequests();
         fetchUsersForSelection(userSearchQuery);
       } else {
-        showToast(res.data?.message || "Failed to grant Blue Tick.", "error");
+        showToast(res.data?.message || "Failed to grant Orange Tick.", "error");
       }
     } catch (err) {
       console.error("Manual verify error:", err);
@@ -893,7 +941,11 @@ export default function VerificationManagement() {
                             <button
                               className="btn-icon"
                               title="View Application Details"
-                              onClick={() => setViewRequest(reqItem)}
+                              onClick={() => {
+                                setViewRequest(reqItem);
+                                setModalVerifyResult(null);
+                                setModalVerifyError("");
+                              }}
                             >
                               <Eye size={16} />
                             </button>
@@ -950,194 +1002,436 @@ export default function VerificationManagement() {
       )}
 
       {/* ── View Application Details Modal ── */}
-      {viewRequest && (
-        <div className="verif-modal-overlay">
-          <div className="verif-modal-card">
-            <div className="verif-modal-header">
-              <h2>Verification Application Details</h2>
-              <button
-                className="btn-icon"
-                onClick={() => setViewRequest(null)}
-              >
-                <X size={18} />
-              </button>
-            </div>
+      {viewRequest && (() => {
+        const user = viewRequest.userId || {};
+        const payment = viewRequest.paymentInfo || {};
+        const isApple =
+          payment.isApple ||
+          viewRequest.paymentGateway === "apple" ||
+          Boolean(viewRequest.appleDetails?.transactionId) ||
+          Boolean(viewRequest.paymentId && /^\d{10,}$/.test(String(viewRequest.paymentId).trim()));
 
-            <div className="verif-user-cell" style={{ marginBottom: "16px" }}>
-              <img
-                src={getMediaUrl(viewRequest.userId?.profileImage)}
-                alt={viewRequest.fullName}
-                className="verif-avatar"
-                style={{ width: "56px", height: "56px" }}
-              />
-              <div>
-                <h3 style={{ margin: 0, color: "#fff", display: "flex", alignItems: "center", gap: "6px" }}>
-                  {viewRequest.fullName}
-                  {viewRequest.status === "VERIFIED" && <BadgeCheck size={20} color="#f97316" />}
-                </h3>
-                <p style={{ margin: "2px 0 0", color: "#94a3b8", fontSize: "0.88rem" }}>
-                  {viewRequest.username} · Applied on {new Date(viewRequest.createdAt).toLocaleString()}
-                </p>
-              </div>
-            </div>
+        const rawGateway = payment.paymentGateway || viewRequest.paymentGateway || (isApple ? "apple" : viewRequest.paymentId ? "razorpay" : "manual");
+        const txId = payment.transactionId || viewRequest.appleDetails?.transactionId || viewRequest.paymentId || "";
+        const origTxId = payment.originalTransactionId || viewRequest.appleDetails?.originalTransactionId || viewRequest.orderId || "";
+        const prodId = payment.appleProductId || viewRequest.appleDetails?.productId || viewRequest.selectedPlan?.planId?.appleProductId || "—";
+        const env = payment.environment || viewRequest.appleDetails?.environment || (txId && String(txId).startsWith("2") ? "Production" : "Sandbox");
+        const payStatus = payment.paymentStatus || viewRequest.paymentStatus || (txId ? "PAID" : "UNPAID");
+        const amount = payment.amount || viewRequest.selectedPlan?.price || 0;
+        const planName = viewRequest.selectedPlan?.name || "Orange Tick Verification";
+        const planDuration = viewRequest.selectedPlan?.duration || 30;
 
-            {/* Document Images */}
-            <h4 style={{ color: "#cbd5e1", margin: "16px 0 8px" }}>Uploaded Identity Documents</h4>
-            <div className="verif-doc-grid">
-              <div className="verif-doc-card">
-                <img
-                  src={getMediaUrl(viewRequest.idFront)}
-                  alt="Front ID"
-                  onClick={() => setImagePreview(getMediaUrl(viewRequest.idFront))}
-                />
-                <div className="verif-doc-label">Front ID Image</div>
-              </div>
-
-              {viewRequest.idBack && (
-                <div className="verif-doc-card">
-                  <img
-                    src={getMediaUrl(viewRequest.idBack)}
-                    alt="Back ID"
-                    onClick={() => setImagePreview(getMediaUrl(viewRequest.idBack))}
-                  />
-                  <div className="verif-doc-label">Back ID Image (Optional)</div>
+        return (
+          <div className="verif-modal-overlay" onClick={() => setViewRequest(null)}>
+            <div className="verif-modal-card rich-details" onClick={(e) => e.stopPropagation()}>
+              {/* Header */}
+              <div className="verif-modal-top">
+                <div className="verif-title-group">
+                  <div className="verif-title-icon">
+                    <BadgeCheck size={26} color="#f97316" />
+                  </div>
+                  <div>
+                    <h2 style={{ margin: 0, color: "#fff", fontSize: "1.3rem" }}>Verification Application Details</h2>
+                    <p style={{ margin: "2px 0 0", color: "#94a3b8", fontSize: "0.84rem" }}>
+                      Application ID: <span style={{ fontFamily: "monospace", color: "#cbd5e1" }}>{viewRequest._id}</span>
+                    </p>
+                  </div>
                 </div>
-              )}
 
-              <div className="verif-doc-card">
-                <img
-                  src={getMediaUrl(viewRequest.selfie)}
-                  alt="Selfie Photo"
-                  onClick={() => setImagePreview(getMediaUrl(viewRequest.selfie))}
-                />
-                <div className="verif-doc-label">Selfie Photo</div>
+                <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+                  <span className={`status-badge ${viewRequest.status}`}>
+                    {viewRequest.status}
+                  </span>
+                  <button className="btn-icon" onClick={() => setViewRequest(null)} title="Close">
+                    <X size={18} />
+                  </button>
+                </div>
               </div>
-            </div>
 
-            {/* Field Details */}
-            {viewRequest.selectedPlan?.name && (
-              <div className="verif-info-row">
-                <span className="verif-info-label">Selected Plan</span>
-                <span className="verif-info-val" style={{ color: "#f97316", fontWeight: 700 }}>
-                  {viewRequest.selectedPlan.name} — ₹{viewRequest.selectedPlan.price} ({viewRequest.selectedPlan.duration} days)
-                </span>
+              {/* 1. Applicant & User Profile Card */}
+              <div className="verif-section-card">
+                <div className="verif-section-header">
+                  <h4 className="verif-section-title">
+                    <User size={16} color="#3b82f6" /> Applicant & User Profile
+                  </h4>
+                  <span style={{ fontSize: "0.78rem", color: "#94a3b8" }}>
+                    Applied on {new Date(viewRequest.createdAt).toLocaleString()}
+                  </span>
+                </div>
+
+                <div style={{ display: "flex", alignItems: "center", gap: "16px", flexWrap: "wrap" }}>
+                  <img
+                    src={getMediaUrl(user.profileImage || viewRequest.selfie)}
+                    alt={viewRequest.fullName}
+                    className="verif-avatar"
+                    style={{ width: "62px", height: "62px", borderRadius: "50%", border: "2px solid #f97316" }}
+                    onError={(e) => (e.target.src = "/avatar-placeholder.png")}
+                  />
+                  <div>
+                    <h3 style={{ margin: 0, color: "#fff", fontSize: "1.15rem", display: "flex", alignItems: "center", gap: "6px" }}>
+                      {viewRequest.fullName || user.name || "User"}
+                      {(viewRequest.status === "VERIFIED" || user.isVerified) && (
+                        <BadgeCheck size={20} color="#f97316" />
+                      )}
+                    </h3>
+                    <p style={{ margin: "2px 0 0", color: "#94a3b8", fontSize: "0.88rem" }}>
+                      {viewRequest.username || user.username || "@username"}
+                    </p>
+                  </div>
+                </div>
+
+                <div className="verif-user-grid">
+                  <div className="user-meta-field">
+                    <span className="meta-field-label"><Hash size={12} /> User ID</span>
+                    <span className="meta-field-val code">
+                      {user._id ? String(user._id) : "—"}
+                      {user._id && (
+                        <button className="copy-inline-btn" title="Copy User ID" onClick={() => handleCopy(String(user._id), "user-id")}>
+                          {copiedKey === "user-id" ? <Check size={12} color="#10b981" /> : <Copy size={12} />}
+                        </button>
+                      )}
+                    </span>
+                  </div>
+
+                  <div className="user-meta-field">
+                    <span className="meta-field-label"><Phone size={12} /> Mobile Phone</span>
+                    <span className="meta-field-val">
+                      {user.phone ? `+${user.phone}` : "Not provided"}
+                    </span>
+                  </div>
+
+                  <div className="user-meta-field">
+                    <span className="meta-field-label"><Mail size={12} /> Email</span>
+                    <span className="meta-field-val">
+                      {user.email || "Not linked"}
+                    </span>
+                  </div>
+
+                  <div className="user-meta-field">
+                    <span className="meta-field-label"><Shield size={12} /> Account Role</span>
+                    <span className="meta-field-val">
+                      {user.role || "USER"} · {user.isCreator ? "Creator Account" : "Standard"}
+                    </span>
+                  </div>
+
+                  <div className="user-meta-field">
+                    <span className="meta-field-label"><Calendar size={12} /> Member Since</span>
+                    <span className="meta-field-val">
+                      {user.createdAt ? new Date(user.createdAt).toLocaleDateString() : "—"}
+                    </span>
+                  </div>
+
+                  <div className="user-meta-field">
+                    <span className="meta-field-label"><BadgeCheck size={12} /> Badge Status</span>
+                    <span className="meta-field-val" style={{ color: user.isVerified || user.verification?.status === "VERIFIED" ? "#10b981" : "#f59e0b" }}>
+                      {user.verification?.status || (user.isVerified ? "VERIFIED" : "NOT_VERIFIED")}
+                    </span>
+                  </div>
+                </div>
               </div>
-            )}
 
-            <div className="verif-info-row">
-              <span className="verif-info-label">Government ID</span>
-              <span className="verif-info-val">
-                {viewRequest.governmentIdType} ({viewRequest.governmentIdNumber || "Not Provided"})
-              </span>
-            </div>
+              {/* 2. Payment & In-App Purchase Details Card */}
+              <div className="verif-section-card verif-payment-card">
+                <div className="verif-section-header">
+                  <h4 className="verif-section-title">
+                    {isApple ? <Apple size={16} color="#38bdf8" /> : <CreditCard size={16} color="#60a5fa" />}
+                    Payment & StoreKit Purchase Breakdown
+                  </h4>
+                  <div style={{ display: "flex", gap: "8px", alignItems: "center" }}>
+                    <span className={`payment-gateway-pill ${isApple ? "apple" : rawGateway === "razorpay" ? "razorpay" : "manual"}`}>
+                      {isApple ? (
+                        <>
+                          <Apple size={13} /> Apple StoreKit (IAP)
+                        </>
+                      ) : rawGateway === "razorpay" ? (
+                        "💳 Razorpay"
+                      ) : (
+                        "🏷️ Manual / Grant"
+                      )}
+                    </span>
+                    <span className={`status-badge ${payStatus === "PAID" ? "VERIFIED" : "PENDING"}`}>
+                      {payStatus}
+                    </span>
+                  </div>
+                </div>
 
-            <div className="verif-info-row">
-              <span className="verif-info-label">Reason</span>
-              <span className="verif-info-val">{viewRequest.reason || "N/A"}</span>
-            </div>
+                <div className="verif-payment-grid">
+                  <div className="user-meta-field">
+                    <span className="meta-field-label">Selected Plan</span>
+                    <span className="meta-field-val" style={{ color: "#f97316" }}>
+                      {planName} ({planDuration} days)
+                    </span>
+                  </div>
 
-            <div className="verif-info-row">
-              <span className="verif-info-label">Social Links</span>
-              <span className="verif-info-val" style={{ display: "flex", gap: "12px", flexWrap: "wrap" }}>
-                {viewRequest.website && (
-                  <a href={viewRequest.website} target="_blank" rel="noreferrer" style={{ color: "#3b82f6" }}>
-                    Website <ExternalLink size={12} />
-                  </a>
-                )}
-                {viewRequest.instagram && (
-                  <a href={viewRequest.instagram} target="_blank" rel="noreferrer" style={{ color: "#e1306c" }}>
-                    Instagram <ExternalLink size={12} />
-                  </a>
-                )}
-                {viewRequest.facebook && (
-                  <a href={viewRequest.facebook} target="_blank" rel="noreferrer" style={{ color: "#1877f2" }}>
-                    Facebook <ExternalLink size={12} />
-                  </a>
-                )}
-                {viewRequest.youtube && (
-                  <a href={viewRequest.youtube} target="_blank" rel="noreferrer" style={{ color: "#ff0000" }}>
-                    YouTube <ExternalLink size={12} />
-                  </a>
-                )}
-                {viewRequest.twitter && (
-                  <a href={viewRequest.twitter} target="_blank" rel="noreferrer" style={{ color: "#1da1f2" }}>
-                    X / Twitter <ExternalLink size={12} />
-                  </a>
-                )}
-                {viewRequest.linkedin && (
-                  <a href={viewRequest.linkedin} target="_blank" rel="noreferrer" style={{ color: "#0a66c2" }}>
-                    LinkedIn <ExternalLink size={12} />
-                  </a>
-                )}
-                {!viewRequest.website && !viewRequest.instagram && !viewRequest.facebook && !viewRequest.youtube && !viewRequest.twitter && !viewRequest.linkedin && (
-                  <span>None</span>
-                )}
-              </span>
-            </div>
+                  <div className="user-meta-field">
+                    <span className="meta-field-label">Amount Paid</span>
+                    <span className="meta-field-val" style={{ color: "#10b981", fontSize: "1rem" }}>
+                      ₹{amount} INR
+                    </span>
+                  </div>
 
-            {viewRequest.adminRemark && (
-              <div className="verif-info-row">
-                <span className="verif-info-label">Admin Remark</span>
-                <span className="verif-info-val" style={{ color: "#f59e0b" }}>{viewRequest.adminRemark}</span>
+                  <div className="user-meta-field">
+                    <span className="meta-field-label">Apple Product ID</span>
+                    <span className="meta-field-val code" style={{ color: "#38bdf8" }}>
+                      {prodId}
+                    </span>
+                  </div>
+
+                  <div className="user-meta-field">
+                    <span className="meta-field-label">Environment</span>
+                    <span className="meta-field-val">
+                      <span className={`env-badge ${env?.toLowerCase()}`}>
+                        {env === "Sandbox" ? "🧪 Sandbox" : "🟢 Production"}
+                      </span>
+                    </span>
+                  </div>
+
+                  <div className="user-meta-field">
+                    <span className="meta-field-label">Transaction ID</span>
+                    <span className="meta-field-val code">
+                      {txId || "—"}
+                      {txId && (
+                        <button className="copy-inline-btn" title="Copy Transaction ID" onClick={() => handleCopy(txId, "modal-tx")}>
+                          {copiedKey === "modal-tx" ? <Check size={12} color="#10b981" /> : <Copy size={12} />}
+                        </button>
+                      )}
+                    </span>
+                  </div>
+
+                  <div className="user-meta-field">
+                    <span className="meta-field-label">Original Transaction / Order ID</span>
+                    <span className="meta-field-val code">
+                      {origTxId || "—"}
+                      {origTxId && (
+                        <button className="copy-inline-btn" title="Copy Order ID" onClick={() => handleCopy(origTxId, "modal-orig")}>
+                          {copiedKey === "modal-orig" ? <Check size={12} color="#10b981" /> : <Copy size={12} />}
+                        </button>
+                      )}
+                    </span>
+                  </div>
+                </div>
+
+                {/* Live Apple StoreKit Verification Diagnostic Trigger */}
+                {txId && (
+                  <div style={{ marginTop: "14px", paddingTop: "12px", borderTop: "1px solid rgba(255, 255, 255, 0.08)" }}>
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: "10px" }}>
+                      <div>
+                        <span style={{ fontSize: "0.82rem", color: "#cbd5e1", fontWeight: 600 }}>
+                          Apple StoreKit 2 Live Verification Engine
+                        </span>
+                        <p style={{ margin: "2px 0 0", fontSize: "0.76rem", color: "#94a3b8" }}>
+                          Query Apple App Store servers to cryptographically confirm receipt & ownership.
+                        </p>
+                      </div>
+
+                      <button
+                        className="apple-live-verify-btn"
+                        onClick={() => handleLiveAppleVerifyInModal(txId)}
+                        disabled={modalVerifying}
+                      >
+                        {modalVerifying ? (
+                          <>
+                            <RefreshCw size={14} className="spin" /> Verifying with Apple...
+                          </>
+                        ) : (
+                          <>
+                            <Zap size={14} /> Verify Apple Transaction
+                          </>
+                        )}
+                      </button>
+                    </div>
+
+                    {modalVerifyResult && (
+                      <div className="live-verify-banner success">
+                        <div className="live-verify-banner-content">
+                          <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                            <CheckCircle2 size={18} color="#10b981" />
+                            <div>
+                              <strong>StoreKit 2 Signature Validated: Active Apple In-App Purchase</strong>
+                              <div style={{ fontSize: "0.76rem", color: "#cbd5e1", marginTop: "2px" }}>
+                                Protocol: {modalVerifyResult.storeKitVersion} · Algorithm: {modalVerifyResult.cryptographicAlgorithm} · Environment: {modalVerifyResult.environment}
+                              </div>
+                            </div>
+                          </div>
+                          <span style={{ fontWeight: 700, color: "#10b981" }}>OWNERSHIP: {modalVerifyResult.ownershipType || "PURCHASED"}</span>
+                        </div>
+                      </div>
+                    )}
+
+                    {modalVerifyError && (
+                      <div className="live-verify-banner error">
+                        <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                          <AlertTriangle size={18} color="#ef4444" />
+                          <span>{modalVerifyError}</span>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                )}
               </div>
-            )}
 
-            {/* Modal Actions */}
-            <div className="verif-modal-actions">
-              {viewRequest.status === "PENDING" && (
-                <>
-                  <button
-                    className="verif-btn approve"
-                    onClick={() => handleApprove(viewRequest._id)}
-                  >
-                    <Check size={16} /> Approve Verification
-                  </button>
-                  <button
-                    className="verif-btn reject"
-                    onClick={() => {
-                      setRejectModal(viewRequest);
-                    }}
-                  >
-                    <X size={16} /> Reject Request
-                  </button>
-                </>
-              )}
+              {/* 3. Uploaded Identity Documents */}
+              <div className="verif-section-card">
+                <div className="verif-section-header">
+                  <h4 className="verif-section-title">
+                    <FileText size={16} color="#a855f7" /> Uploaded Identity Documents
+                  </h4>
+                  <span style={{ fontSize: "0.82rem", color: "#cbd5e1" }}>
+                    ID: <strong>{viewRequest.governmentIdType}</strong> ({viewRequest.governmentIdNumber || "Number Not Provided"})
+                  </span>
+                </div>
 
-              {viewRequest.status === "VERIFIED" && (
-                <>
-                  <button
-                    className="verif-btn suspend"
-                    onClick={() => setSuspendModal(viewRequest)}
-                  >
-                    <Ban size={16} /> Suspend Verification
-                  </button>
-                  <button
-                    className="verif-btn reject"
-                    onClick={() => handleRemoveVerification(viewRequest.userId?._id || viewRequest.userId)}
-                  >
-                    <Trash2 size={16} /> Remove Orange Tick
-                  </button>
-                </>
-              )}
+                <div className="verif-doc-grid">
+                  <div className="verif-doc-card">
+                    <img
+                      src={getMediaUrl(viewRequest.idFront)}
+                      alt="Front ID"
+                      onClick={() => setImagePreview(getMediaUrl(viewRequest.idFront))}
+                    />
+                    <div className="verif-doc-label">Front ID Image (Click to Zoom)</div>
+                  </div>
 
-              <button
-                className="verif-btn reject"
-                onClick={() => handleDeleteRequest(viewRequest._id)}
-                style={{ background: "#dc2626" }}
-              >
-                <Trash2 size={16} /> Delete Request History
-              </button>
+                  {viewRequest.idBack ? (
+                    <div className="verif-doc-card">
+                      <img
+                        src={getMediaUrl(viewRequest.idBack)}
+                        alt="Back ID"
+                        onClick={() => setImagePreview(getMediaUrl(viewRequest.idBack))}
+                      />
+                      <div className="verif-doc-label">Back ID Image (Click to Zoom)</div>
+                    </div>
+                  ) : (
+                    <div className="verif-doc-card" style={{ display: "flex", flexDirection: "column", justifyContent: "center", alignItems: "center", height: "160px" }}>
+                      <FileText size={32} color="#64748b" />
+                      <div className="verif-doc-label" style={{ marginTop: "10px" }}>Back ID Not Provided</div>
+                    </div>
+                  )}
 
-              <button
-                className="verif-btn secondary"
-                onClick={() => setViewRequest(null)}
-              >
-                Close
-              </button>
+                  <div className="verif-doc-card">
+                    <img
+                      src={getMediaUrl(viewRequest.selfie)}
+                      alt="Selfie Photo"
+                      onClick={() => setImagePreview(getMediaUrl(viewRequest.selfie))}
+                    />
+                    <div className="verif-doc-label">Selfie Photo (Face Match)</div>
+                  </div>
+                </div>
+              </div>
+
+              {/* 4. Social Links & Online Presence */}
+              <div className="verif-section-card">
+                <h4 className="verif-section-title">
+                  <ExternalLink size={16} color="#06b6d4" /> Social Profiles & Online Presence
+                </h4>
+                <div className="verif-social-chips">
+                  {viewRequest.website && (
+                    <a href={viewRequest.website} target="_blank" rel="noreferrer" className="social-chip website">
+                      🌐 Website <ExternalLink size={12} />
+                    </a>
+                  )}
+                  {viewRequest.instagram && (
+                    <a href={viewRequest.instagram.startsWith("http") ? viewRequest.instagram : `https://instagram.com/${viewRequest.instagram.replace(/^@/, "")}`} target="_blank" rel="noreferrer" className="social-chip instagram">
+                      📸 Instagram <ExternalLink size={12} />
+                    </a>
+                  )}
+                  {viewRequest.youtube && (
+                    <a href={viewRequest.youtube} target="_blank" rel="noreferrer" className="social-chip youtube">
+                      ▶️ YouTube <ExternalLink size={12} />
+                    </a>
+                  )}
+                  {viewRequest.facebook && (
+                    <a href={viewRequest.facebook} target="_blank" rel="noreferrer" className="social-chip facebook">
+                      📘 Facebook <ExternalLink size={12} />
+                    </a>
+                  )}
+                  {viewRequest.twitter && (
+                    <a href={viewRequest.twitter.startsWith("http") ? viewRequest.twitter : `https://x.com/${viewRequest.twitter.replace(/^@/, "")}`} target="_blank" rel="noreferrer" className="social-chip twitter">
+                      𝕏 Twitter / X <ExternalLink size={12} />
+                    </a>
+                  )}
+                  {viewRequest.linkedin && (
+                    <a href={viewRequest.linkedin} target="_blank" rel="noreferrer" className="social-chip linkedin">
+                      💼 LinkedIn <ExternalLink size={12} />
+                    </a>
+                  )}
+                  {!viewRequest.website && !viewRequest.instagram && !viewRequest.facebook && !viewRequest.youtube && !viewRequest.twitter && !viewRequest.linkedin && (
+                    <span style={{ fontSize: "0.84rem", color: "#64748b" }}>No social media profiles submitted.</span>
+                  )}
+                </div>
+              </div>
+
+              {/* 5. Application Reason & Notes */}
+              <div className="verif-section-card">
+                <h4 className="verif-section-title">
+                  <FileText size={16} color="#f59e0b" /> Application Reason & Notes
+                </h4>
+                <p style={{ margin: "8px 0 0", color: "#cbd5e1", fontSize: "0.88rem", lineHeight: 1.5 }}>
+                  {viewRequest.reason || "Applicant did not provide custom notes."}
+                </p>
+
+                {viewRequest.adminRemark && (
+                  <div style={{ marginTop: "12px", padding: "10px 14px", background: "rgba(245, 158, 11, 0.1)", borderRadius: "8px", border: "1px solid rgba(245, 158, 11, 0.25)" }}>
+                    <span style={{ fontSize: "0.76rem", color: "#f59e0b", fontWeight: 700, textTransform: "uppercase" }}>Admin Review Remark:</span>
+                    <p style={{ margin: "4px 0 0", color: "#fef3c7", fontSize: "0.85rem" }}>{viewRequest.adminRemark}</p>
+                  </div>
+                )}
+              </div>
+
+              {/* Modal Actions */}
+              <div className="verif-modal-actions">
+                {viewRequest.status === "PENDING" && (
+                  <>
+                    <button
+                      className="verif-btn approve"
+                      onClick={() => handleApprove(viewRequest._id)}
+                    >
+                      <Check size={16} /> Approve Verification
+                    </button>
+                    <button
+                      className="verif-btn reject"
+                      onClick={() => setRejectModal(viewRequest)}
+                    >
+                      <X size={16} /> Reject Request
+                    </button>
+                  </>
+                )}
+
+                {viewRequest.status === "VERIFIED" && (
+                  <>
+                    <button
+                      className="verif-btn suspend"
+                      onClick={() => setSuspendModal(viewRequest)}
+                    >
+                      <Ban size={16} /> Suspend Verification
+                    </button>
+                    <button
+                      className="verif-btn reject"
+                      onClick={() => handleRemoveVerification(viewRequest.userId?._id || viewRequest.userId)}
+                    >
+                      <Trash2 size={16} /> Remove Orange Tick
+                    </button>
+                  </>
+                )}
+
+                <button
+                  className="verif-btn reject"
+                  onClick={() => handleDeleteRequest(viewRequest._id)}
+                  style={{ background: "#dc2626" }}
+                >
+                  <Trash2 size={16} /> Delete Request History
+                </button>
+
+                <button
+                  className="verif-btn secondary"
+                  onClick={() => setViewRequest(null)}
+                >
+                  Close
+                </button>
+              </div>
             </div>
           </div>
-        </div>
-      )}
+        );
+      })()}
 
       {/* ── Reject Reason Popup Modal ── */}
       {rejectModal && (
@@ -1195,7 +1489,7 @@ export default function VerificationManagement() {
             </div>
             <form onSubmit={handleSuspendSubmit}>
               <p style={{ color: "#cbd5e1", fontSize: "0.9rem", marginTop: 0 }}>
-                Specify reason for suspending blue tick for <strong>{suspendModal.fullName || "user"}</strong>:
+                Specify reason for suspending orange tick for <strong>{suspendModal.fullName || "user"}</strong>:
               </p>
               <textarea
                 required
@@ -1364,11 +1658,66 @@ export default function VerificationManagement() {
       {/* ── Image Preview Zoom Modal ── */}
       {imagePreview && (
         <div className="verif-modal-overlay" onClick={() => setImagePreview(null)}>
-          <div style={{ position: "relative", maxWidth: "90vw", maxHeight: "90vh" }}>
+          <div
+            style={{
+              position: "relative",
+              maxWidth: "90vw",
+              maxHeight: "90vh",
+              display: "flex",
+              flexDirection: "column",
+              alignItems: "center",
+              gap: "12px",
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div
+              style={{
+                display: "flex",
+                justifyContent: "space-between",
+                width: "100%",
+                alignItems: "center",
+              }}
+            >
+              <a
+                href={imagePreview}
+                target="_blank"
+                rel="noreferrer"
+                style={{
+                  display: "inline-flex",
+                  alignItems: "center",
+                  gap: "6px",
+                  color: "#38bdf8",
+                  fontSize: "0.85rem",
+                  fontWeight: 600,
+                  textDecoration: "none",
+                  background: "rgba(15,23,42,0.8)",
+                  padding: "6px 12px",
+                  borderRadius: "8px",
+                  border: "1px solid rgba(255,255,255,0.1)",
+                }}
+              >
+                Open Original File <ExternalLink size={14} />
+              </a>
+              <button
+                className="btn-icon"
+                onClick={() => setImagePreview(null)}
+                title="Close Lightbox"
+                style={{ background: "#dc2626", color: "#fff" }}
+              >
+                <X size={18} />
+              </button>
+            </div>
             <img
               src={imagePreview}
               alt="Enlarged document"
-              style={{ maxWidth: "100%", maxHeight: "85vh", borderRadius: "12px", objectFit: "contain" }}
+              style={{
+                maxWidth: "100%",
+                maxHeight: "80vh",
+                borderRadius: "14px",
+                objectFit: "contain",
+                boxShadow: "0 25px 50px -12px rgba(0,0,0,0.8)",
+                border: "1px solid rgba(255,255,255,0.15)",
+              }}
             />
           </div>
         </div>

@@ -3,6 +3,8 @@ import { MdVerified } from "react-icons/md";
 const VerifiedBadge = ({ user, isVerified, size = "md", className = "" }) => {
   const verified =
     isVerified === true ||
+    user?.orangeTick === true ||
+    user?.blueTick === true ||
     user?.verification?.isVerified === true ||
     user?.verification?.status === "VERIFIED" ||
     user?.isVerified === true;
