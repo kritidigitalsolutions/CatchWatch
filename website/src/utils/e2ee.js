@@ -483,17 +483,24 @@ export async function initUserE2EE(userId, saveIdentityApi, getBackupApi, getPub
           keyId,
           encryptedPrivateKeyBackup: backup,
           deviceId,
-        }).catch((err) => {
-          console.warn("Could not register initial E2EE identity on server:", err);
-        });
+        })
+          .then(() => {
+            localStorage.setItem(`${KEY_STORAGE_PREFIX}synced_${userId}_${keyId}`, "true");
+          })
+          .catch((err) => {
+            console.warn("Could not register initial E2EE identity on server:", err);
+          });
       }
     } else {
-      // Key exists locally. Ensure server has backup if needed.
+      // Key exists locally. Ensure server has backup only if not already synced.
       if (!keyId) {
         keyId = await computeKeyId(publicKeyStr);
       }
 
-      if (typeof saveIdentityApi === "function") {
+      const syncKey = `${KEY_STORAGE_PREFIX}synced_${userId}_${keyId}`;
+      const alreadySynced = localStorage.getItem(syncKey) === "true";
+
+      if (!alreadySynced && typeof saveIdentityApi === "function") {
         const backup = await encryptPrivateKeyBackup(privateKeyStr, recoveryPassphrase);
         if (backup) {
           saveIdentityApi({
@@ -501,7 +508,11 @@ export async function initUserE2EE(userId, saveIdentityApi, getBackupApi, getPub
             keyId,
             encryptedPrivateKeyBackup: backup,
             deviceId,
-          }).catch(() => null);
+          })
+            .then(() => {
+              localStorage.setItem(syncKey, "true");
+            })
+            .catch(() => null);
         }
       }
     }

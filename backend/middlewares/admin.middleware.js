@@ -37,8 +37,8 @@ const isAdmin = async (
     next();
 
   } catch (error) {
-    console.error(
-      "Admin Middleware Error:",
+    console.warn(
+      "Admin Middleware Auth Notice:",
       error.message
     );
 

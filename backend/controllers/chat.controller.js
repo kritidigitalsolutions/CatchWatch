@@ -10,8 +10,8 @@ const crypto = require("crypto");
 
 const populateMessage = (query) =>
   query
-    .populate("sender", "name username profileImage publicKey activeSession deviceKeys")
-    .populate("recipient", "name username profileImage publicKey activeSession deviceKeys");
+    .populate("sender", "name username profileImage publicKey e2eeIdentity activeSession deviceKeys")
+    .populate("recipient", "name username profileImage publicKey e2eeIdentity activeSession deviceKeys");
 
 const getActiveDeviceKeys = (user) => {
   const userId = (user?._id || user?.id)?.toString() || "";
@@ -150,14 +150,20 @@ exports.getConversations = async (req, res) => {
     })
       .populate({
         path: "participants",
-        select: "name username profileImage isOnline lastSeen phone bio role verification publicKey deviceKeys",
+        select: "name username profileImage isOnline lastSeen phone bio role verification publicKey e2eeIdentity deviceKeys",
       })
       .populate({
         path: "lastMessage",
-        populate: {
-          path: "sender",
-          select: "name username profileImage",
-        },
+        populate: [
+          {
+            path: "sender",
+            select: "name username profileImage publicKey e2eeIdentity activeSession deviceKeys",
+          },
+          {
+            path: "recipient",
+            select: "name username profileImage publicKey e2eeIdentity activeSession deviceKeys",
+          },
+        ],
       })
       .sort({ lastMessageAt: -1 });
 
@@ -353,14 +359,14 @@ exports.getMessages = async (req, res) => {
       conversationId,
       deletedFor: { $ne: currentUserId },
     })
-      .populate("sender", "name username profileImage publicKey deviceKeys")
-      .populate("recipient", "name username profileImage publicKey deviceKeys")
+      .populate("sender", "name username profileImage publicKey e2eeIdentity activeSession deviceKeys")
+      .populate("recipient", "name username profileImage publicKey e2eeIdentity activeSession deviceKeys")
       .populate("pinnedBy", "name username")
       .populate({
         path: "replyTo",
         populate: [
-          { path: "sender", select: "name username profileImage publicKey activeSession deviceKeys" },
-          { path: "recipient", select: "name username profileImage publicKey activeSession deviceKeys" },
+          { path: "sender", select: "name username profileImage publicKey e2eeIdentity activeSession deviceKeys" },
+          { path: "recipient", select: "name username profileImage publicKey e2eeIdentity activeSession deviceKeys" },
         ],
       })
       .sort({ createdAt: -1 })
@@ -390,9 +396,20 @@ exports.getMessages = async (req, res) => {
       await conversation.save();
     }
 
+    const formattedMessages = messages.map((m) => {
+      const msgObj = m.toObject();
+      const isPinnedForMe = Array.isArray(msgObj.pinnedBy)
+        ? msgObj.pinnedBy.some((p) => (p?._id || p)?.toString() === currentUserId.toString())
+        : (msgObj.pinnedBy?._id || msgObj.pinnedBy)?.toString() === currentUserId.toString();
+      return {
+        ...msgObj,
+        isPinned: Boolean(isPinnedForMe),
+      };
+    });
+
     return res.status(200).json({
       success: true,
-      data: messages.reverse(),
+      data: formattedMessages.reverse(),
       pagination: {
         page,
         limit,
@@ -738,13 +755,13 @@ exports.editMessage = async (req, res) => {
     await message.save();
 
     const updatedMessage = await Message.findById(message._id)
-      .populate("sender", "name username profileImage publicKey deviceKeys")
-      .populate("recipient", "name username profileImage publicKey deviceKeys")
+      .populate("sender", "name username profileImage publicKey e2eeIdentity activeSession deviceKeys")
+      .populate("recipient", "name username profileImage publicKey e2eeIdentity activeSession deviceKeys")
       .populate({
         path: "replyTo",
         populate: [
-          { path: "sender", select: "name username profileImage publicKey activeSession deviceKeys" },
-          { path: "recipient", select: "name username profileImage publicKey activeSession deviceKeys" },
+          { path: "sender", select: "name username profileImage publicKey e2eeIdentity activeSession deviceKeys" },
+          { path: "recipient", select: "name username profileImage publicKey e2eeIdentity activeSession deviceKeys" },
         ],
       });
 
@@ -788,8 +805,8 @@ exports.unsendMessage = async (req, res) => {
     await message.save();
 
     const updatedMessage = await Message.findById(message._id)
-      .populate("sender", "name username profileImage publicKey deviceKeys")
-      .populate("recipient", "name username profileImage publicKey deviceKeys");
+      .populate("sender", "name username profileImage publicKey e2eeIdentity activeSession deviceKeys")
+      .populate("recipient", "name username profileImage publicKey e2eeIdentity activeSession deviceKeys");
 
     // Notify sockets
     const io = getIO();
@@ -884,8 +901,8 @@ exports.toggleReaction = async (req, res) => {
     await message.save();
 
     const updatedMessage = await Message.findById(message._id)
-      .populate("sender", "name username profileImage publicKey deviceKeys")
-      .populate("recipient", "name username profileImage publicKey deviceKeys")
+      .populate("sender", "name username profileImage publicKey e2eeIdentity activeSession deviceKeys")
+      .populate("recipient", "name username profileImage publicKey e2eeIdentity activeSession deviceKeys")
       .populate("reactions.user", "name username");
 
     // Notify sockets
@@ -1078,8 +1095,8 @@ exports.searchMessages = async (req, res) => {
     }
 
     const messages = await Message.find(filter)
-      .populate("sender", "name username profileImage publicKey deviceKeys")
-      .populate("recipient", "name username profileImage publicKey deviceKeys")
+      .populate("sender", "name username profileImage publicKey e2eeIdentity activeSession deviceKeys")
+      .populate("recipient", "name username profileImage publicKey e2eeIdentity activeSession deviceKeys")
       .sort({ createdAt: -1 })
       .limit(50);
 
@@ -1481,6 +1498,14 @@ exports.getPublicKey = async (req, res) => {
         userId: user._id,
         publicKey,
         keyId,
+        e2eeIdentity: user.e2eeIdentity
+          ? {
+              keyId: user.e2eeIdentity.keyId || keyId,
+              publicKey: user.e2eeIdentity.publicKey || publicKey,
+              hasBackup: Boolean(user.e2eeIdentity.hasBackup),
+            }
+          : null,
+        deviceKeys: user.deviceKeys || [],
         hasBackup: Boolean(user.e2eeIdentity?.hasBackup),
         status: user.sessions?.web?.status || user.activeSession?.status || "ACTIVE",
       },
@@ -1518,36 +1543,57 @@ exports.togglePinMessage = async (req, res) => {
       return res.status(400).json({ success: false, message: "Cannot pin an unsent message" });
     }
 
-    const nextPinState = !message.isPinned;
-    message.isPinned = nextPinState;
-    message.pinnedBy = nextPinState ? currentUserId : null;
-    message.pinnedAt = nextPinState ? new Date() : null;
+    // Convert pinnedBy into array of user ID strings
+    let currentPinnedBy = [];
+    if (Array.isArray(message.pinnedBy)) {
+      currentPinnedBy = message.pinnedBy.map((p) => (p?._id || p)?.toString());
+    } else if (message.pinnedBy) {
+      currentPinnedBy = [(message.pinnedBy?._id || message.pinnedBy).toString()];
+    }
+
+    const isAlreadyPinnedByMe = currentPinnedBy.includes(currentUserId.toString());
+    let nextPinState = false;
+
+    if (isAlreadyPinnedByMe) {
+      currentPinnedBy = currentPinnedBy.filter((id) => id !== currentUserId.toString());
+      nextPinState = false;
+    } else {
+      currentPinnedBy.push(currentUserId.toString());
+      nextPinState = true;
+    }
+
+    message.pinnedBy = currentPinnedBy;
+    message.isPinned = currentPinnedBy.length > 0;
+    message.pinnedAt = nextPinState ? new Date() : message.pinnedAt;
 
     await message.save();
 
     const updatedMessage = await Message.findById(message._id)
-      .populate("sender", "name username profileImage publicKey deviceKeys")
-      .populate("recipient", "name username profileImage publicKey deviceKeys")
+      .populate("sender", "name username profileImage publicKey e2eeIdentity activeSession deviceKeys")
+      .populate("recipient", "name username profileImage publicKey e2eeIdentity activeSession deviceKeys")
       .populate("pinnedBy", "name username")
       .populate({
         path: "replyTo",
         populate: [
-          { path: "sender", select: "name username profileImage publicKey activeSession deviceKeys" },
-          { path: "recipient", select: "name username profileImage publicKey activeSession deviceKeys" },
+          { path: "sender", select: "name username profileImage publicKey e2eeIdentity activeSession deviceKeys" },
+          { path: "recipient", select: "name username profileImage publicKey e2eeIdentity activeSession deviceKeys" },
         ],
       });
 
-    // Notify sockets
+    const updatedMessageObj = updatedMessage ? updatedMessage.toObject() : {};
+    updatedMessageObj.isPinned = nextPinState;
+
+    // Notify sockets: Emit ONLY to current user so other participants' chats are not affected!
     const io = getIO();
     if (io) {
-      io.to(`user_${message.recipient}`).emit("message_pinned", updatedMessage);
-      io.to(`user_${message.sender}`).emit("message_pinned", updatedMessage);
+      io.to(`user_${currentUserId}`).emit("message_pinned", updatedMessageObj);
     }
 
     return res.status(200).json({
       success: true,
       message: nextPinState ? "Message pinned successfully" : "Message unpinned successfully",
-      data: updatedMessage,
+      data: updatedMessageObj,
+      isPinnedForMe: nextPinState,
     });
   } catch (error) {
     console.error("Toggle Pin Message Error:", error);
@@ -1576,11 +1622,11 @@ exports.getPinnedMessages = async (req, res) => {
 
     const pinnedMessages = await Message.find({
       conversationId,
-      isPinned: true,
+      pinnedBy: currentUserId,
       deletedFor: { $ne: currentUserId },
     })
-      .populate("sender", "name username profileImage publicKey deviceKeys")
-      .populate("recipient", "name username profileImage publicKey deviceKeys")
+      .populate("sender", "name username profileImage publicKey e2eeIdentity activeSession deviceKeys")
+      .populate("recipient", "name username profileImage publicKey e2eeIdentity activeSession deviceKeys")
       .populate("pinnedBy", "name username")
       .sort({ pinnedAt: -1, createdAt: -1 });
 

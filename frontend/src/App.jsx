@@ -36,6 +36,7 @@ const AdminAnalytics = lazy(() => import("./pages/AdminAnalytics"));
 const AdminSettings = lazy(() => import("./pages/AdminSettings"));
 const RedeemRequests = lazy(() => import("./pages/RedeemRequests"));
 const ApplePayments = lazy(() => import("./pages/ApplePayments"));
+const UgcModeration = lazy(() => import("./pages/UgcModeration"));
 
 // ── Toast Context ──
 const ToastContext = createContext();
@@ -316,6 +317,14 @@ function App() {
             <Route path="redeem-requests" element={<RedeemRequests />} />
             <Route path="admin-analytics" element={<AdminAnalytics />} />
             <Route path="apple-payments" element={<ApplePayments />} />
+            <Route
+              path="reports"
+              element={
+                <PermissionGuard pageKey="reports">
+                  <UgcModeration />
+                </PermissionGuard>
+              }
+            />
             <Route path="admin-settings" element={<AdminSettings />} />
           </Route>
         </Routes>

@@ -40,6 +40,7 @@ const MODULE_GROUPS = [
   {
     category: "SUPPORT & COMMUNICATION",
     modules: [
+      { id: "reports", name: "UGC Reports & Moderation", hasCreate: false, hasEdit: true, hasDelete: true },
       { id: "notifications", name: "Notifications & Broadcasts", hasCreate: true, hasEdit: false, hasDelete: true },
       { id: "support", name: "Support & Tickets", hasCreate: true, hasEdit: true, hasDelete: true },
       { id: "legal", name: "Legal & Policy", hasCreate: true, hasEdit: true, hasDelete: true },
@@ -60,6 +61,7 @@ const MODULE_DISPLAY_NAMES = {
   plans: "Subscription Plans",
   promo: "Promo Codes & Vouchers",
   pricing: "User Subscriptions & Revenue",
+  reports: "UGC Reports & Moderation",
   notifications: "Notifications",
   support: "Support & Tickets",
   legal: "Legal & Policy",

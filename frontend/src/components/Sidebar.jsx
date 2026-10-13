@@ -15,7 +15,7 @@ const NAV = [
   { id: "subscribed-users", label: "Subscrived Users", icon: Users, color: "#ec4899" },
   { id: "promo", label: "Promo & Voucher", icon: CreditCard, color: "#ec4899" },
   { id: "subadmins", label: "Sub-admins & Staff", icon: ShieldCheck, color: "#a855f7" },
-  // { id: "fraud-monitoring", label: "Fraud Monitoring", icon: ShieldAlert, color: "#ef4444" },
+  { id: "reports", label: "UGC Reports & Blocks", icon: ShieldAlert, color: "#ef4444" },
   { id: "admin-analytics", label: "Analytics & Revenue", icon: Activity, color: "#06b6d4" },
   { id: "plans", label: "Subscription Plans", icon: CreditCard, color: "#ec4899" },
   { id: "notifications", label: "Notifications", icon: Bell, color: "#f59e0b" },

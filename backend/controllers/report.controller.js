@@ -3,6 +3,7 @@ const Report = require("../models/report.model");
 const Reel = require("../models/reel.model");
 const Comment = require("../models/comment.model");
 const User = require("../models/user.model");
+const UserBlock = require("../models/userBlock.model");
 
 // ========================================
 // 1. UNIFIED CREATE REPORT (UGC: Reel, Comment, User)
@@ -194,11 +195,65 @@ exports.getMyReports = async (req, res) => {
 };
 
 // ========================================
-// 6. ADMIN: GET ALL REPORTS
+// 6. ADMIN: MODERATION STATS OVERVIEW
+// ========================================
+exports.getModerationStats = async (req, res) => {
+  try {
+    const [
+      totalReports,
+      pendingReports,
+      reviewedReports,
+      actionTakenReports,
+      dismissedReports,
+      reelReports,
+      commentReports,
+      userReports,
+      totalBlocks,
+      totalBannedUsers,
+    ] = await Promise.all([
+      Report.countDocuments(),
+      Report.countDocuments({ status: "PENDING" }),
+      Report.countDocuments({ status: "REVIEWED" }),
+      Report.countDocuments({ status: "ACTION_TAKEN" }),
+      Report.countDocuments({ status: "DISMISSED" }),
+      Report.countDocuments({ targetType: "reel" }),
+      Report.countDocuments({ targetType: "comment" }),
+      Report.countDocuments({ targetType: "user" }),
+      UserBlock.countDocuments(),
+      User.countDocuments({ status: "Blocked" }),
+    ]);
+
+    return res.status(200).json({
+      success: true,
+      stats: {
+        totalReports,
+        pendingReports,
+        reviewedReports,
+        actionTakenReports,
+        dismissedReports,
+        reelReports,
+        commentReports,
+        userReports,
+        totalBlocks,
+        totalBannedUsers,
+      },
+    });
+  } catch (error) {
+    console.error("GET MODERATION STATS ERROR:", error);
+    return res.status(500).json({
+      success: false,
+      message: "Failed to fetch moderation stats",
+      error: error.message,
+    });
+  }
+};
+
+// ========================================
+// 7. ADMIN: GET ALL REPORTS (WITH POPULATION & TARGET PREVIEWS)
 // ========================================
 exports.getAllReports = async (req, res) => {
   try {
-    const { status, targetType, reason, page = 1, limit = 20 } = req.query;
+    const { status, targetType, reason, search, page = 1, limit = 20 } = req.query;
     const query = {};
 
     if (status && status !== "ALL") {
@@ -211,25 +266,69 @@ exports.getAllReports = async (req, res) => {
       query.reason = reason;
     }
 
-    const pageNum = parseInt(page);
-    const limitNum = parseInt(limit);
+    if (search && search.trim()) {
+      const matchingUsers = await User.find({
+        $or: [
+          { name: { $regex: search.trim(), $options: "i" } },
+          { username: { $regex: search.trim(), $options: "i" } },
+          { phone: { $regex: search.trim(), $options: "i" } },
+        ],
+      }).select("_id");
+      const userIds = matchingUsers.map((u) => u._id);
+
+      query.$or = [
+        { description: { $regex: search.trim(), $options: "i" } },
+        { reporter: { $in: userIds } },
+        { reportedUser: { $in: userIds } },
+      ];
+    }
+
+    const pageNum = parseInt(page) || 1;
+    const limitNum = parseInt(limit) || 20;
     const skip = (pageNum - 1) * limitNum;
 
-    const [reports, total] = await Promise.all([
+    const [rawReports, total] = await Promise.all([
       Report.find(query)
         .sort({ createdAt: -1 })
         .skip(skip)
         .limit(limitNum)
-        .populate("reporter", "name username phone profileImage")
-        .populate("reportedUser", "name username phone profileImage status"),
+        .populate("reporter", "name username phone email profileImage isVerified")
+        .populate("reportedUser", "name username phone email profileImage status isVerified")
+        .populate("resolvedBy", "name email"),
       Report.countDocuments(query),
     ]);
+
+    // Attach target previews for effortless admin visibility
+    const reports = await Promise.all(
+      rawReports.map(async (doc) => {
+        const item = doc.toObject();
+        try {
+          if (item.targetType === "reel") {
+            item.targetContent = await Reel.findById(item.targetId)
+              .select("title description videoUrl thumbnailUrl likesCount commentsCount status user")
+              .lean();
+          } else if (item.targetType === "comment") {
+            item.targetContent = await Comment.findById(item.targetId)
+              .select("text user reel createdAt")
+              .lean();
+          } else if (item.targetType === "user") {
+            item.targetContent = await User.findById(item.targetId)
+              .select("name username profileImage phone status bio isVerified")
+              .lean();
+          }
+        } catch (e) {
+          item.targetContent = null;
+        }
+        return item;
+      })
+    );
 
     return res.status(200).json({
       success: true,
       total,
       page: pageNum,
       limit: limitNum,
+      totalPages: Math.ceil(total / limitNum) || 1,
       reports,
     });
   } catch (error) {
@@ -243,13 +342,13 @@ exports.getAllReports = async (req, res) => {
 };
 
 // ========================================
-// 7. ADMIN: GET REPORT BY ID (WITH TARGET CONTENT)
+// 8. ADMIN: GET REPORT BY ID (WITH FULL CONTEXT)
 // ========================================
 exports.getReportById = async (req, res) => {
   try {
     const report = await Report.findById(req.params.id)
-      .populate("reporter", "name username phone profileImage")
-      .populate("reportedUser", "name username phone profileImage status")
+      .populate("reporter", "name username phone email profileImage isVerified")
+      .populate("reportedUser", "name username phone email profileImage status isVerified")
       .populate("resolvedBy", "name email");
 
     if (!report) {
@@ -263,7 +362,7 @@ exports.getReportById = async (req, res) => {
       targetContent = await Comment.findById(report.targetId).lean();
     } else if (report.targetType === "user") {
       targetContent = await User.findById(report.targetId)
-        .select("name username bio profileImage status verification")
+        .select("name username bio profileImage phone email status verification isVerified")
         .lean();
     }
 
@@ -283,7 +382,7 @@ exports.getReportById = async (req, res) => {
 };
 
 // ========================================
-// 8. ADMIN: RESOLVE REPORT & TAKE ACTION
+// 9. ADMIN: RESOLVE REPORT & EXECUTE ACTION
 // ========================================
 exports.resolveReport = async (req, res) => {
   try {
@@ -301,7 +400,7 @@ exports.resolveReport = async (req, res) => {
     report.resolvedBy = req.user?.id || req.user?._id;
     report.resolvedAt = new Date();
 
-    // Execute moderation action
+    // Execute moderation action in database
     if (actionTaken === "CONTENT_DELETED") {
       if (report.targetType === "reel") {
         await Reel.findByIdAndUpdate(report.targetId, { status: "DELETED" });
@@ -314,22 +413,108 @@ exports.resolveReport = async (req, res) => {
           await Comment.findByIdAndDelete(report.targetId);
         }
       }
-    } else if (actionTaken === "USER_BANNED" && report.reportedUser) {
-      await User.findByIdAndUpdate(report.reportedUser, { status: "Blocked" });
+    } else if (actionTaken === "USER_BANNED" || actionTaken === "USER_BLOCKED") {
+      if (report.reportedUser) {
+        await User.findByIdAndUpdate(report.reportedUser, { status: "Blocked" });
+      }
+    } else if (actionTaken === "NONE" && status === "DISMISSED") {
+      report.actionTaken = "NONE";
     }
 
     await report.save();
 
+    const populated = await Report.findById(id)
+      .populate("reporter", "name username phone email profileImage")
+      .populate("reportedUser", "name username phone email profileImage status")
+      .populate("resolvedBy", "name email");
+
     return res.status(200).json({
       success: true,
       message: "Report updated and moderation action processed successfully",
-      report,
+      report: populated,
     });
   } catch (error) {
     console.error("ADMIN RESOLVE REPORT ERROR:", error);
     return res.status(500).json({
       success: false,
       message: "Failed to resolve report",
+      error: error.message,
+    });
+  }
+};
+
+// ========================================
+// 10. ADMIN: GET ALL USER-TO-USER BLOCKS
+// ========================================
+exports.getAllUserBlocks = async (req, res) => {
+  try {
+    const { search, page = 1, limit = 20 } = req.query;
+    const pageNum = parseInt(page) || 1;
+    const limitNum = parseInt(limit) || 20;
+    const skip = (pageNum - 1) * limitNum;
+
+    let query = {};
+    if (search && search.trim()) {
+      const users = await User.find({
+        $or: [
+          { name: { $regex: search.trim(), $options: "i" } },
+          { username: { $regex: search.trim(), $options: "i" } },
+          { phone: { $regex: search.trim(), $options: "i" } },
+        ],
+      }).select("_id");
+      const userIds = users.map((u) => u._id);
+      query = {
+        $or: [{ blocker: { $in: userIds } }, { blocked: { $in: userIds } }],
+      };
+    }
+
+    const [blocks, total] = await Promise.all([
+      UserBlock.find(query)
+        .sort({ createdAt: -1 })
+        .skip(skip)
+        .limit(limitNum)
+        .populate("blocker", "name username phone email profileImage isVerified")
+        .populate("blocked", "name username phone email profileImage isVerified status"),
+      UserBlock.countDocuments(query),
+    ]);
+
+    return res.status(200).json({
+      success: true,
+      total,
+      page: pageNum,
+      limit: limitNum,
+      totalPages: Math.ceil(total / limitNum) || 1,
+      blocks,
+    });
+  } catch (error) {
+    console.error("ADMIN GET ALL USER BLOCKS ERROR:", error);
+    return res.status(500).json({
+      success: false,
+      message: "Failed to fetch user blocks",
+      error: error.message,
+    });
+  }
+};
+
+// ========================================
+// 11. ADMIN: REMOVE / UNBLOCK USER BLOCK
+// ========================================
+exports.deleteUserBlock = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const block = await UserBlock.findByIdAndDelete(id);
+    if (!block) {
+      return res.status(404).json({ success: false, message: "Block record not found" });
+    }
+    return res.status(200).json({
+      success: true,
+      message: "User block removed successfully by admin",
+    });
+  } catch (error) {
+    console.error("DELETE USER BLOCK ERROR:", error);
+    return res.status(500).json({
+      success: false,
+      message: "Failed to delete user block",
       error: error.message,
     });
   }
