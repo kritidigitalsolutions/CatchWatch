@@ -60,7 +60,16 @@ export default function PlansPage() {
   // =========================
   const ch = (e) => {
     const value = e.target.type === "checkbox" ? e.target.checked : e.target.value;
-    setForm({ ...form, [e.target.name]: value });
+    const updated = { ...form, [e.target.name]: value };
+
+    // Auto-fill duration if empty when changing plan type
+    if (e.target.name === "planType" && !form.duration) {
+      if (value === "monthly") updated.duration = "30";
+      else if (value === "yearly") updated.duration = "365";
+      else if (value === "weekly") updated.duration = "7";
+    }
+
+    setForm(updated);
   };
 
   // =========================
@@ -91,7 +100,7 @@ export default function PlansPage() {
     setForm({
       name: "",
       price: "",
-      duration: "",
+      duration: "30",
       features: "",
       planType: "monthly",
       appleProductId: "",
@@ -107,7 +116,7 @@ export default function PlansPage() {
   const handleScanAppleInForm = async () => {
     const pId = (form.appleProductId || "").trim();
     if (!pId) {
-      alert("Please enter an Apple Product ID first (e.g. com.app.catchWatch.sub.creator.orangetick)");
+      alert("Please enter an Apple Product ID first (e.g. com.app.catchWatch.sub.premium.monthly)");
       return;
     }
 
@@ -116,6 +125,7 @@ export default function PlansPage() {
       const res = await API.post("/admin/plan/apple/scan", {
         productId: pId,
         planId: editId || undefined,
+        price: form.price ? Number(form.price) : undefined,
       });
 
       if (res.data?.success && res.data.scanResult) {
@@ -143,11 +153,25 @@ export default function PlansPage() {
   // =========================
   const handleSubmit = async (e) => {
     e.preventDefault();
+
+    if (!form.name || !form.name.trim()) {
+      alert("Please enter Plan Name.");
+      return;
+    }
+    if (form.price === "" || form.price === null || isNaN(Number(form.price)) || Number(form.price) < 0) {
+      alert("Please enter a valid Plan Price in ₹.");
+      return;
+    }
+    if (!form.duration || isNaN(Number(form.duration)) || Number(form.duration) <= 0) {
+      alert("Please enter Validity Duration in Days (e.g. 30 for Monthly, 365 for Yearly).");
+      return;
+    }
+
     setLoading(true);
 
     try {
       const payload = {
-        name: form.name,
+        name: form.name.trim(),
         price: Number(form.price),
         duration: Number(form.duration),
         features: form.features
@@ -158,9 +182,9 @@ export default function PlansPage() {
         appleProductId: (form.appleProductId || "").trim(),
         appleSubscriptionId: formAppleScan?.appleSubscriptionId || undefined,
         appleCurrentPrice: formAppleScan?.currentPrice ? Number(formAppleScan.currentPrice) : undefined,
-        sortOrder: Number(form.sortOrder),
-        isRecommended: form.isRecommended,
-        isActive: form.isActive,
+        sortOrder: Number(form.sortOrder || 0),
+        isRecommended: !!form.isRecommended,
+        isActive: form.isActive !== false,
         category: activeTab,
       };
 
@@ -560,7 +584,9 @@ export default function PlansPage() {
 
                 <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))", gap: 12 }}>
                   <div style={{ background: "rgba(0,0,0,0.25)", padding: "10px 14px", borderRadius: "8px" }}>
-                    <div style={{ fontSize: "0.75rem", color: "#94a3b8" }}>Apple Live Price (IND)</div>
+                    <div style={{ fontSize: "0.75rem", color: "#94a3b8" }}>
+                      {formAppleScan.isLive ? "Apple Live Price (IND)" : "Apple StoreKit Tier (IND)"}
+                    </div>
                     <div style={{ fontSize: "1.25rem", fontWeight: 800, color: "#4ade80", marginTop: 2 }}>
                       ₹{formAppleScan.currentPrice}
                     </div>

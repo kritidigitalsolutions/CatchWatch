@@ -51,14 +51,14 @@ exports.verifySubscription = async (req, res) => {
     }
 
     // ========================================
-    // CHECK EXISTING SUBSCRIPTION
+    // CHECK EXISTING SUBSCRIPTION: PREVENT DOWNGRADE & ALLOW UPGRADE
     // ========================================
 
     let existing =
       await Subscription.findOne({
         user: userId,
         status: "active",
-      });
+      }).populate("plan");
 
     existing =
       await expireSubscriptionIfNeeded(
@@ -69,10 +69,26 @@ exports.verifySubscription = async (req, res) => {
       existing &&
       existing.status === "active"
     ) {
-      return res.status(400).json({
-        success: false,
-        message: "Already subscribed",
-      });
+      const currentActivePrice = existing.plan?.price || existing.amount || 0;
+      if (plan.price < currentActivePrice) {
+        return res.status(400).json({
+          success: false,
+          code: "DOWNGRADE_NOT_ALLOWED",
+          message: `You currently have an active ${existing.plan?.name || "plan"} (₹${currentActivePrice}). Downgrading to a lower plan (₹${plan.price}) is not permitted until your current plan expires.`,
+        });
+      }
+      if (String(existing.plan?._id || existing.plan) === String(plan._id)) {
+        return res.status(400).json({
+          success: false,
+          code: "ALREADY_ACTIVE",
+          message: "You already have an active subscription for this plan",
+        });
+      }
+
+      // Upgrade: mark old subscription as upgraded
+      existing.status = "upgraded";
+      existing.upgradedTo = plan._id;
+      await existing.save();
     }
 
     // ========================================
@@ -309,6 +325,7 @@ exports.checkSubscription = async (
     ) {
       return res.status(200).json({
         success: false,
+        hasActiveSubscription: false,
         message:
           "No active subscription",
       });
@@ -339,7 +356,16 @@ exports.checkSubscription = async (
 
     res.status(200).json({
       success: true,
+      hasActiveSubscription: true,
       subscription,
+      activePlan: {
+        id: subscription.plan?._id,
+        name: subscription.plan?.name,
+        price: subscription.plan?.price || subscription.amount,
+        planType: subscription.plan?.planType,
+        duration: subscription.plan?.duration,
+        features: subscription.plan?.features || [],
+      },
       remainingDays,
     });
 

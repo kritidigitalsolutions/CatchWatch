@@ -155,7 +155,7 @@ exports.getAllPlans = async (req, res) => {
 // ==========================================
 exports.scanAppleProductInfo = async (req, res) => {
   try {
-    const { productId, planId } = req.body;
+    const { productId, planId, price } = req.body;
 
     if (!productId || !productId.trim()) {
       return res.status(400).json({
@@ -164,7 +164,13 @@ exports.scanAppleProductInfo = async (req, res) => {
       });
     }
 
-    const scanResult = await scanAppleProduct(productId.trim());
+    let targetPrice = price;
+    if ((targetPrice === undefined || targetPrice === null || targetPrice === "") && planId) {
+      const existingPlan = await Plan.findById(planId);
+      if (existingPlan) targetPrice = existingPlan.price;
+    }
+
+    const scanResult = await scanAppleProduct(productId.trim(), targetPrice);
 
     // If planId provided, sync scanned metadata into the Plan document
     let updatedPlan = null;
@@ -341,7 +347,7 @@ exports.syncPriceFromApple = async (req, res) => {
     }
 
     // Scan latest live price from Apple
-    const scan = await scanAppleProduct(plan.appleProductId);
+    const scan = await scanAppleProduct(plan.appleProductId, plan.price);
     const appleLivePrice = scan.currentPrice;
 
     if (!appleLivePrice || isNaN(appleLivePrice)) {

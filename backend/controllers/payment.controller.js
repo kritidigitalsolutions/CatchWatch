@@ -48,6 +48,39 @@ exports.createOrder = async (
       });
     }
 
+    // Check existing subscription: prevent downgrade & allow upgrade
+    const existingOrderSub = await Subscription.findOne({
+      user: req.user.id,
+      status: "active",
+    }).populate("plan");
+
+    const validOrderSub = await expireSubscriptionIfNeeded(existingOrderSub);
+    if (validOrderSub && validOrderSub.status === "active") {
+      const isOrangeOrBlue =
+        plan.category === "BLUETICK" ||
+        plan.category === "ORANGETICK" ||
+        plan.type === "BLUETICK" ||
+        plan.type === "ORANGETICK";
+
+      if (!isOrangeOrBlue) {
+        const currentActivePrice = validOrderSub.plan?.price || validOrderSub.amount || 0;
+        if (plan.price < currentActivePrice) {
+          return res.status(400).json({
+            success: false,
+            code: "DOWNGRADE_NOT_ALLOWED",
+            message: `You currently have an active ${validOrderSub.plan?.name || "plan"} (₹${currentActivePrice}). Downgrading to a lower plan (₹${plan.price}) is not permitted. You can only upgrade to a higher tier plan.`,
+          });
+        }
+        if (String(validOrderSub.plan?._id || validOrderSub.plan) === String(plan._id)) {
+          return res.status(400).json({
+            success: false,
+            code: "ALREADY_ACTIVE",
+            message: `You already have an active ${plan.name} subscription.`,
+          });
+        }
+      }
+    }
+
     let finalAmount = plan.price;
 
     let appliedPromo = null;
@@ -320,27 +353,34 @@ exports.verifyPayment = async (
     // ========================================
 
     if (!isOrangeOrBlueTick) {
-      let existing =
-        await Subscription.findOne({
-          user: userId,
-          status: "active",
-        });
+      let existing = await Subscription.findOne({
+        user: userId,
+        status: "active",
+      }).populate("plan");
 
-      existing =
-        await expireSubscriptionIfNeeded(
-          existing
-        );
+      existing = await expireSubscriptionIfNeeded(existing);
 
-      if (
-        existing &&
-        existing.status ===
-          "active"
-      ) {
-        return res.status(400).json({
-          success: false,
-          message:
-            "You already have an active subscription",
-        });
+      if (existing && existing.status === "active") {
+        const currentActivePrice = existing.plan?.price || existing.amount || 0;
+        if (plan.price < currentActivePrice) {
+          return res.status(400).json({
+            success: false,
+            code: "DOWNGRADE_NOT_ALLOWED",
+            message: `You currently have an active ${existing.plan?.name || "plan"} (₹${currentActivePrice}). Downgrading to ₹${plan.price} is not permitted until your current plan expires.`,
+          });
+        }
+        if (String(existing.plan?._id || existing.plan) === String(plan._id)) {
+          return res.status(400).json({
+            success: false,
+            code: "ALREADY_ACTIVE",
+            message: "You already have an active subscription for this plan",
+          });
+        }
+
+        // Upgrade allowed: mark old subscription as upgraded
+        existing.status = "upgraded";
+        existing.upgradedTo = plan._id;
+        await existing.save();
       }
     }
 
@@ -553,6 +593,10 @@ exports.verifyApplePayment = async (req, res) => {
       });
     }
 
+    const isSandboxEnv =
+      verification.environment === "Sandbox" ||
+      verification.environment === "Xcode";
+
     // 2. Prevent Duplicate Payment & Verify Transaction Ownership
     const existingTx = await Subscription.findOne({
       paymentId: resolvedTransactionId,
@@ -574,13 +618,24 @@ exports.verifyApplePayment = async (req, res) => {
         });
       }
 
-      // Conflict: Transaction belongs to a different account
-      return res.status(409).json({
-        success: false,
-        code: "TRANSACTION_OWNED_BY_ANOTHER_ACCOUNT",
-        message:
-          "This Apple transaction is already associated with another Catch & Watch account. Cross-account transfer is not permitted.",
-      });
+      // In Sandbox or if old account was deleted, allow reassigning to current user for QA testing
+      if (isSandboxEnv || existingTx.status === "account_deleted") {
+        console.log(
+          `[Apple Sandbox Transfer] Reassigning paymentId ${resolvedTransactionId} from old user ${existingTx.user} to ${userId}`
+        );
+        existingTx.status = "transferred";
+        existingTx.paymentId = `${resolvedTransactionId}_transferred_${Date.now()}`;
+        existingTx.subscriptionId = `${existingTx.subscriptionId}_transferred_${Date.now()}`;
+        await existingTx.save();
+      } else {
+        // Conflict: Transaction belongs to a different account in Production
+        return res.status(409).json({
+          success: false,
+          code: "TRANSACTION_OWNED_BY_ANOTHER_ACCOUNT",
+          message:
+            "This Apple transaction is already associated with another Catch & Watch account. Cross-account transfer is not permitted.",
+        });
+      }
     }
 
     // Verify originalTransactionId ownership across active subscriptions
@@ -595,12 +650,21 @@ exports.verifyApplePayment = async (req, res) => {
 
       if (existingOriginalTx) {
         if (existingOriginalTx.user.toString() !== userId.toString()) {
-          return res.status(409).json({
-            success: false,
-            code: "ORIGINAL_TRANSACTION_OWNED_BY_ANOTHER_ACCOUNT",
-            message:
-              "The original Apple subscription is already associated with another active Catch & Watch account.",
-          });
+          if (isSandboxEnv || existingOriginalTx.status === "account_deleted") {
+            console.log(
+              `[Apple Sandbox Transfer] Reassigning originalTxId ${resolvedOriginalTransactionId} from old user ${existingOriginalTx.user} to ${userId}`
+            );
+            existingOriginalTx.status = "transferred";
+            existingOriginalTx.subscriptionId = `${resolvedOriginalTransactionId}_transferred_${Date.now()}`;
+            await existingOriginalTx.save();
+          } else {
+            return res.status(409).json({
+              success: false,
+              code: "ORIGINAL_TRANSACTION_OWNED_BY_ANOTHER_ACCOUNT",
+              message:
+                "The original Apple subscription is already associated with another active Catch & Watch account.",
+            });
+          }
         }
       }
     }
@@ -647,7 +711,7 @@ exports.verifyApplePayment = async (req, res) => {
       let existing = await Subscription.findOne({
         user: userId,
         status: "active",
-      });
+      }).populate("plan");
 
       existing = await expireSubscriptionIfNeeded(existing);
 
@@ -655,7 +719,8 @@ exports.verifyApplePayment = async (req, res) => {
         if (
           resolvedOriginalTransactionId &&
           (existing.subscriptionId === resolvedOriginalTransactionId ||
-            existing.paymentId === resolvedTransactionId)
+            existing.paymentId === resolvedTransactionId) &&
+          String(existing.plan?._id || existing.plan) === String(plan._id)
         ) {
           return res.status(200).json({
             success: true,
@@ -664,10 +729,19 @@ exports.verifyApplePayment = async (req, res) => {
           });
         }
 
-        return res.status(400).json({
-          success: false,
-          message: "You already have an active subscription",
-        });
+        const currentActivePrice = existing.plan?.price || existing.amount || 0;
+        if (plan.price < currentActivePrice) {
+          return res.status(400).json({
+            success: false,
+            code: "DOWNGRADE_NOT_ALLOWED",
+            message: `You currently have an active ${existing.plan?.name || "plan"} (₹${currentActivePrice}). Downgrading to ₹${plan.price} is not permitted until your current plan expires.`,
+          });
+        }
+
+        // Upgrade allowed: mark existing subscription as upgraded
+        existing.status = "upgraded";
+        existing.upgradedTo = plan._id;
+        await existing.save();
       }
     }
 
