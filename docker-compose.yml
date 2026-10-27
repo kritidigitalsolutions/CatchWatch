@@ -1,0 +1,43 @@
+services:
+  backend:
+    build:
+      context: ./backend
+    container_name: catchwatch-backend
+    restart: unless-stopped
+    env_file:
+      - ./backend/.env
+    environment:
+      NODE_ENV: production
+      PORT: 5000
+    ports:
+      - "127.0.0.1:15000:5000"
+    networks:
+      - catchwatch-network
+
+  admin:
+    build:
+      context: ./frontend
+      args:
+        VITE_API_BASE_URL: https://api.catchandwatch.com/api
+    container_name: catchwatch-admin
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:18081:80"
+    networks:
+      - catchwatch-network
+
+  website:
+    build:
+      context: ./website
+      args:
+        REACT_APP_API_URL: https://api.catchandwatch.com
+    container_name: catchwatch-website
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:18082:80"
+    networks:
+      - catchwatch-network
+
+networks:
+  catchwatch-network:
+    driver: bridge
