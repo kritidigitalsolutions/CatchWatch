@@ -1,18 +1,38 @@
 import React from 'react';
-import { Navigate, Outlet } from 'react-router-dom';
+import { Navigate, Outlet, useLocation } from 'react-router-dom';
 
 const ProtectedRoute = () => {
-  // Check if the user is authenticated. 
-  // Adjust this logic based on where you save your auth token.
-  const isAuthenticated = localStorage.getItem("authToken") !== null;
+  const location = useLocation();
+  const token = localStorage.getItem("authToken") || localStorage.getItem("token");
+  const isAuthenticated = !!token;
 
-  // If they are NOT logged in, redirect them to the login page.
-  // We use the <Navigate /> component here because we are inside the render cycle.
+  // If not authenticated, redirect to login
   if (!isAuthenticated) {
     return <Navigate to="/login" replace />;
   }
 
-  // If they ARE logged in, render the child routes using <Outlet />
+  // Parse stored user object to verify profile completion status
+  let user = null;
+  try {
+    const raw = localStorage.getItem("user");
+    if (raw) user = JSON.parse(raw);
+  } catch (e) {
+    user = null;
+  }
+
+  const isProfileIncomplete = Boolean(user && user.profileComplete === false);
+  const isCompleteProfilePage = location.pathname === "/complete-profile";
+
+  // If user has NOT completed profile, force them to complete-profile
+  if (isProfileIncomplete && !isCompleteProfilePage) {
+    return <Navigate to="/complete-profile" replace />;
+  }
+
+  // If profile is already complete, redirect away from complete-profile to home
+  if (!isProfileIncomplete && isCompleteProfilePage) {
+    return <Navigate to="/" replace />;
+  }
+
   return <Outlet />;
 };
 

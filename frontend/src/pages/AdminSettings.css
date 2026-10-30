@@ -192,3 +192,63 @@
   gap: 14px;
   padding-top: 10px;
 }
+
+/* =========================================================
+   LIGHT THEME OVERRIDES FOR ENGINE & SETTINGS
+========================================================= */
+body.light .settings-container {
+  color: #0f172a;
+}
+
+body.light .settings-titles h2 {
+  color: #0f172a !important;
+}
+
+body.light .settings-titles p {
+  color: #64748b;
+}
+
+body.light .btn-reset-settings {
+  background: #ffffff;
+  border-color: #e2e8f0;
+  color: #334155;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+}
+
+body.light .btn-reset-settings:hover {
+  background: #f8fafc;
+  border-color: #cbd5e1;
+  color: #0f172a;
+}
+
+body.light .settings-section-card {
+  background: #ffffff !important;
+  border-color: #e2e8f0 !important;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05) !important;
+}
+
+body.light .settings-section-header {
+  border-bottom-color: #e2e8f0;
+}
+
+body.light .settings-label {
+  color: #475569;
+}
+
+body.light .settings-input,
+body.light .settings-select {
+  background: #f8fafc !important;
+  border-color: #e2e8f0 !important;
+  color: #0f172a !important;
+}
+
+body.light .settings-input:focus,
+body.light .settings-select:focus {
+  background: #ffffff !important;
+  border-color: #ec4899 !important;
+}
+
+body.light .settings-select option {
+  background: #ffffff;
+  color: #0f172a;
+}

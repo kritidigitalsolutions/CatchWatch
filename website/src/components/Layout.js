@@ -8,6 +8,12 @@ const Layout = ({ children }) => {
   const location = useLocation();
   const path = location.pathname;
 
+  // On auth onboarding pages, render without navigation chrome so user cannot bypass profile completion
+  const isAuthPage = path === '/login' || path === '/complete-profile';
+  if (isAuthPage) {
+    return <main className="w-full min-h-screen bg-neutral-950">{children}</main>;
+  }
+
   const isFullHeightPage =
     path === '/chat' ||
     path === '/upload' ||

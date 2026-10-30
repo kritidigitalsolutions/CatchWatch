@@ -1,5 +1,6 @@
 const express = require("express");
 const router = express.Router();
+const mongoose = require("mongoose");
 const Reel = require("../../models/reel.model");
 const { isAdmin } = require("../../middlewares/admin.middleware");
 
@@ -24,16 +25,38 @@ router.get("/", isAdmin, async (req, res) => {
   }
 });
 
-// Admin moderate (soft delete) reel
+// Admin moderate / delete reel
 router.delete("/:id", isAdmin, async (req, res) => {
   try {
     const { id } = req.params;
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid Reel ID",
+      });
+    }
+
     const reel = await Reel.findById(id);
     
-    if (!reel || reel.status === "DELETED") {
+    if (!reel) {
       return res.status(404).json({
         success: false,
         message: "Reel not found",
+      });
+    }
+
+    if (req.query.permanent === "true") {
+      await Reel.findByIdAndDelete(id);
+      return res.status(200).json({
+        success: true,
+        message: "Reel permanently deleted by admin",
+      });
+    }
+
+    if (reel.status === "DELETED") {
+      return res.status(200).json({
+        success: true,
+        message: "Reel is already deleted",
       });
     }
 

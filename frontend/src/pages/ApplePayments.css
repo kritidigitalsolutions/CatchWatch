@@ -957,3 +957,246 @@
     justify-content: center;
   }
 }
+
+/* =======================================================
+   LIGHT THEME OVERRIDES FOR APPLE IN-APP PAYMENTS
+======================================================= */
+body.light .apple-pay-page {
+  color: #0f172a;
+}
+
+body.light .apple-pay-header {
+  border-bottom-color: #e2e8f0;
+}
+
+body.light .apple-logo-badge {
+  background: linear-gradient(135deg, #f0f9ff, #e0f2fe);
+  border-color: #bae6fd;
+  color: #0284c7;
+  box-shadow: 0 4px 14px rgba(2, 132, 199, 0.15);
+}
+
+body.light .apple-pay-title-box h1 {
+  color: #0f172a;
+}
+
+body.light .apple-subtitle {
+  color: #64748b;
+}
+
+body.light .apple-refresh-btn {
+  background: #ffffff;
+  border-color: #e2e8f0;
+  color: #334155;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+}
+
+body.light .apple-refresh-btn:hover {
+  background: #f8fafc;
+  border-color: #cbd5e1;
+  color: #0f172a;
+}
+
+/* Stat Cards */
+body.light .apple-stat-card {
+  background: #ffffff !important;
+  border-color: #e2e8f0 !important;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.05) !important;
+}
+
+body.light .stat-value {
+  color: #0f172a;
+}
+
+body.light .stat-label {
+  color: #64748b;
+}
+
+body.light .stat-sub {
+  color: #94a3b8;
+}
+
+/* Verifier Box */
+body.light .apple-verifier-box {
+  background: linear-gradient(135deg, #f0f9ff 0%, #ffffff 100%);
+  border-color: #bae6fd;
+  box-shadow: 0 8px 24px rgba(2, 132, 199, 0.08);
+}
+
+body.light .verifier-title h3 {
+  color: #0f172a;
+}
+
+body.light .verifier-title p {
+  color: #64748b;
+}
+
+body.light .verifier-input-wrap input {
+  background: #ffffff;
+  border-color: #cbd5e1;
+  color: #0f172a;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+}
+
+body.light .verifier-input-wrap input:focus {
+  border-color: #0284c7;
+}
+
+body.light .result-details-grid {
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+}
+
+body.light .item-val {
+  color: #0f172a;
+}
+
+body.light .result-msg {
+  color: #475569;
+}
+
+/* Table Controls */
+body.light .apple-search-form input {
+  background: #ffffff;
+  border-color: #e2e8f0;
+  color: #0f172a;
+}
+
+body.light .apple-search-form input::placeholder {
+  color: #94a3b8;
+}
+
+body.light .btn-search-submit {
+  background: #f1f5f9;
+  border-color: #e2e8f0;
+  color: #334155;
+}
+
+body.light .btn-search-submit:hover {
+  background: #e2e8f0;
+  color: #0f172a;
+}
+
+body.light .apple-filter-group select {
+  background: #ffffff;
+  border-color: #e2e8f0;
+  color: #334155;
+}
+
+/* Table Card */
+body.light .apple-table-card {
+  background: #ffffff !important;
+  border-color: #e2e8f0 !important;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.05) !important;
+}
+
+body.light .table-header-title {
+  border-bottom-color: #e2e8f0;
+  background: #ffffff;
+}
+
+body.light .table-header-title h3 {
+  color: #0f172a;
+}
+
+body.light .apple-table th {
+  background: #f8fafc !important;
+  color: #475569 !important;
+  border-bottom: 1px solid #e2e8f0 !important;
+}
+
+body.light .apple-table td {
+  border-bottom: 1px solid #f1f5f9 !important;
+}
+
+body.light .apple-table tbody tr:hover {
+  background: #f8fafc !important;
+}
+
+body.light .user-name {
+  color: #0f172a !important;
+}
+
+body.light .user-avatar {
+  background: #f1f5f9;
+  border-color: #e2e8f0;
+}
+
+body.light .code-tx-id,
+body.light .date-cell {
+  color: #334155;
+}
+
+body.light .btn-action-icon {
+  background: #f1f5f9;
+  border-color: #e2e8f0;
+  color: #475569;
+}
+
+body.light .btn-action-icon:hover {
+  background: #e2e8f0;
+  color: #0f172a;
+}
+
+body.light .table-empty h4 {
+  color: #0f172a;
+}
+
+/* Modal */
+body.light .inspect-modal-card {
+  background: #ffffff !important;
+  border-color: #e2e8f0 !important;
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.15) !important;
+  color: #0f172a;
+}
+
+body.light .inspect-modal-header {
+  border-bottom-color: #e2e8f0;
+}
+
+body.light .inspect-modal-header h2 {
+  color: #0f172a;
+}
+
+body.light .btn-close-modal {
+  background: #f1f5f9;
+  color: #64748b;
+}
+
+body.light .btn-close-modal:hover {
+  background: #e2e8f0;
+  color: #0f172a;
+}
+
+body.light .inspect-user-row {
+  background: #f8fafc;
+  border-color: #e2e8f0;
+}
+
+body.light .modal-user-name {
+  color: #0f172a;
+}
+
+body.light .grid-field {
+  background: #f8fafc;
+  border-color: #e2e8f0;
+}
+
+body.light .field-val {
+  color: #0f172a;
+}
+
+body.light .inspect-actions {
+  border-top-color: #e2e8f0;
+}
+
+body.light .btn-inspect-close {
+  background: #f1f5f9;
+  border-color: #e2e8f0;
+  color: #334155;
+}
+
+body.light .btn-inspect-close:hover {
+  background: #e2e8f0;
+  color: #0f172a;
+}

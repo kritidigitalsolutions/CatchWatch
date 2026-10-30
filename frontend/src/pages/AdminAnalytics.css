@@ -317,3 +317,103 @@
   color: #34d399;
   border: 1px solid rgba(16, 185, 129, 0.3);
 }
+
+/* =========================================================
+   LIGHT THEME OVERRIDES FOR ADMIN ANALYTICS & REVENUE
+========================================================= */
+body.light .analytics-container {
+  color: #0f172a;
+}
+
+body.light .analytics-titles h2 {
+  color: #0f172a !important;
+}
+
+body.light .analytics-titles p {
+  color: #64748b;
+}
+
+body.light .analytics-btn-refresh {
+  background: #ffffff;
+  border-color: #e2e8f0;
+  color: #334155;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+}
+
+body.light .analytics-btn-refresh:hover {
+  background: #f8fafc;
+  border-color: #cbd5e1;
+  color: #0f172a;
+}
+
+body.light .analytics-section-title {
+  color: #0f172a;
+}
+
+/* Stat Cards */
+body.light .analytics-stat-card {
+  background: #ffffff !important;
+  border-color: #e2e8f0 !important;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.05) !important;
+}
+
+body.light .analytics-stat-label {
+  color: #64748b !important;
+}
+
+body.light .analytics-stat-value {
+  color: #0f172a !important;
+}
+
+/* Panel Card */
+body.light .analytics-panel-card {
+  background: #ffffff !important;
+  border-color: #e2e8f0 !important;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05) !important;
+}
+
+/* Simulator Form */
+body.light .sim-label {
+  color: #475569;
+}
+
+body.light .sim-input {
+  background: #f8fafc !important;
+  border-color: #e2e8f0 !important;
+  color: #0f172a !important;
+}
+
+body.light .sim-input:focus {
+  background: #ffffff !important;
+  border-color: #ec4899 !important;
+}
+
+body.light .sim-results-grid {
+  border-top-color: #e2e8f0;
+}
+
+body.light .sim-result-box {
+  background: #f8fafc !important;
+  border-color: #e2e8f0 !important;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.03) !important;
+}
+
+body.light .sim-result-lbl {
+  color: #64748b !important;
+}
+
+/* Tables */
+body.light .analytics-table th {
+  background: #f8fafc;
+  color: #475569 !important;
+  border-bottom: 1px solid #e2e8f0 !important;
+}
+
+body.light .analytics-table td {
+  border-bottom: 1px solid #f1f5f9 !important;
+  color: #334155;
+}
+
+body.light .analytics-table tr:hover td {
+  background: #f8fafc !important;
+}

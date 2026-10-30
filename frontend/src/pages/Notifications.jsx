@@ -908,7 +908,7 @@ export default function NotificationsPage() {
                             <UserCheck size={12} /> {n.targetUser.name || "User"}
                           </span>
                         ) : (
-                          <span style={{ color: "#cbd5e1" }}>{n.targetUserType || "All Users"}</span>
+                          <span style={{ color: "var(--text-soft, #475569)" }}>{n.targetUserType || "All Users"}</span>
                         )}
                       </td>
 

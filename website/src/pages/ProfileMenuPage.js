@@ -1,4 +1,4 @@
-import  { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   FaUserAlt,
@@ -293,11 +293,17 @@ const ProfileMenuPage = () => {
     }
   };
 
+  const myProfileRoute = userData?.username
+    ? `/user/${userData.username.replace(/^@/, "")}`
+    : userData?._id
+    ? `/user/${userData._id}`
+    : "/profile";
+
   const usernameFormatted = userData?.username
     ? userData.username.startsWith("@")
       ? userData.username
       : `@${userData.username}`
-    : "@user";
+    : (userData?._id ? `@user_${String(userData._id).slice(-4)}` : "");
 
   const [showOtherLegalPages, setShowOtherLegalPages] = useState(false);
 
@@ -321,7 +327,7 @@ const ProfileMenuPage = () => {
     {
       category: "PROFILE & CREATOR TOOLS",
       items: [
-        { label: "My Profile", route: `/user/${usernameFormatted.replace(/^@/, "")}`, icon: <FaUserAlt /> },
+        { label: "My Profile", route: myProfileRoute, icon: <FaUserAlt /> },
         { label: "Creator Studio & Analytics", route: "/creator/dashboard", icon: <FaTrophy /> },
         { label: "Verification", route: "/verification", icon: <FaTrophy /> },
         { label: "Creator Leaderboard", route: "/leaderboard", icon: <FaTrophy /> },
@@ -499,7 +505,7 @@ const ProfileMenuPage = () => {
                     <span>{userData?.name || "Deepak Kumar"}</span>
                     <VerifiedBadge user={userData} isVerified={isVerifiedUser} size="lg" />
                   </h2>
-                  <p className="text-xs font-bold text-brand-orange">{usernameFormatted === "@user" ? "@deepak_kumar" : usernameFormatted}</p>
+                  <p className="text-xs font-bold text-brand-orange">{usernameFormatted === "@user" ? `@username` : usernameFormatted}</p>
                   <p className="text-xs text-neutral-400 font-medium">
                     {userData?.phone || userData?.email || "+918273243959"}
                   </p>

@@ -243,7 +243,7 @@ export default function RedeemRequests() {
                 const creator = r.creatorId || {};
                 const details = r.paymentDetails || {};
                 return (
-                  <tr key={r._id} style={{ borderBottom: "1px solid rgba(255, 255, 255, 0.05)" }}>
+                  <tr key={r._id} style={{ borderBottom: "1px solid var(--border, rgba(255, 255, 255, 0.05))" }}>
                     {/* Creator */}
                     <td style={{ padding: "16px 20px" }}>
                       <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
@@ -257,7 +257,7 @@ export default function RedeemRequests() {
                           }}
                         />
                         <div>
-                          <div style={{ fontWeight: 700, color: "#fff", display: "flex", alignItems: "center", gap: "6px" }}>
+                          <div style={{ fontWeight: 700, color: "var(--text, #fff)", display: "flex", alignItems: "center", gap: "6px" }}>
                             {creator.name || "Creator"}
                             {creator.isVerified && <UserCheck size={14} color="#3b82f6" title="Verified Creator" />}
                           </div>
@@ -283,7 +283,7 @@ export default function RedeemRequests() {
                       {details.paymentMethod === "UPI" ? (
                         <div style={{ background: "rgba(59, 130, 246, 0.1)", padding: "8px 12px", borderRadius: "8px", border: "1px solid rgba(59, 130, 246, 0.2)", display: "inline-block" }}>
                           <div style={{ fontSize: "0.7rem", color: "#3b82f6", fontWeight: 700 }}>UPI METHOD</div>
-                          <div style={{ fontWeight: 700, color: "#fff", marginTop: "2px", display: "flex", alignItems: "center", gap: "8px" }}>
+                          <div style={{ fontWeight: 700, color: "var(--text, #fff)", marginTop: "2px", display: "flex", alignItems: "center", gap: "8px" }}>
                             {details.upiId || "N/A"}
                             {details.upiId && (
                               <button
@@ -300,10 +300,10 @@ export default function RedeemRequests() {
                       ) : (
                         <div style={{ background: "rgba(16, 185, 129, 0.1)", padding: "8px 12px", borderRadius: "8px", border: "1px solid rgba(16, 185, 129, 0.2)", display: "inline-block" }}>
                           <div style={{ fontSize: "0.7rem", color: "#10b981", fontWeight: 700 }}>BANK TRANSFER</div>
-                          <div style={{ fontWeight: 700, color: "#fff", marginTop: "2px" }}>
+                          <div style={{ fontWeight: 700, color: "var(--text, #fff)", marginTop: "2px" }}>
                             {details.accountHolderName || "Holder Name"}
                           </div>
-                          <div style={{ fontSize: "0.75rem", color: "#cbd5e1" }}>
+                          <div style={{ fontSize: "0.75rem", color: "var(--text-soft, #cbd5e1)" }}>
                             Acc: {details.accountNumber} | IFSC: {details.ifscCode}
                           </div>
                         </div>
@@ -311,7 +311,7 @@ export default function RedeemRequests() {
                     </td>
 
                     {/* Amount */}
-                    <td style={{ padding: "16px 20px", fontWeight: 800, color: r.status === "APPROVED" ? "#10b981" : "#cbd5e1" }}>
+                    <td style={{ padding: "16px 20px", fontWeight: 800, color: r.status === "APPROVED" ? "#10b981" : "var(--text, #cbd5e1)" }}>
                       {r.status === "APPROVED" ? `₹${r.amount?.toLocaleString()}` : `Est. ₹${Math.round((r.points || 0) * 0.1)}`}
                       {r.transactionId && (
                         <div style={{ fontSize: "0.72rem", color: "#64748b", fontWeight: 500 }}>
@@ -379,25 +379,25 @@ export default function RedeemRequests() {
 
       {/* APPROVE PAYOUT MODAL */}
       {showApproveModal && selectedReq && (
-        <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.75)", backdropFilter: "blur(6px)", zIndex: 100, display: "flex", alignItems: "center", justifyContent: "center", padding: "16px" }}>
-          <div style={{ background: "#1e293b", width: "100%", maxWidth: "520px", borderRadius: "20px", padding: "28px", border: "1px solid rgba(255,255,255,0.1)", color: "#fff" }}>
-            <h3 style={{ fontSize: "1.3rem", fontWeight: 800, marginBottom: "6px", color: "#fff" }}>
+        <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.6)", backdropFilter: "blur(6px)", zIndex: 100, display: "flex", alignItems: "center", justifyContent: "center", padding: "16px" }}>
+          <div style={{ background: "var(--bg-card, #1e293b)", width: "100%", maxWidth: "520px", borderRadius: "20px", padding: "28px", border: "1px solid var(--border, rgba(255,255,255,0.1))", color: "var(--text, #fff)", boxShadow: "0 20px 40px rgba(0,0,0,0.2)" }}>
+            <h3 style={{ fontSize: "1.3rem", fontWeight: 800, marginBottom: "6px", color: "var(--text, #fff)" }}>
               Approve Payout & Process Payment
             </h3>
-            <p style={{ fontSize: "0.82rem", color: "#94a3b8", marginBottom: "20px" }}>
+            <p style={{ fontSize: "0.82rem", color: "var(--text-muted, #94a3b8)", marginBottom: "20px" }}>
               Creator requested cashout for <strong style={{ color: "#f59e0b" }}>{selectedReq.points} Coins</strong>
             </p>
 
             {/* Payment Details Box */}
-            <div style={{ background: "#0f172a", padding: "16px", borderRadius: "12px", border: "1px solid rgba(255,255,255,0.08)", marginBottom: "20px" }}>
-              <div style={{ fontSize: "0.75rem", color: "#94a3b8", textTransform: "uppercase", fontWeight: 700, marginBottom: "8px" }}>
+            <div style={{ background: "var(--bg-input, #0f172a)", padding: "16px", borderRadius: "12px", border: "1px solid var(--border, rgba(255,255,255,0.08))", marginBottom: "20px" }}>
+              <div style={{ fontSize: "0.75rem", color: "var(--text-muted, #94a3b8)", textTransform: "uppercase", fontWeight: 700, marginBottom: "8px" }}>
                 Target Payment Account Info ({selectedReq.paymentDetails?.paymentMethod})
               </div>
 
               {selectedReq.paymentDetails?.paymentMethod === "UPI" ? (
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
                   <div>
-                    <div style={{ fontSize: "0.8rem", color: "#cbd5e1" }}>UPI Address / Phone:</div>
+                    <div style={{ fontSize: "0.8rem", color: "var(--text-soft, #cbd5e1)" }}>UPI Address / Phone:</div>
                     <div style={{ fontSize: "1.1rem", fontWeight: 800, color: "#3b82f6" }}>{selectedReq.paymentDetails?.upiId}</div>
                   </div>
                   <button
@@ -410,8 +410,8 @@ export default function RedeemRequests() {
                 </div>
               ) : (
                 <div>
-                  <div style={{ fontSize: "0.85rem", fontWeight: 700, color: "#fff" }}>{selectedReq.paymentDetails?.accountHolderName}</div>
-                  <div style={{ fontSize: "0.8rem", color: "#94a3b8", marginTop: "2px" }}>
+                  <div style={{ fontSize: "0.85rem", fontWeight: 700, color: "var(--text, #fff)" }}>{selectedReq.paymentDetails?.accountHolderName}</div>
+                  <div style={{ fontSize: "0.8rem", color: "var(--text-muted, #94a3b8)", marginTop: "2px" }}>
                     Bank: {selectedReq.paymentDetails?.bankName} | Acc: <strong>{selectedReq.paymentDetails?.accountNumber}</strong> | IFSC: <strong>{selectedReq.paymentDetails?.ifscCode}</strong>
                   </div>
                   <button
@@ -427,39 +427,39 @@ export default function RedeemRequests() {
 
             <form onSubmit={handleApproveSubmit}>
               <div style={{ marginBottom: "14px" }}>
-                <label style={{ display: "block", fontSize: "0.82rem", color: "#cbd5e1", fontWeight: 600, marginBottom: "6px" }}>
+                <label style={{ display: "block", fontSize: "0.82rem", color: "var(--text-soft, #cbd5e1)", fontWeight: 600, marginBottom: "6px" }}>
                   Converted Rupee Payout Amount (₹)
                 </label>
                 <input
                   type="number"
                   required
                   min="1"
-                  style={{ width: "100%", padding: "12px", borderRadius: "10px", background: "#0f172a", border: "1px solid rgba(255,255,255,0.15)", color: "#10b981", fontWeight: 800, fontSize: "1.1rem" }}
+                  style={{ width: "100%", padding: "12px", borderRadius: "10px", background: "var(--bg-input, #0f172a)", border: "1px solid var(--border, rgba(255,255,255,0.15))", color: "#10b981", fontWeight: 800, fontSize: "1.1rem" }}
                   value={payoutAmount}
                   onChange={(e) => setPayoutAmount(e.target.value)}
                 />
               </div>
 
               <div style={{ marginBottom: "14px" }}>
-                <label style={{ display: "block", fontSize: "0.82rem", color: "#cbd5e1", fontWeight: 600, marginBottom: "6px" }}>
+                <label style={{ display: "block", fontSize: "0.82rem", color: "var(--text-soft, #cbd5e1)", fontWeight: 600, marginBottom: "6px" }}>
                   Transaction / UTR Reference ID (Optional)
                 </label>
                 <input
                   type="text"
                   placeholder="e.g. UTR123456789 or UPI987654"
-                  style={{ width: "100%", padding: "10px", borderRadius: "10px", background: "#0f172a", border: "1px solid rgba(255,255,255,0.1)", color: "#fff", fontSize: "0.88rem" }}
+                  style={{ width: "100%", padding: "10px", borderRadius: "10px", background: "var(--bg-input, #0f172a)", border: "1px solid var(--border, rgba(255,255,255,0.1))", color: "var(--text, #fff)", fontSize: "0.88rem" }}
                   value={transactionId}
                   onChange={(e) => setTransactionId(e.target.value)}
                 />
               </div>
 
               <div style={{ marginBottom: "20px" }}>
-                <label style={{ display: "block", fontSize: "0.82rem", color: "#cbd5e1", fontWeight: 600, marginBottom: "6px" }}>
+                <label style={{ display: "block", fontSize: "0.82rem", color: "var(--text-soft, #cbd5e1)", fontWeight: 600, marginBottom: "6px" }}>
                   Admin Remark / Note to Creator
                 </label>
                 <input
                   type="text"
-                  style={{ width: "100%", padding: "10px", borderRadius: "10px", background: "#0f172a", border: "1px solid rgba(255,255,255,0.1)", color: "#fff", fontSize: "0.88rem" }}
+                  style={{ width: "100%", padding: "10px", borderRadius: "10px", background: "var(--bg-input, #0f172a)", border: "1px solid var(--border, rgba(255,255,255,0.1))", color: "var(--text, #fff)", fontSize: "0.88rem" }}
                   value={adminRemark}
                   onChange={(e) => setAdminRemark(e.target.value)}
                 />
@@ -468,7 +468,7 @@ export default function RedeemRequests() {
               <div style={{ display: "flex", justifyContent: "flex-end", gap: "10px" }}>
                 <button
                   type="button"
-                  style={{ padding: "10px 18px", borderRadius: "10px", background: "#334155", color: "#fff", fontWeight: 700, border: "none", cursor: "pointer" }}
+                  style={{ padding: "10px 18px", borderRadius: "10px", background: "var(--border2, #334155)", color: "var(--text, #fff)", fontWeight: 700, border: "none", cursor: "pointer" }}
                   onClick={() => setShowApproveModal(false)}
                 >
                   Cancel
@@ -487,24 +487,24 @@ export default function RedeemRequests() {
 
       {/* REJECT MODAL */}
       {showRejectModal && selectedReq && (
-        <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.75)", backdropFilter: "blur(6px)", zIndex: 100, display: "flex", alignItems: "center", justifyContent: "center", padding: "16px" }}>
-          <div style={{ background: "#1e293b", width: "100%", maxWidth: "480px", borderRadius: "20px", padding: "28px", border: "1px solid rgba(255,255,255,0.1)", color: "#fff" }}>
+        <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.6)", backdropFilter: "blur(6px)", zIndex: 100, display: "flex", alignItems: "center", justifyContent: "center", padding: "16px" }}>
+          <div style={{ background: "var(--bg-card, #1e293b)", width: "100%", maxWidth: "480px", borderRadius: "20px", padding: "28px", border: "1px solid var(--border, rgba(255,255,255,0.1))", color: "var(--text, #fff)", boxShadow: "0 20px 40px rgba(0,0,0,0.2)" }}>
             <h3 style={{ fontSize: "1.2rem", fontWeight: 800, marginBottom: "6px", color: "#ef4444" }}>
               Reject Redeem Request
             </h3>
-            <p style={{ fontSize: "0.82rem", color: "#94a3b8", marginBottom: "16px" }}>
+            <p style={{ fontSize: "0.82rem", color: "var(--text-muted, #94a3b8)", marginBottom: "16px" }}>
               Coins ({selectedReq.points}) will be refunded back to the creator's wallet.
             </p>
 
             <form onSubmit={handleRejectSubmit}>
               <div style={{ marginBottom: "20px" }}>
-                <label style={{ display: "block", fontSize: "0.82rem", color: "#cbd5e1", fontWeight: 600, marginBottom: "6px" }}>
+                <label style={{ display: "block", fontSize: "0.82rem", color: "var(--text-soft, #cbd5e1)", fontWeight: 600, marginBottom: "6px" }}>
                   Rejection Reason (Visible to Creator)
                 </label>
                 <textarea
                   required
                   rows="3"
-                  style={{ width: "100%", padding: "10px", borderRadius: "10px", background: "#0f172a", border: "1px solid rgba(255,255,255,0.1)", color: "#fff", fontSize: "0.88rem" }}
+                  style={{ width: "100%", padding: "10px", borderRadius: "10px", background: "var(--bg-input, #0f172a)", border: "1px solid var(--border, rgba(255,255,255,0.1))", color: "var(--text, #fff)", fontSize: "0.88rem" }}
                   value={rejectionReason}
                   onChange={(e) => setRejectionReason(e.target.value)}
                 />
@@ -513,7 +513,7 @@ export default function RedeemRequests() {
               <div style={{ display: "flex", justifyContent: "flex-end", gap: "10px" }}>
                 <button
                   type="button"
-                  style={{ padding: "10px 18px", borderRadius: "10px", background: "#334155", color: "#fff", fontWeight: 700, border: "none", cursor: "pointer" }}
+                  style={{ padding: "10px 18px", borderRadius: "10px", background: "var(--border2, #334155)", color: "var(--text, #fff)", fontWeight: 700, border: "none", cursor: "pointer" }}
                   onClick={() => setShowRejectModal(false)}
                 >
                   Cancel

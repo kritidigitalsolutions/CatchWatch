@@ -842,3 +842,237 @@
   background: rgba(239, 68, 68, 0.95);
   border: 1px solid rgba(239, 68, 68, 0.4);
 }
+
+/* =========================================================
+   LIGHT THEME OVERRIDES FOR NOTIFICATIONS STUDIO
+========================================================= */
+body.light .notif-studio-container {
+  color: #0f172a;
+}
+
+body.light .notif-header-titles h2 {
+  color: #0f172a !important;
+}
+
+body.light .notif-header-titles p {
+  color: #64748b;
+}
+
+body.light .notif-refresh-btn {
+  background: #ffffff;
+  border-color: #e2e8f0;
+  color: #334155;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+}
+
+body.light .notif-refresh-btn:hover {
+  background: #f8fafc;
+  border-color: #cbd5e1;
+  color: #0f172a;
+}
+
+/* Stat Boxes */
+body.light .notif-stat-box {
+  background: #ffffff !important;
+  border-color: #e2e8f0 !important;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.05) !important;
+}
+
+body.light .notif-stat-box.delivered {
+  background: #f0fdf4 !important;
+  border-color: #bbf7d0 !important;
+}
+
+body.light .notif-stat-box.failed {
+  background: #fef2f2 !important;
+  border-color: #fecaca !important;
+}
+
+body.light .notif-stat-num {
+  color: #0f172a !important;
+}
+
+body.light .notif-stat-lbl {
+  color: #64748b !important;
+}
+
+/* Studio Form Card */
+body.light .notif-card {
+  background: #ffffff !important;
+  border-color: #e2e8f0 !important;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05) !important;
+}
+
+body.light .notif-label {
+  color: #475569;
+}
+
+body.light .notif-label span {
+  color: #94a3b8;
+}
+
+body.light .notif-input-text,
+body.light .notif-textarea,
+body.light .notif-select {
+  background: #f8fafc !important;
+  border-color: #e2e8f0 !important;
+  color: #0f172a !important;
+}
+
+body.light .notif-input-text:focus,
+body.light .notif-textarea:focus,
+body.light .notif-select:focus {
+  background: #ffffff !important;
+  border-color: #a855f7 !important;
+}
+
+body.light .notif-tab-btn {
+  background: #f1f5f9;
+  border-color: #e2e8f0;
+  color: #475569;
+}
+
+body.light .notif-tab-btn.active {
+  background: #f3e8ff;
+  border-color: #a855f7;
+  color: #7e22ce;
+}
+
+body.light .notif-file-dropzone {
+  background: #f8fafc;
+  border-color: #cbd5e1;
+}
+
+body.light .dropzone-label {
+  color: #475569;
+}
+
+body.light .notif-radio-item {
+  color: #334155;
+}
+
+body.light .notif-picker-box {
+  background: #f8fafc;
+  border-color: #d8b4fe;
+}
+
+body.light .notif-selected-item-card {
+  background: #faf5ff;
+  border-color: #d8b4fe;
+}
+
+body.light .selected-item-name {
+  color: #0f172a;
+}
+
+body.light .notif-dropdown-list {
+  background: #ffffff;
+  border-color: #e2e8f0;
+  box-shadow: 0 12px 36px rgba(0, 0, 0, 0.12);
+}
+
+body.light .notif-dropdown-row {
+  border-bottom-color: #f1f5f9;
+}
+
+body.light .notif-dropdown-row:hover {
+  background: #faf5ff;
+}
+
+body.light .dropdown-item-title {
+  color: #0f172a;
+}
+
+body.light .btn-clear-v2 {
+  background: #f1f5f9;
+  border-color: #e2e8f0;
+  color: #475569;
+}
+
+body.light .btn-clear-v2:hover {
+  background: #e2e8f0;
+  color: #0f172a;
+}
+
+/* History Card */
+body.light .notif-history-card {
+  background: #ffffff !important;
+  border-color: #e2e8f0 !important;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05) !important;
+}
+
+body.light .history-title-wrap h3 {
+  color: #0f172a !important;
+}
+
+body.light .history-count-badge {
+  background: #f1f5f9;
+  color: #475569;
+}
+
+body.light .history-search-box input,
+body.light .history-type-select {
+  background: #f8fafc !important;
+  border-color: #e2e8f0 !important;
+  color: #0f172a !important;
+}
+
+body.light .history-table th {
+  background: #f8fafc;
+  color: #475569 !important;
+  border-bottom: 1px solid #e2e8f0 !important;
+}
+
+body.light .history-table td {
+  border-bottom: 1px solid #f1f5f9 !important;
+  color: #334155;
+}
+
+body.light .history-table tr:hover td {
+  background: #f8fafc !important;
+}
+
+body.light .history-notif-title {
+  color: #0f172a !important;
+}
+
+body.light .history-notif-msg {
+  color: #64748b;
+}
+
+body.light .action-icon-btn {
+  background: #f1f5f9;
+  border-color: #e2e8f0;
+  color: #64748b;
+}
+
+body.light .action-icon-btn:hover {
+  background: #f3e8ff;
+  color: #7e22ce;
+  border-color: #d8b4fe;
+}
+
+/* View Modal */
+body.light .notif-modal-card {
+  background: #ffffff !important;
+  border-color: #e2e8f0 !important;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.15) !important;
+  color: #0f172a;
+}
+
+body.light .modal-top-bar {
+  border-bottom-color: #e2e8f0;
+}
+
+body.light .modal-title {
+  color: #0f172a;
+}
+
+body.light .modal-message {
+  color: #334155;
+}
+
+body.light .modal-link-box {
+  background: #faf5ff;
+  border-color: #d8b4fe;
+}

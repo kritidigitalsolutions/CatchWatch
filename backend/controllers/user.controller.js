@@ -121,8 +121,7 @@ exports.completeProfile = async (
         const decoded = jwt.verify(token, process.env.JWT_SECRET);
         user = await User.findById(decoded.id);
       } catch (err) {
-        // Invalid token
-      }
+           console.error("invalid tocken:", err);      }
     }
 
     // If no user by token, but phone is provided
@@ -263,6 +262,7 @@ exports.completeProfile = async (
       user: {
         id: user._id,
         name: user.name,
+        username: user.username,
         phone: user.phone,
         profileImage: user.profileImage,
         profileComplete: user.profileComplete,
@@ -608,7 +608,10 @@ exports.getPublicUserProfile = async (req, res) => {
       query.username = new RegExp(`^${formatted}$`, "i");
     }
 
-    const user = await User.findOne(query).select("-password -__v");
+    let user = await User.findOne(query).select("-password -__v");
+    if (!user && (identifier === "user" || identifier === "@user") && currentUserId) {
+      user = await User.findById(currentUserId).select("-password -__v");
+    }
     if (!user) {
       return res.status(404).json({
         success: false,
@@ -878,7 +881,9 @@ exports.blockUser = async (req, res) => {
           io.to(sId).emit("user_blocked", { blockerId, blockedId: targetUserId });
         });
       }
-    } catch (e) {}
+    } catch (e) {
+      console.error("Socket notification failed:", e);
+    }
 
     return res.status(200).json({
       success: true,
@@ -914,7 +919,9 @@ exports.unblockUser = async (req, res) => {
           io.to(sId).emit("user_unblocked", { unblockerId: blockerId, unblockedId: targetUserId });
         });
       }
-    } catch (e) {}
+    } catch (e) {
+      console.error("unblock user error:", e);
+    }
 
     return res.status(200).json({
       success: true,

@@ -39,6 +39,8 @@ import ChatPage from './pages/ChatPage';
 import { SocketProvider } from './context/SocketContext';
 import { CallProvider } from './context/CallContext';
 import { CallModal } from './components/CallModal';
+import { initUserE2EE } from './utils/e2ee';
+import { saveE2EEIdentity, getE2EEBackup, getUserPublicKey } from './api/chatApi';
 
 // Helper to check if JWT token is actually expired
 const isTokenExpired = (token) => {
@@ -93,6 +95,20 @@ const App = () => {
     };
 
     performRefresh();
+
+    // Ensure E2EE identity is restored in background on app start if user is logged in
+    const storedUser = localStorage.getItem("user");
+    if (storedUser) {
+      try {
+        const u = JSON.parse(storedUser);
+        const uid = u?._id || u?.id;
+        if (uid) {
+          initUserE2EE(uid, saveE2EEIdentity, getE2EEBackup, getUserPublicKey).catch((err) => {
+            console.warn("Background E2EE init notice:", err);
+          });
+        }
+      } catch (e) {}
+    }
 
     // Set up silent refresh timer for every 25 minutes
     const interval = setInterval(async () => {

@@ -419,7 +419,7 @@ export default function ApplePayments() {
                       <td>
                         <div className="user-cell">
                           <img
-                            src={user?.profileImage || "/avatar-placeholder.png"}
+                            src={user?.profileImage || "https://static.vecteezy.com/system/resources/previews/065/959/781/non_2x/simple-dark-blue-user-profile-icon-person-symbol-free-vector.jpg"}
                             alt={user?.name || "User"}
                             className="user-avatar"
                             onError={(e) => (e.target.src = "/avatar-placeholder.png")}

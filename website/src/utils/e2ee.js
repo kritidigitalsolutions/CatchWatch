@@ -445,15 +445,51 @@ export async function initUserE2EE(userId, saveIdentityApi, getBackupApi, getPub
           recoveryPassphrase
         );
 
-        if (restoredPrivateStr && backupData.publicKey && privateMatchesPublic(restoredPrivateStr, backupData.publicKey)) {
-          privateKeyStr = restoredPrivateStr;
-          publicKeyStr = backupData.publicKey;
-          keyId = backupData.keyId || (await computeKeyId(publicKeyStr));
-          safeKeyDiagnostic(E2EE_DIAGNOSTIC.IDENTITY_RESTORED, {
-            senderId: userId,
-            currentKeyId: keyId,
-          });
-          console.log("🔑 Successfully restored account E2EE identity from zero-knowledge backup!");
+        if (restoredPrivateStr) {
+          // Extract the exact public key coordinates directly from the restored private key JWK
+          let derivedPublicStr = null;
+          try {
+            const privJwk = JSON.parse(restoredPrivateStr);
+            if (privJwk && privJwk.x && privJwk.y) {
+              derivedPublicStr = JSON.stringify({
+                crv: privJwk.crv || "P-256",
+                ext: true,
+                key_ops: [],
+                kty: privJwk.kty || "EC",
+                x: privJwk.x,
+                y: privJwk.y,
+              });
+            }
+          } catch (e) {
+            derivedPublicStr = null;
+          }
+
+          if (derivedPublicStr) {
+            privateKeyStr = restoredPrivateStr;
+            publicKeyStr = (backupData.publicKey && privateMatchesPublic(restoredPrivateStr, backupData.publicKey))
+              ? backupData.publicKey
+              : derivedPublicStr;
+            keyId = backupData.keyId || (await computeKeyId(publicKeyStr));
+            safeKeyDiagnostic(E2EE_DIAGNOSTIC.IDENTITY_RESTORED, {
+              senderId: userId,
+              currentKeyId: keyId,
+            });
+            console.log("🔑 Successfully restored account E2EE identity from zero-knowledge backup!");
+
+            // Register this device with the restored identity on server
+            if (typeof saveIdentityApi === "function") {
+              try {
+                await saveIdentityApi({
+                  publicKey: publicKeyStr,
+                  keyId,
+                  encryptedPrivateKeyBackup: backupData.encryptedPrivateKeyBackup,
+                  deviceId,
+                });
+              } catch (regErr) {
+                console.warn("Could not sync restored session to server:", regErr);
+              }
+            }
+          }
         }
       }
     } else {
@@ -461,6 +497,40 @@ export async function initUserE2EE(userId, saveIdentityApi, getBackupApi, getPub
         senderId: userId,
         currentKeyId: keyId,
       });
+
+      // Key exists locally. Ensure server has matching backup.
+      if (!keyId) {
+        keyId = await computeKeyId(publicKeyStr);
+      }
+
+      let serverHasBackup = false;
+      let serverKeyMatches = false;
+      if (typeof getBackupApi === "function") {
+        try {
+          const checkRes = await getBackupApi();
+          serverHasBackup = Boolean(checkRes?.data?.hasBackup);
+          serverKeyMatches = serverHasBackup && (checkRes?.data?.keyId === keyId || privateMatchesPublic(privateKeyStr, checkRes?.data?.publicKey));
+        } catch (e) {
+          serverHasBackup = false;
+        }
+      }
+
+      if (!serverKeyMatches && typeof saveIdentityApi === "function") {
+        const backup = await encryptPrivateKeyBackup(privateKeyStr, recoveryPassphrase);
+        if (backup) {
+          try {
+            await saveIdentityApi({
+              publicKey: publicKeyStr,
+              keyId,
+              encryptedPrivateKeyBackup: backup,
+              deviceId,
+            });
+            localStorage.setItem(`${KEY_STORAGE_PREFIX}synced_${userId}_${keyId}`, "true");
+          } catch (e) {
+            console.warn("Could not sync E2EE backup to server:", e);
+          }
+        }
+      }
     }
 
     // If still no key (first time account creation), generate initial keypair and backup
@@ -488,39 +558,6 @@ export async function initUserE2EE(userId, saveIdentityApi, getBackupApi, getPub
           localStorage.setItem(`${KEY_STORAGE_PREFIX}synced_${userId}_${keyId}`, "true");
         } catch (err) {
           console.warn("Could not register initial E2EE identity on server:", err);
-        }
-      }
-    } else {
-      // Key exists locally. Ensure server has backup.
-      if (!keyId) {
-        keyId = await computeKeyId(publicKeyStr);
-      }
-
-      const syncKey = `${KEY_STORAGE_PREFIX}synced_${userId}_${keyId}`;
-      let serverHasBackup = false;
-      if (typeof getBackupApi === "function") {
-        try {
-          const checkRes = await getBackupApi();
-          serverHasBackup = Boolean(checkRes?.data?.hasBackup);
-        } catch (e) {
-          serverHasBackup = false;
-        }
-      }
-
-      if (!serverHasBackup && typeof saveIdentityApi === "function") {
-        const backup = await encryptPrivateKeyBackup(privateKeyStr, recoveryPassphrase);
-        if (backup) {
-          try {
-            await saveIdentityApi({
-              publicKey: publicKeyStr,
-              keyId,
-              encryptedPrivateKeyBackup: backup,
-              deviceId,
-            });
-            localStorage.setItem(syncKey, "true");
-          } catch (e) {
-            console.warn("Could not sync E2EE backup to server:", e);
-          }
         }
       }
     }

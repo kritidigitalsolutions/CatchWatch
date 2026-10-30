@@ -366,10 +366,31 @@ exports.verifyOtp = async (req, res) => {
 
     // create user automatically
     if (!user) {
+      const cleanDigits = normalizedPhone.replace(/\D/g, "").slice(-4) || Math.floor(1000 + Math.random() * 9000);
+      let baseUsername = `@user_${cleanDigits}`;
+      let candidateUsername = baseUsername;
+      let counter = 1;
+      while (await User.findOne({ username: candidateUsername })) {
+        candidateUsername = `@user_${cleanDigits}_${counter++}`;
+      }
+
       user = await User.create({
         phone: normalizedPhone,
+        username: candidateUsername,
+        name: "User",
         role: "USER",
+        profileComplete: false,
       });
+    } else if (!user.username) {
+      const cleanDigits = normalizedPhone.replace(/\D/g, "").slice(-4) || Math.floor(1000 + Math.random() * 9000);
+      let baseUsername = `@user_${cleanDigits}`;
+      let candidateUsername = baseUsername;
+      let counter = 1;
+      while (await User.findOne({ username: candidateUsername, _id: { $ne: user._id } })) {
+        candidateUsername = `@user_${cleanDigits}_${counter++}`;
+      }
+      user.username = candidateUsername;
+      await user.save();
     }
 
     const rawFcmToken =
@@ -460,6 +481,7 @@ exports.verifyOtp = async (req, res) => {
       user: {
         id: user._id,
         name: user.name,
+        username: user.username,
         email: user.email,
         phone: user.phone,
         profileImage:
@@ -766,6 +788,42 @@ exports.getSession = async (req, res) => {
     return res.status(500).json({
       success: false,
       message: "Failed to get session",
+    });
+  }
+};
+// ========================================
+// CANCEL INCOMPLETE REGISTRATION
+// ========================================
+exports.cancelRegistration = async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const user = await User.findById(userId);
+
+    if (!user) {
+      return res.status(200).json({
+        success: true,
+        message: "User not found or already removed",
+      });
+    }
+
+    // Only allow cancelling if profile is NOT complete
+    if (!user.profileComplete) {
+      await User.findByIdAndDelete(userId);
+      return res.status(200).json({
+        success: true,
+        message: "Incomplete registration cancelled and user removed successfully",
+      });
+    }
+
+    return res.status(400).json({
+      success: false,
+      message: "Cannot cancel an already completed user profile",
+    });
+  } catch (error) {
+    console.error("Cancel registration error:", error);
+    return res.status(500).json({
+      success: false,
+      message: "Server error cancelling registration",
     });
   }
 };

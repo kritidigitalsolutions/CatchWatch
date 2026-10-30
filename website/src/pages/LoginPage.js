@@ -4,6 +4,8 @@ import { useNavigate } from 'react-router-dom'; // Redirection ke liye
 import { toast } from 'react-toastify';
 // Apni api file ka correct path yahan dalein
 import { auth, verifyOTP } from '../api/authApi';
+import { initUserE2EE } from '../utils/e2ee';
+import { saveE2EEIdentity, getE2EEBackup, getUserPublicKey } from '../api/chatApi';
 
 const LoginPage = () => {
     // Step 1: Phone Number, Step 2: OTP Verification
@@ -110,6 +112,12 @@ const LoginPage = () => {
                 localStorage.setItem("authToken", response.token);
                 if (response.user) {
                     localStorage.setItem("user", JSON.stringify(response.user));
+                    const uid = response.user._id || response.user.id;
+                    if (uid) {
+                        initUserE2EE(uid, saveE2EEIdentity, getE2EEBackup, getUserPublicKey).catch((err) => {
+                            console.warn("E2EE auto-init on login notice:", err);
+                        });
+                    }
                 }
 
                 toast.success("Login successful!");

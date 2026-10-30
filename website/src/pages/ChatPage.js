@@ -579,24 +579,30 @@ const ChatPage = () => {
 
   // Helper to decrypt a single payload's text if encrypted
   const decryptMessageText = async (msg, sharedKey = null) => {
-    if (!msg || !msg.text) return msg;
+    if (!msg) return msg;
+    const cipherTextToDecrypt = msg.originalCiphertext || msg.text;
+    if (!cipherTextToDecrypt) return msg;
     if (!msg.isEncrypted || !msg.iv) return { ...msg, isDecrypted: true };
-    if (msg.isDecrypted) return msg;
+    if (msg.isDecrypted && !msg.isDecryptionFailed) return msg;
 
     // Check recent fast plaintext cache first for immediately sent messages
-    if (recentPlaintextCache.current.has(msg.text)) {
+    if (recentPlaintextCache.current.has(cipherTextToDecrypt)) {
       return {
         ...msg,
-        text: recentPlaintextCache.current.get(msg.text),
+        originalCiphertext: cipherTextToDecrypt,
+        text: recentPlaintextCache.current.get(cipherTextToDecrypt),
         isDecrypted: true,
+        isDecryptionFailed: false,
       };
     }
     const msgKey = (msg._id || msg.id)?.toString();
     if (msgKey && recentPlaintextCache.current.has(msgKey)) {
       return {
         ...msg,
+        originalCiphertext: cipherTextToDecrypt,
         text: recentPlaintextCache.current.get(msgKey),
         isDecrypted: true,
+        isDecryptionFailed: false,
       };
     }
 
@@ -609,7 +615,7 @@ const ChatPage = () => {
         currentDeviceId: activeKeys?.deviceId,
         currentKeyId: activeKeys?.keyId,
       });
-      return { ...msg, isDecrypted: false };
+      return { ...msg, originalCiphertext: cipherTextToDecrypt, isDecrypted: false };
     }
 
     try {
@@ -648,6 +654,7 @@ const ChatPage = () => {
         if (Array.isArray(partnerObj?.deviceKeys)) {
           partnerObj.deviceKeys.forEach((dk) => addCandidateKey(dk?.publicKey));
         }
+        addCandidateKey(encryptionObj.recipientPublicKey);
       } else {
         // Case 2: Message sent by current user.
         addCandidateKey(encryptionObj.recipientPublicKey);
@@ -696,14 +703,23 @@ const ChatPage = () => {
 
       // If a pre-derived shared key was passed, try it first
       if (sharedKey) {
-        const plainText = await decryptText(msg.text, msg.iv, sharedKey);
+        const plainText = await decryptText(cipherTextToDecrypt, msg.iv, sharedKey);
         if (plainText !== null) {
           safeKeyDiagnostic(E2EE_DIAGNOSTIC.HISTORICAL_DECRYPT_SUCCESS, {
             messageId: msg._id || msg.id,
             senderId,
             recipientId,
           });
-          return { ...msg, text: plainText, isDecrypted: true };
+          if (msgKey) recentPlaintextCache.current.set(msgKey, plainText);
+          if (cipherTextToDecrypt) recentPlaintextCache.current.set(cipherTextToDecrypt, plainText);
+          return {
+            ...msg,
+            originalCiphertext: cipherTextToDecrypt,
+            text: plainText,
+            isDecrypted: true,
+            isDecryptionFailed: false,
+            isLegacyUnavailable: false,
+          };
         }
       }
 
@@ -716,14 +732,23 @@ const ChatPage = () => {
           const derivedSecret = await deriveSharedKey(activeKeys.privateKey, importedPub);
           if (!derivedSecret) continue;
 
-          const plainText = await decryptText(msg.text, msg.iv, derivedSecret);
+          const plainText = await decryptText(cipherTextToDecrypt, msg.iv, derivedSecret);
           if (plainText !== null) {
             safeKeyDiagnostic(E2EE_DIAGNOSTIC.HISTORICAL_DECRYPT_SUCCESS, {
               messageId: msg._id || msg.id,
               senderId,
               recipientId,
             });
-            return { ...msg, text: plainText, isDecrypted: true };
+            if (msgKey) recentPlaintextCache.current.set(msgKey, plainText);
+            if (cipherTextToDecrypt) recentPlaintextCache.current.set(cipherTextToDecrypt, plainText);
+            return {
+              ...msg,
+              originalCiphertext: cipherTextToDecrypt,
+              text: plainText,
+              isDecrypted: true,
+              isDecryptionFailed: false,
+              isLegacyUnavailable: false,
+            };
           }
         } catch (e) {
           // continue trying next key
@@ -758,7 +783,16 @@ const ChatPage = () => {
                   safeKeyDiagnostic(E2EE_DIAGNOSTIC.HISTORICAL_DECRYPT_SUCCESS, {
                     messageId: msg._id || msg.id,
                   });
-                  return { ...msg, text: plainText, isDecrypted: true };
+                  if (msgKey) recentPlaintextCache.current.set(msgKey, plainText);
+                  if (cipherTextToDecrypt) recentPlaintextCache.current.set(cipherTextToDecrypt, plainText);
+                  return {
+                    ...msg,
+                    originalCiphertext: cipherTextToDecrypt,
+                    text: plainText,
+                    isDecrypted: true,
+                    isDecryptionFailed: false,
+                    isLegacyUnavailable: false,
+                  };
                 }
               }
             }
@@ -777,6 +811,7 @@ const ChatPage = () => {
 
       return {
         ...msg,
+        originalCiphertext: cipherTextToDecrypt,
         text: "🔒 Message unavailable on this device",
         isDecrypted: true,
         isDecryptionFailed: true,
@@ -790,6 +825,7 @@ const ChatPage = () => {
       });
       return {
         ...msg,
+        originalCiphertext: cipherTextToDecrypt,
         text: "🔒 Message unavailable on this device",
         isDecrypted: true,
         isDecryptionFailed: true,
@@ -835,25 +871,32 @@ const ChatPage = () => {
   };
 
   const lastDecryptedWithKeyRef = useRef(null);
+  const decryptionRetriesRef = useRef(new Set());
 
   // Auto-retry decryption whenever e2eeKeys, activeConv, or messages array updates
   useEffect(() => {
     if (!e2eeKeys || !activeConv || messages.length === 0) return;
 
-    const keyChanged = Boolean(e2eeKeys.keyId && e2eeKeys.keyId !== lastDecryptedWithKeyRef.current);
+    const currentKeyId = e2eeKeys.keyId || "key_active";
+    const keyChanged = Boolean(currentKeyId !== lastDecryptedWithKeyRef.current);
     if (keyChanged) {
-      lastDecryptedWithKeyRef.current = e2eeKeys.keyId;
+      lastDecryptedWithKeyRef.current = currentKeyId;
+      decryptionRetriesRef.current.clear();
     }
 
-    const hasUndecrypted = messages.some(
-      (m) =>
-        (m.isEncrypted && m.iv && (!m.isDecrypted || (keyChanged && m.isDecryptionFailed))) ||
+    const hasUndecrypted = messages.some((m) => {
+      const mKey = (m._id || m.id)?.toString();
+      const retryKey = `${mKey}_${currentKeyId}`;
+      const canRetryThisMsg = !decryptionRetriesRef.current.has(retryKey);
+      return (
+        (m.isEncrypted && m.iv && (!m.isDecrypted || (canRetryThisMsg && m.isDecryptionFailed))) ||
         (m.replyTo &&
           typeof m.replyTo === "object" &&
           m.replyTo.isEncrypted &&
           m.replyTo.iv &&
-          (!m.replyTo.isDecrypted || (keyChanged && m.replyTo.isDecryptionFailed))),
-    );
+          (!m.replyTo.isDecrypted || (canRetryThisMsg && m.replyTo.isDecryptionFailed)))
+      );
+    });
     if (!hasUndecrypted) return;
 
     let isMounted = true;
@@ -863,16 +906,21 @@ const ChatPage = () => {
 
       const updated = await Promise.all(
         messages.map(async (msg) => {
+          const mKey = (msg._id || msg.id)?.toString();
+          const retryKey = `${mKey}_${currentKeyId}`;
+          const canRetry = !decryptionRetriesRef.current.has(retryKey);
+
           const needsMsgDecryption =
-            msg.isEncrypted && msg.iv && (!msg.isDecrypted || (keyChanged && msg.isDecryptionFailed));
+            msg.isEncrypted && msg.iv && (!msg.isDecrypted || (canRetry && msg.isDecryptionFailed));
           const needsReplyDecryption =
             msg.replyTo &&
             typeof msg.replyTo === "object" &&
             msg.replyTo.isEncrypted &&
             msg.replyTo.iv &&
-            (!msg.replyTo.isDecrypted || (keyChanged && msg.replyTo.isDecryptionFailed));
+            (!msg.replyTo.isDecrypted || (canRetry && msg.replyTo.isDecryptionFailed));
 
           if (needsMsgDecryption || needsReplyDecryption) {
+            decryptionRetriesRef.current.add(retryKey);
             return await processDecryptMessage(msg, partnerKey);
           }
           return msg;
@@ -952,7 +1000,7 @@ const ChatPage = () => {
       decryptConversationsLastMessages(conversations);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [e2eeKeys]);
+  }, [e2eeKeys, conversations]);
 
   const loadConversations = async () => {
     try {

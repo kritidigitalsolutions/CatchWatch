@@ -8,6 +8,7 @@ const {
   refreshToken,
   logout,
   getSession,
+  cancelRegistration,
 } = require("../../controllers/auth.controller");
 const { isAuth, optionalAuth } = require("../../middlewares/auth.middleware");
 
@@ -52,6 +53,16 @@ router.get(
   "/session",
   isAuth,
   getSession
+);
+
+
+// ========================================
+// CANCEL INCOMPLETE REGISTRATION
+// ========================================
+router.post(
+  "/cancel-registration",
+  isAuth,
+  cancelRegistration
 );
 
 module.exports = router;

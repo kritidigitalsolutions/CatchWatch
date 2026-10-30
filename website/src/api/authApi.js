@@ -44,4 +44,12 @@ export const refreshTokenCall = async () => {
   }
 };
 
-
+export const cancelRegistration = async () => {
+  try {
+    const response = await axiosInstance.post("/auth/cancel-registration");
+    return response.data;
+  } catch (error) {
+    console.error("Error cancelling registration:", error);
+    return null;
+  }
+};

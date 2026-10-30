@@ -324,7 +324,7 @@ export default function AdminAnalytics() {
                       <span className="rank-badge">#{index + 1}</span>
                     </td>
                     <td>
-                      <div style={{ fontWeight: 700, color: "#ffffff" }}>{c.name}</div>
+                      <div style={{ fontWeight: 700, color: "var(--text, #ffffff)" }}>{c.name}</div>
                       <div style={{ fontSize: "0.75rem", color: "#94a3b8" }}>@{c.username || "creator"}</div>
                     </td>
                     <td>
@@ -336,7 +336,7 @@ export default function AdminAnalytics() {
                     <td style={{ fontWeight: 700, color: "#38bdf8" }}>
                       {(c.totalEngagementPoints || 0).toLocaleString()}
                     </td>
-                    <td style={{ fontWeight: 700, color: "#cbd5e1" }}>
+                    <td style={{ fontWeight: 700, color: "var(--text-soft, #cbd5e1)" }}>
                       {(c.totalQualifiedViews || 0).toLocaleString()}
                     </td>
                   </tr>

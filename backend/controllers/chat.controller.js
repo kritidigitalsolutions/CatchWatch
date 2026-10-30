@@ -282,8 +282,14 @@ exports.startConversation = async (req, res) => {
       participants: { $all: [currentUserId, recipientId] },
     }).populate({
       path: "participants",
-      select: "name username profileImage isOnline lastSeen phone bio role verification publicKey deviceKeys",
-    }).populate("lastMessage");
+      select: "name username profileImage isOnline lastSeen phone bio role verification publicKey e2eeIdentity activeSession deviceKeys",
+    }).populate({
+      path: "lastMessage",
+      populate: [
+        { path: "sender", select: "name username profileImage publicKey e2eeIdentity activeSession deviceKeys" },
+        { path: "recipient", select: "name username profileImage publicKey e2eeIdentity activeSession deviceKeys" },
+      ],
+    });
 
     if (conversation) {
       // If user previously deleted conversation, remove from deletedBy
@@ -304,7 +310,7 @@ exports.startConversation = async (req, res) => {
 
       conversation = await Conversation.findById(conversation._id).populate({
         path: "participants",
-        select: "name username profileImage isOnline lastSeen phone bio role verification publicKey deviceKeys",
+        select: "name username profileImage isOnline lastSeen phone bio role verification publicKey e2eeIdentity activeSession deviceKeys",
       });
     }
 
@@ -506,6 +512,16 @@ exports.sendMessage = async (req, res) => {
       finalIv = iv.trim();
       finalEncryption = validation.normalized;
 
+      // Ensure sender and recipient public keys are ALWAYS preserved on every encrypted message
+      if (!finalEncryption.senderPublicKey) {
+        const senderUser = await User.findById(senderId).select("publicKey e2eeIdentity");
+        finalEncryption.senderPublicKey = senderUser?.e2eeIdentity?.publicKey || senderUser?.publicKey || "";
+      }
+      if (!finalEncryption.recipientPublicKey) {
+        const recipientUser = await User.findById(targetRecipientId).select("publicKey e2eeIdentity");
+        finalEncryption.recipientPublicKey = recipientUser?.e2eeIdentity?.publicKey || recipientUser?.publicKey || "";
+      }
+
       safeE2eeDiagnostic("MESSAGE_ENCRYPTED_VALIDATED", {
         senderId,
         recipientId: targetRecipientId,
@@ -544,8 +560,8 @@ exports.sendMessage = async (req, res) => {
       .populate({
         path: "replyTo",
         populate: [
-          { path: "sender", select: "name username profileImage publicKey activeSession deviceKeys" },
-          { path: "recipient", select: "name username profileImage publicKey activeSession deviceKeys" },
+          { path: "sender", select: "name username profileImage publicKey e2eeIdentity activeSession deviceKeys" },
+          { path: "recipient", select: "name username profileImage publicKey e2eeIdentity activeSession deviceKeys" },
         ],
       });
 
@@ -745,6 +761,15 @@ exports.editMessage = async (req, res) => {
       finalIsEncrypted = true;
       finalIv = iv.trim();
       finalEncryption = validation.normalized;
+
+      if (!finalEncryption.senderPublicKey) {
+        const senderUser = await User.findById(message.sender).select("publicKey e2eeIdentity");
+        finalEncryption.senderPublicKey = senderUser?.e2eeIdentity?.publicKey || senderUser?.publicKey || "";
+      }
+      if (!finalEncryption.recipientPublicKey) {
+        const recipientUser = await User.findById(message.recipient).select("publicKey e2eeIdentity");
+        finalEncryption.recipientPublicKey = recipientUser?.e2eeIdentity?.publicKey || recipientUser?.publicKey || "";
+      }
     }
 
     message.text = text.trim();
@@ -1410,26 +1435,31 @@ exports.setE2EEIdentity = async (req, res) => {
       });
     }
 
-    user.e2eeIdentity.publicKey = publicKey.trim();
-    user.e2eeIdentity.keyId = effectiveKeyId;
-    user.publicKey = publicKey.trim();
-
-    if (
+    const hasIncomingBackup = Boolean(
       encryptedPrivateKeyBackup &&
       typeof encryptedPrivateKeyBackup === "object" &&
       encryptedPrivateKeyBackup.ciphertext &&
       encryptedPrivateKeyBackup.iv &&
       encryptedPrivateKeyBackup.salt
-    ) {
-      user.e2eeIdentity.encryptedPrivateKeyBackup = {
-        ciphertext: String(encryptedPrivateKeyBackup.ciphertext),
-        iv: String(encryptedPrivateKeyBackup.iv),
-        salt: String(encryptedPrivateKeyBackup.salt),
-        iterations: Number(encryptedPrivateKeyBackup.iterations) || 100000,
-        version: Number(encryptedPrivateKeyBackup.version) || 1,
-      };
-      user.e2eeIdentity.hasBackup = true;
-      user.e2eeIdentity.backupUpdatedAt = new Date();
+    );
+
+    // Protect account identity: if user already has an active backup, do not overwrite identity without a valid new backup
+    if (!user.e2eeIdentity.hasBackup || hasIncomingBackup) {
+      user.e2eeIdentity.publicKey = publicKey.trim();
+      user.e2eeIdentity.keyId = effectiveKeyId;
+      user.publicKey = publicKey.trim();
+
+      if (hasIncomingBackup) {
+        user.e2eeIdentity.encryptedPrivateKeyBackup = {
+          ciphertext: String(encryptedPrivateKeyBackup.ciphertext),
+          iv: String(encryptedPrivateKeyBackup.iv),
+          salt: String(encryptedPrivateKeyBackup.salt),
+          iterations: Number(encryptedPrivateKeyBackup.iterations) || 100000,
+          version: Number(encryptedPrivateKeyBackup.version) || 1,
+        };
+        user.e2eeIdentity.hasBackup = true;
+        user.e2eeIdentity.backupUpdatedAt = new Date();
+      }
     }
 
     // Also sync active web session

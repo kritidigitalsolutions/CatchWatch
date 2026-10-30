@@ -281,6 +281,7 @@ app.use("/api/support", userSupportRoutes);
 app.use("/api/admin/support", adminSupportRoutes);
 
 const reelRoutes = require("./routes/user/reel.routes");
+const adminReelRoutes = require("./routes/admin/reel.routes");
 const commentRoutes = require("./routes/user/comment.routes");
 const userCreatorRoutes = require("./routes/user/creator.routes");
 const adminCreatorRoutes = require("./routes/admin/creator.routes");
@@ -288,6 +289,8 @@ const adminRedeemRoutes = require("./routes/admin/redeem.routes");
 
 app.use("/api/reels", reelRoutes);
 app.use("/api/comments", commentRoutes);
+app.use("/api/admin/reels", adminReelRoutes);
+app.use("/admin/reels", adminReelRoutes);
 
 // UGC REPORT ROUTES (Apple Guideline 1.2)
 const userReportRoutes = require("./routes/user/report.routes");
