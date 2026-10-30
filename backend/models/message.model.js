@@ -82,6 +82,10 @@ const messageSchema = new mongoose.Schema(
         type: String,
         default: "",
       },
+      recipientPublicKey: {
+        type: String,
+        default: "",
+      },
       envelopes: [
         {
           userId: { type: mongoose.Schema.Types.ObjectId, ref: "User" },

@@ -131,6 +131,7 @@ const ForwardModal = ({ isOpen, onClose, messageToForward }) => {
           senderPublicKey: activeKeys.publicKeyString,
           recipientDeviceId: recipientKeyRes?.data?.deviceId || "active_device",
           recipientKeyId: recipientKeyRes?.data?.keyId || "active_key",
+          recipientPublicKey: recipientPubKeyStr,
           envelopes: [],
         };
       }

@@ -478,41 +478,49 @@ export async function initUserE2EE(userId, saveIdentityApi, getBackupApi, getPub
       });
 
       if (typeof saveIdentityApi === "function" && backup) {
-        await saveIdentityApi({
-          publicKey: publicKeyStr,
-          keyId,
-          encryptedPrivateKeyBackup: backup,
-          deviceId,
-        })
-          .then(() => {
-            localStorage.setItem(`${KEY_STORAGE_PREFIX}synced_${userId}_${keyId}`, "true");
-          })
-          .catch((err) => {
-            console.warn("Could not register initial E2EE identity on server:", err);
+        try {
+          await saveIdentityApi({
+            publicKey: publicKeyStr,
+            keyId,
+            encryptedPrivateKeyBackup: backup,
+            deviceId,
           });
+          localStorage.setItem(`${KEY_STORAGE_PREFIX}synced_${userId}_${keyId}`, "true");
+        } catch (err) {
+          console.warn("Could not register initial E2EE identity on server:", err);
+        }
       }
     } else {
-      // Key exists locally. Ensure server has backup only if not already synced.
+      // Key exists locally. Ensure server has backup.
       if (!keyId) {
         keyId = await computeKeyId(publicKeyStr);
       }
 
       const syncKey = `${KEY_STORAGE_PREFIX}synced_${userId}_${keyId}`;
-      const alreadySynced = localStorage.getItem(syncKey) === "true";
+      let serverHasBackup = false;
+      if (typeof getBackupApi === "function") {
+        try {
+          const checkRes = await getBackupApi();
+          serverHasBackup = Boolean(checkRes?.data?.hasBackup);
+        } catch (e) {
+          serverHasBackup = false;
+        }
+      }
 
-      if (!alreadySynced && typeof saveIdentityApi === "function") {
+      if (!serverHasBackup && typeof saveIdentityApi === "function") {
         const backup = await encryptPrivateKeyBackup(privateKeyStr, recoveryPassphrase);
         if (backup) {
-          saveIdentityApi({
-            publicKey: publicKeyStr,
-            keyId,
-            encryptedPrivateKeyBackup: backup,
-            deviceId,
-          })
-            .then(() => {
-              localStorage.setItem(syncKey, "true");
-            })
-            .catch(() => null);
+          try {
+            await saveIdentityApi({
+              publicKey: publicKeyStr,
+              keyId,
+              encryptedPrivateKeyBackup: backup,
+              deviceId,
+            });
+            localStorage.setItem(syncKey, "true");
+          } catch (e) {
+            console.warn("Could not sync E2EE backup to server:", e);
+          }
         }
       }
     }

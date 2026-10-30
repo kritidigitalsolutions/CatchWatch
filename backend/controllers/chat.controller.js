@@ -93,6 +93,7 @@ const normalizeEncryptionMetadata = (encryption = {}) => {
     senderPublicKey: encryption.senderPublicKey || "",
     recipientDeviceId: encryption.recipientDeviceId || "",
     recipientKeyId: encryption.recipientKeyId || "",
+    recipientPublicKey: encryption.recipientPublicKey || "",
     envelopes,
   };
 };
@@ -1380,6 +1381,35 @@ exports.setE2EEIdentity = async (req, res) => {
       user.e2eeIdentity = {};
     }
 
+    if (!Array.isArray(user.deviceKeys)) {
+      user.deviceKeys = [];
+    }
+
+    const previousPubKey = user.e2eeIdentity?.publicKey || user.publicKey;
+    if (previousPubKey && previousPubKey.trim() && previousPubKey.trim() !== publicKey.trim()) {
+      const alreadyInDeviceKeys = user.deviceKeys.some((dk) => dk?.publicKey === previousPubKey.trim());
+      if (!alreadyInDeviceKeys) {
+        user.deviceKeys.push({
+          deviceId: user.activeSession?.deviceId || `dev_prev_${Date.now()}`,
+          keyId: user.e2eeIdentity?.keyId || `key_prev_${Date.now()}`,
+          publicKey: previousPubKey.trim(),
+          createdAt: new Date(),
+          lastSeenAt: new Date(),
+        });
+      }
+    }
+
+    const currentInDeviceKeys = user.deviceKeys.some((dk) => dk?.publicKey === publicKey.trim());
+    if (!currentInDeviceKeys) {
+      user.deviceKeys.push({
+        deviceId: effectiveDeviceId,
+        keyId: effectiveKeyId,
+        publicKey: publicKey.trim(),
+        createdAt: new Date(),
+        lastSeenAt: new Date(),
+      });
+    }
+
     user.e2eeIdentity.publicKey = publicKey.trim();
     user.e2eeIdentity.keyId = effectiveKeyId;
     user.publicKey = publicKey.trim();
@@ -1412,6 +1442,10 @@ exports.setE2EEIdentity = async (req, res) => {
       lastActive: new Date(),
       status: "ACTIVE",
     };
+
+    user.markModified("e2eeIdentity");
+    user.markModified("deviceKeys");
+    user.markModified("activeSession");
 
     await user.save();
 

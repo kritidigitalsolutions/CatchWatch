@@ -343,28 +343,43 @@ const ChatPage = () => {
     };
   }, [currentUserId]);
 
-  // Initialize E2EE Keypair for current user
+  const e2eeInitPromiseRef = useRef(null);
+  const messagesRef = useRef([]);
+
+  useEffect(() => {
+    messagesRef.current = messages;
+  }, [messages]);
+
+  // Initialize E2EE Keypair for current user with singleton promise lock
   const ensureUserE2EE = async () => {
     if (e2eeKeys && !e2eeKeys.error && e2eeKeys.privateKey) {
       return e2eeKeys;
     }
     if (!currentUserId) return null;
-    try {
-      const keys = await initUserE2EE(
-        currentUserId,
-        saveE2EEIdentity,
-        getE2EEBackup,
-        getUserPublicKey,
-      );
-      if (keys && !keys.error && keys.privateKey) {
-        setE2eeKeys(keys);
-        return keys;
-      }
-      return keys;
-    } catch (err) {
-      console.error("Error ensuring user E2EE keys:", err);
-      return null;
+    if (e2eeInitPromiseRef.current) {
+      return e2eeInitPromiseRef.current;
     }
+    e2eeInitPromiseRef.current = (async () => {
+      try {
+        const keys = await initUserE2EE(
+          currentUserId,
+          saveE2EEIdentity,
+          getE2EEBackup,
+          getUserPublicKey,
+        );
+        if (keys && !keys.error && keys.privateKey) {
+          setE2eeKeys(keys);
+          return keys;
+        }
+        return keys;
+      } catch (err) {
+        console.error("Error ensuring user E2EE keys:", err);
+        return null;
+      } finally {
+        e2eeInitPromiseRef.current = null;
+      }
+    })();
+    return e2eeInitPromiseRef.current;
   };
 
   useEffect(() => {
@@ -556,6 +571,7 @@ const ChatPage = () => {
         senderPublicKey: activeKeys.publicKeyString,
         recipientDeviceId: recipient?.sessions?.web?.deviceId || "active_device",
         recipientKeyId: recipientKeyId || "key_account",
+        recipientPublicKey: recipientPubKeyStr,
         envelopes: [],
       },
     };
@@ -634,6 +650,7 @@ const ChatPage = () => {
         }
       } else {
         // Case 2: Message sent by current user.
+        addCandidateKey(encryptionObj.recipientPublicKey);
         addCandidateKey(partnerObj?.publicKey);
         addCandidateKey(partnerObj?.e2eeIdentity?.publicKey);
         addCandidateKey(partnerObj?.activeSession?.publicKey);
@@ -641,6 +658,23 @@ const ChatPage = () => {
           partnerObj.deviceKeys.forEach((dk) => addCandidateKey(dk?.publicKey));
         }
         addCandidateKey(encryptionObj.senderPublicKey);
+      }
+
+      // Gather candidate keys from loaded messages in this conversation (historical partner keys)
+      const currentMsgs = messagesRef.current || messages;
+      if (Array.isArray(currentMsgs)) {
+        for (const item of currentMsgs) {
+          const itemSenderId = (item.sender?._id || item.sender?.id || item.sender)?.toString();
+          if (itemSenderId && !isSameId(itemSenderId, currentUserId)) {
+            let enc = item.encryption;
+            if (typeof enc === "string") {
+              try { enc = JSON.parse(enc); } catch (e) { enc = null; }
+            }
+            if (enc?.senderPublicKey) {
+              addCandidateKey(enc.senderPublicKey);
+            }
+          }
+        }
       }
 
       // If active conversation partner key is available, add as fallback
@@ -800,19 +834,25 @@ const ChatPage = () => {
     return decryptedMsg;
   };
 
+  const lastDecryptedWithKeyRef = useRef(null);
+
   // Auto-retry decryption whenever e2eeKeys, activeConv, or messages array updates
   useEffect(() => {
     if (!e2eeKeys || !activeConv || messages.length === 0) return;
 
+    const keyChanged = Boolean(e2eeKeys.keyId && e2eeKeys.keyId !== lastDecryptedWithKeyRef.current);
+    if (keyChanged) {
+      lastDecryptedWithKeyRef.current = e2eeKeys.keyId;
+    }
+
     const hasUndecrypted = messages.some(
       (m) =>
-        (m.isEncrypted && m.iv && !m.isDecrypted && !m.isDecryptionFailed) ||
+        (m.isEncrypted && m.iv && (!m.isDecrypted || (keyChanged && m.isDecryptionFailed))) ||
         (m.replyTo &&
           typeof m.replyTo === "object" &&
           m.replyTo.isEncrypted &&
           m.replyTo.iv &&
-          !m.replyTo.isDecrypted &&
-          !m.replyTo.isDecryptionFailed),
+          (!m.replyTo.isDecrypted || (keyChanged && m.replyTo.isDecryptionFailed))),
     );
     if (!hasUndecrypted) return;
 
@@ -824,14 +864,13 @@ const ChatPage = () => {
       const updated = await Promise.all(
         messages.map(async (msg) => {
           const needsMsgDecryption =
-            msg.isEncrypted && msg.iv && !msg.isDecrypted && !msg.isDecryptionFailed;
+            msg.isEncrypted && msg.iv && (!msg.isDecrypted || (keyChanged && msg.isDecryptionFailed));
           const needsReplyDecryption =
             msg.replyTo &&
             typeof msg.replyTo === "object" &&
             msg.replyTo.isEncrypted &&
             msg.replyTo.iv &&
-            !msg.replyTo.isDecrypted &&
-            !msg.replyTo.isDecryptionFailed;
+            (!msg.replyTo.isDecrypted || (keyChanged && msg.replyTo.isDecryptionFailed));
 
           if (needsMsgDecryption || needsReplyDecryption) {
             return await processDecryptMessage(msg, partnerKey);
@@ -992,6 +1031,8 @@ const ChatPage = () => {
     const fetchConvMessages = async () => {
       setLoadingMessages(true);
       try {
+        // Ensure user E2EE identity is active before decrypting messages
+        await ensureUserE2EE();
         const res = await getMessages(activeConv._id);
         if (res && res.data) {
           const partnerKey = await getSharedKeyForPartner(activeConv.partner);
