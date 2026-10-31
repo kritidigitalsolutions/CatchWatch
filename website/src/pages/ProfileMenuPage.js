@@ -355,7 +355,11 @@ const ProfileMenuPage = () => {
 
   if (isLoading) return <Loader />;
 
-  const initial = userData?.name ? userData.name.charAt(0).toUpperCase() : "D";
+  const initial = userData?.name
+    ? userData.name.charAt(0).toUpperCase()
+    : userData?.username
+    ? userData.username.replace("@", "").charAt(0).toUpperCase()
+    : "U";
   const isVerifiedUser =
     userData?.isVerified ||
     userData?.verification?.isVerified ||
@@ -363,7 +367,7 @@ const ProfileMenuPage = () => {
     verifStatus.status === "VERIFIED" ||
     false; // Default active matching design preview
 
-  const qualityScore = userData?.qualityScore ?? 20;
+  const qualityScore = userData?.qualityScore ?? 0;
   const creatorLevel = userData?.creatorLevel || "Beginner";
 
   return (
@@ -502,16 +506,20 @@ const ProfileMenuPage = () => {
 
                 <div className="space-y-1">
                   <h2 className="text-xl font-black text-white flex items-center justify-center sm:justify-start gap-1.5">
-                    <span>{userData?.name || "Deepak Kumar"}</span>
+                    <span>{userData?.name || "User"}</span>
                     <VerifiedBadge user={userData} isVerified={isVerifiedUser} size="lg" />
                   </h2>
                   <p className="text-xs font-bold text-brand-orange">{usernameFormatted === "@user" ? `@username` : usernameFormatted}</p>
-                  <p className="text-xs text-neutral-400 font-medium">
-                    {userData?.phone || userData?.email || "+918273243959"}
-                  </p>
-                  <p className="text-xs text-neutral-300 font-medium italic pt-0.5">
-                    "{userData?.bio || "Hi! I'm Deepak Kumar"}"
-                  </p>
+                  {(userData?.phone || userData?.email) && (
+                    <p className="text-xs text-neutral-400 font-medium">
+                      {userData?.phone || userData?.email}
+                    </p>
+                  )}
+                  {userData?.bio ? (
+                    <p className="text-xs text-neutral-300 font-medium italic pt-0.5">
+                      "{userData.bio}"
+                    </p>
+                  ) : null}
                 </div>
               </div>
 
@@ -520,7 +528,7 @@ const ProfileMenuPage = () => {
                 {/* Stats Row */}
                 <div className="flex items-center justify-center xl:justify-end gap-6 text-center w-full">
                   <div>
-                    <span className="block text-lg font-black text-white">{stats.postsCount || 1}</span>
+                    <span className="block text-lg font-black text-white">{stats.postsCount || 0}</span>
                     <span className="text-[10px] font-extrabold uppercase tracking-wider text-neutral-400">POSTS</span>
                   </div>
                   <div className="h-6 w-[1px] bg-neutral-800" />
@@ -566,7 +574,7 @@ const ProfileMenuPage = () => {
                   <FaCoins className="text-amber-400 text-sm" />
                 </div>
                 <div className="text-2xl sm:text-3xl font-black text-white">
-                  {wallet.totalPoints ? wallet.totalPoints.toLocaleString() : "10,065"}
+                  {(wallet.totalPoints || 0).toLocaleString()}
                 </div>
                 <span className="text-[10px] text-neutral-400 font-medium">All-time engagement coins</span>
               </div>
@@ -578,7 +586,7 @@ const ProfileMenuPage = () => {
                   <FaCoins className="text-orange-400 text-sm" />
                 </div>
                 <div className="text-2xl sm:text-3xl font-black text-brand-orange">
-                  {wallet.availablePoints ? wallet.availablePoints.toLocaleString() : "9,065"}
+                  {(wallet.availablePoints || 0).toLocaleString()}
                 </div>
                 <span className="text-[10px] text-neutral-400 font-medium">Available for redeem request</span>
               </div>
@@ -590,7 +598,7 @@ const ProfileMenuPage = () => {
                   <FaCheckCircle className="text-emerald-400 text-sm" />
                 </div>
                 <div className="text-2xl sm:text-3xl font-black text-emerald-400">
-                  {wallet.redeemedPoints ? wallet.redeemedPoints.toLocaleString() : "1,000"}
+                  {(wallet.redeemedPoints || 0).toLocaleString()}
                 </div>
                 <span className="text-[10px] text-neutral-400 font-medium">Approved & processed coins</span>
               </div>
@@ -604,11 +612,11 @@ const ProfileMenuPage = () => {
               </div>
               <div>
                 <span className="block text-xs text-neutral-400 font-semibold">This Week</span>
-                <span className="text-sm sm:text-base font-black text-amber-400">+{pointsBreakdown.weeklyPoints || 63} coins</span>
+                <span className="text-sm sm:text-base font-black text-amber-400">+{pointsBreakdown.weeklyPoints || 0} coins</span>
               </div>
               <div>
                 <span className="block text-xs text-neutral-400 font-semibold">This Month</span>
-                <span className="text-sm sm:text-base font-black text-amber-400">+{pointsBreakdown.monthlyPoints || 10093} coins</span>
+                <span className="text-sm sm:text-base font-black text-amber-400">+{pointsBreakdown.monthlyPoints || 0} coins</span>
               </div>
             </div>
 
