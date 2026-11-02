@@ -178,7 +178,7 @@ const Footer = () => {
       </div>
 
       {/* Underline Copyright Metadata Bottom Segment Bar */}
-      <div className="w-full bg-neutral-950 border-t border-neutral-900 py-6 text-center text-[11px] text-neutral-600 tracking-wide px-4">
+      <div className="w-full bg-neutral-950 border-t border-neutral-900 pt-6 pb-[calc(5rem+env(safe-area-inset-bottom,0px))] md:py-6 text-center text-[11px] text-neutral-600 tracking-wide px-4">
         <div className="max-w-[1600px] mx-auto flex flex-col sm:flex-row items-center justify-between gap-4">
           <span>
             &copy; {currentYear} CATCH&WATCH Video Streaming Network Services

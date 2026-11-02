@@ -45,15 +45,16 @@
 }
 
 .hero-title {
-  font-size: 1.8rem;
+  font-size: clamp(1.3rem, 3.5vw, 1.8rem);
   font-weight: 900;
   color: #ffffff;
   margin-bottom: 4px;
   letter-spacing: -0.5px;
+  line-height: 1.25;
 }
 
 .hero-subtitle {
-  font-size: 0.92rem;
+  font-size: clamp(0.8rem, 2vw, 0.92rem);
   color: #94a3b8;
   font-weight: 500;
 }
@@ -66,7 +67,14 @@
   background: rgba(255, 255, 255, 0.08);
   padding: 6px;
   border-radius: 16px;
-  backdrop-filter: blur(8px);
+  max-width: 100%;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+}
+
+.leaderboard-time-pills::-webkit-scrollbar {
+  display: none;
 }
 
 .time-pill-btn {
@@ -79,6 +87,8 @@
   font-weight: 800;
   cursor: pointer;
   transition: all 0.2s ease;
+  flex-shrink: 0;
+  white-space: nowrap;
 }
 
 .time-pill-btn:hover {
@@ -567,5 +577,97 @@
 @keyframes spin {
   to {
     transform: rotate(360deg);
+  }
+}
+
+/* Responsive Enhancements for Tablets & Mobile Screens */
+@media (max-width: 1024px) {
+  .leaderboard-container {
+    padding: 24px 16px 80px 16px;
+    border-radius: 20px;
+  }
+  .podium-section {
+    gap: 16px;
+  }
+  .podium-card {
+    width: 220px;
+  }
+  .champion-podium {
+    width: 240px;
+  }
+}
+
+@media (max-width: 768px) {
+  .leaderboard-container {
+    padding: 16px 12px 80px 12px;
+    border-radius: 16px;
+  }
+  .leaderboard-hero-banner {
+    padding: 20px 16px;
+    border-radius: 18px;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 18px;
+  }
+  .hero-content {
+    gap: 14px;
+    align-items: flex-start;
+  }
+  .hero-icon-badge {
+    width: 48px;
+    height: 48px;
+    border-radius: 14px;
+  }
+  .hero-title {
+    font-size: clamp(1.2rem, 5vw, 1.6rem);
+  }
+  .hero-subtitle {
+    font-size: 0.82rem;
+  }
+  .leaderboard-time-pills {
+    max-width: 100%;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+    padding: 4px;
+    border-radius: 14px;
+    gap: 6px;
+  }
+  .leaderboard-time-pills::-webkit-scrollbar {
+    display: none;
+  }
+  .time-pill-btn {
+    flex-shrink: 0;
+    padding: 7px 14px;
+    font-size: 0.8rem;
+    border-radius: 10px;
+  }
+  .podium-section {
+    flex-direction: column;
+    align-items: center;
+    gap: 16px;
+    padding: 10px 0 20px 0;
+  }
+  .podium-card {
+    width: 100%;
+    max-width: 340px;
+  }
+  .champion-podium {
+    order: -1;
+    width: 100%;
+    max-width: 350px;
+    transform: none;
+  }
+  .champion-podium:hover {
+    transform: translateY(-4px);
+  }
+  .table-title {
+    font-size: 1.1rem;
+  }
+  .search-input-wrap {
+    max-width: 100%;
+  }
+  .leaderboard-table th, .leaderboard-row td {
+    padding: 10px 12px;
   }
 }

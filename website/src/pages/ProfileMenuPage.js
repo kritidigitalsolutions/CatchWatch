@@ -371,11 +371,11 @@ const ProfileMenuPage = () => {
   const creatorLevel = userData?.creatorLevel || "Beginner";
 
   return (
-    <div className="min-h-screen bg-[#FAF7F2] text-gray-900 py-8 px-4 sm:px-6 lg:px-8">
-      <div className="max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+    <div className="min-h-screen bg-[#FAF7F2] text-gray-900 py-4 sm:py-8 px-2 sm:px-6 lg:px-8">
+      <div className="max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-12 gap-5 lg:gap-8 items-start">
 
-        {/* ── LEFT COLUMN: SIDEBAR MENU TABS ── */}
-        <div className="lg:col-span-4 bg-white border border-gray-100/90 rounded-3xl p-6 shadow-sm">
+        {/* ── LEFT COLUMN: SIDEBAR MENU TABS (SECOND ON MOBILE) ── */}
+        <div className="order-2 lg:order-1 lg:col-span-4 bg-white border border-gray-100/90 rounded-3xl p-4 sm:p-6 shadow-sm">
           {categorizedMenu.map((group, groupIdx) => (
             <div key={groupIdx} className={groupIdx > 0 ? "pt-5 mt-5 border-t border-gray-100" : ""}>
               <h3 className="text-xs font-black text-brand-orange uppercase tracking-wider mb-3">
@@ -464,9 +464,9 @@ const ProfileMenuPage = () => {
           ))}
         </div>
 
-        {/* ── RIGHT COLUMN: CREATOR REWARDS & COINS CONTAINER (WITH INNER PROFILE CARD) ── */}
-        <div className="lg:col-span-8 space-y-4">
-          <div className="bg-gradient-to-b from-[#1c1714] via-[#161210] to-[#0e0c0a] border border-[#2b231d] rounded-3xl p-6 sm:p-8 text-white shadow-2xl relative overflow-hidden">
+        {/* ── RIGHT COLUMN: CREATOR REWARDS & COINS CONTAINER (FIRST ON MOBILE) ── */}
+        <div className="order-1 lg:order-2 lg:col-span-8 space-y-4">
+          <div className="bg-gradient-to-b from-[#1c1714] via-[#161210] to-[#0e0c0a] border border-[#2b231d] rounded-3xl p-4 sm:p-8 text-white shadow-2xl relative overflow-hidden">
             {/* Ambient Background Glow */}
             <div className="absolute -top-10 -right-10 w-48 h-48 bg-orange-500/10 rounded-full blur-3xl pointer-events-none" />
 
@@ -645,8 +645,8 @@ const ProfileMenuPage = () => {
 
       {/* ── 1. REDEEM POINTS MODAL (DARK THEMED) ── */}
       {isRedeemModalOpen && (
-        <div className="fixed inset-0 bg-black/80 backdrop-blur-md z-50 flex items-center justify-center p-4">
-          <div className="bg-slate-900 border border-slate-800 rounded-3xl max-w-md w-full p-6 sm:p-8 shadow-2xl relative my-auto max-h-[90vh] overflow-y-auto text-white">
+        <div className="fixed inset-0 bg-black/85 backdrop-blur-md z-[100] flex items-center justify-center p-3 sm:p-4 pb-24 sm:pb-6">
+          <div className="bg-slate-900 border border-slate-800 rounded-3xl max-w-md w-full p-5 sm:p-8 shadow-2xl relative my-auto max-h-[calc(100dvh-6rem)] overflow-y-auto text-white">
             {/* Modal Header */}
             <div className="flex items-center justify-between border-b border-slate-800 pb-4 mb-4">
               <div className="flex items-center gap-3">
@@ -832,18 +832,18 @@ const ProfileMenuPage = () => {
               </div>
 
               {/* Submit Buttons */}
-              <div className="flex justify-end gap-3 pt-2">
+              <div className="flex flex-col-reverse sm:flex-row justify-end gap-2.5 sm:gap-3 pt-3 sticky bottom-0 bg-slate-900/95 backdrop-blur-sm border-t border-slate-800">
                 <button
                   type="button"
                   onClick={() => setIsRedeemModalOpen(false)}
-                  className="px-5 py-2.5 bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold text-xs rounded-xl transition"
+                  className="w-full sm:w-auto px-5 py-2.5 bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold text-xs rounded-xl transition text-center"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
                   disabled={isRedeeming}
-                  className="px-6 py-2.5 bg-orange-500 hover:bg-orange-600 text-white font-extrabold text-xs rounded-xl transition disabled:opacity-60 flex items-center gap-2"
+                  className="w-full sm:w-auto px-6 py-2.5 bg-orange-500 hover:bg-orange-600 text-white font-extrabold text-xs rounded-xl transition disabled:opacity-60 flex items-center justify-center gap-2 shadow-lg shadow-orange-500/25"
                 >
                   {isRedeeming ? "Submitting..." : "Submit Redeem Request"}
                 </button>
@@ -856,11 +856,11 @@ const ProfileMenuPage = () => {
       {/* ── 2. REDEEM HISTORY MODAL (DARK THEMED) ── */}
       {showHistoryModal && (
         <div
-          className="fixed inset-0 bg-black/80 backdrop-blur-md z-50 flex items-center justify-center p-4"
+          className="fixed inset-0 bg-black/85 backdrop-blur-md z-[100] flex items-center justify-center p-3 sm:p-4 pb-24 sm:pb-6"
           onClick={() => setShowHistoryModal(false)}
         >
           <div
-            className="bg-slate-900 border border-slate-800 rounded-3xl max-w-lg w-full p-6 shadow-2xl relative max-h-[80vh] flex flex-col text-white"
+            className="bg-slate-900 border border-slate-800 rounded-3xl max-w-lg w-full p-5 sm:p-6 shadow-2xl relative max-h-[calc(100dvh-6rem)] flex flex-col text-white"
             onClick={(e) => e.stopPropagation()}
           >
             {/* Header */}

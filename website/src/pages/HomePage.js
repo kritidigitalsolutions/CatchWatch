@@ -191,7 +191,7 @@ const HomePage = () => {
         <div
           onMouseEnter={() => setIsHovered(true)}
           onMouseLeave={() => setIsHovered(false)}
-          className="relative w-full rounded-lg md:rounded-2xl bg-neutral-900 aspect-[25/10] md:aspect-[25/10] overflow-hidden shadow-lg group"
+          className="relative w-full rounded-xl md:rounded-2xl bg-neutral-900 aspect-[16/9] sm:aspect-[21/9] md:aspect-[25/10] overflow-hidden shadow-lg group"
         >
           <div
             className={`h-full w-full flex ${isTransitionEnabled ? "transition-transform duration-1000 ease-in-out" : ""}`}
@@ -207,21 +207,21 @@ const HomePage = () => {
                   }
                   navigate(`/watch/${slide.slug}`);
                 }}
-                className="w-full h-full flex-shrink-0 relative flex flex-col justify-center items-center p-6 text-center text-white cursor-pointer"
+                className="w-full h-full flex-shrink-0 relative flex flex-col justify-end items-center p-4 sm:p-8 text-center text-white cursor-pointer pb-6 sm:pb-10"
               >
                 <div
                   className="absolute inset-0 bg-cover bg-center transition-transform duration-700 group-hover:scale-105"
                   style={{ backgroundImage: `url(${slide.image})` }}
                 />
-                <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/50 to-black/40 z-0" />
-                <div className="relative z-10 max-w-xl space-y-1 lg:space-y-4 mt-4 sm:mt-36 lg:mt-58 select-none pointer-events-none">
-                  <span className="inline-block bg-brand-orange text-[8px] md:text-xs font-black tracking-wider px-2 md:py-1 rounded-full uppercase shadow">
+                <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/40 to-transparent z-0" />
+                <div className="relative z-10 max-w-xl space-y-1 sm:space-y-2 select-none pointer-events-none">
+                  <span className="inline-block bg-brand-orange text-[9px] sm:text-xs font-black tracking-wider px-2.5 py-0.5 sm:py-1 rounded-full uppercase shadow">
                     {slide.tag}
                   </span>
-                  <h2 className=" text-sm sm:text-2xl lg:text-4xl font-black tracking-tight drop-shadow-md">
+                  <h2 className="text-base sm:text-2xl lg:text-3xl font-black tracking-tight drop-shadow-md">
                     {slide.title}
                   </h2>
-                  <p className="text-brand-orange text-[10px] sm:text-xs md:text-sm font-bold tracking-wider drop-shadow">
+                  <p className="text-orange-300 text-[11px] sm:text-xs md:text-sm font-semibold tracking-wide drop-shadow">
                     {slide.subText}
                   </p>
                 </div>

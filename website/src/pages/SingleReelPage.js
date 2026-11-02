@@ -403,7 +403,7 @@ const SingleReelPage = () => {
   }
 
   return (
-    <div className="mx-auto w-auto max-w-full bg-black rounded-2xl overflow-hidden relative shadow-2xl aspect-[9/16] h-[calc(100dvh-136px)] max-h-[calc(100dvh-136px)] md:h-[calc(100vh-120px)] md:max-h-[780px] my-auto flex flex-col">
+    <div className="mx-auto w-full sm:w-auto max-w-full bg-black sm:rounded-2xl overflow-hidden relative shadow-2xl h-[calc(100dvh-8rem-env(safe-area-inset-bottom,0px))] sm:aspect-[9/16] sm:h-[calc(100dvh-120px)] sm:max-h-[820px] md:h-[calc(100vh-120px)] md:max-h-[780px] sm:my-auto flex flex-col">
 
       {/* Top Navigation Bar overlay */}
       <div className="absolute top-0 left-0 right-0 p-3 sm:p-4 flex justify-between items-center bg-gradient-to-b from-black/80 to-transparent z-20 text-white">

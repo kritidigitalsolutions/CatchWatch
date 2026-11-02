@@ -37,8 +37,8 @@ const Layout = ({ children }) => {
           isChatPage
             ? 'max-w-full p-0 overflow-hidden'
             : isReelsPage
-            ? 'max-w-full p-0 sm:py-2 md:py-3 flex flex-col items-center justify-center overflow-hidden'
-            : 'max-w-[1600px] px-4 sm:px-6 lg:px-8 py-6 md:py-10'
+            ? 'max-w-full p-0 flex flex-col items-center justify-start overflow-hidden sm:justify-center sm:py-2 md:py-3'
+            : 'max-w-[1600px] px-3 sm:px-6 lg:px-8 py-4 sm:py-6 md:py-10 pb-[calc(5.5rem+env(safe-area-inset-bottom,0px))] md:pb-10'
         }`}
       >
         {children}

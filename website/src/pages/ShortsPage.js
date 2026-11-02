@@ -952,7 +952,7 @@ const ShortsPage = () => {
 
   if (error || reels.length === 0) {
     return (
-      <div className="mx-auto w-auto max-w-full bg-black rounded-2xl overflow-hidden relative shadow-2xl aspect-[9/16] h-[calc(100dvh-136px)] max-h-[calc(100dvh-136px)] md:h-[calc(100vh-120px)] md:max-h-[780px] my-auto flex flex-col items-center justify-center text-white p-4">
+      <div className="mx-auto w-full sm:w-auto max-w-full bg-black sm:rounded-2xl overflow-hidden relative shadow-2xl h-[calc(100dvh-8rem-env(safe-area-inset-bottom,0px))] sm:aspect-[9/16] sm:h-[calc(100dvh-120px)] sm:max-h-[820px] md:h-[calc(100vh-120px)] md:max-h-[780px] sm:my-auto flex flex-col items-center justify-center text-white p-4">
         <h2 className="text-lg sm:text-xl font-bold">Oops!</h2>
         <p className="text-xs sm:text-sm text-gray-400 mt-2 text-center">{error || "No reels available right now."}</p>
       </div>
@@ -960,7 +960,7 @@ const ShortsPage = () => {
   }
 
   return (
-    <div className="mx-auto w-auto max-w-full bg-black rounded-2xl overflow-hidden relative shadow-2xl aspect-[9/16] h-[calc(100dvh-136px)] max-h-[calc(100dvh-136px)] md:h-[calc(100vh-120px)] md:max-h-[780px] my-auto">
+    <div className="mx-auto w-full sm:w-auto max-w-full bg-black sm:rounded-2xl overflow-hidden relative shadow-2xl h-[calc(100dvh-8rem-env(safe-area-inset-bottom,0px))] sm:aspect-[9/16] sm:h-[calc(100dvh-120px)] sm:max-h-[820px] md:h-[calc(100vh-120px)] md:max-h-[780px] sm:my-auto">
 
       {/* Absolute Transparent Frame Header */}
       <div className="absolute top-0 left-0 right-0 p-3 sm:p-4 flex justify-between items-center bg-gradient-to-b from-black/80 to-transparent z-40 text-white">

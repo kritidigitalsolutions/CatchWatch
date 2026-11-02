@@ -21,30 +21,26 @@ const BottomNav = () => {
   ];
 
   return (
-    <nav className="fixed bottom-0 left-0 right-0 h-16 bg-white border-t border-gray-200 z-50 flex justify-around items-center md:sticky md:top-0 md:bottom-auto md:h-20 md:border-t-0 md:border-b md:shadow-sm px-4 max-w-[1600px] mx-auto">
-      {/* Brand Logo Only Visible on Desktop Header Mode */}
-      <div className="hidden md:block text-2xl font-black text-brand-orange tracking-wide cursor-pointer">
-        CATCHWATCH
-      </div>
-
-      <div className="flex justify-around items-center w-full md:w-auto md:gap-8 lg:gap-12">
+    <nav className="fixed bottom-0 left-0 right-0 z-50 bg-white/95 backdrop-blur-md border-t border-gray-200/80 shadow-[0_-4px_20px_rgba(0,0,0,0.06)] pb-[env(safe-area-inset-bottom,0px)]">
+      <div className="flex justify-around items-center w-full max-w-lg mx-auto h-16 px-2">
         {navItems.map((item, index) => (
           <NavLink
             key={index}
             to={item.path}
-            className={({ isActive }) => 
-              `flex flex-col items-center justify-center text-xs font-semibold transition-colors ${
-                isActive ? 'text-brand-orange' : 'text-gray-400 hover:text-gray-600'
-              }`
-            }
+            className={({ isActive }) => {
+              const isItemActive = isActive || (item.path === '/reels-feed' && (window.location.pathname === '/reels' || window.location.pathname.startsWith('/reels')));
+              return `flex flex-col items-center justify-center flex-1 py-1 transition-colors ${
+                isItemActive ? 'text-brand-orange font-bold' : 'text-gray-400 hover:text-gray-600 font-medium'
+              }`;
+            }}
           >
             {item.isAdd ? (
-              <div className="w-10 h-10 bg-brand-orange text-white rounded-full flex items-center justify-center text-2xl font-normal shadow-md hover:scale-105 transform transition md:w-11 md:h-11">
+              <div className="w-11 h-11 bg-brand-orange text-white rounded-full flex items-center justify-center text-2xl shadow-lg shadow-orange-500/30 hover:scale-105 active:scale-95 transform transition">
                 {item.icon}
               </div>
             ) : (
               <>
-                <span className="relative text-xl md:text-2xl mb-0.5">
+                <span className="relative text-xl mb-0.5">
                   {item.icon}
                   {item.badge > 0 && (
                     <span className="absolute -top-1 -right-2 bg-brand-orange text-white text-[8px] font-black w-3.5 h-3.5 flex items-center justify-center rounded-full border border-white">
@@ -52,7 +48,7 @@ const BottomNav = () => {
                     </span>
                   )}
                 </span>
-                <span className="text-[10px] md:text-xs uppercase tracking-wider">{item.name}</span>
+                <span className="text-[10px] uppercase tracking-wider">{item.name}</span>
               </>
             )}
           </NavLink>

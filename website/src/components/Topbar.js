@@ -94,6 +94,18 @@ const Topbar = () => {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
+  // Lock body scroll when mobile slide-over drawer is open
+  useEffect(() => {
+    if (isMobileMenuOpen) {
+      document.body.style.overflow = "hidden";
+    } else {
+      document.body.style.overflow = "";
+    }
+    return () => {
+      document.body.style.overflow = "";
+    };
+  }, [isMobileMenuOpen]);
+
   // 1. Handle Mark All As Read
   const markAllAsRead = async () => {
     try {
@@ -362,11 +374,12 @@ const Topbar = () => {
         </div>
 
         {/* MOBILE & TABLET VIEW CONTROLS (< lg screens) */}
-        <div className="flex lg:hidden items-center gap-2.5 sm:gap-3 flex-shrink-0">
+        <div className="flex lg:hidden items-center gap-1.5 sm:gap-3 flex-shrink-0">
+          {/* Upload Reel Icon - hidden on mobile phones because BottomNav has it in the center */}
           <NavLink
             to="/upload"
             className={({ isActive }) =>
-              `text-xl p-1 transition-colors ${isActive ? "text-brand-orange" : "text-gray-500 hover:text-gray-900"}`
+              `hidden sm:flex text-xl p-2 transition-colors ${isActive ? "text-brand-orange" : "text-gray-500 hover:text-gray-900"}`
             }
             title="Upload Reel"
           >
@@ -375,55 +388,60 @@ const Topbar = () => {
 
           {isAuthenticated ? (
             <>
+              {/* Search Icon - hidden on mobile phones because BottomNav has it */}
               <NavLink
                 to="/search"
                 className={({ isActive }) =>
-                  `text-lg font-bold tracking-wide uppercase p-1 transition-colors ${isActive ? "text-brand-orange" : "text-gray-500 hover:text-gray-900"}`
+                  `hidden sm:flex text-lg font-bold tracking-wide uppercase p-2 transition-colors ${isActive ? "text-brand-orange" : "text-gray-500 hover:text-gray-900"}`
                 }
+                title="Search"
               >
                 <FaSearch />
               </NavLink>
 
+              {/* Chat Icon with Badge */}
               <NavLink
                 to="/chat"
                 className={({ isActive }) =>
-                  `relative text-xl p-1 transition-colors ${isActive ? "text-brand-orange" : "text-gray-500 hover:text-gray-900"}`
+                  `relative p-2 text-xl transition-colors ${isActive ? "text-brand-orange" : "text-gray-600 hover:text-gray-900"}`
                 }
                 title="Chats"
               >
                 <FaComments />
                 {unreadChatCount > 0 && (
-                  <span className="absolute top-0 right-0 bg-brand-orange text-white text-[9px] font-bold w-4 h-4 flex items-center justify-center rounded-full border-2 border-white transform translate-x-1/4 -translate-y-1/4">
+                  <span className="absolute top-1 right-1 bg-brand-orange text-white text-[9px] font-bold w-4 h-4 flex items-center justify-center rounded-full border-2 border-white transform translate-x-1/4 -translate-y-1/4">
                     {unreadChatCount > 99 ? '99+' : unreadChatCount}
                   </span>
                 )}
               </NavLink>
 
+              {/* Notification Bell Dropdown */}
               <div className="relative" ref={mobileNotifRef}>
                 <button
                   onClick={toggleNotificationDropdown}
-                  className={`relative text-xl p-1 transition-colors ${isNotifOpen ? "text-brand-orange" : "text-gray-500 hover:text-gray-900"}`}
+                  className={`relative p-2 text-xl transition-colors ${isNotifOpen ? "text-brand-orange" : "text-gray-600 hover:text-gray-900"}`}
+                  aria-label="Notifications"
                 >
                   <FaBell />
                   {unreadCount > 0 && (
-                    <span className="absolute top-0 right-0 bg-red-500 text-white text-[9px] font-bold w-4 h-4 flex items-center justify-center rounded-full border-2 border-white transform translate-x-1/4 -translate-y-1/4">
+                    <span className="absolute top-1 right-1 bg-red-500 text-white text-[9px] font-bold w-4 h-4 flex items-center justify-center rounded-full border-2 border-white transform translate-x-1/4 -translate-y-1/4">
                       {unreadCount > 99 ? '99+' : unreadCount}
                     </span>
                   )}
                 </button>
 
                 {isNotifOpen && (
-                  <div className="absolute right-0 mt-3 w-80 bg-white border border-gray-100 rounded-2xl shadow-xl z-50 overflow-hidden animate-fade-in-down origin-top-right">
+                  <div className="fixed inset-x-3 top-16 sm:absolute sm:inset-auto sm:right-0 sm:top-full sm:mt-2 sm:w-88 sm:max-w-sm bg-white border border-gray-100 rounded-2xl shadow-2xl z-50 overflow-hidden animate-fade-in-down origin-top-right flex flex-col max-h-[75vh]">
                     <div className="px-4 py-3 border-b border-gray-100 flex justify-between items-center bg-gray-50">
                       <h3 className="text-sm font-extrabold text-gray-800">Notifications</h3>
                       {unreadCount > 0 && (
-                        <button onClick={markAllAsRead} className="text-[10px] text-brand-orange font-bold hover:underline">
+                        <button onClick={markAllAsRead} className="text-[11px] text-brand-orange font-bold hover:underline">
                           Mark all as read
                         </button>
                       )}
                     </div>
 
-                    <div className="max-h-72 overflow-y-auto divide-y divide-gray-50">
+                    <div className="overflow-y-auto divide-y divide-gray-50 flex-1">
                       {notifications.length > 0 ? (
                         notifications.map((notif) => {
                           const isReadStatus = notif.isRead || notif.read;
@@ -462,7 +480,7 @@ const Topbar = () => {
                           );
                         })
                       ) : (
-                        <div className="p-6 text-center text-xs text-gray-400 font-medium">No new notifications</div>
+                        <div className="p-8 text-center text-xs text-gray-400 font-medium">No new notifications</div>
                       )}
                     </div>
 
@@ -472,7 +490,7 @@ const Topbar = () => {
                           setIsNotifOpen(false);
                           navigate("/notifications");
                         }}
-                        className="text-xs font-bold text-brand-orange hover:text-orange-600 hover:underline w-full transition"
+                        className="text-xs font-bold text-brand-orange hover:text-orange-600 hover:underline w-full transition py-1"
                       >
                         View All Notifications
                       </button>
@@ -481,36 +499,37 @@ const Topbar = () => {
                 )}
               </div>
 
-              {/* MOBILE PROFILE AVATAR TAB (< 1024px) */}
+              {/* MOBILE PROFILE AVATAR TAB */}
               <NavLink
                 to="/profile"
-                className="flex items-center p-0.5 transition-transform hover:scale-105"
+                className="flex items-center p-1 transition-transform active:scale-95"
                 title="Profile"
               >
-                <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-full border-2 border-orange-200 overflow-hidden bg-brand-orange text-white flex items-center justify-center text-xs font-black shadow-sm shrink-0">
+                <div className="w-8 h-8 rounded-full border-2 border-orange-200 overflow-hidden bg-brand-orange text-white flex items-center justify-center text-xs font-black shadow-sm shrink-0">
                   {userProfile?.profileImage ? (
                     <img src={userProfile.profileImage} alt={userProfile.name || "User"} className="w-full h-full object-cover" />
                   ) : userProfile?.name ? (
                     userProfile.name.charAt(0).toUpperCase()
                   ) : (
-                    <FaRegUserCircle className="text-sm sm:text-base" />
+                    <FaRegUserCircle className="text-base" />
                   )}
                 </div>
               </NavLink>
 
+              {/* Mobile Hamburger Drawer Trigger */}
               <button
                 onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-                className="text-2xl text-gray-700 focus:outline-none p-1 ml-1"
+                className="p-1.5 text-gray-700 hover:text-brand-orange focus:outline-none transition-colors"
                 aria-label="Toggle menu"
               >
-                {isMobileMenuOpen ? "✕" : "☰"}
+                <span className="text-2xl font-light leading-none block">☰</span>
               </button>
             </>
           ) : (
             !isLoginPage && (
               <button
                 onClick={() => navigate("/login")}
-                className="bg-brand-orange text-white text-[10px] font-bold uppercase tracking-wider py-1.5 px-3 rounded-lg shadow-sm hover:bg-orange-600 transition"
+                className="bg-brand-orange text-white text-[11px] font-bold uppercase tracking-wider py-1.5 px-3.5 rounded-lg shadow-sm hover:bg-orange-600 transition"
               >
                 Sign In
               </button>
@@ -519,53 +538,165 @@ const Topbar = () => {
         </div>
       </div>
 
-      {/* Mobile / Tablet Side Menu */}
-      {isAuthenticated && isMobileMenuOpen && (
-        <div className="lg:hidden border-t border-gray-100 bg-white shadow-inner animate-fade-in-down max-h-[85vh] overflow-y-auto">
-          <div className="px-4 py-3 border-b border-gray-50 bg-brand-light-bg/30">
-            <div className="flex justify-between items-center mb-2">
-              <span className="text-xs font-bold text-gray-400 uppercase tracking-widest">
-                App Links
-              </span>
-              <NavLink
-                to="/upload"
-                onClick={() => setIsMobileMenuOpen(false)}
-                className="flex items-center gap-1 bg-orange-100 text-brand-orange text-xs font-bold px-3 py-1 rounded-full"
-              >
-                <span>Upload reels</span>
-                <MdCamera className="text-sm" />
-              </NavLink>
-            </div>
-            <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
-              {navLinks.map((link, i) => (
-                <button
-                  key={i}
-                  onClick={() => {
-                    navigate(link.path);
-                    setIsMobileMenuOpen(false);
-                  }}
-                  className="text-left py-2 px-3 bg-white border border-gray-100 rounded-lg text-xs font-bold text-gray-700 hover:text-brand-orange hover:bg-orange-50 transition"
-                >
-                  {link.name}
-                </button>
-              ))}
-            </div>
-          </div>
+      {/* Modern Slide-Over Drawer for Mobile / Tablet (< lg screens) */}
+      {isMobileMenuOpen && (
+        <div className="fixed inset-0 z-50 lg:hidden flex justify-end">
+          {/* Backdrop overlay */}
+          <div
+            className="fixed inset-0 bg-black/60 backdrop-blur-sm transition-opacity animate-fade-in"
+            onClick={() => setIsMobileMenuOpen(false)}
+          />
 
-          <div className="px-4 py-3 space-y-1">
-            <div className="pt-2 border-t border-gray-100 mt-2 pb-2">
-              <button
-                onClick={() => {
-                  localStorage.removeItem("authToken");
-                  localStorage.removeItem("token");
-                  localStorage.removeItem("userIsPremium");
-                  setIsMobileMenuOpen(false);
-                  navigate("/login");
-                }}
-                className="w-full bg-red-600 text-white text-xs font-bold uppercase tracking-wider py-3 rounded-xl text-center shadow-sm hover:bg-red-700 transition"
-              >
-                Log Out
-              </button>
+          {/* Drawer container */}
+          <div className="relative w-[85vw] max-w-sm bg-white h-full shadow-2xl flex flex-col justify-between overflow-y-auto z-10 animate-slide-in-right">
+            <div>
+              {/* Drawer Header */}
+              <div className="px-5 py-4 border-b border-gray-100 flex items-center justify-between bg-gradient-to-r from-orange-50/50 to-white">
+                <div className="flex items-center gap-2">
+                  <img src="/logo512.png" className="h-8 w-auto object-contain" alt="CatchWatch Logo" />
+                </div>
+                <button
+                  onClick={() => setIsMobileMenuOpen(false)}
+                  className="w-9 h-9 rounded-full bg-gray-100 hover:bg-gray-200 text-gray-600 flex items-center justify-center text-sm font-black transition"
+                  aria-label="Close menu"
+                >
+                  ✕
+                </button>
+              </div>
+
+              {/* Profile Card if authenticated */}
+              {isAuthenticated && userProfile && (
+                <div className="p-4 mx-4 my-3 bg-gradient-to-br from-orange-50 to-orange-100/40 rounded-2xl border border-orange-200/60 flex items-center gap-3">
+                  <div className="w-12 h-12 rounded-full border-2 border-white shadow overflow-hidden bg-brand-orange text-white flex items-center justify-center text-base font-black shrink-0">
+                    {userProfile?.profileImage ? (
+                      <img src={userProfile.profileImage} alt={userProfile.name || "User"} className="w-full h-full object-cover" />
+                    ) : userProfile?.name ? (
+                      userProfile.name.charAt(0).toUpperCase()
+                    ) : (
+                      <FaRegUserCircle className="text-xl" />
+                    )}
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <p className="font-extrabold text-sm text-gray-900 truncate">
+                      {userProfile.name || userProfile.username || "User"}
+                    </p>
+                    <p className="text-xs text-gray-500 truncate">
+                      @{userProfile.username || "creator"}
+                    </p>
+                  </div>
+                  <NavLink
+                    to="/profile"
+                    onClick={() => setIsMobileMenuOpen(false)}
+                    className="text-xs font-bold text-brand-orange bg-white px-2.5 py-1.5 rounded-lg border border-orange-200 shadow-xs hover:bg-brand-orange hover:text-white transition"
+                  >
+                    Profile
+                  </NavLink>
+                </div>
+              )}
+
+              {/* App Navigation Categories */}
+              <div className="px-5 py-3">
+                <p className="text-[11px] font-extrabold uppercase tracking-widest text-gray-400 mb-2.5">
+                  Browse Shows
+                </p>
+                <div className="grid grid-cols-2 gap-2">
+                  {navLinks.map((link) => (
+                    <NavLink
+                      key={link.path}
+                      to={link.path}
+                      onClick={() => setIsMobileMenuOpen(false)}
+                      className={({ isActive }) =>
+                        `px-3 py-2.5 rounded-xl text-xs font-bold transition flex items-center justify-between border ${
+                          isActive
+                            ? "bg-brand-orange text-white border-brand-orange shadow-sm"
+                            : "bg-gray-50/70 text-gray-700 border-gray-100 hover:bg-orange-50 hover:text-brand-orange"
+                        }`
+                      }
+                    >
+                      <span>{link.name}</span>
+                    </NavLink>
+                  ))}
+                </div>
+              </div>
+
+              {/* Creator & Platform Links */}
+              <div className="px-5 py-3 border-t border-gray-100">
+                <p className="text-[11px] font-extrabold uppercase tracking-widest text-gray-400 mb-2.5">
+                  Quick Links
+                </p>
+                <div className="space-y-1.5">
+                  <NavLink
+                    to="/upload"
+                    onClick={() => setIsMobileMenuOpen(false)}
+                    className="flex items-center justify-between px-3.5 py-2.5 rounded-xl text-xs font-bold text-brand-orange bg-orange-50/70 hover:bg-orange-100 transition border border-orange-200/50"
+                  >
+                    <span className="flex items-center gap-2">
+                      <MdCamera className="text-base" /> Upload Reels
+                    </span>
+                    <span className="text-[10px] bg-brand-orange text-white px-2 py-0.5 rounded-full font-bold">New</span>
+                  </NavLink>
+                  <NavLink
+                    to="/creator-dashboard"
+                    onClick={() => setIsMobileMenuOpen(false)}
+                    className="flex items-center justify-between px-3.5 py-2.5 rounded-xl text-xs font-bold text-gray-700 hover:bg-gray-50 transition"
+                  >
+                    <span>Creator Dashboard</span>
+                    <span className="text-gray-400">›</span>
+                  </NavLink>
+                  <NavLink
+                    to="/leaderboard"
+                    onClick={() => setIsMobileMenuOpen(false)}
+                    className="flex items-center justify-between px-3.5 py-2.5 rounded-xl text-xs font-bold text-gray-700 hover:bg-gray-50 transition"
+                  >
+                    <span>Leaderboard</span>
+                    <span className="text-gray-400">›</span>
+                  </NavLink>
+                  <NavLink
+                    to="/subscription"
+                    onClick={() => setIsMobileMenuOpen(false)}
+                    className="flex items-center justify-between px-3.5 py-2.5 rounded-xl text-xs font-bold text-gray-700 hover:bg-gray-50 transition"
+                  >
+                    <span>Subscription Plans</span>
+                    <span className="text-gray-400">›</span>
+                  </NavLink>
+                  <NavLink
+                    to="/support"
+                    onClick={() => setIsMobileMenuOpen(false)}
+                    className="flex items-center justify-between px-3.5 py-2.5 rounded-xl text-xs font-bold text-gray-700 hover:bg-gray-50 transition"
+                  >
+                    <span>Help & Support</span>
+                    <span className="text-gray-400">›</span>
+                  </NavLink>
+                </div>
+              </div>
+            </div>
+
+            {/* Drawer Bottom Actions */}
+            <div className="p-5 border-t border-gray-100 bg-gray-50/50">
+              {isAuthenticated ? (
+                <button
+                  onClick={() => {
+                    localStorage.removeItem("authToken");
+                    localStorage.removeItem("token");
+                    localStorage.removeItem("userIsPremium");
+                    setIsMobileMenuOpen(false);
+                    navigate("/login");
+                  }}
+                  className="w-full bg-red-600 hover:bg-red-700 text-white text-xs font-bold uppercase tracking-wider py-3 rounded-xl text-center shadow-md shadow-red-500/20 transition active:scale-[0.99]"
+                >
+                  Log Out
+                </button>
+              ) : (
+                <button
+                  onClick={() => {
+                    setIsMobileMenuOpen(false);
+                    navigate("/login");
+                  }}
+                  className="w-full bg-brand-orange hover:bg-orange-600 text-white text-xs font-bold uppercase tracking-wider py-3 rounded-xl text-center shadow-md shadow-orange-500/20 transition active:scale-[0.99]"
+                >
+                  Sign In
+                </button>
+              )}
             </div>
           </div>
         </div>
