@@ -356,6 +356,57 @@ Relevant configuration files:
 /etc/nginx/sites-available/website
 ```
 
+### Production Host Nginx Configuration for Backend & Socket.IO (`/etc/nginx/sites-available/backend`)
+
+Ensure your `/etc/nginx/sites-available/backend` contains both the API proxy and the WebSocket upgrade headers for `/socket.io/`:
+
+```nginx
+server {
+    listen 80;
+    server_name api.catchandwatch.com;
+    return 301 https://$host$request_uri;
+}
+
+server {
+    listen 443 ssl http2;
+    server_name api.catchandwatch.com;
+
+    # SSL certificates (managed by Certbot)
+    ssl_certificate /etc/letsencrypt/live/api.catchandwatch.com/fullchain.pem;
+    ssl_certificate_key /etc/letsencrypt/live/api.catchandwatch.com/privkey.pem;
+
+    # Maximum upload size for video/media uploads
+    client_max_body_size 100M;
+
+    # 1. Socket.IO WebSocket Reverse Proxy
+    location /socket.io/ {
+        proxy_pass http://127.0.0.1:15000/socket.io/;
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection "upgrade";
+        proxy_set_header Host $host;
+        proxy_cache_bypass $http_upgrade;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_read_timeout 86400s;
+        proxy_send_timeout 86400s;
+    }
+
+    # 2. API Routes Reverse Proxy
+    location / {
+        proxy_pass http://127.0.0.1:15000;
+        proxy_http_version 1.1;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_read_timeout 300s;
+        proxy_connect_timeout 300s;
+    }
+}
+```
+
 Before reloading Nginx after any configuration change:
 
 ```bash

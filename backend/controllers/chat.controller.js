@@ -1443,8 +1443,11 @@ exports.setE2EEIdentity = async (req, res) => {
       encryptedPrivateKeyBackup.salt
     );
 
-    // Protect account identity: if user already has an active backup, do not overwrite identity without a valid new backup
-    if (!user.e2eeIdentity.hasBackup || hasIncomingBackup) {
+    const existingPubKey = (user.e2eeIdentity?.publicKey || user.publicKey || "").trim();
+    const isFirstTime = !existingPubKey || !user.e2eeIdentity?.hasBackup;
+
+    // Protect account identity: if user already has an active backup, do not overwrite identity with a conflicting key
+    if (isFirstTime) {
       user.e2eeIdentity.publicKey = publicKey.trim();
       user.e2eeIdentity.keyId = effectiveKeyId;
       user.publicKey = publicKey.trim();
@@ -1460,18 +1463,35 @@ exports.setE2EEIdentity = async (req, res) => {
         user.e2eeIdentity.hasBackup = true;
         user.e2eeIdentity.backupUpdatedAt = new Date();
       }
+    } else {
+      if (existingPubKey === publicKey.trim() && hasIncomingBackup) {
+        user.e2eeIdentity.encryptedPrivateKeyBackup = {
+          ciphertext: String(encryptedPrivateKeyBackup.ciphertext),
+          iv: String(encryptedPrivateKeyBackup.iv),
+          salt: String(encryptedPrivateKeyBackup.salt),
+          iterations: Number(encryptedPrivateKeyBackup.iterations) || 100000,
+          version: Number(encryptedPrivateKeyBackup.version) || 1,
+        };
+        user.e2eeIdentity.hasBackup = true;
+        user.e2eeIdentity.backupUpdatedAt = new Date();
+      } else if (existingPubKey !== publicKey.trim()) {
+        console.warn(`[E2EE] Device ${effectiveDeviceId} registered with key different from master identity. Preserving master identity.`);
+      }
     }
 
-    // Also sync active web session
-    const currentSessionId = req.user?.sessionId || user.sessions?.web?.sessionId || user.activeSession?.sessionId || `sess_${crypto.randomBytes(16).toString("hex")}`;
-    user.activeSession = {
-      sessionId: currentSessionId,
-      deviceId: effectiveDeviceId,
-      keyId: effectiveKeyId,
-      publicKey: publicKey.trim(),
-      lastActive: new Date(),
-      status: "ACTIVE",
-    };
+    // Also sync active web session if web platform
+    const platform = req.user?.platform || "web";
+    if (platform === "web") {
+      const currentSessionId = req.user?.sessionId || user.sessions?.web?.sessionId || user.activeSession?.sessionId || `sess_${crypto.randomBytes(16).toString("hex")}`;
+      user.activeSession = {
+        sessionId: currentSessionId,
+        deviceId: effectiveDeviceId,
+        keyId: effectiveKeyId,
+        publicKey: publicKey.trim(),
+        lastActive: new Date(),
+        status: "ACTIVE",
+      };
+    }
 
     user.markModified("e2eeIdentity");
     user.markModified("deviceKeys");

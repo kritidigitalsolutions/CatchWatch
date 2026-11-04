@@ -19,7 +19,12 @@ function bufferToBase64(buffer) {
 
 // Helper: Convert Base64 String to Uint8Array
 function base64ToBuffer(base64) {
-  const binaryString = window.atob(base64);
+  if (!base64 || typeof base64 !== "string") return new Uint8Array(0);
+  let clean = base64.trim().replace(/-/g, "+").replace(/_/g, "/");
+  while (clean.length % 4 !== 0) {
+    clean += "=";
+  }
+  const binaryString = window.atob(clean);
   const len = binaryString.length;
   const bytes = new Uint8Array(len);
   for (let i = 0; i < len; i++) {
@@ -160,15 +165,25 @@ function privateMatchesPublic(privateKeyStr, publicKeyStr) {
 export async function importPublicKey(publicKeyJwkOrString) {
   if (!publicKeyJwkOrString) return null;
   try {
-    const jwk = typeof publicKeyJwkOrString === "string"
+    let jwk = typeof publicKeyJwkOrString === "string"
       ? JSON.parse(publicKeyJwkOrString)
       : publicKeyJwkOrString;
 
     if (!jwk || typeof jwk !== "object" || !jwk.kty) return null;
 
+    // Normalize coordinates for WebCrypto (base64url without padding)
+    const normalizedJwk = {
+      ...jwk,
+      kty: "EC",
+      crv: "P-256",
+      ext: true,
+      x: typeof jwk.x === "string" ? jwk.x.trim().replace(/\+/g, "-").replace(/\//g, "_").replace(/=/g, "") : jwk.x,
+      y: typeof jwk.y === "string" ? jwk.y.trim().replace(/\+/g, "-").replace(/\//g, "_").replace(/=/g, "") : jwk.y,
+    };
+
     return await window.crypto.subtle.importKey(
       "jwk",
-      jwk,
+      normalizedJwk,
       {
         name: "ECDH",
         namedCurve: "P-256",
@@ -272,7 +287,7 @@ export async function decryptText(ciphertextBase64, ivBase64, sharedKey) {
   // Check if text contains spaces or non-base64 characters (plain text message)
   if (
     typeof ciphertextBase64 === "string" &&
-    (ciphertextBase64.includes(" ") || !/^[A-Za-z0-9+/=]+$/.test(ciphertextBase64.trim()))
+    (ciphertextBase64.includes(" ") || !/^[A-Za-z0-9+/=_-]+$/.test(ciphertextBase64.trim()))
   ) {
     return ciphertextBase64;
   }
