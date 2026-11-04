@@ -159,7 +159,7 @@ const Topbar = () => {
   ];
 
   return (
-    <header className="sticky top-0 z-40 bg-white border-b border-gray-100 shadow-sm transition-all">
+    <header className={`sticky top-0 ${isMobileMenuOpen || selectedNotifForModal ? "z-[9999]" : "z-40"} bg-white border-b border-gray-100 shadow-sm transition-all`}>
       {selectedNotifForModal && (
         <NotificationDetailModal
           notification={selectedNotifForModal}
@@ -540,7 +540,7 @@ const Topbar = () => {
 
       {/* Modern Slide-Over Drawer for Mobile / Tablet (< lg screens) */}
       {isMobileMenuOpen && (
-        <div className="fixed inset-0 z-50 lg:hidden flex justify-end">
+        <div className="fixed inset-0 z-[9999] lg:hidden flex justify-end">
           {/* Backdrop overlay */}
           <div
             className="fixed inset-0 bg-black/60 backdrop-blur-sm transition-opacity animate-fade-in"
@@ -548,7 +548,7 @@ const Topbar = () => {
           />
 
           {/* Drawer container */}
-          <div className="relative w-[85vw] max-w-sm bg-white h-full shadow-2xl flex flex-col justify-between overflow-y-auto z-10 animate-slide-in-right">
+          <div className="relative w-[85vw] max-w-sm bg-white h-full shadow-2xl flex flex-col justify-between overflow-y-auto z-20 animate-slide-in-right">
             <div>
               {/* Drawer Header */}
               <div className="px-5 py-4 border-b border-gray-100 flex items-center justify-between bg-gradient-to-r from-orange-50/50 to-white">

@@ -963,7 +963,7 @@ const ShortsPage = () => {
     <div className="mx-auto w-full sm:w-auto max-w-full bg-black sm:rounded-2xl overflow-hidden relative shadow-2xl h-[calc(100dvh-8rem-env(safe-area-inset-bottom,0px))] sm:aspect-[9/16] sm:h-[calc(100dvh-120px)] sm:max-h-[820px] md:h-[calc(100vh-120px)] md:max-h-[780px] sm:my-auto">
 
       {/* Absolute Transparent Frame Header */}
-      <div className="absolute top-0 left-0 right-0 p-3 sm:p-4 flex justify-between items-center bg-gradient-to-b from-black/80 to-transparent z-40 text-white">
+      <div className="absolute top-0 left-0 right-0 p-3 sm:p-4 flex justify-between items-center bg-gradient-to-b from-black/80 to-transparent z-20 text-white">
         <h1 className="text-base sm:text-xl font-black tracking-wide drop-shadow-md">Reels</h1>
         <button
           onClick={() => navigate('/upload')}
