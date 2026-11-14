@@ -264,6 +264,7 @@ exports.completeProfile = async (
         name: user.name,
         username: user.username,
         phone: user.phone,
+        registrationNumber: user.registrationNumber,
         profileImage: user.profileImage,
         profileComplete: user.profileComplete,
         role: user.role || "USER",
@@ -467,7 +468,19 @@ exports.saveFcmToken = async (req, res) => {
     user.fcmToken = fcmToken;
     user.fcmTokenUpdatedAt = new Date();
 
+    const shouldSendWelcome = !user.registrationNotified;
+    if (shouldSendWelcome) {
+      user.registrationNotified = true;
+    }
+
     await user.save();
+
+    if (shouldSendWelcome) {
+      const { notifyNewUserRegistration } = require("../utils/notificationDispatcher.helper");
+      notifyNewUserRegistration(user).catch((e) =>
+        console.error("Deferred registration welcome push error:", e.message)
+      );
+    }
 
     res.status(200).json({
       success: true,

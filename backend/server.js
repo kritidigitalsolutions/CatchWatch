@@ -4,6 +4,7 @@ const app = require("./app");
 const connectDB = require("./config/db");
 const createDefaultAdmin = require("./utils/createDefaultAdmin");
 const createDefaultDemoUser = require("./utils/createDefaultDemoUser");
+const createDefaultSponsoredAds = require("./utils/createDefaultSponsoredAds");
 const { initSocket } = require("./socket/chatSocket");
 
 const PORT = process.env.PORT || 5000;
@@ -13,9 +14,10 @@ const startServer = async () => {
     // Connect Database
     await connectDB();
 
-    // Create Default Admin and Demo User
+    // Create Default Admin, Demo User, and Sponsored Ads
     await createDefaultAdmin();
     await createDefaultDemoUser();
+    await createDefaultSponsoredAds();
 
     // Create HTTP Server
     const server = http.createServer(app);

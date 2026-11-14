@@ -4,7 +4,9 @@ const { isAdmin } = require("../../middlewares/admin.middleware");
 const {
   getAdminAdDashboard,
   getCampaigns,
+  getSingleCampaign,
   createCampaign,
+  updateCampaign,
   updateCampaignStatus,
   duplicateCampaign,
   deleteCampaign,
@@ -14,6 +16,7 @@ const upload = require("../../middlewares/upload.middleware");
 
 router.get("/dashboard", isAdmin, getAdminAdDashboard);
 router.get("/campaigns", isAdmin, getCampaigns);
+router.get("/campaigns/:id", isAdmin, getSingleCampaign);
 router.post(
   "/campaigns",
   isAdmin,
@@ -23,6 +26,16 @@ router.post(
     { name: "thumbnailFile", maxCount: 1 },
   ]),
   createCampaign
+);
+router.put(
+  "/campaigns/:id",
+  isAdmin,
+  upload.fields([
+    { name: "mediaFile", maxCount: 1 },
+    { name: "media", maxCount: 1 },
+    { name: "thumbnailFile", maxCount: 1 },
+  ]),
+  updateCampaign
 );
 router.patch("/campaigns/:id/status", isAdmin, updateCampaignStatus);
 router.post("/campaigns/:id/duplicate", isAdmin, duplicateCampaign);

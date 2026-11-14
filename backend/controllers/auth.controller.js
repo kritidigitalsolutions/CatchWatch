@@ -7,6 +7,9 @@ const { revokeUserSockets } = require("../socket/chatSocket");
 
 const { admin } = require("../config/firebase");
 const { OAuth2Client } = require("google-auth-library");
+const createDefaultDemoUser = require("../utils/createDefaultDemoUser");
+const { generateUniqueRegistrationNumber, sendRegistrationSMS } = require("../utils/registrationHelper");
+const { notifyNewUserRegistration } = require("../utils/notificationDispatcher.helper");
 
 const googleClient = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
 
@@ -359,13 +362,21 @@ exports.verifyOtp = async (req, res) => {
       });
     }
 
+    // ensure demo user and genuine creator reels exist for Apple review
+    if (isDummyOtp) {
+      await createDefaultDemoUser();
+    }
+
     // check user
     let user = await User.findOne({
       phone: normalizedPhone,
     });
 
+    let isFirstTimeRegistration = false;
+
     // create user automatically
     if (!user) {
+      isFirstTimeRegistration = true;
       const cleanDigits = normalizedPhone.replace(/\D/g, "").slice(-4) || Math.floor(1000 + Math.random() * 9000);
       let baseUsername = `@user_${cleanDigits}`;
       let candidateUsername = baseUsername;
@@ -374,12 +385,17 @@ exports.verifyOtp = async (req, res) => {
         candidateUsername = `@user_${cleanDigits}_${counter++}`;
       }
 
+      // Generate unique registration application number
+      const registrationNumber = await generateUniqueRegistrationNumber();
+
       user = await User.create({
         phone: normalizedPhone,
         username: candidateUsername,
         name: "User",
         role: "USER",
         profileComplete: false,
+        registrationNumber,
+        registrationNotified: false,
       });
     } else if (!user.username) {
       const cleanDigits = normalizedPhone.replace(/\D/g, "").slice(-4) || Math.floor(1000 + Math.random() * 9000);
@@ -390,6 +406,12 @@ exports.verifyOtp = async (req, res) => {
         candidateUsername = `@user_${cleanDigits}_${counter++}`;
       }
       user.username = candidateUsername;
+      if (!user.registrationNumber) {
+        user.registrationNumber = await generateUniqueRegistrationNumber();
+      }
+      await user.save();
+    } else if (!user.registrationNumber) {
+      user.registrationNumber = await generateUniqueRegistrationNumber();
       await user.save();
     }
 
@@ -463,6 +485,22 @@ exports.verifyOtp = async (req, res) => {
 
     await user.save();
 
+    // Trigger New User Welcome Notification (Push Popup & In-App Notification)
+    if (isFirstTimeRegistration || (!user.registrationNotified && !user.profileComplete)) {
+      user.registrationNotified = true;
+      await user.save();
+
+      // Send Push Notification Popup directly to device (FCM heads-up alert)
+      notifyNewUserRegistration(user).catch((e) =>
+        console.error("Welcome push notification error:", e.message)
+      );
+
+      // Send Welcome SMS if DLT Template is set up in .env
+      sendRegistrationSMS(normalizedPhone, user.registrationNumber).catch((e) =>
+        console.error("Welcome registration SMS error:", e.message)
+      );
+    }
+
     // generate token with sessionId and platform
     const token = generateUserToken(user, newSessionId, platform);
 
@@ -477,6 +515,8 @@ exports.verifyOtp = async (req, res) => {
       sessionId: newSessionId,
       platform,
       isNewUser,
+      registrationNumber: user.registrationNumber,
+      welcomeMessage: `Welcome to Catch & Watch! Your Registration Number is ${user.registrationNumber}.`,
 
       user: {
         id: user._id,
@@ -484,6 +524,7 @@ exports.verifyOtp = async (req, res) => {
         username: user.username,
         email: user.email,
         phone: user.phone,
+        registrationNumber: user.registrationNumber,
         profileImage:
           user.profileImage,
         profileComplete:

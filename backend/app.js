@@ -5,6 +5,7 @@ const path = require("path");
 const connectDB = require("./config/db");
 const createDefaultAdmin = require("./utils/createDefaultAdmin");
 const createDefaultDemoUser = require("./utils/createDefaultDemoUser");
+const createDefaultSponsoredAds = require("./utils/createDefaultSponsoredAds");
 
 require("dotenv").config();
 
@@ -15,6 +16,7 @@ if (process.env.NODE_ENV === "production" || process.env.VERCEL) {
   connectDB().then(() => {
     createDefaultAdmin();
     createDefaultDemoUser();
+    createDefaultSponsoredAds();
   });
 }
 

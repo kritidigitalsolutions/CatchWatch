@@ -18,6 +18,19 @@ const userSchema = new mongoose.Schema(
 
 
 
+    registrationNotified: {
+      type: Boolean,
+      default: false,
+    },
+
+    registrationNumber: {
+      type: String,
+      unique: true,
+      sparse: true,
+      trim: true,
+      index: true,
+    },
+
     username: {
       type: String,
       trim: true,

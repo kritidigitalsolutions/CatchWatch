@@ -173,7 +173,7 @@ const Topbar = () => {
           <NavLink to="/" className="flex items-center gap-2">
             <img
               src="/logo512.png"
-              className="h-10 sm:h-12 w-auto object-contain"
+              className="h-10 sm:h-14 w-auto object-contain"
               alt="CatchWatch Logo"
             />
           </NavLink>

@@ -502,6 +502,17 @@
   color: #ffffff;
 }
 
+.btn-action-icon.edit-btn {
+  background: rgba(168, 85, 247, 0.1);
+  color: #c084fc;
+  border-color: rgba(168, 85, 247, 0.25);
+}
+.btn-action-icon.edit-btn:hover {
+  background: rgba(168, 85, 247, 0.25);
+  color: #ffffff;
+  box-shadow: 0 0 10px rgba(168, 85, 247, 0.3);
+}
+
 .btn-action-icon.copy-btn {
   background: rgba(255, 255, 255, 0.05);
   color: #94a3b8;
@@ -842,6 +853,62 @@
   text-decoration: underline;
 }
 
+.btn-edit-header {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: rgba(168, 85, 247, 0.15);
+  border: 1px solid rgba(168, 85, 247, 0.35);
+  color: #c084fc;
+  padding: 5px 12px;
+  border-radius: 8px;
+  font-size: 0.78rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+.btn-edit-header:hover {
+  background: #a855f7;
+  color: #ffffff;
+  box-shadow: 0 4px 14px rgba(168, 85, 247, 0.35);
+}
+
+.campaign-details-section-title {
+  font-size: 0.78rem;
+  font-weight: 800;
+  color: #ec4899;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  margin-top: 14px;
+  margin-bottom: 8px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  padding-bottom: 4px;
+}
+
+.edit-ad-btn-v2 {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: linear-gradient(135deg, #a855f7 0%, #ec4899 100%);
+  color: #ffffff;
+  border: none;
+  padding: 10px 18px;
+  border-radius: 8px;
+  font-weight: 700;
+  font-size: 0.88rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  box-shadow: 0 4px 14px rgba(168, 85, 247, 0.25);
+}
+.edit-ad-btn-v2:hover {
+  opacity: 0.95;
+  transform: translateY(-1px);
+  box-shadow: 0 6px 18px rgba(168, 85, 247, 0.35);
+}
+
 /* ---------- Responsive Breakpoints ---------- */
 @media (max-width: 1024px) {
   .stats-row-v2 {
@@ -1154,3 +1221,31 @@ body.light .detail-val {
 body.light .empty-state-v2 h4 {
   color: #0f172a;
 }
+
+body.light .btn-action-icon.edit-btn {
+  background: #f3e8ff;
+  border-color: #d8b4fe;
+  color: #7e22ce;
+}
+
+body.light .btn-action-icon.edit-btn:hover {
+  background: #e9d5ff;
+  color: #6b21a8;
+}
+
+body.light .campaign-details-section-title {
+  color: #db2777;
+  border-bottom-color: #e2e8f0;
+}
+
+body.light .btn-edit-header {
+  background: #f3e8ff;
+  border-color: #d8b4fe;
+  color: #7e22ce;
+}
+
+body.light .btn-edit-header:hover {
+  background: #a855f7;
+  color: #ffffff;
+}
+

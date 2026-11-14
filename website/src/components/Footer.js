@@ -34,7 +34,7 @@ const Footer = () => {
             <div>
               <img
                 src="/logo512.png"
-                className="h-10 sm:h-12 w-auto object-contain"
+                className="h-10 sm:h-14 w-auto object-contain"
                 alt="CatchWatch Logo"
               />
             </div>

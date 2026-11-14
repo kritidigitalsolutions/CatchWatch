@@ -2,6 +2,14 @@ const mongoose = require("mongoose");
 const Reel = require("../models/reel.model");
 const User = require("../models/user.model");
 const Interaction = require("../models/interaction.model");
+const {
+  REELS_COMPLIANCE_REGEX,
+  isIOSRequest,
+  getCompliantReelsFilter,
+  isCompliantFeedAd,
+  formatSponsoredFeedAd,
+} = require("../utils/reelCompliance.helper");
+const createDefaultSponsoredAds = require("../utils/createDefaultSponsoredAds");
 
 // ========================================
 // UPLOAD REEL
@@ -114,18 +122,46 @@ exports.getReelsFeed = async (req, res) => {
       );
     }
 
-    const reelQuery = { status: "ACTIVE" };
+    const isIOS = isIOSRequest(req);
+    const complianceFilter = getCompliantReelsFilter(isIOS);
+
+    const reelQuery = {
+      status: "ACTIVE",
+      videoUrl: complianceFilter.videoUrl,
+    };
     if (blockedUserIds.length > 0) {
       reelQuery.user = { $nin: blockedUserIds };
     }
 
-    const reels = await Reel.find(reelQuery)
+    const parsedLimit = req.query.limit ? parseInt(req.query.limit, 10) : null;
+    const parsedPage = req.query.page ? parseInt(req.query.page, 10) : 1;
+    const defaultAdFrequency = 3;
+
+    // Apply content filtering before pagination while maintaining expected page size
+    let queryLimit = parsedLimit;
+    let skip = 0;
+    if (parsedLimit) {
+      const adsPerPage = Math.max(1, Math.floor(parsedLimit / defaultAdFrequency));
+      const reelsPerPage = Math.max(1, parsedLimit - adsPerPage);
+      skip = (parsedPage - 1) * reelsPerPage;
+      queryLimit = parsedLimit;
+    }
+
+    let reelFindQuery = Reel.find(reelQuery)
       .populate(
         "user",
         "name username profileImage bio verification isVerified"
       )
-      .sort({ createdAt: -1 })
-      .lean();
+      .sort({ createdAt: -1 });
+
+    if (queryLimit) {
+      reelFindQuery = reelFindQuery.skip(skip).limit(queryLimit);
+    }
+
+    const [totalReelsCount, reels] = await Promise.all([
+      Reel.countDocuments(reelQuery),
+      reelFindQuery.lean(),
+    ]);
 
     if (userId) {
       const User = require("../models/user.model");
@@ -242,7 +278,7 @@ exports.getReelsFeed = async (req, res) => {
       return new Date(b.createdAt) - new Date(a.createdAt);
     });
 
-    // AD INSERTION ENGINE (Runs for all users including verified users in Reels feed)
+    // ── INSTAGRAM-STYLE SPONSORED AD INSERTION ENGINE ──
     let finalFeed = reels;
 
     try {
@@ -251,22 +287,23 @@ exports.getReelsFeed = async (req, res) => {
       const Ad = require("../models/ad.model");
 
       const settings = await SystemSettings.getSettings();
-      const adFrequency = settings?.adSettings?.adFrequency || 2;
+      const adFrequency = settings?.adSettings?.adFrequency || 3;
       const now = new Date();
 
-      // Query active ad campaigns (Filtered for Reels and Video ads)
-      const activeCampaigns = await AdCampaign.find({
+      // Query active ad campaigns (Filtered specifically for Reels and Video placements, excluding movie-only ads)
+      let activeCampaigns = await AdCampaign.find({
         $or: [
           { status: "ACTIVE" },
           { status: "active" },
           { status: { $exists: false } },
         ],
+        adType: { $in: ["SPONSORED_REELS", "SPONSORED_SHORTS", "ALL_CONTENT", "VIDEO"] },
       })
         .sort({ priority: -1, createdAt: -1 })
         .lean();
 
       // Filter by budget & dates
-      const validCampaigns = activeCampaigns.filter((c) => {
+      let validCampaigns = activeCampaigns.filter((c) => {
         if (typeof c.budget === "number" && typeof c.spent === "number" && c.budget > 0 && c.spent >= c.budget) {
           return false;
         }
@@ -274,88 +311,88 @@ exports.getReelsFeed = async (req, res) => {
         return true;
       });
 
-      if (validCampaigns.length > 0) {
-        const campaignIds = validCampaigns.map((c) => c._id);
-        const activeAds = await Ad.find({
-          $or: [
-            { campaignId: { $in: campaignIds } },
-            { status: "ACTIVE" },
-            { status: "active" }
-          ],
+      let campaignIds = validCampaigns.map((c) => c._id);
+      let activeAds = await Ad.find({
+        $or: [
+          { campaignId: { $in: campaignIds } },
+          { status: "ACTIVE" },
+          { status: "active" },
+        ],
+        adType: { $in: ["SPONSORED_REELS", "SPONSORED_SHORTS", "ALL_CONTENT", "VIDEO"] },
+        mediaUrl: { $exists: true, $ne: "" },
+      })
+        .populate("campaignId advertiserId", "name companyName businessName logo")
+        .lean();
+
+      // Compliance filtering: exclude YouTube, magnific.com, static images, and unsupported external redirects
+      let eligibleAds = activeAds.filter((ad) => isCompliantFeedAd(ad, isIOS));
+
+      // Guarantee legitimate sponsored video ads are available in feed
+      if (eligibleAds.length === 0) {
+        await createDefaultSponsoredAds();
+        activeCampaigns = await AdCampaign.find({
+          status: "ACTIVE",
+          adType: { $in: ["SPONSORED_REELS", "SPONSORED_SHORTS", "ALL_CONTENT", "VIDEO"] },
+        }).lean();
+        campaignIds = activeCampaigns.map((c) => c._id);
+        activeAds = await Ad.find({
+          campaignId: { $in: campaignIds },
+          status: "ACTIVE",
           mediaUrl: { $exists: true, $ne: "" },
         }).lean();
+        eligibleAds = activeAds.filter((ad) => isCompliantFeedAd(ad, isIOS));
+      }
 
-        if (activeAds.length > 0) {
-          finalFeed = [];
-          let reelCounter = 0;
-          let adInserted = false;
+      if (eligibleAds.length > 0 && reels.length > 0) {
+        finalFeed = [];
+        let reelCounter = 0;
+        let adInserted = false;
 
-          const pickAd = () => {
-            const weights = activeAds.map((ad) => {
-              let p = ad.priority;
-              if (!p && ad.campaignId) {
-                const parent = validCampaigns.find((c) => String(c._id) === String(ad.campaignId));
-                if (parent && parent.priority) p = parent.priority;
-              }
-              return Math.max(1, Number(p) || 1);
-            });
-
-            const totalWeight = weights.reduce((sum, w) => sum + w, 0);
-            let randomVal = Math.random() * totalWeight;
-            let chosenIdx = 0;
-
-            for (let i = 0; i < activeAds.length; i++) {
-              if (randomVal < weights[i]) {
-                chosenIdx = i;
-                break;
-              }
-              randomVal -= weights[i];
+        const pickAd = () => {
+          const weights = eligibleAds.map((ad) => {
+            let p = ad.priority;
+            if (!p && ad.campaignId) {
+              const parent = validCampaigns.find((c) => String(c._id) === String(ad.campaignId));
+              if (parent && parent.priority) p = parent.priority;
             }
-            return activeAds[chosenIdx];
-          };
-
-          const formatAd = (selectedAd, counter) => {
-            return {
-              _id: "ad_" + counter + "_" + selectedAd._id,
-              adId: selectedAd._id,
-              campaignId: selectedAd.campaignId,
-              advertiserId: selectedAd.advertiserId,
-              title: selectedAd.title || "Sponsored Ad",
-              caption: selectedAd.title || "Sponsored Ad",
-              adType: selectedAd.adType || "VIDEO",
-              mediaUrl: selectedAd.mediaUrl,
-              videoUrl: selectedAd.mediaUrl,
-              thumbnailUrl: selectedAd.thumbnailUrl || selectedAd.mediaUrl,
-              ctaText: selectedAd.ctaText || "Learn More",
-              destinationUrl: selectedAd.destinationUrl || "#",
-              durationSeconds: selectedAd.durationSeconds || 15,
-              isAd: true,
-              user: {
-                name: "Sponsored Ad",
-                username: "@sponsored",
-                profileImage: selectedAd.thumbnailUrl || "",
-                isVerified: true,
-              },
-            };
-          };
-
-          reels.forEach((reelItem) => {
-            finalFeed.push(reelItem);
-            if (reelItem.allowAds !== false) {
-              reelCounter++;
-              if (reelCounter % adFrequency === 0) {
-                adInserted = true;
-                const chosen = pickAd();
-                finalFeed.push(formatAd(chosen, reelCounter));
-              }
-            }
+            return Math.max(1, Number(p) || 1);
           });
 
-          // Always ensure at least one active ad is included in feed for all users
-          if (!adInserted && activeAds.length > 0) {
-            const chosen = pickAd();
-            finalFeed.push(formatAd(chosen, reelCounter + 1));
+          const totalWeight = weights.reduce((sum, w) => sum + w, 0);
+          let randomVal = Math.random() * totalWeight;
+          let chosenIdx = 0;
+
+          for (let i = 0; i < eligibleAds.length; i++) {
+            if (randomVal < weights[i]) {
+              chosenIdx = i;
+              break;
+            }
+            randomVal -= weights[i];
           }
+          return eligibleAds[chosenIdx];
+        };
+
+        reels.forEach((reelItem) => {
+          finalFeed.push(reelItem);
+          if (reelItem.allowAds !== false) {
+            reelCounter++;
+            if (reelCounter % adFrequency === 0) {
+              adInserted = true;
+              const chosen = pickAd();
+              finalFeed.push(formatSponsoredFeedAd(chosen, reelCounter));
+            }
+          }
+        });
+
+        // Ensure at least one legitimate sponsored video ad is included in feed
+        if (!adInserted && eligibleAds.length > 0) {
+          const chosen = pickAd();
+          finalFeed.push(formatSponsoredFeedAd(chosen, reelCounter + 1));
+        }
+
+        // Maintain exact page size when limit is requested
+        if (parsedLimit && finalFeed.length > parsedLimit) {
+          finalFeed = finalFeed.slice(0, parsedLimit);
         }
       }
     } catch (adError) {
@@ -365,7 +402,10 @@ exports.getReelsFeed = async (req, res) => {
     return res.status(200).json({
       success: true,
       count: finalFeed.length,
-      isAdFree: false,
+      total: totalReelsCount,
+      page: parsedPage,
+      limit: parsedLimit || finalFeed.length,
+      isAdFree: isVerifiedUser,
       reels: finalFeed,
     });
   } catch (error) {
@@ -848,9 +888,13 @@ exports.getMyReels = async (req, res) => {
     const limit = Number(req.query.limit) || 10;
     const skip = (page - 1) * limit;
 
+    const isIOS = isIOSRequest(req);
+    const complianceFilter = getCompliantReelsFilter(isIOS);
+
     const filter = {
       user: userId,
       status: "ACTIVE",
+      videoUrl: complianceFilter.videoUrl,
     };
 
     const reels = await Reel.find(filter)
@@ -939,9 +983,13 @@ exports.getUserReels = async (req, res) => {
       });
     }
 
+    const isIOS = isIOSRequest(req);
+    const complianceFilter = getCompliantReelsFilter(isIOS);
+
     const filter = {
       user: targetUserId,
       status: "ACTIVE",
+      videoUrl: complianceFilter.videoUrl,
     };
 
     const reels = await Reel.find(filter)
@@ -1056,9 +1104,13 @@ exports.searchReels = async (req, res) => {
 
     const matchingUserIds = matchingUsers.map((u) => u._id);
 
-    // 2. Find Reels matching caption, hashtags, or creator user ID
+    // 2. Find Reels matching caption, hashtags, or creator user ID with compliance filtering before pagination
+    const isIOS = isIOSRequest(req);
+    const complianceFilter = getCompliantReelsFilter(isIOS);
+
     const filter = {
       status: "ACTIVE",
+      videoUrl: complianceFilter.videoUrl,
       $or: [
         { caption: searchRegex },
         { hashtags: searchRegex },

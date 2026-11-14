@@ -599,7 +599,15 @@ const ShortVideo = ({ video, isActive }) => {
             href={video.destinationUrl || "#"}
             target="_blank"
             rel="noopener noreferrer"
-            onClick={(e) => e.stopPropagation()}
+            onClick={(e) => {
+              e.stopPropagation();
+              const rawAdId = video.adId || video._id;
+              API.post("/ads/event", {
+                adId: rawAdId,
+                campaignId: video.campaignId,
+                eventType: "CLICK",
+              }).catch(() => {});
+            }}
             className="mt-3 w-full py-2.5 bg-gradient-to-r from-brand-orange to-orange-600 hover:from-orange-600 hover:to-orange-700 text-white font-black text-xs sm:text-sm rounded-xl transition shadow-xl flex items-center justify-center gap-2 tracking-wide cursor-pointer text-center"
           >
             <span>{video.ctaText || "Learn More"}</span>

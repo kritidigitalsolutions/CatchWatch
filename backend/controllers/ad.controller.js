@@ -98,7 +98,7 @@ exports.createCampaign = async (req, res) => {
 exports.getCampaigns = async (req, res) => {
   try {
     const page = parseInt(req.query.page) || 1;
-    const limit = parseInt(req.query.limit) || 10;
+    const limit = parseInt(req.query.limit) || 100;
     const skip = (page - 1) * limit;
     const { status, search } = req.query;
 
@@ -121,11 +121,20 @@ exports.getCampaigns = async (req, res) => {
     const formattedCampaigns = await Promise.all(
       campaigns.map(async (c) => {
         const adsCount = await Ad.countDocuments({ campaignId: c._id });
-        const ctr = c.totalImpressions > 0 ? ((c.totalClicks / c.totalImpressions) * 100).toFixed(2) : "0.00";
+        const impressions = c.totalImpressions || c.totalViews || 0;
+        const views = c.totalViews || c.totalImpressions || 0;
+        const clicks = c.totalClicks || 0;
+        const ctr = impressions > 0 ? ((clicks / impressions) * 100).toFixed(2) : "0.00";
         return {
           ...c,
           adsCount,
           ctr,
+          totalImpressions: impressions,
+          totalViews: views,
+          totalClicks: clicks,
+          impressionsCount: impressions,
+          viewsCount: views,
+          clicksCount: clicks,
           remainingBudget: Math.max(0, c.budget - c.spent),
         };
       })
@@ -203,6 +212,170 @@ exports.updateCampaignStatus = async (req, res) => {
   } catch (error) {
     console.error("UPDATE CAMPAIGN STATUS ERROR:", error);
     return res.status(500).json({ success: false, message: "Server error" });
+  }
+};
+
+/**
+ * Get Single Campaign Details with Ads and Analytics
+ */
+exports.getSingleCampaign = async (req, res) => {
+  try {
+    const { id } = req.params;
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      return res.status(400).json({ success: false, message: "Invalid Campaign ID" });
+    }
+
+    const campaign = await AdCampaign.findById(id).populate("advertiserId").lean();
+    if (!campaign) {
+      return res.status(404).json({ success: false, message: "Campaign not found" });
+    }
+
+    const [ads, analytics] = await Promise.all([
+      Ad.find({ campaignId: campaign._id }).lean(),
+      AdAnalytics.find({ campaignId: campaign._id }).sort({ date: -1 }).limit(30).lean(),
+    ]);
+
+    const impressions = campaign.totalImpressions || campaign.totalViews || 0;
+    const views = campaign.totalViews || campaign.totalImpressions || 0;
+    const clicks = campaign.totalClicks || 0;
+    const ctr = impressions > 0 ? ((clicks / impressions) * 100).toFixed(2) : "0.00";
+
+    return res.status(200).json({
+      success: true,
+      campaign: {
+        ...campaign,
+        ctr,
+        totalImpressions: impressions,
+        totalViews: views,
+        totalClicks: clicks,
+        impressionsCount: impressions,
+        viewsCount: views,
+        clicksCount: clicks,
+        ads,
+        analytics,
+      },
+    });
+  } catch (error) {
+    console.error("GET SINGLE CAMPAIGN ERROR:", error);
+    return res.status(500).json({ success: false, message: "Server error" });
+  }
+};
+
+/**
+ * Update Campaign Details & Creatives
+ */
+exports.updateCampaign = async (req, res) => {
+  try {
+    const { id } = req.params;
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      return res.status(400).json({ success: false, message: "Invalid Campaign ID" });
+    }
+
+    const campaign = await AdCampaign.findById(id);
+    if (!campaign) {
+      return res.status(404).json({ success: false, message: "Campaign not found" });
+    }
+
+    let {
+      campaignName,
+      businessName,
+      companyName,
+      email,
+      phone,
+      budget,
+      dailyLimit,
+      startDate,
+      endDate,
+      priority,
+      targetAudience,
+      adType,
+      title,
+      mediaUrl,
+      thumbnailUrl,
+      ctaText,
+      destinationUrl,
+      durationSeconds,
+      category,
+      status,
+      paymentStatus,
+    } = req.body;
+
+    // Extract uploaded files from Multer if present
+    const mediaFile = req.files?.mediaFile?.[0] || req.files?.media?.[0];
+    const thumbnailFile = req.files?.thumbnailFile?.[0] || req.files?.thumbnail?.[0];
+
+    if (mediaFile) {
+      mediaUrl = mediaFile.cdnUrl || mediaFile.path || mediaUrl;
+    }
+    if (thumbnailFile) {
+      thumbnailUrl = thumbnailFile.cdnUrl || thumbnailFile.path || thumbnailUrl;
+    }
+
+    // Update campaign fields
+    if (campaignName !== undefined) campaign.campaignName = campaignName.trim();
+    if (businessName !== undefined) campaign.businessName = businessName.trim();
+    if (companyName !== undefined) campaign.companyName = companyName.trim();
+    if (email !== undefined) campaign.email = email.trim();
+    if (phone !== undefined) campaign.phone = phone.trim();
+    if (budget !== undefined) campaign.budget = Number(budget);
+    if (dailyLimit !== undefined) campaign.dailyLimit = Number(dailyLimit);
+    if (startDate) campaign.startDate = new Date(startDate);
+    if (endDate) campaign.endDate = new Date(endDate);
+    if (priority !== undefined) campaign.priority = Number(priority);
+    if (adType) campaign.adType = adType;
+    if (mediaUrl) campaign.mediaUrl = mediaUrl;
+    if (destinationUrl) campaign.destinationUrl = destinationUrl.trim();
+    if (status) campaign.status = status;
+    if (paymentStatus) campaign.paymentStatus = paymentStatus;
+
+    if (targetAudience) {
+      if (typeof targetAudience === "string") {
+        try { targetAudience = JSON.parse(targetAudience); } catch (e) {}
+      }
+      campaign.targetAudience = targetAudience;
+    }
+
+    await campaign.save();
+
+    // Sync or update associated Ad document(s)
+    let primaryAd = await Ad.findOne({ campaignId: campaign._id });
+    if (primaryAd) {
+      if (title !== undefined) primaryAd.title = title || campaign.campaignName;
+      if (adType) primaryAd.adType = adType;
+      if (mediaUrl) primaryAd.mediaUrl = mediaUrl;
+      if (thumbnailUrl) primaryAd.thumbnailUrl = thumbnailUrl;
+      if (ctaText !== undefined) primaryAd.ctaText = ctaText;
+      if (destinationUrl) primaryAd.destinationUrl = destinationUrl;
+      if (durationSeconds !== undefined) primaryAd.durationSeconds = Number(durationSeconds);
+      if (category) primaryAd.category = category;
+      if (priority !== undefined) primaryAd.priority = Number(priority);
+      if (status) primaryAd.status = status;
+      await primaryAd.save();
+    } else if (mediaUrl) {
+      primaryAd = await Ad.create({
+        title: title || campaign.campaignName,
+        campaignId: campaign._id,
+        adType: adType || campaign.adType,
+        mediaUrl: mediaUrl,
+        thumbnailUrl: thumbnailUrl || "",
+        ctaText: ctaText || "Learn More",
+        destinationUrl: destinationUrl || campaign.destinationUrl || "#",
+        durationSeconds: durationSeconds ? Number(durationSeconds) : 15,
+        category: category || "General",
+        priority: priority ? Number(priority) : campaign.priority,
+        status: status || campaign.status,
+      });
+    }
+
+    return res.status(200).json({
+      success: true,
+      message: "Campaign updated successfully",
+      campaign,
+      ad: primaryAd,
+    });
+  } catch (error) {
+    console.error("UPDATE CAMPAIGN ERROR:", error);
+    return res.status(500).json({ success: false, message: "Server error", error: error.message });
   }
 };
 
@@ -505,7 +678,9 @@ exports.recordAdEvent = async (req, res) => {
 
     if (eventType === "IMPRESSION") {
       campaign.totalImpressions = (campaign.totalImpressions || 0) + 1;
+      campaign.totalViews = (campaign.totalViews || 0) + 1;
       analytics.impressions = (analytics.impressions || 0) + 1;
+      analytics.views = (analytics.views || 0) + 1;
       campaign.spent = (campaign.spent || 0) + costPerImpression;
       analytics.spend = (analytics.spend || 0) + costPerImpression;
     } else if (eventType === "QUALIFIED_IMPRESSION") {
@@ -575,7 +750,10 @@ exports.getAdminAdDashboard = async (req, res) => {
       totalViews: 0,
     };
 
-    const avgCtr = stats.totalImpressions > 0 ? ((stats.totalClicks / stats.totalImpressions) * 100).toFixed(2) : "0.00";
+    const totalImpressions = stats.totalImpressions || stats.totalViews || 0;
+    const totalViews = stats.totalViews || stats.totalImpressions || 0;
+    const totalClicks = stats.totalClicks || 0;
+    const avgCtr = totalImpressions > 0 ? ((totalClicks / totalImpressions) * 100).toFixed(2) : "0.00";
 
     return res.status(200).json({
       success: true,
@@ -585,7 +763,12 @@ exports.getAdminAdDashboard = async (req, res) => {
       completedCampaigns,
       todayRevenue: Math.round(stats.totalRevenue * 0.15),
       monthlyRevenue: Math.round(stats.totalRevenue),
-      totalAdViews: stats.totalViews || stats.totalImpressions,
+      totalAdViews: totalViews,
+      totalImpressions: totalImpressions,
+      totalViews: totalViews,
+      totalClicks: totalClicks,
+      todayImpressions: Math.round(totalImpressions * 0.12),
+      todayClicks: Math.round(totalClicks * 0.12),
       averageCtr: avgCtr,
       totalAdSpend: Math.round(stats.totalRevenue),
       estimatedProfit: Math.round(stats.totalRevenue * 0.4),

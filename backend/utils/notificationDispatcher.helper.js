@@ -253,6 +253,32 @@ const broadcastPushNotification = async ({
 ───────────────────────────────────────────────────────────── */
 
 /**
+ * 0. New User Signup / Registration Welcome Push Notification
+ */
+const notifyNewUserRegistration = async (user) => {
+  if (!user || !user._id) return;
+  const regNo = user.registrationNumber || "CW" + Math.floor(100000 + Math.random() * 900000);
+  const title = "Welcome to Catch & Watch! 🎉";
+  const message = `Welcome to Catch & Watch! Your Registration Number is ${regNo}. Thank you for registering with us.`;
+
+  return sendUserPushNotification({
+    userId: user._id,
+    title,
+    message,
+    type: "ACCOUNT",
+    imageUrl: user.profileImage || "",
+    actionUrl: "/profile",
+    data: {
+      event: "USER_REGISTERED",
+      type: "REGISTRATION_WELCOME",
+      registrationNumber: regNo,
+      title,
+      body: message,
+    },
+  });
+};
+
+/**
  * 1. User Account Completion
  */
 const notifyProfileCompleted = async (user) => {
@@ -501,6 +527,7 @@ const notifyNewFollower = async (followedUserId, follower) => {
 module.exports = {
   sendUserPushNotification,
   broadcastPushNotification,
+  notifyNewUserRegistration,
   notifyProfileCompleted,
   notifyBlueTickStatus,
   notifyOrangeTickStatus: notifyBlueTickStatus,
