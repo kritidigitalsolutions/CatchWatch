@@ -1,6 +1,7 @@
 import React, { useEffect, useState, useMemo } from "react";
 import API from "../api/axios";
 import { useToast } from "../App";
+import Pagination from "../components/Pagination";
 import {
   CreditCard,
   RefreshCw,
@@ -31,6 +32,8 @@ export default function SubscriptionPage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState("ALL");
   const [dateFilter, setDateFilter] = useState("ALL");
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 10;
 
   // Selected for Preview Modal
   const [selectedSub, setSelectedSub] = useState(null);
@@ -159,6 +162,19 @@ export default function SubscriptionPage() {
       return true;
     });
   }, [subs, statusFilter, searchQuery, dateFilter]);
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchQuery, statusFilter, dateFilter]);
+
+  const totalPages = Math.max(1, Math.ceil(filteredSubs.length / itemsPerPage));
+  const validPage = Math.min(currentPage, totalPages);
+  const paginatedSubs = useMemo(() => {
+    return filteredSubs.slice(
+      (validPage - 1) * itemsPerPage,
+      validPage * itemsPerPage
+    );
+  }, [filteredSubs, validPage, itemsPerPage]);
 
   const totalCalculatedRevenue = useMemo(() => {
     return subs.reduce((sum, s) => sum + (s.amount || 0), 0);
@@ -330,7 +346,7 @@ export default function SubscriptionPage() {
                 </tr>
               </thead>
               <tbody>
-                {filteredSubs.map((sub) => {
+                {paginatedSubs.map((sub) => {
                   const isActive =
                     sub.status === "active" && new Date(sub.endDate) > new Date();
                   const userName = sub.user?.name || "Subscriber User";
@@ -427,6 +443,13 @@ export default function SubscriptionPage() {
             </table>
           </div>
         )}
+
+        <Pagination
+          currentPage={validPage}
+          totalItems={filteredSubs.length}
+          itemsPerPage={itemsPerPage}
+          onPageChange={(page) => setCurrentPage(page)}
+        />
       </div>
 
       {/* Subscriber Details Modal */}

@@ -5,6 +5,7 @@ import {
   Users, UserCheck, Smartphone, Check, ChevronDown, Upload, Link as LinkIcon
 } from "lucide-react";
 import API from "../api/axios";
+import Pagination from "../components/Pagination";
 import "./Dashboard.css";
 import "./Notifications.css";
 
@@ -68,6 +69,8 @@ export default function NotificationsPage() {
   const [viewNotif, setViewNotif] = useState(null);
   const [historySearch, setHistorySearch] = useState("");
   const [historyFilter, setHistoryFilter] = useState("ALL");
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 10;
 
   const fileInputRef = useRef(null);
 
@@ -294,6 +297,19 @@ export default function NotificationsPage() {
       return true;
     });
   }, [notifications, historyFilter, historySearch]);
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [historyFilter, historySearch]);
+
+  const totalPages = Math.max(1, Math.ceil(filteredNotifications.length / itemsPerPage));
+  const validPage = Math.min(currentPage, totalPages);
+  const paginatedNotifications = useMemo(() => {
+    return filteredNotifications.slice(
+      (validPage - 1) * itemsPerPage,
+      validPage * itemsPerPage
+    );
+  }, [filteredNotifications, validPage, itemsPerPage]);
 
   return (
     <div className="notif-studio-container">
@@ -864,8 +880,8 @@ export default function NotificationsPage() {
               </tr>
             </thead>
             <tbody>
-              {filteredNotifications.length > 0 ? (
-                filteredNotifications.map((n) => {
+              {paginatedNotifications.length > 0 ? (
+                paginatedNotifications.map((n) => {
                   const typeCfg = TYPE_COLORS[n.type] || TYPE_COLORS.GENERAL;
                   const thumb = n.imageUrl || n.metadata?.imageUrl || "";
 
@@ -956,6 +972,13 @@ export default function NotificationsPage() {
             </tbody>
           </table>
         </div>
+
+        <Pagination
+          currentPage={validPage}
+          totalItems={filteredNotifications.length}
+          itemsPerPage={itemsPerPage}
+          onPageChange={(page) => setCurrentPage(page)}
+        />
       </div>
 
       {/* ── View Detail Modal ── */}

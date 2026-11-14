@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import API, { API_BASE_URL } from "../api/axios";
 import { Users, RefreshCw, User, CheckCircle, AlertCircle, Search, Loader, Eye, Trash2, X, Clapperboard, Play, Ban, ShieldCheck } from "lucide-react";
+import Pagination from "../components/Pagination";
 import "./Dashboard.css";
 
 export default function UsersPage() {
@@ -12,6 +13,8 @@ export default function UsersPage() {
   const [userReels, setUserReels] = useState([]);
   const [loadingReels, setLoadingReels] = useState(false);
   const [previewReel, setPreviewReel] = useState(null);
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 10;
 
   const getImageUrl = (path) => {
     if (!path) return null;
@@ -101,10 +104,28 @@ export default function UsersPage() {
     }
   };
 
-  const filtered = users.filter((u) =>
-    (u.name || "").toLowerCase().includes((search || "").toLowerCase()) ||
-    (u.email || "").toLowerCase().includes((search || "").toLowerCase()) ||
-    (u.phone || "").toLowerCase().includes((search || "").toLowerCase())
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [search]);
+
+  const filtered = users.filter((u) => {
+    const q = (search || "").toLowerCase().trim();
+    if (!q) return true;
+    return (
+      (u.name || "").toLowerCase().includes(q) ||
+      (u.username || "").toLowerCase().includes(q) ||
+      (u.email || "").toLowerCase().includes(q) ||
+      (u.phone || "").toLowerCase().includes(q) ||
+      (u.registrationNumber || "").toLowerCase().includes(q) ||
+      (u._id || "").toLowerCase().includes(q)
+    );
+  });
+
+  const totalPages = Math.max(1, Math.ceil(filtered.length / itemsPerPage));
+  const validPage = Math.min(currentPage, totalPages);
+  const paginatedUsers = filtered.slice(
+    (validPage - 1) * itemsPerPage,
+    validPage * itemsPerPage
   );
 
   return (
@@ -142,7 +163,7 @@ export default function UsersPage() {
         <div className="search-row" style={{ marginBottom: 20 }}>
           <div className="search-field">
             <Search size={18} />
-            <input placeholder="Search by name, phone or email..." value={search}
+            <input placeholder="Search by name, phone, email, or registration number..." value={search}
               onChange={e => setSearch(e.target.value)} />
           </div>
         </div>
@@ -156,20 +177,21 @@ export default function UsersPage() {
                 <tr>
                   <th>#</th>
                   <th>User</th>
-                  <th>Email</th>
+                  <th>Reg Number</th>
+                  <th>Email / Phone</th>
                   <th>Joined</th>
                   <th>Status</th>
                   <th>Actions</th>
                 </tr>
               </thead>
               <tbody>
-                {filtered.length === 0 ? (
-                  <tr><td colSpan={6}>
+                {paginatedUsers.length === 0 ? (
+                  <tr><td colSpan={7}>
                     <div className="empty-state"><p>No users found 😕</p></div>
                   </td></tr>
-                ) : filtered.map((u, i) => (
+                ) : paginatedUsers.map((u, i) => (
                   <tr key={u._id || i}>
-                    <td style={{ color: "var(--text-muted)", fontWeight: 600 }}>{i + 1}</td>
+                    <td style={{ color: "var(--text-muted)", fontWeight: 600 }}>{(validPage - 1) * itemsPerPage + i + 1}</td>
                     <td>
                       <div className="user-cell">
                         <div className="u-avatar">
@@ -184,6 +206,29 @@ export default function UsersPage() {
                           {u.username && <span style={{ fontSize: "0.72rem", color: "var(--primary)", display: "block" }}>{u.username}</span>}
                         </div>
                       </div>
+                    </td>
+                    <td>
+                      {u.registrationNumber ? (
+                        <span
+                          className="badge"
+                          style={{
+                            background: "rgba(249, 115, 22, 0.15)",
+                            color: "#f97316",
+                            border: "1px solid rgba(249, 115, 22, 0.35)",
+                            fontFamily: "monospace",
+                            fontWeight: 700,
+                            letterSpacing: "0.5px",
+                            fontSize: "0.78rem",
+                            padding: "3px 8px",
+                            whiteSpace: "nowrap"
+                          }}
+                          title="Registration Number"
+                        >
+                          {u.registrationNumber}
+                        </span>
+                      ) : (
+                        <span style={{ color: "var(--text-muted)", fontSize: "0.8rem" }}>—</span>
+                      )}
                     </td>
                     <td style={{ color: "var(--text-soft)" }}>{u.email || u.phone || "—"}</td>
                     <td style={{ color: "var(--text-muted)" }}>{new Date(u.createdAt).toLocaleDateString("en-IN")}</td>
@@ -206,6 +251,13 @@ export default function UsersPage() {
             </table>
           </div>
         )}
+
+        <Pagination
+          currentPage={validPage}
+          totalItems={filtered.length}
+          itemsPerPage={itemsPerPage}
+          onPageChange={(page) => setCurrentPage(page)}
+        />
       </div>
 
       {/* User Details Modal */}
@@ -238,6 +290,22 @@ export default function UsersPage() {
                             ✓ VERIFIED
                           </span>
                         ) : null}
+                        {selected.registrationNumber && (
+                          <span
+                            className="badge"
+                            style={{
+                              fontSize: "0.68rem",
+                              padding: "2px 8px",
+                              background: "rgba(249, 115, 22, 0.2)",
+                              color: "#f97316",
+                              border: "1px solid rgba(249, 115, 22, 0.4)",
+                              fontWeight: 700,
+                              fontFamily: "monospace"
+                            }}
+                          >
+                            REG: {selected.registrationNumber}
+                          </span>
+                        )}
                         <span className={`badge ${selected.isBlocked || selected.status === "Blocked" ? "badge-blocked" : "badge-active"}`}>
                           {selected.isBlocked || selected.status === "Blocked" ? "BLOCKED" : "ACTIVE"}
                         </span>
@@ -293,6 +361,12 @@ export default function UsersPage() {
                 <div className="p-detail-card">
                   <span className="p-detail-label">Phone Number</span>
                   <span className="p-detail-value mono">{selected.phone || "—"}</span>
+                </div>
+                <div className="p-detail-card">
+                  <span className="p-detail-label">Registration Number</span>
+                  <span className="p-detail-value mono" style={{ color: "#f97316", fontWeight: 700, fontSize: "0.95rem" }}>
+                    {selected.registrationNumber || "—"}
+                  </span>
                 </div>
                 <div className="p-detail-card">
                   <span className="p-detail-label">Account Role</span>

@@ -1,4 +1,5 @@
 const User = require("../../models/user.model");
+const { generateUniqueRegistrationNumber } = require("../../utils/registrationHelper");
 
 
 // ========================================
@@ -9,20 +10,47 @@ exports.getAllUsers = async (
     res
 ) => {
     try {
-        const users = await User.find()
+        let query = {};
+        if (req.query.search && req.query.search.trim()) {
+            const s = req.query.search.trim();
+            const regex = new RegExp(s, "i");
+            query = {
+                $or: [
+                    { name: regex },
+                    { username: regex },
+                    { phone: regex },
+                    { email: regex },
+                    { registrationNumber: regex },
+                ],
+            };
+        }
+
+        const users = await User.find(query)
             .select("-__v")
             .sort({ createdAt: -1 });
 
         const Subscription = require("../../models/subscription.model");
         const subscriptions = await Subscription.find({ status: "active" }).populate("plan");
 
-        const usersWithPlans = users.map(user => {
-            const activeSub = subscriptions.find(sub => sub.user.toString() === user._id.toString());
-            return {
-                ...user.toObject(),
-                plan: activeSub && activeSub.plan ? activeSub.plan.name : "Free"
-            };
-        });
+        const usersWithPlans = await Promise.all(
+            users.map(async (user) => {
+                if (!user.registrationNumber) {
+                    user.registrationNumber = await generateUniqueRegistrationNumber();
+                    await User.updateOne(
+                        { _id: user._id },
+                        { $set: { registrationNumber: user.registrationNumber } }
+                    ).catch(() => {});
+                }
+                const activeSub = subscriptions.find(
+                    (sub) => sub.user.toString() === user._id.toString()
+                );
+                return {
+                    ...user.toObject(),
+                    registrationNumber: user.registrationNumber,
+                    plan: activeSub && activeSub.plan ? activeSub.plan.name : "Free",
+                };
+            })
+        );
 
         res.status(200).json({
             success: true,
@@ -74,8 +102,17 @@ exports.getSingleUser = async (
             Subscription.findOne({ user: user._id, status: "active" }).populate("plan"),
         ]);
 
+        if (!user.registrationNumber) {
+            user.registrationNumber = await generateUniqueRegistrationNumber();
+            await User.updateOne(
+                { _id: user._id },
+                { $set: { registrationNumber: user.registrationNumber } }
+            ).catch(() => {});
+        }
+
         const userDetails = {
             ...user.toObject(),
+            registrationNumber: user.registrationNumber,
             isBlocked: user.status === "Blocked",
             followersCount: followersCount || user.totalCreatorFollowers || 0,
             followingCount: followingCount || 0,
