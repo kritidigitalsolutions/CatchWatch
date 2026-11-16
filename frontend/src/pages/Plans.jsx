@@ -494,7 +494,7 @@ export default function PlansPage() {
             <select className="form-input-styled" name="planType" value={form.planType} onChange={ch}>
               <option value="weekly">Weekly</option>
               <option value="monthly">Monthly</option>
-              <option value="quarterly">Quarterly (3 Month)</option>
+              <option value="quarterly">Quarterly (3 Months)</option>
               <option value="yearly">Yearly</option>
             </select>
 

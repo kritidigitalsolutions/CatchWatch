@@ -856,8 +856,8 @@ export default function NotificationsPage() {
               <option value="PROMOTIONAL">Promotional</option>
               <option value="CONTENT_ALERT">Content Alert</option>
               <option value="SUBSCRIPTION">Subscription</option>
-              <option value="ORANGETICK">OrangeTick</option>
-              <option value="BLUETICK">BlueTick (Legacy)</option>
+              <option value="ORANGETICK">Orange Tick</option>
+              <option value="BLUETICK">Blue Tick (Legacy)</option>
               <option value="REEL">Reel</option>
               <option value="CHAT">Chat</option>
               <option value="CALL">Call</option>
@@ -932,11 +932,11 @@ export default function NotificationsPage() {
                       <td style={{ color: "#94a3b8", fontFamily: "monospace", fontSize: "0.78rem" }}>
                         {n.createdAt
                           ? new Date(n.createdAt).toLocaleDateString("en-IN", {
-                              day: "numeric",
-                              month: "short",
-                              hour: "2-digit",
-                              minute: "2-digit",
-                            })
+                            day: "numeric",
+                            month: "short",
+                            hour: "2-digit",
+                            minute: "2-digit",
+                          })
                           : "—"}
                       </td>
 

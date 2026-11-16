@@ -276,7 +276,7 @@ export default function LegalPage() {
                     <Edit2 size={16} />
                   </button>
                   <button
-                    className="icon-btn edit"
+                    className="icon-btn del"
                     onClick={() => handleDelete(doc.type)}
                     title="Delete Document"
                     style={{ color: "#ef4444" }}

@@ -204,19 +204,19 @@ export default function Dashboard() {
         <div className="stat-grid">
           <div className="stat-card s-red">
             <div className="stat-icon"><Sun size={28} /></div>
-            <div className="stat-label">Today Registration</div>
+            <div className="stat-label">Today Registrations</div>
             <div className="stat-value">{loading ? "..." : registrationStats.todayRegistration}</div>
             <div className="stat-trend up">New users today</div>
           </div>
           <div className="stat-card s-blue">
             <div className="stat-icon"><CalendarDays size={28} /></div>
-            <div className="stat-label">Yesterday Registration</div>
+            <div className="stat-label">Yesterday Registrations</div>
             <div className="stat-value">{loading ? "..." : registrationStats.yesterdayRegistration}</div>
             <div className="stat-trend up">New users yesterday</div>
           </div>
           <div className="stat-card s-green">
             <div className="stat-icon"><Users size={28} /></div>
-            <div className="stat-label">Total Registration counts</div>
+            <div className="stat-label">Total Registrations</div>
             <div className="stat-value">{loading ? "..." : registrationStats.totalRegistration}</div>
             <div className="stat-trend up">All registered users</div>
           </div>
@@ -228,19 +228,19 @@ export default function Dashboard() {
         <div className="stat-grid">
           <div className="stat-card s-green">
             <div className="stat-icon"><BadgeCheck size={28} /></div>
-            <div className="stat-label">Total Subscribe Users</div>
+            <div className="stat-label">Total Subscribed Users</div>
             <div className="stat-value">{loading ? "..." : subscriptionStats.totalSubscribedUsers}</div>
             <div className="stat-trend up">Active subscription users</div>
           </div>
           <div className="stat-card s-blue">
             <div className="stat-icon"><UserX size={28} /></div>
-            <div className="stat-label">Total Not Subscribe Users</div>
+            <div className="stat-label">Total Non-Subscribed Users</div>
             <div className="stat-value">{loading ? "..." : subscriptionStats.totalNotSubscribedUsers}</div>
             <div className="stat-trend down">No active subscription</div>
           </div>
           <div className="stat-card s-orange">
             <div className="stat-icon"><Clock3 size={28} /></div>
-            <div className="stat-label">Expiry Subscription counts</div>
+            <div className="stat-label">Expired Subscriptions</div>
             <div className="stat-value">{loading ? "..." : subscriptionStats.expirySubscriptionCount}</div>
             <div className="stat-trend down">Expired subscriptions</div>
           </div>
@@ -282,7 +282,7 @@ export default function Dashboard() {
           </div>
           <div className="stat-card s-green">
             <div className="stat-icon"><Wallet size={28} /></div>
-            <div className="stat-label">Total Income Counts</div>
+            <div className="stat-label">Total Income</div>
             <div className="stat-value">{loading ? "..." : formatCurrency(incomeStats.totalIncome)}</div>
             <div className="stat-trend up">Overall revenue</div>
           </div>

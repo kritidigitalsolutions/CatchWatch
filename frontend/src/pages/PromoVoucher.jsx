@@ -204,7 +204,7 @@ export default function PromoVoucher() {
                     <tr key={p._id}>
                       <td style={{ fontWeight: 700, color: 'var(--primary)' }}>{p.code}</td>
                       <td style={{ textTransform: 'capitalize' }}>{p.discountType}</td>
-                      <td>{p.discountType === 'percentage' ? `${p.discountValue}%` : `$${p.discountValue}`}</td>
+                      <td>{p.discountType === 'percentage' ? `${p.discountValue}%` : `₹${p.discountValue}`}</td>
                       <td>{p.usedCount} / {p.maxUses}</td>
                       <td>
                         <span className={`badge ${p.applicablePlans?.length ? 'badge-pub' : 'badge-draft'}`}>
@@ -417,7 +417,7 @@ export default function PromoVoucher() {
                     <Activity size={14} /> DISCOUNT
                   </strong>
                   <span style={{ fontSize: '1.1rem', fontWeight: 600 }}>
-                    {viewData._type === 'promo' ? `${viewData.discountValue}${viewData.discountType === 'percentage' ? '%' : '$'}` : 'N/A'}
+                    {viewData._type === 'promo' ? (viewData.discountType === 'percentage' ? `${viewData.discountValue}%` : `₹${viewData.discountValue}`) : 'N/A'}
                   </span>
                   {viewData._type === 'promo' && <small style={{ color: 'var(--text-muted)', fontSize: '0.75rem' }}>({viewData.discountType})</small>}
                 </div>

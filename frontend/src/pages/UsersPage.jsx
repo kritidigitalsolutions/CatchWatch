@@ -274,7 +274,7 @@ export default function UsersPage() {
               <div className="profile-hero">
                 <div className="profile-hero-bg" />
                 <div className="profile-hero-content" style={{ flexWrap: "wrap", justifyContent: "space-between", alignItems: "center" }}>
-                  <div style={{ display: "flex", items: "center", gap: 16 }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
                     <div className="u-avatar large">
                       {selected.profileImage ? (
                         <img src={getImageUrl(selected.profileImage)} alt={selected.name} />

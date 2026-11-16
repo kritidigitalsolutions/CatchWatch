@@ -311,7 +311,7 @@ export default function SubscriptionPage() {
             value={statusFilter}
             onChange={(e) => setStatusFilter(e.target.value)}
           >
-            <option value="ALL">All statuses</option>
+            <option value="ALL">All Statuses</option>
             <option value="ACTIVE">Active</option>
             <option value="EXPIRED">Expired</option>
             <option value="CANCELLED">Cancelled</option>
