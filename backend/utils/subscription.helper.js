@@ -39,6 +39,38 @@ const expireSubscriptionIfNeeded = async (
   }
 };
 
+// ========================================
+// CHECK IF PLAN / SUBSCRIPTION IS VERIFICATION (ORANGE/BLUE TICK)
+// ========================================
+const isVerificationPlanOrSub = (subOrPlan) => {
+  if (!subOrPlan) return false;
+  const plan = subOrPlan.plan || subOrPlan;
+  const category = String(plan?.category || "").toUpperCase();
+  if (category === "ORANGETICK" || category === "BLUETICK") return true;
+
+  const planName = String(plan?.name || "").toLowerCase();
+  if (
+    planName.includes("orange") ||
+    planName.includes("blue tick") ||
+    planName.includes("verification")
+  ) {
+    return true;
+  }
+
+  const appleProductId = String(
+    plan?.appleProductId || subOrPlan?.appleDetails?.productId || ""
+  ).toLowerCase();
+  if (
+    appleProductId.includes("orangetick") ||
+    appleProductId.includes("bluetick")
+  ) {
+    return true;
+  }
+
+  return false;
+};
+
 module.exports = {
   expireSubscriptionIfNeeded,
+  isVerificationPlanOrSub,
 };

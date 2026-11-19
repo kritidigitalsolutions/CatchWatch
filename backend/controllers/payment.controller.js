@@ -605,15 +605,53 @@ exports.verifyApplePayment = async (req, res) => {
     if (existingTx) {
       // Idempotent retry for the same authenticated user
       if (existingTx.user.toString() === userId.toString()) {
+        const env = verification.environment || existingTx.appleDetails?.environment || (isSandboxEnv ? "Sandbox" : "Production");
+        const safeInternalOrderId = (req.body.orderId && String(req.body.orderId).startsWith("order_")) ? String(req.body.orderId).trim() : "";
+        const appleDetailsObj = {
+          transactionId: resolvedTransactionId,
+          originalTransactionId: resolvedOriginalTransactionId,
+          productId: verifiedProductId || existingTx.appleDetails?.productId || "com.app.catchWatch.creator.orangetick",
+          environment: env,
+          purchaseDate: existingTx.appleDetails?.purchaseDate || existingTx.startDate || new Date(),
+          expiresDate: existingTx.appleDetails?.expiresDate || existingTx.endDate || null,
+        };
+
         return res.status(200).json({
           success: true,
           message: "Payment already verified",
+          paymentStatus: "PAID",
+          paymentGateway: "apple",
+          transactionId: resolvedTransactionId,
+          originalTransactionId: resolvedOriginalTransactionId,
+          productId: verifiedProductId,
+          environment: env,
+          purchaseDate: appleDetailsObj.purchaseDate,
+          expiresDate: appleDetailsObj.expiresDate,
+          expiryDate: appleDetailsObj.expiresDate,
+          orderId: safeInternalOrderId,
+          appleDetails: appleDetailsObj,
+          paymentInfo: {
+            paymentStatus: "PAID",
+            paymentGateway: "apple",
+            transactionId: resolvedTransactionId,
+            originalTransactionId: resolvedOriginalTransactionId,
+            productId: verifiedProductId,
+            appleProductId: verifiedProductId,
+            environment: env,
+            purchaseDate: appleDetailsObj.purchaseDate,
+            expiresDate: appleDetailsObj.expiresDate,
+            expiryDate: appleDetailsObj.expiresDate,
+            orderId: safeInternalOrderId,
+            amount: existingTx.amount || 0,
+            currency: existingTx.currency || "INR",
+            subscriptionStatus: existingTx.status || "active",
+          },
           subscription: existingTx,
           verification: {
             transactionId: resolvedTransactionId,
             originalTransactionId: resolvedOriginalTransactionId,
             productId: verifiedProductId,
-            environment: verification.environment || "Production",
+            environment: env,
           },
         });
       }
@@ -814,15 +852,53 @@ exports.verifyApplePayment = async (req, res) => {
 
         if (retrySub) {
           if (retrySub.user.toString() === userId.toString()) {
+            const env = verification.environment || retrySub.appleDetails?.environment || (isSandboxEnv ? "Sandbox" : "Production");
+            const safeInternalOrderId = (req.body.orderId && String(req.body.orderId).startsWith("order_")) ? String(req.body.orderId).trim() : "";
+            const appleDetailsObj = {
+              transactionId: resolvedTransactionId,
+              originalTransactionId: resolvedOriginalTransactionId,
+              productId: verifiedProductId || retrySub.appleDetails?.productId || "com.app.catchWatch.creator.orangetick",
+              environment: env,
+              purchaseDate: retrySub.appleDetails?.purchaseDate || retrySub.startDate || new Date(),
+              expiresDate: retrySub.appleDetails?.expiresDate || retrySub.endDate || null,
+            };
+
             return res.status(200).json({
               success: true,
               message: "Payment verified successfully",
+              paymentStatus: "PAID",
+              paymentGateway: "apple",
+              transactionId: resolvedTransactionId,
+              originalTransactionId: resolvedOriginalTransactionId,
+              productId: verifiedProductId,
+              environment: env,
+              purchaseDate: appleDetailsObj.purchaseDate,
+              expiresDate: appleDetailsObj.expiresDate,
+              expiryDate: appleDetailsObj.expiresDate,
+              orderId: safeInternalOrderId,
+              appleDetails: appleDetailsObj,
+              paymentInfo: {
+                paymentStatus: "PAID",
+                paymentGateway: "apple",
+                transactionId: resolvedTransactionId,
+                originalTransactionId: resolvedOriginalTransactionId,
+                productId: verifiedProductId,
+                appleProductId: verifiedProductId,
+                environment: env,
+                purchaseDate: appleDetailsObj.purchaseDate,
+                expiresDate: appleDetailsObj.expiresDate,
+                expiryDate: appleDetailsObj.expiresDate,
+                orderId: safeInternalOrderId,
+                amount: retrySub.amount || 0,
+                currency: retrySub.currency || "INR",
+                subscriptionStatus: retrySub.status || "active",
+              },
               subscription: retrySub,
               verification: {
                 transactionId: resolvedTransactionId,
                 originalTransactionId: resolvedOriginalTransactionId,
                 productId: verifiedProductId,
-                environment: verification.environment || "Production",
+                environment: env,
               },
             });
           }
@@ -837,32 +913,37 @@ exports.verifyApplePayment = async (req, res) => {
       throw createErr;
     }
 
-    // 8. Link to Pending Verification Request if this is Orange Tick / Blue Tick
+    // 8. Link to Pending / Existing Verification Request if this is Orange Tick / Blue Tick
     if (isOrangeOrBlueTick) {
       try {
         const pendingVR = await VerificationRequest.findOne({
           userId,
-          status: "PENDING",
-        });
+          status: { $in: ["PENDING", "pending", "REJECTED", "rejected", "CHANGES_REQUESTED", "changes_requested", "UNPAID", "unpaid"] },
+        }).sort({ createdAt: -1 });
+
         if (pendingVR) {
           pendingVR.paymentId = resolvedTransactionId;
-          pendingVR.orderId = resolvedOriginalTransactionId;
           pendingVR.paymentGateway = "apple";
           pendingVR.paymentStatus = "PAID";
+          pendingVR.isPaid = true;
           pendingVR.appleDetails = {
             transactionId: resolvedTransactionId,
             originalTransactionId: resolvedOriginalTransactionId,
             productId: verifiedProductId,
-            environment: verification.environment || "Production",
+            environment: verification.environment || (isSandboxEnv ? "Sandbox" : "Production"),
             purchaseDate: startDate,
+            expiresDate: endDate,
           };
+          if (req.body.orderId && String(req.body.orderId).startsWith("order_")) {
+            pendingVR.orderId = String(req.body.orderId).trim();
+          }
           pendingVR.selectedPlan = {
             planId: plan._id,
             name: plan.name,
             price: plan.price,
             duration: plan.duration,
             paymentId: resolvedTransactionId,
-            orderId: resolvedOriginalTransactionId,
+            orderId: pendingVR.orderId || "",
           };
           await pendingVR.save();
         }
@@ -883,15 +964,53 @@ exports.verifyApplePayment = async (req, res) => {
       console.log("Apple sub dispatcher err:", e.message);
     }
 
+    const env = verification.environment || (isSandboxEnv ? "Sandbox" : "Production");
+    const safeInternalOrderId = (req.body.orderId && String(req.body.orderId).startsWith("order_")) ? String(req.body.orderId).trim() : "";
+    const appleDetailsObj = {
+      transactionId: resolvedTransactionId,
+      originalTransactionId: resolvedOriginalTransactionId,
+      productId: verifiedProductId,
+      environment: env,
+      purchaseDate: startDate,
+      expiresDate: endDate,
+    };
+
     return res.status(200).json({
       success: true,
       message: "Apple payment verified successfully",
+      paymentStatus: "PAID",
+      paymentGateway: "apple",
+      transactionId: resolvedTransactionId,
+      originalTransactionId: resolvedOriginalTransactionId,
+      productId: verifiedProductId,
+      environment: env,
+      purchaseDate: startDate,
+      expiresDate: endDate,
+      expiryDate: endDate,
+      orderId: safeInternalOrderId,
+      appleDetails: appleDetailsObj,
+      paymentInfo: {
+        paymentStatus: "PAID",
+        paymentGateway: "apple",
+        transactionId: resolvedTransactionId,
+        originalTransactionId: resolvedOriginalTransactionId,
+        productId: verifiedProductId,
+        appleProductId: verifiedProductId,
+        environment: env,
+        purchaseDate: startDate,
+        expiresDate: endDate,
+        expiryDate: endDate,
+        orderId: safeInternalOrderId,
+        amount: finalAmount,
+        currency: "INR",
+        subscriptionStatus: "active",
+      },
       subscription,
       verification: {
         transactionId: resolvedTransactionId,
         originalTransactionId: resolvedOriginalTransactionId,
         productId: verifiedProductId,
-        environment: verification.environment || "Production",
+        environment: env,
       },
     });
   } catch (err) {

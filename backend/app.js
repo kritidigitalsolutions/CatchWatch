@@ -6,6 +6,7 @@ const connectDB = require("./config/db");
 const createDefaultAdmin = require("./utils/createDefaultAdmin");
 const createDefaultDemoUser = require("./utils/createDefaultDemoUser");
 const createDefaultSponsoredAds = require("./utils/createDefaultSponsoredAds");
+const createDefaultLiveMatches = require("./utils/createDefaultLiveMatches");
 
 require("dotenv").config();
 
@@ -17,6 +18,7 @@ if (process.env.NODE_ENV === "production" || process.env.VERCEL) {
     createDefaultAdmin();
     createDefaultDemoUser();
     createDefaultSponsoredAds();
+    createDefaultLiveMatches();
   });
 }
 
@@ -317,6 +319,13 @@ app.use("/api/admin/fraud", adminFraudRoutes);
 app.use("/api/admin/analytics", adminAnalyticsRoutes);
 app.use("/api/admin/settings", adminSettingsRoutes);
 app.use("/api/ads", userAdRoutes);
+
+// LIVE CRICKET MATCHES ROUTES
+const adminLiveMatchRoutes = require("./routes/admin/liveMatch.routes");
+const userLiveMatchRoutes = require("./routes/user/liveMatch.routes");
+
+app.use("/api/admin/live-matches", adminLiveMatchRoutes);
+app.use("/api/live-matches", userLiveMatchRoutes);
 // ========================================
 // GLOBAL ERROR HANDLER
 // ========================================

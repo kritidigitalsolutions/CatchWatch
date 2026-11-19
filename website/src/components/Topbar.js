@@ -151,6 +151,7 @@ const Topbar = () => {
 
   const navLinks = [
     { name: "All Shows", path: "/" },
+    { name: "Live Cricket", path: "/live-cricket", isLive: true },
     { name: "Movies", path: "/movies" },
     { name: "TV Shows", path: "/tv-shows" },
     { name: "Short Films", path: "/short-films" },
@@ -186,12 +187,18 @@ const Topbar = () => {
               key={link.path}
               to={link.path}
               className={({ isActive }) =>
-                `text-xs xl:text-sm font-bold uppercase tracking-wider transition-colors hover:text-brand-orange ${
+                `text-xs xl:text-sm font-bold uppercase tracking-wider transition-colors hover:text-brand-orange flex items-center gap-1.5 ${
                   isActive ? "text-brand-orange font-black" : "text-gray-600"
                 }`
               }
             >
-              {link.name}
+              {link.isLive && (
+                <span className="relative flex h-2 w-2">
+                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
+                  <span className="relative inline-flex rounded-full h-2 w-2 bg-red-500"></span>
+                </span>
+              )}
+              <span>{link.name}</span>
             </NavLink>
           ))}
         </nav>
@@ -613,7 +620,20 @@ const Topbar = () => {
                         }`
                       }
                     >
-                      <span>{link.name}</span>
+                      <span className="flex items-center gap-1.5">
+                        {link.isLive && (
+                          <span className="relative flex h-2 w-2">
+                            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
+                            <span className="relative inline-flex rounded-full h-2 w-2 bg-red-500"></span>
+                          </span>
+                        )}
+                        <span>{link.name}</span>
+                      </span>
+                      {link.isLive && (
+                        <span className="text-[9px] bg-red-500 text-white font-extrabold px-1.5 py-0.5 rounded uppercase tracking-wider">
+                          Live
+                        </span>
+                      )}
                     </NavLink>
                   ))}
                 </div>

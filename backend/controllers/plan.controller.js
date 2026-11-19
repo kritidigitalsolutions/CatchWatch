@@ -23,8 +23,14 @@ exports.getPlans = async (req, res) => {
         if (userId) {
           const Subscription = require("../models/subscription.model");
           const { expireSubscriptionIfNeeded } = require("../utils/subscription.helper");
-          let sub = await Subscription.findOne({ user: userId, status: "active" }).populate("plan");
-          activeSub = await expireSubscriptionIfNeeded(sub);
+          const activeSubs = await Subscription.find({ user: userId, status: "active" }).populate("plan").sort({ createdAt: -1 });
+          for (let s of activeSubs) {
+            s = await expireSubscriptionIfNeeded(s);
+            if (s && s.status === "active" && s.plan && s.plan.category !== "ORANGETICK" && s.plan.category !== "BLUETICK") {
+              activeSub = s;
+              break;
+            }
+          }
         }
       }
     } catch (e) {

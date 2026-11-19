@@ -14,6 +14,7 @@ import ContentExplorerPage from './pages/ContentExplorePage';
 import TopChartPage from './pages/TopChartPage';
 import MoviePage from './pages/MoviesPage';
 import TVShowsPage from './pages/TVShowPage';
+import LiveMatchesPage from './pages/LiveMatchesPage';
 import './App.css';
 import { ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
@@ -155,6 +156,8 @@ const App = () => {
               <Route path="/refund-policy" element={<LegalPage />} />
               <Route element={<ProtectedRoute />}>
                 <Route path="/" element={<HomePage />} />
+                <Route path="/live-cricket" element={<LiveMatchesPage />} />
+                <Route path="/live-cricket/:id" element={<LiveMatchesPage />} />
                 <Route path="/movies" element={<MoviePage />} />
                 <Route path="/tv-shows" element={<TVShowsPage />} />
                 <Route path="/tvshows" element={<TVShowsPage />} />

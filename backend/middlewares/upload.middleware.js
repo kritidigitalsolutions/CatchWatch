@@ -17,13 +17,16 @@ const getUploadInfo = (req, file) => {
   if (req.originalUrl.includes("/verification")) type = "verification";
   if (req.originalUrl.includes("/ad") || req.originalUrl.includes("/campaigns")) type = "ads";
   if (req.originalUrl.includes("/chat")) type = "chat";
+  if (req.originalUrl.includes("/live-matches")) type = "live-matches";
 
   let subfolder = "others";
 
   if (file.fieldname === "poster" || file.fieldname === "thumbnail") {
     subfolder = "posters";
-  } else if (file.fieldname === "banner") {
+  } else if (file.fieldname === "banner" || file.fieldname === "bannerFile") {
     subfolder = "banners";
+  } else if (file.fieldname.toLowerCase().includes("logo")) {
+    subfolder = "logos";
   } else if (file.fieldname === "video" || file.fieldname === "media") {
     subfolder = "videos";
   } else if (file.fieldname === "trailer") {

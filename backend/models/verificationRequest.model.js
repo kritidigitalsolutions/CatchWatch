@@ -91,9 +91,32 @@ const verificationRequestSchema = new mongoose.Schema(
     },
     status: {
       type: String,
-      enum: ["PENDING", "VERIFIED", "REJECTED", "SUSPENDED", "CANCELLED"],
+      enum: [
+        "PENDING",
+        "pending",
+        "VERIFIED",
+        "verified",
+        "REJECTED",
+        "rejected",
+        "SUSPENDED",
+        "suspended",
+        "CANCELLED",
+        "cancelled",
+        "CHANGES_REQUESTED",
+        "changes_requested",
+        "ACTION_REQUIRED",
+        "action_required",
+      ],
       default: "PENDING",
       index: true,
+    },
+    isPaid: {
+      type: Boolean,
+      default: false,
+    },
+    plan: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Plan",
     },
     adminRemark: {
       type: String,
@@ -140,6 +163,7 @@ const verificationRequestSchema = new mongoose.Schema(
       productId: { type: String, default: "" },
       environment: { type: String, default: "" },
       purchaseDate: { type: Date, default: null },
+      expiresDate: { type: Date, default: null },
     },
   },
   {

@@ -1,0 +1,247 @@
+{
+  "info": {
+    "_postman_id": "catchwatch-live-cricket-apis-collection",
+    "name": "CatchWatch - Live Cricket User APIs (Flutter & iOS)",
+    "description": "Complete user-facing REST APIs for Live Cricket Streaming, Scoreboard, Live Crease (Striker/Non-Striker/Bowler), Commentary, Playing XI Squads, and Full Scorecard. Designed for Flutter and iOS mobile app developers.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://192.168.1.26:5000",
+      "type": "string"
+    },
+    {
+      "key": "matchId",
+      "value": "6afadf21ddb6e82a903d8be0",
+      "type": "string"
+    }
+  ],
+  "item": [
+    {
+      "name": "1. Match Listings & Filters",
+      "description": "APIs to display live match cards, upcoming schedules, and completed fixtures on home screens and live cricket tabs.",
+      "item": [
+        {
+          "name": "Get All Cricket Matches (With Stats & Filters)",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Accept", "value": "application/json" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/live-matches?status=ALL&format=ALL&limit=50",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "live-matches"],
+              "query": [
+                {
+                  "key": "status",
+                  "value": "ALL",
+                  "description": "Filter by status: ALL, LIVE, UPCOMING, COMPLETED"
+                },
+                {
+                  "key": "format",
+                  "value": "ALL",
+                  "description": "Filter by format: ALL, T20, ODI, TEST, LEAGUE"
+                },
+                {
+                  "key": "tournament",
+                  "value": "",
+                  "description": "Optional search by tournament name, e.g. ICC T20 World Cup",
+                  "disabled": true
+                },
+                {
+                  "key": "limit",
+                  "value": "50",
+                  "description": "Number of matches to return (default 50, max 100)"
+                }
+              ]
+            },
+            "description": "Fetches all cricket matches with total counts for live, upcoming, and completed matches. Used for main listing screen."
+          },
+          "response": []
+        },
+        {
+          "name": "Get Featured Match (Hero Banner)",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Accept", "value": "application/json" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/live-matches/featured",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "live-matches", "featured"]
+            },
+            "description": "Returns the top featured LIVE cricket match for hero carousel / top banner on the app home screen."
+          },
+          "response": []
+        },
+        {
+          "name": "Get LIVE Matches Only (Shortcut)",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Accept", "value": "application/json" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/live-matches/live-now",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "live-matches", "live-now"]
+            },
+            "description": "Direct shortcut endpoint returning only matches with status 'LIVE'."
+          },
+          "response": []
+        },
+        {
+          "name": "Get UPCOMING Matches Only (Shortcut)",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Accept", "value": "application/json" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/live-matches/upcoming",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "live-matches", "upcoming"]
+            },
+            "description": "Direct shortcut endpoint returning only scheduled UPCOMING matches."
+          },
+          "response": []
+        },
+        {
+          "name": "Get COMPLETED Matches Only (Shortcut)",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Accept", "value": "application/json" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/live-matches/completed",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "live-matches", "completed"]
+            },
+            "description": "Direct shortcut endpoint returning past / COMPLETED matches with final scores and result."
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "2. Live Match Stream & Detail Screen",
+      "description": "Complete match details, video player stream URLs, and viewer heartbeat.",
+      "item": [
+        {
+          "name": "Get Full Match Details (Video Player & Info)",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Accept", "value": "application/json" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/live-matches/{{matchId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "live-matches", "{{matchId}}"]
+            },
+            "description": "Fetches complete match data including streamUrl (HLS m3u8, YouTube, mp4), backup stream, team info, scores, live crease, squads, full scorecard and commentary. Call this once when opening the match screen."
+          },
+          "response": []
+        },
+        {
+          "name": "Ping Viewer Count (Heartbeat)",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Accept", "value": "application/json" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/live-matches/{{matchId}}/view",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "live-matches", "{{matchId}}", "view"]
+            },
+            "description": "Call this once when user starts watching the stream or every 60s as a heartbeat to increment live viewer count."
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "3. Live Polling & Detail Tabs",
+      "description": "Lightweight sub-endpoints designed specifically for high-frequency polling and tab-based navigation in mobile apps.",
+      "item": [
+        {
+          "name": "⚡ Live Activity & Crease Polling (Call Every 3-5s)",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Accept", "value": "application/json" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/live-matches/{{matchId}}/live-activity",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "live-matches", "{{matchId}}", "live-activity"]
+            },
+            "description": "⚡ SUPER LIGHTWEIGHT: Poll this every 3 to 5 seconds during a LIVE match. Returns live scores, CRR, RRR, Target, Striker (runs/balls/4s/6s/SR), Non-Striker, Current Bowler (overs/maidens/runs/wickets/economy), Recent balls ticker, and Over status text. Low bandwidth overhead."
+          },
+          "response": []
+        },
+        {
+          "name": "Scorecard Tab (Full Batting & Bowling Tables)",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Accept", "value": "application/json" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/live-matches/{{matchId}}/scorecard",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "live-matches", "{{matchId}}", "scorecard"]
+            },
+            "description": "Returns full Innings 1 and Innings 2 batting cards (batter name, dismissal text, runs, balls, 4s, 6s, SR), bowling figures (overs, maidens, runs, wickets, economy), extras breakdown, and Fall of Wickets (FOW)."
+          },
+          "response": []
+        },
+        {
+          "name": "Commentary Tab (Ball-by-Ball Feed)",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Accept", "value": "application/json" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/live-matches/{{matchId}}/commentary?limit=30",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "live-matches", "{{matchId}}", "commentary"],
+              "query": [
+                {
+                  "key": "limit",
+                  "value": "30",
+                  "description": "Number of latest commentary balls to fetch (default 30, max 100)"
+                }
+              ]
+            },
+            "description": "Returns latest commentary entries posted by the admin scorer, including over.ball, text, runs scored, boundary indicators (4, 6), and wickets."
+          },
+          "response": []
+        },
+        {
+          "name": "Squads & Playing XI Tab (11 vs 11)",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Accept", "value": "application/json" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/live-matches/{{matchId}}/squads",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "live-matches", "{{matchId}}", "squads"]
+            },
+            "description": "Returns playing XI squads for both teams, including player name, role (BATSMAN, BOWLER, ALL_ROUNDER, WICKET_KEEPER), captain flag, and wicketkeeper flag."
+          },
+          "response": []
+        }
+      ]
+    }
+  ]
+}

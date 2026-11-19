@@ -23,7 +23,10 @@ const generateUserToken = (user) => {
 
 
 const Subscription = require("../models/subscription.model");
-const { expireSubscriptionIfNeeded } = require("../utils/subscription.helper");
+const {
+  expireSubscriptionIfNeeded,
+  isVerificationPlanOrSub,
+} = require("../utils/subscription.helper");
 const { decorateUserWithBlueTick } = require("../utils/creator.helper");
 
 const decorateUserWithSubscription = async (userObj) => {
@@ -31,12 +34,23 @@ const decorateUserWithSubscription = async (userObj) => {
   let user = userObj.toObject ? userObj.toObject() : userObj;
   user = decorateUserWithBlueTick(user);
   try {
-    let activeSub = await Subscription.findOne({
+    const allActiveSubs = await Subscription.find({
       user: user._id || user.id,
       status: "active",
-    }).populate("plan");
-    
-    activeSub = await expireSubscriptionIfNeeded(activeSub);
+    }).populate("plan").sort({ createdAt: -1 });
+
+    let activeSub = null;
+    for (let sub of allActiveSubs) {
+      sub = await expireSubscriptionIfNeeded(sub);
+      if (
+        sub &&
+        sub.status === "active" &&
+        !isVerificationPlanOrSub(sub)
+      ) {
+        activeSub = sub;
+        break;
+      }
+    }
     
     user.isPremium = !!(activeSub && activeSub.status === "active");
     user.planId = activeSub ? activeSub.plan?._id : null;

@@ -3,6 +3,7 @@ const Subscription = require("../models/subscription.model");
 
 const {
   expireSubscriptionIfNeeded,
+  isVerificationPlanOrSub,
 } = require("../utils/subscription.helper");
 
 const protectSubscription = async (
@@ -35,26 +36,36 @@ const protectSubscription = async (
       user.subscriptions &&
       user.subscriptions.length > 0
     ) {
+      const candidateSub = await Subscription.findById(
+        user.subscriptions[user.subscriptions.length - 1]
+      ).populate("plan");
 
-      subscription =
-        await Subscription.findById(
-          user.subscriptions[
-            user.subscriptions.length - 1
-          ]
-        );
+      if (candidateSub && !isVerificationPlanOrSub(candidateSub)) {
+        subscription = candidateSub;
+      }
     }
 
     // ========================================
-    // CURRENT SYSTEM
+    // CURRENT SYSTEM (OTT Streaming Plans Only)
     // ========================================
 
     if (!subscription) {
+      const activeSubs = await Subscription.find({
+        user: userId,
+        status: "active",
+      }).populate("plan").sort({ createdAt: -1 });
 
-      subscription =
-        await Subscription.findOne({
-          user: userId,
-          status: "active",
-        }).sort({ createdAt: -1 });
+      for (let sub of activeSubs) {
+        sub = await expireSubscriptionIfNeeded(sub);
+        if (
+          sub &&
+          sub.status === "active" &&
+          !isVerificationPlanOrSub(sub)
+        ) {
+          subscription = sub;
+          break;
+        }
+      }
     }
 
     // no subscription

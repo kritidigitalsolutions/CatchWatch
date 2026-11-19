@@ -14,7 +14,19 @@ const decorateUserWithBlueTick = (userObj) => {
   const isDoc = typeof userObj.toObject === "function";
   const user = isDoc ? userObj.toObject() : { ...userObj };
 
-  const isVerified = Boolean(
+  // Enforce badge expiry date
+  let isExpired = false;
+  if (user.verification?.expiryDate) {
+    if (new Date(user.verification.expiryDate) <= new Date()) {
+      isExpired = true;
+      if (user.verification) {
+        user.verification.isVerified = false;
+        user.verification.status = "NOT_VERIFIED";
+      }
+    }
+  }
+
+  const isVerified = !isExpired && Boolean(
     user.isVerified ||
     (user.verification &&
       (user.verification.isVerified || user.verification.status === "VERIFIED"))

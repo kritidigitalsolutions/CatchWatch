@@ -63,16 +63,19 @@ exports.redeemVoucher = async (
     // CHECK EXISTING SUBSCRIPTION
     // ========================================
 
-    let existing =
-      await Subscription.findOne({
-        user: userId,
-        status: "active",
-      });
+    const activeSubs = await Subscription.find({
+      user: userId,
+      status: "active",
+    }).populate("plan").sort({ createdAt: -1 });
 
-    existing =
-      await expireSubscriptionIfNeeded(
-        existing
-      );
+    let existing = null;
+    for (let s of activeSubs) {
+      s = await expireSubscriptionIfNeeded(s);
+      if (s && s.status === "active" && s.plan && s.plan.category !== "ORANGETICK" && s.plan.category !== "BLUETICK") {
+        existing = s;
+        break;
+      }
+    }
 
     if (
       existing &&

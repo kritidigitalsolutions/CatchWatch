@@ -5,6 +5,7 @@ const Promo = require("../models/promocode.model");
 
 const {
   expireSubscriptionIfNeeded,
+  isVerificationPlanOrSub,
 } = require("../utils/subscription.helper");
 
 
@@ -305,17 +306,24 @@ exports.checkSubscription = async (
 
     const userId = req.user.id;
 
-    let subscription =
-      await Subscription.findOne({
-        user: userId,
-        status: "active",
-      }).populate("plan");
+    // Retrieve active subscriptions and separate Orange Tick from OTT streaming
+    const allActiveSubs = await Subscription.find({
+      user: userId,
+      status: "active",
+    }).populate("plan").sort({ createdAt: -1 });
 
-    // auto expire
-    subscription =
-      await expireSubscriptionIfNeeded(
-        subscription
-      );
+    let subscription = null;
+    for (let sub of allActiveSubs) {
+      sub = await expireSubscriptionIfNeeded(sub);
+      if (
+        sub &&
+        sub.status === "active" &&
+        !isVerificationPlanOrSub(sub)
+      ) {
+        subscription = sub;
+        break;
+      }
+    }
 
     // invalid subscription
     if (

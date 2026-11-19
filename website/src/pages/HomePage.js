@@ -1,10 +1,12 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { FaPlay, FaChevronLeft, FaChevronRight } from "react-icons/fa";
+import { FaPlay, FaChevronLeft, FaChevronRight, FaBolt, FaMapMarkerAlt } from "react-icons/fa";
+import { MdLiveTv } from "react-icons/md";
 import Loader from '../components/Loader';
 import { getMovies } from '../api/movieApi';
 import { getAllContent } from '../api/contentApi';
 import { getCategories } from '../api/categoryApi';
+import { getActiveMatches } from '../api/liveMatchApi';
 
 const HomePage = () => {
   const navigate = useNavigate();
@@ -18,10 +20,12 @@ const HomePage = () => {
   // Dynamic States for API Data
   const [moviesList, setMoviesList] = useState([]);
   const [categoriesList, setCategoriesList] = useState([]);
+  const [liveMatches, setLiveMatches] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
 
   // Fallback images
   const FALLBACK_POSTER = "https://img.magnific.com/premium-vector/abstract-orange-blur-gradient-background-design_624457-4943.jpg";
+  const FALLBACK_CRICKET_BANNER = "https://images.unsplash.com/photo-1540747913346-19e32dc3e97e?q=80&w=1200&auto=format&fit=crop";
 
   // Image URL Resolver Helper
   const getImageUrl = (url) => {
@@ -36,17 +40,32 @@ const HomePage = () => {
     return `${baseUrl}${cleanUrl.startsWith("/") ? "" : "/"}${cleanUrl}`;
   };
 
+  const getCricketBannerUrl = (url) => {
+    if (!url || typeof url !== "string" || !url.trim()) return FALLBACK_CRICKET_BANNER;
+    return getImageUrl(url);
+  };
+
+  const getCricketLogoUrl = (url) => {
+    if (!url || typeof url !== "string" || !url.trim()) return null;
+    return getImageUrl(url);
+  };
+
   // API Integration Effect
   useEffect(() => {
     const fetchHomeData = async () => {
       setIsLoading(true);
 
       try {
-        // Fetch categories and content in parallel
-        const [contentRes, catRes] = await Promise.all([
+        // Fetch categories, content, and live matches in parallel
+        const [contentRes, catRes, liveRes] = await Promise.all([
           getAllContent(),
           getCategories(),
+          getActiveMatches({ limit: 6 }).catch(() => null),
         ]);
+
+        if (liveRes && liveRes.matches && liveRes.matches.length > 0) {
+          setLiveMatches(liveRes.matches);
+        }
 
         if (contentRes && contentRes.content && contentRes.content.length > 0) {
           setMoviesList(contentRes.content);
@@ -100,6 +119,22 @@ const HomePage = () => {
     };
 
     fetchHomeData();
+  }, []);
+
+  // Real-Time Live Cricket Scores Auto-Polling (every 3 seconds)
+  useEffect(() => {
+    const liveScoreTimer = setInterval(async () => {
+      try {
+        const liveRes = await getActiveMatches({ limit: 6 }).catch(() => null);
+        if (liveRes && liveRes.matches && liveRes.matches.length > 0) {
+          setLiveMatches(liveRes.matches);
+        }
+      } catch (err) {
+        // silent catch
+      }
+    }, 3000);
+
+    return () => clearInterval(liveScoreTimer);
   }, []);
 
   const [isTransitionEnabled, setIsTransitionEnabled] = useState(true);
@@ -267,6 +302,196 @@ const HomePage = () => {
                   }`}
               />
             ))}
+          </div>
+        </div>
+      )}
+
+      {/* LIVE CRICKET MATCHES STRIP - LIGHT THEME (MATCHES CATCHWATCH WEBSITE THEME) */}
+      {liveMatches.length > 0 && (
+        <div className="bg-white border border-orange-200/80 rounded-2xl p-3 sm:p-4 my-3 sm:my-5 shadow-sm relative overflow-hidden">
+          {/* Subtle Ambient Background Warm Glow */}
+          <div className="absolute -top-24 -left-24 w-72 h-72 bg-orange-400/5 rounded-full blur-3xl pointer-events-none" />
+          <div className="absolute -bottom-24 -right-24 w-72 h-72 bg-red-400/5 rounded-full blur-3xl pointer-events-none" />
+
+          {/* Section Header */}
+          <div className="flex flex-wrap justify-between items-center gap-2 mb-3 relative z-10">
+            <div className="flex items-center gap-2.5">
+              <span className="relative flex h-2.5 w-2.5">
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-80" />
+                <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-red-500" />
+              </span>
+              <div>
+                <h3 className="text-sm sm:text-lg font-black text-gray-900 flex items-center gap-1.5 tracking-tight">
+                  <MdLiveTv className="text-red-500 text-lg sm:text-xl" />
+                  Live Cricket Matches
+                </h3>
+                <p className="text-[10px] sm:text-xs text-gray-500 font-medium">
+                  Stream live cricket matches, real-time ball-by-ball scoreboards & tournament broadcasts
+                </p>
+              </div>
+            </div>
+
+            <button
+              onClick={() => navigate("/live-cricket")}
+              className="text-[10px] sm:text-xs font-bold bg-gradient-to-r from-red-500 to-brand-orange hover:from-red-600 hover:to-orange-600 text-white px-3 py-1.5 rounded-lg transition-all shadow-sm shadow-orange-500/20 flex items-center gap-1 hover:scale-[1.02]"
+            >
+              <span>Explore All</span>
+              <span>→</span>
+            </button>
+          </div>
+
+          {/* Matches Rail / Grid (Mobile: Horizontal swipe rail, Web: Compact 3-4 col grid) */}
+          <div className="flex sm:grid sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-3 xl:grid-cols-4 gap-3 sm:gap-3.5 overflow-x-auto sm:overflow-visible pb-2 sm:pb-0 snap-x sm:snap-none hide-scrollbar relative z-10">
+            {liveMatches.slice(0, 10).map((match) => {
+              const bannerSrc = getCricketBannerUrl(match.banner);
+              const team1Logo = getCricketLogoUrl(match.team1?.logo);
+              const team2Logo = getCricketLogoUrl(match.team2?.logo);
+
+              return (
+                <div
+                  key={match._id}
+                  onClick={() => navigate(`/live-cricket/${match._id}`)}
+                  className="w-[260px] sm:w-auto flex-shrink-0 sm:flex-shrink snap-start group bg-white border border-gray-200/90 hover:border-brand-orange/60 rounded-xl overflow-hidden cursor-pointer transition-all duration-300 hover:-translate-y-1 hover:shadow-md shadow-xs flex flex-col justify-between"
+                >
+                  {/* Top Match Banner Poster (Compact Height: h-24 sm:h-28) */}
+                  <div className="relative h-24 sm:h-28 w-full overflow-hidden bg-gray-100">
+                    <img
+                      src={bannerSrc}
+                      alt={match.title}
+                      className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+                      onError={(e) => {
+                        e.target.onerror = null;
+                        e.target.src = FALLBACK_CRICKET_BANNER;
+                      }}
+                    />
+
+                    {/* Gradient Overlay for Text Readability */}
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/20 to-transparent" />
+
+                    {/* Top Chips */}
+                    <div className="absolute top-1.5 inset-x-2 flex items-center justify-between gap-1">
+                      <span className="backdrop-blur-md bg-black/65 border border-white/20 text-orange-300 px-1.5 py-0.5 rounded text-[8px] sm:text-[9px] font-black uppercase tracking-wider shadow">
+                        {match.matchFormat} • {match.tournament}
+                      </span>
+
+                      {match.status === "LIVE" ? (
+                        <span className="backdrop-blur-md bg-red-600 text-white px-2 py-0.5 rounded-full text-[8px] sm:text-[9px] font-black uppercase tracking-wider flex items-center gap-1 shadow-md shadow-red-600/40 animate-pulse">
+                          <span className="w-1 h-1 rounded-full bg-white" />
+                          LIVE
+                        </span>
+                      ) : match.status === "UPCOMING" ? (
+                        <span className="backdrop-blur-md bg-amber-500 text-white px-2 py-0.5 rounded-full text-[8px] sm:text-[9px] font-black uppercase tracking-wider shadow">
+                          UPCOMING
+                        </span>
+                      ) : (
+                        <span className="backdrop-blur-md bg-gray-700 text-white px-2 py-0.5 rounded-full text-[8px] sm:text-[9px] font-semibold uppercase tracking-wider shadow">
+                          COMPLETED
+                        </span>
+                      )}
+                    </div>
+
+                    {/* Center Hover Play Action */}
+                    <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300 bg-black/30 backdrop-blur-[1px]">
+                      <div className="w-8 h-8 rounded-full bg-red-600 text-white flex items-center justify-center shadow-lg shadow-red-600/50 transform group-hover:scale-110 transition-transform">
+                        <FaPlay className="ml-0.5 text-[10px]" />
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Card Content & Scoreboard (Light Theme) */}
+                  <div className="p-2 sm:p-2.5 flex-1 flex flex-col justify-between bg-white">
+                    <div>
+                      {/* Match Title */}
+                      <h4 className="text-xs font-bold text-gray-900 group-hover:text-brand-orange transition-colors line-clamp-1 mb-1.5">
+                        {match.title}
+                      </h4>
+
+                      {/* Head-to-Head Scoreboard Box (Compact) */}
+                      <div className="bg-[#FFF8F3] border border-orange-200/80 rounded-lg p-1.5 sm:p-2 mb-1.5 space-y-1 shadow-xs">
+                        {/* Team 1 */}
+                        <div className="flex justify-between items-center text-xs">
+                          <div className="flex items-center gap-1.5 min-w-0 pr-1">
+                            {team1Logo ? (
+                              <img
+                                src={team1Logo}
+                                alt={match.team1?.name}
+                                className="w-4 h-4 rounded-full object-cover bg-white ring-1 ring-orange-200 shadow-xs flex-shrink-0"
+                                onError={(e) => { e.target.style.display = 'none'; }}
+                              />
+                            ) : (
+                              <div className="w-4 h-4 rounded-full bg-gradient-to-br from-red-500 to-orange-500 text-white flex items-center justify-center text-[8px] font-black shadow-xs flex-shrink-0">
+                                {match.team1?.shortName?.charAt(0) || match.team1?.name?.charAt(0) || "T"}
+                              </div>
+                            )}
+                            <span className="font-bold text-gray-900 truncate text-[11px] sm:text-xs">
+                              {match.team1?.name}
+                            </span>
+                            {match.team1?.shortName && (
+                              <span className="text-[8px] font-semibold text-gray-400 uppercase hidden sm:inline">
+                                ({match.team1.shortName})
+                              </span>
+                            )}
+                          </div>
+                          <span className="font-mono font-extrabold text-orange-600 text-[11px] sm:text-xs flex-shrink-0">
+                            {match.team1?.score || "—"}
+                          </span>
+                        </div>
+
+                        <div className="border-t border-orange-200/60" />
+
+                        {/* Team 2 */}
+                        <div className="flex justify-between items-center text-xs">
+                          <div className="flex items-center gap-1.5 min-w-0 pr-1">
+                            {team2Logo ? (
+                              <img
+                                src={team2Logo}
+                                alt={match.team2?.name}
+                                className="w-4 h-4 rounded-full object-cover bg-white ring-1 ring-gray-200 shadow-xs flex-shrink-0"
+                                onError={(e) => { e.target.style.display = 'none'; }}
+                              />
+                            ) : (
+                              <div className="w-4 h-4 rounded-full bg-gradient-to-br from-blue-500 to-indigo-500 text-white flex items-center justify-center text-[8px] font-black shadow-xs flex-shrink-0">
+                                {match.team2?.shortName?.charAt(0) || match.team2?.name?.charAt(0) || "T"}
+                              </div>
+                            )}
+                            <span className="font-bold text-gray-900 truncate text-[11px] sm:text-xs">
+                              {match.team2?.name}
+                            </span>
+                            {match.team2?.shortName && (
+                              <span className="text-[8px] font-semibold text-gray-400 uppercase hidden sm:inline">
+                                ({match.team2.shortName})
+                              </span>
+                            )}
+                          </div>
+                          <span className="font-mono font-bold text-gray-700 text-[11px] sm:text-xs flex-shrink-0">
+                            {match.team2?.score || "—"}
+                          </span>
+                        </div>
+                      </div>
+
+                      {/* Current Commentary Snippet */}
+                      {match.currentStatusText && (
+                        <div className="flex items-center gap-1 text-[9px] sm:text-[10px] text-amber-900 font-medium bg-amber-50 border border-amber-200/80 px-1.5 py-0.5 rounded mb-1.5">
+                          <FaBolt className="text-amber-600 text-[8px] flex-shrink-0" />
+                          <span className="truncate">{match.currentStatusText}</span>
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Card Footer: Venue & Watch Action */}
+                    <div className="flex justify-between items-center pt-1.5 border-t border-gray-100 text-[9px] sm:text-[10px] text-gray-500">
+                      <span className="flex items-center gap-1 truncate max-w-[60%]">
+                        <FaMapMarkerAlt className="text-gray-400 text-[8px] flex-shrink-0" />
+                        <span className="truncate">{match.venue || "Live Stadium"}</span>
+                      </span>
+
+                      <span className="text-brand-orange font-bold flex items-center gap-0.5 group-hover:text-orange-700 text-[9px] sm:text-[10px] flex-shrink-0">
+                        <FaPlay className="text-[7px]" /> Watch
+                      </span></div>
+                  </div>
+                </div>
+              );
+            })}
           </div>
         </div>
       )}
