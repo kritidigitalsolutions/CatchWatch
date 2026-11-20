@@ -1759,29 +1759,484 @@
   to { transform: rotate(360deg); }
 }
 
-/* Responsive */
-@media (max-width: 768px) {
-  .lcp-main-heading {
-    font-size: 1.6rem;
+/* ── Table Scroll Hint (Mobile Helper) ── */
+.lcp-table-scroll-hint {
+  display: none;
+  font-size: 0.70rem;
+  color: #94a3b8;
+  font-style: italic;
+  text-align: right;
+  margin-bottom: 5px;
+  padding: 0 4px;
+}
+
+/* ── Mobile Filter Dropdown Menu (Desktop Default: Hidden) ── */
+.lcp-mobile-filters {
+  display: none;
+}
+
+/* ═════════════════════════════════════════════════════════════════════════
+   TABLET RESPONSIVE STYLES (769px to 1024px)
+   ═════════════════════════════════════════════════════════════════════════ */
+@media (min-width: 769px) and (max-width: 1024px) {
+  .lcp-container {
+    padding: 0 16px;
   }
-  .lcp-scoreboard-strip {
-    padding: 16px;
-  }
-  .lcp-teams-score-board {
-    grid-template-columns: 1fr;
-    gap: 12px;
-    padding: 14px;
-  }
-  .lcp-vs-separator {
-    margin: 0 auto;
-  }
-  .lcp-match-title {
-    font-size: 1.2rem;
-  }
-  .lcp-squads-grid {
-    grid-template-columns: 1fr;
+  .lcp-crease-grid {
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 10px;
   }
   .lcp-matches-grid {
-    grid-template-columns: 1fr;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 14px;
+  }
+}
+
+/* ═════════════════════════════════════════════════════════════════════════
+   MOBILE SCREEN RESPONSIVE STYLES (All Screens <= 768px)
+   Edge-to-edge 100% width, compact tables, and mobile filter dropdowns
+   ═════════════════════════════════════════════════════════════════════════ */
+@media (max-width: 768px) {
+  /* 1. Remove left/right container padding so page takes 100% screen width */
+  .live-cricket-page {
+    padding-bottom: 36px;
+  }
+
+  .lcp-container {
+    padding: 0 !important;
+    width: 100% !important;
+    max-width: 100% !important;
+  }
+
+  /* 2. Main Hero Card: Edge-to-edge 100% width */
+  .lcp-hero-card {
+    border-radius: 0 !important;
+    border-left: none !important;
+    border-right: none !important;
+    box-shadow: none !important;
+    margin-bottom: 20px !important;
+    width: 100% !important;
+  }
+
+  .lcp-player-wrapper {
+    border-radius: 0 !important;
+    width: 100% !important;
+    max-height: 48vw !important; /* Perfect responsive 16:9 ratio for mobile */
+  }
+
+  .lcp-scoreboard-strip {
+    padding: 12px 10px !important;
+    border-radius: 0 !important;
+  }
+
+  .lcp-score-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px;
+    margin-bottom: 10px;
+  }
+
+  .lcp-tournament-badge {
+    gap: 6px;
+    font-size: 0.74rem;
+  }
+
+  .lcp-score-actions {
+    width: 100%;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+
+  .lcp-match-title {
+    font-size: 1.15rem !important;
+    line-height: 1.3;
+  }
+
+  .lcp-match-venue {
+    font-size: 0.76rem;
+  }
+
+  /* Teams Score Board: clean stacked 100% width layout without bulky VS circle */
+  .lcp-teams-score-board {
+    grid-template-columns: 1fr !important;
+    gap: 8px !important;
+    padding: 10px 12px !important;
+    border-radius: 12px !important;
+    margin-bottom: 10px !important;
+  }
+
+  .lcp-team-block {
+    gap: 8px !important;
+  }
+
+  .lcp-team-flag,
+  .lcp-flag-placeholder {
+    width: 32px !important;
+    height: 32px !important;
+  }
+
+  .lcp-team-name-lg {
+    font-size: 0.94rem !important;
+  }
+
+  .lcp-batting-tag {
+    font-size: 0.62rem;
+    padding: 1px 6px;
+    margin-left: 5px;
+  }
+
+  .lcp-score-display {
+    font-size: 1.15rem !important;
+  }
+
+  .lcp-vs-separator {
+    display: none !important; /* Hide circular VS button to eliminate unwanted space on mobile */
+  }
+
+  .lcp-commentary-banner {
+    padding: 8px 10px !important;
+    font-size: 0.78rem !important;
+    gap: 6px !important;
+    margin-bottom: 10px !important;
+    line-height: 1.35;
+  }
+
+  /* 3. Crease & Rates on Mobile */
+  .lcp-crease-box {
+    padding: 10px 10px !important;
+    border-radius: 12px !important;
+    gap: 8px !important;
+  }
+
+  .lcp-crease-header {
+    gap: 6px;
+  }
+
+  .crease-title {
+    font-size: 0.72rem;
+  }
+
+  .rate-chip {
+    font-size: 0.70rem;
+    padding: 2px 7px;
+  }
+
+  .lcp-crease-grid {
+    grid-template-columns: 1fr !important;
+    gap: 8px !important;
+  }
+
+  .lcp-crease-player-card {
+    padding: 8px 10px !important;
+    gap: 4px !important;
+  }
+
+  .player-meta .player-name {
+    font-size: 0.85rem !important;
+  }
+
+  .primary-stat {
+    font-size: 1.02rem !important;
+  }
+
+  .secondary-stats {
+    font-size: 0.68rem !important;
+  }
+
+  .lcp-ball-ticker-row {
+    padding: 8px 6px !important;
+    gap: 6px !important;
+    flex-wrap: wrap;
+  }
+
+  .ticker-label {
+    font-size: 0.70rem !important;
+  }
+
+  .ticker-balls-list {
+    gap: 4px !important;
+  }
+
+  .lcp-ball-chip {
+    width: 22px !important;
+    height: 22px !important;
+    font-size: 0.65rem !important;
+  }
+
+  /* 4. Match Tabs on Mobile */
+  .lcp-match-center {
+    margin-top: 14px !important;
+    padding-top: 10px !important;
+  }
+
+  .lcp-match-tabs {
+    gap: 4px !important;
+    padding-bottom: 0px !important;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+  }
+
+  .lcp-match-tabs::-webkit-scrollbar {
+    display: none;
+  }
+
+  .lcp-match-tab-btn {
+    padding: 8px 12px !important;
+    font-size: 0.78rem !important;
+    gap: 5px !important;
+  }
+
+  .lcp-tab-pane {
+    padding: 12px 0 4px !important;
+  }
+
+  /* 5. Innings Selector Buttons */
+  .lcp-innings-selector {
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 6px !important;
+    margin-bottom: 8px !important;
+  }
+
+  .inning-btn {
+    width: 100% !important;
+    text-align: left !important;
+    font-size: 0.76rem !important;
+    padding: 7px 10px !important;
+    white-space: normal !important;
+  }
+
+  /* 6. Scorecard Tables - Compact font size, fits screen with touch scrolling */
+  .lcp-table-scroll-hint {
+    display: block !important; /* Visible on mobile */
+  }
+
+  .lcp-table-responsive {
+    border-radius: 8px !important;
+    -webkit-overflow-scrolling: touch !important;
+    overflow-x: auto !important;
+    width: 100% !important;
+    margin-bottom: 10px !important;
+  }
+
+  .lcp-scorecard-table {
+    min-width: 490px !important; /* Keeps table structured and readable without squishing */
+    font-size: 0.72rem !important;
+  }
+
+  .lcp-scorecard-table th {
+    padding: 7px 5px !important;
+    font-size: 0.66rem !important;
+    letter-spacing: 0.02em;
+  }
+
+  .lcp-scorecard-table td {
+    padding: 7px 5px !important;
+    font-size: 0.72rem !important;
+  }
+
+  .lcp-scorecard-table td.batter-name,
+  .lcp-scorecard-table .batter-name {
+    font-size: 0.76rem !important;
+    white-space: nowrap !important;
+    max-width: 130px;
+  }
+
+  .batter-name-text {
+    max-width: 85px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    display: inline-block;
+    vertical-align: middle;
+  }
+
+  .on-strike-badge {
+    padding: 1px 4px !important;
+    font-size: 0.54rem !important;
+    margin-left: 2px !important;
+    border-radius: 6px !important;
+    gap: 2px !important;
+  }
+
+  .on-strike-text {
+    font-size: 0.52rem !important;
+  }
+
+  .lcp-scorecard-table td.dismissal-text,
+  .lcp-scorecard-table .dismissal-text {
+    font-size: 0.66rem !important;
+    max-width: 85px !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+    white-space: nowrap !important;
+  }
+
+  .lcp-scorecard-table .runs-cell {
+    font-size: 0.82rem !important;
+    padding: 6px 3px !important;
+  }
+
+  .lcp-scorecard-table .stat-cell {
+    font-size: 0.72rem !important;
+    padding: 6px 2px !important;
+  }
+
+  .lcp-scorecard-table .sr-cell {
+    font-size: 0.72rem !important;
+    padding: 6px 2px !important;
+  }
+
+  .lcp-scorecard-table td.bowler-name,
+  .lcp-scorecard-table .bowler-name {
+    font-size: 0.76rem !important;
+    max-width: 110px;
+    white-space: nowrap;
+  }
+
+  .lcp-scorecard-table .wickets-cell {
+    font-size: 0.82rem !important;
+    padding: 6px 3px !important;
+  }
+
+  .lcp-scorecard-table .econ-cell {
+    font-size: 0.72rem !important;
+    padding: 6px 2px !important;
+  }
+
+  /* Scorecard Summary Row (Extras & Total) */
+  .lcp-scorecard-summary-row {
+    padding: 8px 10px !important;
+    font-size: 0.74rem !important;
+    gap: 6px !important;
+  }
+
+  .summary-label {
+    font-size: 0.68rem !important;
+    margin-right: 4px;
+  }
+
+  .summary-total-val {
+    font-size: 1.05rem !important;
+  }
+
+  /* Fall of Wickets */
+  .lcp-fow-section {
+    padding: 8px 10px !important;
+    gap: 6px !important;
+  }
+
+  .fow-title {
+    font-size: 0.68rem !important;
+  }
+
+  .fow-items {
+    gap: 6px !important;
+  }
+
+  .fow-chip {
+    padding: 2px 7px !important;
+    font-size: 0.68rem !important;
+  }
+
+  /* 7. All Fixtures Section on Mobile */
+  .lcp-fixtures-section {
+    padding: 0 10px !important;
+    width: 100% !important;
+  }
+
+  .lcp-fixtures-header {
+    flex-direction: column !important;
+    align-items: flex-start !important;
+    gap: 10px !important;
+    margin-bottom: 14px !important;
+  }
+
+  .lcp-section-title {
+    font-size: 1.25rem !important;
+  }
+
+  .lcp-section-desc {
+    font-size: 0.80rem !important;
+  }
+
+  /* Hide Desktop Buttons on Mobile */
+  .lcp-filter-tabs {
+    display: none !important;
+  }
+
+  /* Show Mobile Dropdowns on Mobile Screen */
+  .lcp-mobile-filters {
+    display: grid !important;
+    grid-template-columns: 1fr 1fr !important;
+    gap: 10px !important;
+    width: 100% !important;
+    margin-top: 6px !important;
+  }
+
+  .lcp-mobile-select-group {
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 4px !important;
+  }
+
+  .lcp-select-label {
+    font-size: 0.70rem !important;
+    font-weight: 700 !important;
+    color: #64748b !important;
+    text-transform: uppercase !important;
+    letter-spacing: 0.04em !important;
+  }
+
+  .lcp-select-wrapper {
+    position: relative !important;
+    width: 100% !important;
+  }
+
+  .lcp-filter-select {
+    width: 100% !important;
+    appearance: none !important;
+    -webkit-appearance: none !important;
+    background: #ffffff !important;
+    border: 1.5px solid #fed7aa !important;
+    color: #0f172a !important;
+    font-size: 0.80rem !important;
+    font-weight: 700 !important;
+    padding: 8px 28px 8px 10px !important;
+    border-radius: 9px !important;
+    cursor: pointer !important;
+    outline: none !important;
+    transition: all 0.2s ease !important;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04) !important;
+  }
+
+  .lcp-filter-select:focus {
+    border-color: #ff6600 !important;
+    box-shadow: 0 0 0 3px rgba(255, 102, 0, 0.15) !important;
+  }
+
+  .lcp-select-arrow {
+    position: absolute !important;
+    right: 10px !important;
+    top: 50% !important;
+    transform: translateY(-50%) !important;
+    font-size: 0.60rem !important;
+    color: #ff6600 !important;
+    pointer-events: none !important;
+  }
+
+  /* Matches Grid: 1 column card on mobile */
+  .lcp-matches-grid {
+    grid-template-columns: 1fr !important;
+    gap: 12px !important;
+  }
+
+  .lcp-fixture-card {
+    border-radius: 12px !important;
+  }
+
+  .lcp-fixture-banner {
+    height: 85px !important;
   }
 }

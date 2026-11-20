@@ -643,9 +643,7 @@ export default function LiveMatchesPage() {
                     className={`lcp-match-tab-btn ${activeTab === "SQUADS" ? "active" : ""}`}
                     onClick={() => setActiveTab("SQUADS")}
                   >
-                    <FaUsers /> Playing XI (
-                    {activeMatch.team1?.players?.length || 0} vs {activeMatch.team2?.players?.length || 0})
-                  </button>
+                    <FaUsers /> Playing XI </button>
                   <button
                     className={`lcp-match-tab-btn ${activeTab === "INFO" ? "active" : ""}`}
                     onClick={() => setActiveTab("INFO")}
@@ -676,6 +674,9 @@ export default function LiveMatchesPage() {
                     </div>
 
                     {/* Batting Scorecard Table */}
+                    <div className="lcp-table-scroll-hint">
+                      <span>⇄ Scroll table horizontally for all stats (R, B, 4s, 6s, SR)</span>
+                    </div>
                     <div className="lcp-table-responsive">
                       <table className="lcp-scorecard-table">
                         <thead>
@@ -789,7 +790,10 @@ export default function LiveMatchesPage() {
                     )}
 
                     {/* Bowling Scorecard Table */}
-                    <div className="lcp-table-responsive mt-5">
+                    <div className="lcp-table-scroll-hint mt-4">
+                      <span>⇄ Scroll table horizontally for bowling figures (O, M, R, W, ECON)</span>
+                    </div>
+                    <div className="lcp-table-responsive mt-1">
                       <table className="lcp-scorecard-table bowling">
                         <thead>
                           <tr>
@@ -999,7 +1003,7 @@ export default function LiveMatchesPage() {
               <p className="lcp-section-desc">Select any match to switch the live stream player</p>
             </div>
 
-            {/* Filter Tabs */}
+            {/* Desktop Filter Tabs */}
             <div className="lcp-filter-tabs">
               {STATUS_FILTERS.map((st) => (
                 <button
@@ -1027,6 +1031,46 @@ export default function LiveMatchesPage() {
                   {fmt}
                 </button>
               ))}
+            </div>
+
+            {/* Mobile Filter Dropdowns */}
+            <div className="lcp-mobile-filters">
+              <div className="lcp-mobile-select-group">
+                <label htmlFor="lcp-status-filter" className="lcp-select-label">Status</label>
+                <div className="lcp-select-wrapper">
+                  <select
+                    id="lcp-status-filter"
+                    className="lcp-filter-select"
+                    value={statusFilter}
+                    onChange={(e) => setStatusFilter(e.target.value)}
+                  >
+                    <option value="ALL">🏏 All Matches</option>
+                    <option value="LIVE">🔴 Live Now</option>
+                    <option value="UPCOMING">⏳ Upcoming</option>
+                    <option value="COMPLETED">✅ Completed</option>
+                  </select>
+                  <span className="lcp-select-arrow">▼</span>
+                </div>
+              </div>
+
+              <div className="lcp-mobile-select-group">
+                <label htmlFor="lcp-format-filter" className="lcp-select-label">Format</label>
+                <div className="lcp-select-wrapper">
+                  <select
+                    id="lcp-format-filter"
+                    className="lcp-filter-select"
+                    value={formatFilter}
+                    onChange={(e) => setFormatFilter(e.target.value)}
+                  >
+                    <option value="ALL">All Formats</option>
+                    <option value="T20">T20</option>
+                    <option value="ODI">ODI</option>
+                    <option value="TEST">TEST</option>
+                    <option value="LEAGUE">LEAGUE</option>
+                  </select>
+                  <span className="lcp-select-arrow">▼</span>
+                </div>
+              </div>
             </div>
           </div>
 

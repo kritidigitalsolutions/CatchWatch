@@ -1873,21 +1873,23 @@ export default function LiveMatches() {
                 title="Return to Live Matches list"
               >
                 <ArrowLeft size={17} />
-                <span>Back to Matches List</span>
+                <span className="lm-btn-text-full">Back to Matches List</span>
+                <span className="lm-btn-text-short">Back</span>
               </button>
-              <div className="lm-scorer-badge-row">
-                <span className="lm-live-badge-glow">
-                  <span className="live-blink" /> LIVE CONSOLE
+            </div>
+
+            <div className="lm-scorer-badge-row">
+              <span className="lm-live-badge-glow">
+                <span className="live-blink" /> LIVE CONSOLE
+              </span>
+              <span className="lm-console-match-fmt">{consoleMatch.matchFormat}</span>
+              <span className="lm-console-tour">{consoleMatch.tournament}</span>
+              {consoleMatch.venue && (
+                <span className="lm-console-venue-pill">
+                  <MapPin size={12} className="inline mr-1" />
+                  {consoleMatch.venue}
                 </span>
-                <span className="lm-console-match-fmt">{consoleMatch.matchFormat}</span>
-                <span className="lm-console-tour">{consoleMatch.tournament}</span>
-                {consoleMatch.venue && (
-                  <span className="lm-console-venue-pill">
-                    <MapPin size={12} className="inline mr-1" />
-                    {consoleMatch.venue}
-                  </span>
-                )}
-              </div>
+              )}
             </div>
 
             <div className="lm-scorer-bar-right">
@@ -1898,7 +1900,8 @@ export default function LiveMatches() {
                 title="Refresh Live Data"
               >
                 <RefreshCw size={15} className={consoleLoading ? "spin" : ""} />
-                <span>Refresh Live</span>
+                <span className="lm-btn-text-full">Refresh Live</span>
+                <span className="lm-btn-text-short">Sync</span>
               </button>
               <button
                 type="button"
@@ -1964,20 +1967,27 @@ export default function LiveMatches() {
                 className={`lm-console-nav-btn ${consoleTab === "SCORER" ? "active" : ""}`}
                 onClick={() => setConsoleTab("SCORER")}
               >
-                <Radio size={16} /> 🔴 Live Ball Scorer
+                <Radio size={15} />
+                <span className="lm-btn-text-full">🔴 Live Ball Scorer</span>
+                <span className="lm-btn-text-short">🔴 Scorer</span>
               </button>
               <button
                 className={`lm-console-nav-btn ${consoleTab === "SQUADS" ? "active" : ""}`}
                 onClick={() => setConsoleTab("SQUADS")}
               >
-                <Users size={16} /> Squads & Playing XI ({consoleMatch.team1?.players?.length || 0} vs{" "}
-                {consoleMatch.team2?.players?.length || 0})
+                <Users size={15} />
+                <span className="lm-btn-text-full">
+                  Squads & Playing XI ({consoleMatch.team1?.players?.length || 0} vs {consoleMatch.team2?.players?.length || 0})
+                </span>
+                <span className="lm-btn-text-short">Squads & XI</span>
               </button>
               <button
                 className={`lm-console-nav-btn ${consoleTab === "SCORECARD" ? "active" : ""}`}
                 onClick={() => setConsoleTab("SCORECARD")}
               >
-                <Sliders size={16} /> Scorecard & Inning Settings
+                <Sliders size={15} />
+                <span className="lm-btn-text-full">Scorecard & Inning Settings</span>
+                <span className="lm-btn-text-short">Scorecard</span>
               </button>
             </div>
 
@@ -2303,8 +2313,9 @@ export default function LiveMatches() {
                   <div className="lm-scoring-pad">
                     <div className="scoring-pad-section-title">
                       <div className="scoring-pad-title-left">
-                        <Zap size={16} className="text-amber" />
-                        <span>⚡ 1-Click Scoring Pad (Click button to record ball instantly)</span>
+                        <Zap size={16} className="text-amber flex-shrink-0" />
+                        <span className="lm-btn-text-full">1-Click Scoring Pad (Click button to record ball instantly)</span>
+                        <span className="lm-btn-text-short">1-Click Scoring Pad</span>
                       </div>
                       <button
                         type="button"
@@ -2313,7 +2324,8 @@ export default function LiveMatches() {
                         title="Undo last recorded delivery"
                       >
                         <RotateCcw size={14} />
-                        <span>Undo Last Ball</span>
+                        <span className="lm-btn-text-full">Undo Last Ball</span>
+                        <span className="lm-btn-text-short">Undo</span>
                       </button>
                     </div>
 
@@ -2422,7 +2434,7 @@ export default function LiveMatches() {
                         onClick={handleOpenWicketDialog}
                         title="Record Wicket / Dismissal with dropdown options"
                       >
-                        <span className="btn-main">🔴 OUT / WICKET</span>
+                        <span className="btn-main">OUT / WICKET</span>
                         <span className="btn-sub">Bowled / Caught / LBW / Run Out</span>
                       </button>
                     </div>
@@ -2435,7 +2447,7 @@ export default function LiveMatches() {
                       <div className="steppers-card-header">
                         <div className="steppers-title-group">
                           <span className="steppers-card-title">MANUAL CONTROLS</span>
-                          <span className="steppers-card-sub">MakeTheBoard Steppers</span>
+                          <span className="steppers-card-sub lm-btn-text-full">MakeTheBoard Steppers</span>
                         </div>
                         <button
                           type="button"
@@ -2562,7 +2574,8 @@ export default function LiveMatches() {
                             onClick={handleOpenNextOverModal}
                             title="Start Next Over & Select Bowler"
                           >
-                            🏁 Next Over / Change Bowler
+                            <span className="lm-btn-text-full">🏁 Next Over / Change Bowler</span>
+                            <span className="lm-btn-text-short">🏁 Next Over</span>
                           </button>
                           <button
                             type="button"
@@ -2570,7 +2583,8 @@ export default function LiveMatches() {
                             onClick={handleClearOver}
                             title="Reset current over deliveries"
                           >
-                            🔄 Reset Over
+                            <span className="lm-btn-text-full">🔄 Reset Over</span>
+                            <span className="lm-btn-text-short">🔄 Reset</span>
                           </button>
                         </div>
                       </div>
