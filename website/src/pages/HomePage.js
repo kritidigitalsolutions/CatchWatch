@@ -343,7 +343,7 @@ const HomePage = () => {
           {/* Matches Rail / Grid (Mobile: Horizontal swipe rail, Web: Compact 3-4 col grid) */}
           <div className="flex sm:grid sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-3 xl:grid-cols-4 gap-3 sm:gap-3.5 overflow-x-auto sm:overflow-visible pb-2 sm:pb-0 snap-x sm:snap-none hide-scrollbar relative z-10">
             {liveMatches.slice(0, 10).map((match) => {
-              const bannerSrc = getCricketBannerUrl(match.banner);
+              const bannerSrc = getCricketBannerUrl(match.banner || match.streamThumbnailUrl);
               const team1Logo = getCricketLogoUrl(match.team1?.logo);
               const team2Logo = getCricketLogoUrl(match.team2?.logo);
 
@@ -358,6 +358,7 @@ const HomePage = () => {
                     <img
                       src={bannerSrc}
                       alt={match.title}
+                      referrerPolicy="no-referrer"
                       className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
                       onError={(e) => {
                         e.target.onerror = null;

@@ -19,11 +19,52 @@ import {
   FaInfoCircle,
 } from "react-icons/fa";
 import { MdRefresh, MdSportsCricket } from "react-icons/md";
-import { getActiveMatches, getMatchDetails, pingViewer } from "../api/liveMatchApi";
+import {
+  getActiveMatches,
+  getMatchDetails,
+  getMatchLiveActivity,
+  getMatchScorecard,
+  getMatchCommentary,
+  getMatchSquads,
+  pingViewer,
+} from "../api/liveMatchApi";
 import "./LiveMatchesPage.css";
 
 const STATUS_FILTERS = ["ALL", "LIVE", "UPCOMING", "COMPLETED"];
 const FORMAT_FILTERS = ["ALL", "T20", "ODI", "TEST", "LEAGUE"];
+
+const FALLBACK_BANNER =
+  "https://images.unsplash.com/photo-1540747913346-19e32dc3e97e?q=80&w=1200&auto=format&fit=crop";
+
+const getCricketBannerUrl = (url) => {
+  if (!url || typeof url !== "string" || !url.trim()) return FALLBACK_BANNER;
+  const cleanUrl = url.trim();
+  if (
+    cleanUrl.startsWith("http://") ||
+    cleanUrl.startsWith("https://") ||
+    cleanUrl.startsWith("data:")
+  ) {
+    return cleanUrl;
+  }
+  const apiBase = process.env.REACT_APP_API_URL || "http://localhost:5000";
+  const baseUrl = apiBase.replace(/\/api\/?$/, "");
+  return `${baseUrl}${cleanUrl.startsWith("/") ? "" : "/"}${cleanUrl}`;
+};
+
+const getCricketLogoUrl = (url) => {
+  if (!url || typeof url !== "string" || !url.trim()) return null;
+  const cleanUrl = url.trim();
+  if (
+    cleanUrl.startsWith("http://") ||
+    cleanUrl.startsWith("https://") ||
+    cleanUrl.startsWith("data:")
+  ) {
+    return cleanUrl;
+  }
+  const apiBase = process.env.REACT_APP_API_URL || "http://localhost:5000";
+  const baseUrl = apiBase.replace(/\/api\/?$/, "");
+  return `${baseUrl}${cleanUrl.startsWith("/") ? "" : "/"}${cleanUrl}`;
+};
 
 export default function LiveMatchesPage() {
   const { id } = useParams();
@@ -52,14 +93,58 @@ export default function LiveMatchesPage() {
   const [activeTab, setActiveTab] = useState("SCORECARD"); // "SCORECARD" | "COMMENTARY" | "SQUADS" | "INFO"
   const [selectedInning, setSelectedInning] = useState(1); // 1 or 2
 
-  // Fetch full details for a target match
+  // Fetch initial full details and tabs for a target match
   const fetchSingleMatchDetails = useCallback(async (matchId) => {
     if (!matchId) return;
     try {
-      const res = await getMatchDetails(matchId);
-      if (res?.success && res.match) {
-        setActiveMatch(res.match);
-      }
+      const [detailsRes, activityRes, scorecardRes, commsRes, squadsRes] = await Promise.allSettled([
+        getMatchDetails(matchId),
+        getMatchLiveActivity(matchId),
+        getMatchScorecard(matchId),
+        getMatchCommentary(matchId, 50),
+        getMatchSquads(matchId),
+      ]);
+
+      const baseMatch =
+        detailsRes.status === "fulfilled" && detailsRes.value?.success ? detailsRes.value.match : null;
+      if (!baseMatch) return;
+
+      const activity =
+        activityRes.status === "fulfilled" && activityRes.value?.success ? activityRes.value : {};
+      const scorecard =
+        scorecardRes.status === "fulfilled" && scorecardRes.value?.success ? scorecardRes.value : {};
+      const comms =
+        commsRes.status === "fulfilled" && commsRes.value?.success ? commsRes.value : {};
+      const squads =
+        squadsRes.status === "fulfilled" && squadsRes.value?.success ? squadsRes.value : {};
+
+      setActiveMatch((prev) => ({
+        ...(prev && prev._id === matchId ? prev : {}),
+        ...baseMatch,
+        crr: activity.crr || activity.CRR || baseMatch.crr || "0.00",
+        rrr: activity.rrr || activity.RRR || baseMatch.rrr || "0.00",
+        target: activity.target ?? baseMatch.target ?? 0,
+        striker: activity.striker || baseMatch.striker || null,
+        nonStriker: activity.nonStriker || baseMatch.nonStriker || null,
+        currentBowler: activity.bowler || activity.currentBowler || baseMatch.currentBowler || null,
+        recentBalls: activity.recentBalls || baseMatch.recentBalls || [],
+        currentOverBalls: activity.currentOverBalls || [],
+        currentStatusText:
+          activity.overStatusText || activity.currentStatusText || baseMatch.currentStatusText || "",
+        innings1: scorecard.innings1 || baseMatch.innings1 || null,
+        innings2: scorecard.innings2 || baseMatch.innings2 || null,
+        commentary: comms.commentary || baseMatch.commentary || [],
+        team1: {
+          ...(baseMatch.team1 || {}),
+          score: activity.scores?.team1 || activity.scores?.teamA?.score || baseMatch.team1?.score || "",
+          players: squads.teamA?.players || squads.team1?.players || baseMatch.team1?.players || [],
+        },
+        team2: {
+          ...(baseMatch.team2 || {}),
+          score: activity.scores?.team2 || activity.scores?.teamB?.score || baseMatch.team2?.score || "",
+          players: squads.teamB?.players || squads.team2?.players || baseMatch.team2?.players || [],
+        },
+      }));
     } catch (err) {
       console.warn("Could not fetch full match details:", err);
     }
@@ -113,16 +198,87 @@ export default function LiveMatchesPage() {
     }
   }, [activeMatch, matches.length]);
 
-  // Real-time polling every 3 seconds for live match updates & ball-by-ball score
+  // Real-time polling: poll live-activity every 3 seconds for lightweight crease & score update
   useEffect(() => {
-    const interval = setInterval(() => {
-      if (activeMatch?._id) {
-        fetchSingleMatchDetails(activeMatch._id);
+    if (!activeMatch?._id) return;
+    const matchId = activeMatch._id;
+
+    const interval = setInterval(async () => {
+      try {
+        const activityRes = await getMatchLiveActivity(matchId);
+        if (activityRes?.success) {
+          setActiveMatch((prev) => {
+            if (!prev || prev._id !== matchId) return prev;
+            return {
+              ...prev,
+              status: activityRes.status || prev.status,
+              isLive: activityRes.isLive !== undefined ? activityRes.isLive : prev.isLive,
+              crr: activityRes.crr || activityRes.CRR || prev.crr,
+              rrr: activityRes.rrr || activityRes.RRR || prev.rrr,
+              target: activityRes.target ?? prev.target,
+              striker: activityRes.striker || prev.striker,
+              nonStriker: activityRes.nonStriker || prev.nonStriker,
+              currentBowler: activityRes.bowler || activityRes.currentBowler || prev.currentBowler,
+              recentBalls: activityRes.recentBalls || prev.recentBalls,
+              currentOverBalls: activityRes.currentOverBalls || prev.currentOverBalls,
+              currentStatusText:
+                activityRes.overStatusText || activityRes.currentStatusText || prev.currentStatusText,
+              team1: {
+                ...(prev.team1 || {}),
+                score:
+                  activityRes.scores?.team1 ||
+                  activityRes.scores?.teamA?.score ||
+                  prev.team1?.score,
+              },
+              team2: {
+                ...(prev.team2 || {}),
+                score:
+                  activityRes.scores?.team2 ||
+                  activityRes.scores?.teamB?.score ||
+                  prev.team2?.score,
+              },
+            };
+          });
+        }
+
+        // If on Commentary tab, refresh commentary
+        if (activeTab === "COMMENTARY") {
+          const commsRes = await getMatchCommentary(matchId, 30);
+          if (commsRes?.success && commsRes.commentary) {
+            setActiveMatch((prev) => (prev ? { ...prev, commentary: commsRes.commentary } : prev));
+          }
+        }
+
+        // If on Scorecard tab, refresh scorecard
+        if (activeTab === "SCORECARD") {
+          const scRes = await getMatchScorecard(matchId);
+          if (scRes?.success) {
+            setActiveMatch((prev) =>
+              prev
+                ? {
+                    ...prev,
+                    innings1: scRes.innings1 || prev.innings1,
+                    innings2: scRes.innings2 || prev.innings2,
+                  }
+                : prev
+            );
+          }
+        }
+      } catch (e) {
+        // quiet error on polling
       }
-      fetchMatchesList(false);
     }, 3000);
+
     return () => clearInterval(interval);
-  }, [activeMatch?._id, fetchSingleMatchDetails, fetchMatchesList]);
+  }, [activeMatch?._id, activeTab]);
+
+  // Periodic fixtures list refresh (every 15s)
+  useEffect(() => {
+    const listInterval = setInterval(() => {
+      fetchMatchesList(false);
+    }, 15000);
+    return () => clearInterval(listInterval);
+  }, [fetchMatchesList]);
 
   // Ping viewer count once when active match changes
   useEffect(() => {
@@ -1079,9 +1235,9 @@ export default function LiveMatchesPage() {
             {matches && matches.length > 0 ? (
               matches.map((match) => {
                 const isSelected = activeMatch?._id === match._id;
-                const bannerSrc =
-                  match.banner ||
-                  "https://images.unsplash.com/photo-1540747913346-19e32dc3e97e?q=80&w=1200&auto=format&fit=crop";
+                const bannerSrc = getCricketBannerUrl(match.banner || match.streamThumbnailUrl);
+                const team1Logo = getCricketLogoUrl(match.team1?.logo || match.team1?.flagUrl);
+                const team2Logo = getCricketLogoUrl(match.team2?.logo || match.team2?.flagUrl);
 
                 return (
                   <div
@@ -1096,9 +1252,11 @@ export default function LiveMatchesPage() {
                       <img
                         src={bannerSrc}
                         alt={match.title}
+                        referrerPolicy="no-referrer"
                         className="lcp-fixture-banner-img"
                         onError={(e) => {
-                          e.target.style.display = "none";
+                          e.target.onerror = null;
+                          e.target.src = FALLBACK_BANNER;
                         }}
                       />
                       <div className="lcp-banner-overlay-grad" />
@@ -1131,8 +1289,8 @@ export default function LiveMatchesPage() {
                       {/* Compact Teams vs Strip */}
                       <div className="lcp-teams-compact-strip">
                         <div className="lcp-compact-team">
-                          {match.team1?.logo ? (
-                            <img src={match.team1.logo} alt="" className="lcp-compact-logo" />
+                          {team1Logo ? (
+                            <img src={team1Logo} alt="" className="lcp-compact-logo" />
                           ) : (
                             <div className="lcp-compact-ph">
                               {match.team1?.shortName || match.team1?.name?.charAt(0)}
@@ -1143,8 +1301,8 @@ export default function LiveMatchesPage() {
                         </div>
 
                         <div className="lcp-compact-team">
-                          {match.team2?.logo ? (
-                            <img src={match.team2.logo} alt="" className="lcp-compact-logo" />
+                          {team2Logo ? (
+                            <img src={team2Logo} alt="" className="lcp-compact-logo" />
                           ) : (
                             <div className="lcp-compact-ph">
                               {match.team2?.shortName || match.team2?.name?.charAt(0)}

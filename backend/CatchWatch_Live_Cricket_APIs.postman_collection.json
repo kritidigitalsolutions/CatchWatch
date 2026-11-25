@@ -1,8 +1,8 @@
 {
   "info": {
-    "_postman_id": "catchwatch-live-cricket-apis-collection",
-    "name": "CatchWatch - Live Cricket User APIs (Flutter & iOS)",
-    "description": "Complete user-facing REST APIs for Live Cricket Streaming, Scoreboard, Live Crease (Striker/Non-Striker/Bowler), Commentary, Playing XI Squads, and Full Scorecard. Designed for Flutter and iOS mobile app developers.",
+    "_postman_id": "catchwatch-live-cricket-clean-apis-v2",
+    "name": "CatchWatch - Live Cricket User APIs (Clean Architecture)",
+    "description": "Complete user-facing REST APIs for CatchWatch Live Cricket Streaming, Scoreboard, Crease Polling (Striker/Non-Striker/Bowler), Commentary, Squads, and Full Scorecard.\n\n✨ CLEAN ARCHITECTURE (Single Data Ownership):\n- Listing APIs return only listing metadata.\n- Match Details API (`/:matchId`) is called ONCE when opening the player screen.\n- Live Activity API (`/:matchId/live-activity`) is ultra-lightweight (<500 bytes) for 3-5 second polling.\n- Dedicated tab APIs for Scorecard, Commentary, and Squads prevent redundant data transfer.\n\nCompatible with Flutter, iOS (Swift), and Web.",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
   },
   "variable": [
@@ -23,11 +23,14 @@
       "description": "APIs to display live match cards, upcoming schedules, and completed fixtures on home screens and live cricket tabs.",
       "item": [
         {
-          "name": "Get All Cricket Matches (With Stats & Filters)",
+          "name": "1. Get All Matches (Listing Only)",
           "request": {
             "method": "GET",
             "header": [
-              { "key": "Accept", "value": "application/json" }
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
             ],
             "url": {
               "raw": "{{baseUrl}}/api/live-matches?status=ALL&format=ALL&limit=50",
@@ -57,157 +60,321 @@
                 }
               ]
             },
-            "description": "Fetches all cricket matches with total counts for live, upcoming, and completed matches. Used for main listing screen."
+            "description": "Returns listing-level data for all matches with live/upcoming/completed count badges.\n(Removed: streamUrl, squads, scorecard, commentary, liveCrease)."
           },
-          "response": []
+          "response": [
+            {
+              "name": "200 Success - All Matches Listing",
+              "originalRequest": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/api/live-matches",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["api", "live-matches"]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"success\": true,\n  \"count\": 2,\n  \"stats\": {\n    \"live\": 1,\n    \"upcoming\": 1,\n    \"completed\": 0,\n    \"total\": 2\n  },\n  \"matches\": [\n    {\n      \"matchId\": \"6afadf21ddb6e82a903d8be0\",\n      \"_id\": \"6afadf21ddb6e82a903d8be0\",\n      \"title\": \"England vs South Africa - 1st ODI\",\n      \"status\": \"LIVE\",\n      \"isLive\": true,\n      \"format\": \"ODI\",\n      \"matchFormat\": \"ODI\",\n      \"tournament\": \"ODI Bilateral Series 2026\",\n      \"startTime\": \"2026-11-19T08:00:00.000Z\",\n      \"teamA\": {\n        \"name\": \"England\",\n        \"shortName\": \"ENG\",\n        \"flagUrl\": \"https://example.com/eng.png\",\n        \"score\": \"224/8 (50 ov)\",\n        \"runs\": 224,\n        \"wickets\": 8,\n        \"overs\": 50\n      },\n      \"teamB\": {\n        \"name\": \"South Africa\",\n        \"shortName\": \"SA\",\n        \"flagUrl\": \"https://example.com/sa.png\",\n        \"score\": \"50/1 (3.1 ov)\",\n        \"runs\": 50,\n        \"wickets\": 1,\n        \"overs\": 3.1\n      },\n      \"banner\": \"https://catchandwatchzone.b-cdn.net/banners/cricket1.jpg\",\n      \"streamThumbnailUrl\": \"https://catchandwatchzone.b-cdn.net/banners/cricket1.jpg\",\n      \"result\": \"\",\n      \"currentStatusText\": \"South Africa need 175 runs in 46.5 ov\",\n      \"isFeatured\": true,\n      \"viewersCount\": 29\n    }\n  ]\n}"
+            }
+          ]
         },
         {
-          "name": "Get Featured Match (Hero Banner)",
+          "name": "2. Get Featured Match (Hero Banner)",
           "request": {
             "method": "GET",
             "header": [
-              { "key": "Accept", "value": "application/json" }
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
             ],
             "url": {
               "raw": "{{baseUrl}}/api/live-matches/featured",
               "host": ["{{baseUrl}}"],
               "path": ["api", "live-matches", "featured"]
             },
-            "description": "Returns the top featured LIVE cricket match for hero carousel / top banner on the app home screen."
+            "description": "Returns single featured match listing data + streamThumbnailUrl for app hero banner.\n(Removed: streamUrl, full scorecard, squads, commentary)."
           },
-          "response": []
+          "response": [
+            {
+              "name": "200 Success - Featured Match",
+              "originalRequest": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/api/live-matches/featured",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["api", "live-matches", "featured"]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"success\": true,\n  \"match\": {\n    \"matchId\": \"6afadf21ddb6e82a903d8be0\",\n    \"_id\": \"6afadf21ddb6e82a903d8be0\",\n    \"title\": \"England vs South Africa - 1st ODI\",\n    \"status\": \"LIVE\",\n    \"isLive\": true,\n    \"format\": \"ODI\",\n    \"tournament\": \"ODI Bilateral Series 2026\",\n    \"startTime\": \"2026-11-19T08:00:00.000Z\",\n    \"teamA\": {\n      \"name\": \"England\",\n      \"shortName\": \"ENG\",\n      \"flagUrl\": \"https://example.com/eng.png\",\n      \"score\": \"224/8 (50 ov)\",\n      \"runs\": 224,\n      \"wickets\": 8,\n      \"overs\": 50\n    },\n    \"teamB\": {\n      \"name\": \"South Africa\",\n      \"shortName\": \"SA\",\n      \"flagUrl\": \"https://example.com/sa.png\",\n      \"score\": \"50/1 (3.1 ov)\",\n      \"runs\": 50,\n      \"wickets\": 1,\n      \"overs\": 3.1\n    },\n    \"result\": \"\",\n    \"isFeatured\": true,\n    \"streamThumbnailUrl\": \"https://catchandwatchzone.b-cdn.net/banners/cricket1.jpg\",\n    \"viewersCount\": 29\n  }\n}"
+            }
+          ]
         },
         {
-          "name": "Get LIVE Matches Only (Shortcut)",
+          "name": "3. Get LIVE Matches Shortcut",
           "request": {
             "method": "GET",
             "header": [
-              { "key": "Accept", "value": "application/json" }
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
             ],
             "url": {
               "raw": "{{baseUrl}}/api/live-matches/live-now",
               "host": ["{{baseUrl}}"],
               "path": ["api", "live-matches", "live-now"]
             },
-            "description": "Direct shortcut endpoint returning only matches with status 'LIVE'."
+            "description": "Returns listing fields only for matches currently with status 'LIVE'."
           },
           "response": []
         },
         {
-          "name": "Get UPCOMING Matches Only (Shortcut)",
+          "name": "4. Get UPCOMING Matches Shortcut",
           "request": {
             "method": "GET",
             "header": [
-              { "key": "Accept", "value": "application/json" }
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
             ],
             "url": {
               "raw": "{{baseUrl}}/api/live-matches/upcoming",
               "host": ["{{baseUrl}}"],
               "path": ["api", "live-matches", "upcoming"]
             },
-            "description": "Direct shortcut endpoint returning only scheduled UPCOMING matches."
+            "description": "Returns listing fields only for scheduled UPCOMING fixtures."
           },
           "response": []
         },
         {
-          "name": "Get COMPLETED Matches Only (Shortcut)",
+          "name": "5. Get COMPLETED Matches Shortcut",
           "request": {
             "method": "GET",
             "header": [
-              { "key": "Accept", "value": "application/json" }
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
             ],
             "url": {
               "raw": "{{baseUrl}}/api/live-matches/completed",
               "host": ["{{baseUrl}}"],
               "path": ["api", "live-matches", "completed"]
             },
-            "description": "Direct shortcut endpoint returning past / COMPLETED matches with final scores and result."
+            "description": "Returns listing fields + result field for COMPLETED matches."
           },
           "response": []
         }
       ]
     },
     {
-      "name": "2. Live Match Stream & Detail Screen",
-      "description": "Complete match details, video player stream URLs, and viewer heartbeat.",
+      "name": "2. Live Match Screen (Init & Heartbeat)",
+      "description": "Endpoints called when opening the live cricket match player screen.",
       "item": [
         {
-          "name": "Get Full Match Details (Video Player & Info)",
+          "name": "6. Get Match Details (Called ONCE on Screen Open)",
           "request": {
             "method": "GET",
             "header": [
-              { "key": "Accept", "value": "application/json" }
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
             ],
             "url": {
               "raw": "{{baseUrl}}/api/live-matches/{{matchId}}",
               "host": ["{{baseUrl}}"],
               "path": ["api", "live-matches", "{{matchId}}"]
             },
-            "description": "Fetches complete match data including streamUrl (HLS m3u8, YouTube, mp4), backup stream, team info, scores, live crease, squads, full scorecard and commentary. Call this once when opening the match screen."
+            "description": "⚠️ CALL ONCE: Call this when opening the match screen to initialize the video player (streamUrl, backupStreamUrl, streamThumbnailUrl, venue, teams, status, toss).\n\n(Removed: liveCrease, squads, scorecard, commentary — these have their own lightweight endpoints below)."
           },
-          "response": []
+          "response": [
+            {
+              "name": "200 Success - Match Details",
+              "originalRequest": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/api/live-matches/{{matchId}}",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["api", "live-matches", "{{matchId}}"]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"success\": true,\n  \"match\": {\n    \"matchId\": \"6afadf21ddb6e82a903d8be0\",\n    \"_id\": \"6afadf21ddb6e82a903d8be0\",\n    \"title\": \"England vs South Africa - 1st ODI\",\n    \"status\": \"LIVE\",\n    \"isLive\": true,\n    \"format\": \"ODI\",\n    \"matchFormat\": \"ODI\",\n    \"tournament\": \"ODI Bilateral Series 2026\",\n    \"venue\": \"Lord's Cricket Ground, London\",\n    \"startTime\": \"2026-11-19T08:00:00.000Z\",\n    \"endTime\": \"2026-11-19T16:00:00.000Z\",\n    \"teamA\": {\n      \"name\": \"England\",\n      \"shortName\": \"ENG\",\n      \"flagUrl\": \"https://example.com/eng.png\",\n      \"score\": \"224/8 (50 ov)\",\n      \"runs\": 224,\n      \"wickets\": 8,\n      \"overs\": 50\n    },\n    \"teamB\": {\n      \"name\": \"South Africa\",\n      \"shortName\": \"SA\",\n      \"flagUrl\": \"https://example.com/sa.png\",\n      \"score\": \"50/1 (3.1 ov)\",\n      \"runs\": 50,\n      \"wickets\": 1,\n      \"overs\": 3.1\n    },\n    \"streamUrl\": \"https://test-streams.mux.dev/x36xhzz/x36xhzz.m3u8\",\n    \"backupStreamUrl\": \"https://test-streams.mux.dev/x36xhzz/backup.m3u8\",\n    \"streamType\": \"hls\",\n    \"streamThumbnailUrl\": \"https://catchandwatchzone.b-cdn.net/banners/cricket1.jpg\",\n    \"result\": \"\",\n    \"currentStatusText\": \"South Africa need 175 runs in 46.5 ov\",\n    \"isFeatured\": true,\n    \"isPremium\": false,\n    \"viewersCount\": 29,\n    \"toss\": \"South Africa won the toss and elected to bowl\",\n    \"currentInnings\": 2,\n    \"battingTeam\": \"team2\",\n    \"bowlingTeam\": \"team1\"\n  }\n}"
+            }
+          ]
         },
         {
-          "name": "Ping Viewer Count (Heartbeat)",
+          "name": "7. Ping Viewer Count (Heartbeat)",
           "request": {
             "method": "POST",
             "header": [
-              { "key": "Accept", "value": "application/json" },
-              { "key": "Content-Type", "value": "application/json" }
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
             ],
             "url": {
               "raw": "{{baseUrl}}/api/live-matches/{{matchId}}/view",
               "host": ["{{baseUrl}}"],
               "path": ["api", "live-matches", "{{matchId}}", "view"]
             },
-            "description": "Call this once when user starts watching the stream or every 60s as a heartbeat to increment live viewer count."
+            "description": "Call once when playback begins or every 60s as a viewer heartbeat to increment viewer count."
           },
-          "response": []
+          "response": [
+            {
+              "name": "200 Success - Viewer Heartbeat",
+              "originalRequest": {
+                "method": "POST",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/api/live-matches/{{matchId}}/view",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["api", "live-matches", "{{matchId}}", "view"]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"success\": true,\n  \"viewerCount\": 30,\n  \"viewersCount\": 30\n}"
+            }
+          ]
         }
       ]
     },
     {
-      "name": "3. Live Polling & Detail Tabs",
-      "description": "Lightweight sub-endpoints designed specifically for high-frequency polling and tab-based navigation in mobile apps.",
+      "name": "3. Live Crease Polling & Detail Tabs",
+      "description": "Lightweight sub-endpoints designed specifically for high-frequency polling and tab-based navigation.",
       "item": [
         {
-          "name": "⚡ Live Activity & Crease Polling (Call Every 3-5s)",
+          "name": "8. ⚡ Live Activity & Crease Polling (Poll Every 3-5s)",
           "request": {
             "method": "GET",
             "header": [
-              { "key": "Accept", "value": "application/json" }
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
             ],
             "url": {
               "raw": "{{baseUrl}}/api/live-matches/{{matchId}}/live-activity",
               "host": ["{{baseUrl}}"],
               "path": ["api", "live-matches", "{{matchId}}", "live-activity"]
             },
-            "description": "⚡ SUPER LIGHTWEIGHT: Poll this every 3 to 5 seconds during a LIVE match. Returns live scores, CRR, RRR, Target, Striker (runs/balls/4s/6s/SR), Non-Striker, Current Bowler (overs/maidens/runs/wickets/economy), Recent balls ticker, and Over status text. Low bandwidth overhead."
+            "description": "⚡ ULTRA LIGHTWEIGHT (~400 bytes):\nPoll this every 3 to 5 seconds during a LIVE match.\nReturns ONLY changing real-time data: scores (teamA, teamB), CRR, RRR, target, striker (name, runs, balls, 4s, 6s, SR), nonStriker (name, runs, balls), bowler (name, overs, maidens, runs, wickets, economy), recentBalls, overStatusText, and lastUpdated.\nNo video stream URLs, no full scorecard, no squads."
           },
-          "response": []
+          "response": [
+            {
+              "name": "200 Success - Live Crease Activity",
+              "originalRequest": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/api/live-matches/{{matchId}}/live-activity",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["api", "live-matches", "{{matchId}}", "live-activity"]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"success\": true,\n  \"matchId\": \"6afadf21ddb6e82a903d8be0\",\n  \"status\": \"LIVE\",\n  \"isLive\": true,\n  \"scores\": {\n    \"teamA\": {\n      \"name\": \"England\",\n      \"shortName\": \"ENG\",\n      \"score\": \"224/8 (50 ov)\",\n      \"runs\": 224,\n      \"wickets\": 8,\n      \"overs\": 50\n    },\n    \"teamB\": {\n      \"name\": \"South Africa\",\n      \"shortName\": \"SA\",\n      \"score\": \"50/1 (3.1 ov)\",\n      \"runs\": 50,\n      \"wickets\": 1,\n      \"overs\": 3.1\n    },\n    \"team1\": \"224/8 (50 ov)\",\n    \"team2\": \"50/1 (3.1 ov)\"\n  },\n  \"currentInnings\": 2,\n  \"battingTeam\": \"team2\",\n  \"bowlingTeam\": \"team1\",\n  \"CRR\": \"15.79\",\n  \"RRR\": \"3.84\",\n  \"target\": 225,\n  \"striker\": {\n    \"name\": \"Jonny Bairstow\",\n    \"runs\": 36,\n    \"balls\": 7,\n    \"fours\": 3,\n    \"sixes\": 4,\n    \"SR\": 514.3\n  },\n  \"nonStriker\": {\n    \"name\": \"Quinton de Kock\",\n    \"runs\": 5,\n    \"balls\": 4,\n    \"fours\": 0,\n    \"sixes\": 0,\n    \"SR\": 125.0\n  },\n  \"bowler\": {\n    \"name\": \"David Miller\",\n    \"overs\": 0.5,\n    \"maidens\": 0,\n    \"runs\": 27,\n    \"wickets\": 0,\n    \"economy\": 32.4\n  },\n  \"recentBalls\": [\"1b\", \"Wd\", \"6\", \"W\", \"4\", \"6\", \"1\", \"2\", \"4\", \"4\", \"Nb\", \"6\", \"6\", \"6\"],\n  \"currentOverBalls\": [\"4\", \"4\", \"Nb\", \"6\", \"6\", \"6\"],\n  \"overStatusText\": \"South Africa need 175 runs in 46.5 ov\",\n  \"lastUpdated\": \"2026-11-25T06:50:00.000Z\"\n}"
+            }
+          ]
         },
         {
-          "name": "Scorecard Tab (Full Batting & Bowling Tables)",
+          "name": "9. Scorecard Tab (Batting & Bowling)",
           "request": {
             "method": "GET",
             "header": [
-              { "key": "Accept", "value": "application/json" }
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
             ],
             "url": {
               "raw": "{{baseUrl}}/api/live-matches/{{matchId}}/scorecard",
               "host": ["{{baseUrl}}"],
               "path": ["api", "live-matches", "{{matchId}}", "scorecard"]
             },
-            "description": "Returns full Innings 1 and Innings 2 batting cards (batter name, dismissal text, runs, balls, 4s, 6s, SR), bowling figures (overs, maidens, runs, wickets, economy), extras breakdown, and Fall of Wickets (FOW)."
+            "description": "Called when user selects the Scorecard tab. Returns full innings1 and innings2 batting tables (batter name, dismissal, runs, balls, 4s, 6s, SR), bowling figures (overs, maidens, runs, wickets, economy), extras, and fall of wickets."
           },
-          "response": []
+          "response": [
+            {
+              "name": "200 Success - Full Scorecard",
+              "originalRequest": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/api/live-matches/{{matchId}}/scorecard",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["api", "live-matches", "{{matchId}}", "scorecard"]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"success\": true,\n  \"matchId\": \"6afadf21ddb6e82a903d8be0\",\n  \"status\": \"LIVE\",\n  \"currentInnings\": 2,\n  \"battingTeam\": \"team2\",\n  \"bowlingTeam\": \"team1\",\n  \"target\": 225,\n  \"crr\": \"15.79\",\n  \"rrr\": \"3.84\",\n  \"innings1\": {\n    \"teamName\": \"England\",\n    \"score\": \"224/8 (50 ov)\",\n    \"totalRuns\": 224,\n    \"wickets\": 8,\n    \"overs\": 50,\n    \"extras\": {\n      \"wides\": 4,\n      \"noBalls\": 1,\n      \"byes\": 2,\n      \"legByes\": 3,\n      \"penalty\": 0,\n      \"total\": 10\n    },\n    \"batting\": [\n      {\n        \"playerName\": \"Jonny Bairstow\",\n        \"name\": \"Jonny Bairstow\",\n        \"runs\": 86,\n        \"balls\": 72,\n        \"fours\": 9,\n        \"sixes\": 3,\n        \"strikeRate\": 119.44,\n        \"SR\": 119.44,\n        \"dismissalText\": \"c De Kock b Rabada\",\n        \"isOut\": true\n      }\n    ],\n    \"bowling\": [\n      {\n        \"bowlerName\": \"Kagiso Rabada\",\n        \"name\": \"Kagiso Rabada\",\n        \"overs\": 10,\n        \"maidens\": 1,\n        \"runsConceded\": 42,\n        \"runs\": 42,\n        \"wickets\": 3,\n        \"economy\": 4.2\n      }\n    ],\n    \"fallOfWickets\": [\n      {\n        \"wicketNumber\": 1,\n        \"score\": \"42/1\",\n        \"over\": \"7.4\",\n        \"playerName\": \"Phil Salt\"\n      }\n    ]\n  },\n  \"innings2\": {\n    \"teamName\": \"South Africa\",\n    \"score\": \"50/1 (3.1 ov)\",\n    \"totalRuns\": 50,\n    \"wickets\": 1,\n    \"overs\": 3.1,\n    \"extras\": {\n      \"wides\": 1,\n      \"noBalls\": 1,\n      \"byes\": 1,\n      \"legByes\": 0,\n      \"penalty\": 0,\n      \"total\": 3\n    },\n    \"batting\": [\n      {\n        \"playerName\": \"Quinton de Kock\",\n        \"name\": \"Quinton de Kock\",\n        \"runs\": 5,\n        \"balls\": 4,\n        \"fours\": 0,\n        \"sixes\": 0,\n        \"strikeRate\": 125.0,\n        \"SR\": 125.0,\n        \"dismissalText\": \"not out\",\n        \"isOut\": false\n      },\n      {\n        \"playerName\": \"Reeza Hendricks\",\n        \"name\": \"Reeza Hendricks\",\n        \"runs\": 0,\n        \"balls\": 1,\n        \"fours\": 0,\n        \"sixes\": 0,\n        \"strikeRate\": 0,\n        \"SR\": 0,\n        \"dismissalText\": \"hit wicket b Reece Topley\",\n        \"isOut\": true\n      },\n      {\n        \"playerName\": \"Jonny Bairstow\",\n        \"name\": \"Jonny Bairstow\",\n        \"runs\": 32,\n        \"balls\": 6,\n        \"fours\": 2,\n        \"sixes\": 4,\n        \"strikeRate\": 533.3,\n        \"SR\": 533.3,\n        \"dismissalText\": \"not out\",\n        \"isOut\": false\n      }\n    ],\n    \"bowling\": [\n      {\n        \"bowlerName\": \"Reece Topley\",\n        \"name\": \"Reece Topley\",\n        \"overs\": 1.1,\n        \"maidens\": 0,\n        \"runsConceded\": 20,\n        \"runs\": 20,\n        \"wickets\": 1,\n        \"economy\": 17.14\n      },\n      {\n        \"bowlerName\": \"David Miller\",\n        \"name\": \"David Miller\",\n        \"overs\": 0.4,\n        \"maidens\": 0,\n        \"runsConceded\": 23,\n        \"runs\": 23,\n        \"wickets\": 0,\n        \"economy\": 34.5\n      }\n    ],\n    \"fallOfWickets\": [\n      {\n        \"wicketNumber\": 1,\n        \"score\": \"10/1\",\n        \"over\": \"1.4\",\n        \"playerName\": \"Reeza Hendricks\"\n      }\n    ]\n  }\n}"
+            }
+          ]
         },
         {
-          "name": "Commentary Tab (Ball-by-Ball Feed)",
+          "name": "10. Commentary Tab (Ball-by-Ball Feed)",
           "request": {
             "method": "GET",
             "header": [
-              { "key": "Accept", "value": "application/json" }
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
             ],
             "url": {
               "raw": "{{baseUrl}}/api/live-matches/{{matchId}}/commentary?limit=30",
@@ -217,29 +384,78 @@
                 {
                   "key": "limit",
                   "value": "30",
-                  "description": "Number of latest commentary balls to fetch (default 30, max 100)"
+                  "description": "Number of latest commentary entries (default 30, max 100)"
                 }
               ]
             },
-            "description": "Returns latest commentary entries posted by the admin scorer, including over.ball, text, runs scored, boundary indicators (4, 6), and wickets."
+            "description": "Called when user selects the Commentary tab. Returns array of ball-by-ball commentary entries with over, ball, runs, boundary indicators (4, 6), and wickets."
           },
-          "response": []
+          "response": [
+            {
+              "name": "200 Success - Commentary Feed",
+              "originalRequest": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/api/live-matches/{{matchId}}/commentary?limit=30",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["api", "live-matches", "{{matchId}}", "commentary"]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"success\": true,\n  \"matchId\": \"6afadf21ddb6e82a903d8be0\",\n  \"totalCount\": 15,\n  \"limit\": 30,\n  \"count\": 2,\n  \"currentStatusText\": \"South Africa need 175 runs in 46.5 ov\",\n  \"commentary\": [\n    {\n      \"over\": \"3.1\",\n      \"ball\": 1,\n      \"text\": \"David Miller to Jonny Bairstow, SIX! What a massive strike over the boundary!\",\n      \"runs\": 6,\n      \"isBoundary\": true,\n      \"boundaryType\": \"6\",\n      \"isSix\": true,\n      \"isWicket\": false,\n      \"timestamp\": \"2026-11-20T07:20:00.000Z\"\n    },\n    {\n      \"over\": \"3\",\n      \"ball\": 6,\n      \"text\": \"David Miller to Jonny Bairstow, SIX! Massive hit over deep mid-wicket!\",\n      \"runs\": 6,\n      \"isBoundary\": true,\n      \"boundaryType\": \"6\",\n      \"isSix\": true,\n      \"isWicket\": false,\n      \"timestamp\": \"2026-11-20T07:18:00.000Z\"\n    }\n  ]\n}"
+            }
+          ]
         },
         {
-          "name": "Squads & Playing XI Tab (11 vs 11)",
+          "name": "11. Squads Tab (Playing XI 11 vs 11)",
           "request": {
             "method": "GET",
             "header": [
-              { "key": "Accept", "value": "application/json" }
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
             ],
             "url": {
               "raw": "{{baseUrl}}/api/live-matches/{{matchId}}/squads",
               "host": ["{{baseUrl}}"],
               "path": ["api", "live-matches", "{{matchId}}", "squads"]
             },
-            "description": "Returns playing XI squads for both teams, including player name, role (BATSMAN, BOWLER, ALL_ROUNDER, WICKET_KEEPER), captain flag, and wicketkeeper flag."
+            "description": "Called when user selects the Playing XI / Squads tab. Returns teamA and teamB player rosters with role, captain, and wicketkeeper flags."
           },
-          "response": []
+          "response": [
+            {
+              "name": "200 Success - Playing XI Squads",
+              "originalRequest": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/api/live-matches/{{matchId}}/squads",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["api", "live-matches", "{{matchId}}", "squads"]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"success\": true,\n  \"matchId\": \"6afadf21ddb6e82a903d8be0\",\n  \"title\": \"England vs South Africa - 1st ODI\",\n  \"teamA\": {\n    \"name\": \"England\",\n    \"shortName\": \"ENG\",\n    \"flagUrl\": \"https://example.com/eng.png\",\n    \"playerCount\": 11,\n    \"players\": [\n      {\n        \"name\": \"Jos Buttler\",\n        \"role\": \"WICKET_KEEPER\",\n        \"isCaptain\": true,\n        \"isWicketKeeper\": true\n      },\n      {\n        \"name\": \"Jonny Bairstow\",\n        \"role\": \"BATSMAN\",\n        \"isCaptain\": false,\n        \"isWicketKeeper\": false\n      }\n    ]\n  },\n  \"teamB\": {\n    \"name\": \"South Africa\",\n    \"shortName\": \"SA\",\n    \"flagUrl\": \"https://example.com/sa.png\",\n    \"playerCount\": 11,\n    \"players\": [\n      {\n        \"name\": \"Temba Bavuma\",\n        \"role\": \"BATSMAN\",\n        \"isCaptain\": true,\n        \"isWicketKeeper\": false\n      },\n      {\n        \"name\": \"Quinton de Kock\",\n        \"role\": \"WICKET_KEEPER\",\n        \"isCaptain\": false,\n        \"isWicketKeeper\": true\n      }\n    ]\n  }\n}"
+            }
+          ]
         }
       ]
     }

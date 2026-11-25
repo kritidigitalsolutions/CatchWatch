@@ -28,7 +28,7 @@ export const getFeaturedMatch = async () => {
 };
 
 /**
- * Fetch single match details by ID
+ * Fetch single match details by ID (called ONCE when match screen opens)
  */
 export const getMatchDetails = async (id) => {
   try {
@@ -41,7 +41,21 @@ export const getMatchDetails = async (id) => {
 };
 
 /**
- * Fetch detailed match scorecard
+ * ⚡ Ultra-lightweight Live Activity & Crease Polling (poll every 3-5 seconds)
+ * Returns live scores, CRR, RRR, Target, Striker, Non-Striker, Bowler, Recent Balls
+ */
+export const getMatchLiveActivity = async (id) => {
+  try {
+    const res = await axiosInstance.get(`/live-matches/${id}/live-activity`);
+    return res.data;
+  } catch (error) {
+    console.error("getMatchLiveActivity error:", error);
+    throw error;
+  }
+};
+
+/**
+ * Fetch detailed match scorecard (Innings 1 & 2 batting, bowling, extras, fallOfWickets)
  */
 export const getMatchScorecard = async (id) => {
   try {
@@ -62,6 +76,19 @@ export const getMatchCommentary = async (id, limit = 30) => {
     return res.data;
   } catch (error) {
     console.error("getMatchCommentary error:", error);
+    throw error;
+  }
+};
+
+/**
+ * Fetch playing XI squads (11 vs 11) for both teams
+ */
+export const getMatchSquads = async (id) => {
+  try {
+    const res = await axiosInstance.get(`/live-matches/${id}/squads`);
+    return res.data;
+  } catch (error) {
+    console.error("getMatchSquads error:", error);
     throw error;
   }
 };
