@@ -1,6 +1,6 @@
 import "./Sidebar.css";
 import { NavLink } from "react-router-dom";
-import { X, BarChart3, Users, Plus, Film, FileText, HelpCircle, CreditCard, Settings, LogOut, Star, Bell, MessageSquare, Clapperboard, Play, Layers, ShieldCheck, BadgeCheck, Megaphone, ShieldAlert, Activity, DollarSign, Apple, Radio } from "lucide-react";
+import { X, BarChart3, Users, Plus, Film, FileText, HelpCircle, CreditCard, Settings, LogOut, Star, Bell, MessageSquare, Clapperboard, Play, Layers, ShieldCheck, BadgeCheck, Megaphone, ShieldAlert, Activity, DollarSign, Apple, Radio, Tv } from "lucide-react";
 
 const NAV = [
   { id: "dashboard", label: "Dashboard", icon: BarChart3, color: "#FF7A1A" },
@@ -9,6 +9,7 @@ const NAV = [
   { id: "add-content", label: "Add Content", icon: Plus, color: "#10b981" },
   { id: "content", label: "Content Library", icon: Film, color: "#f59e0b" },
   { id: "live-matches", label: "Live Matches", icon: Radio, color: "#ef4444" },
+  { id: "live-shows", label: "Live Shows", icon: Tv, color: "#ec4899" },
   { id: "ad-management", label: "Advertisement & Campaigns", icon: Megaphone, color: "#ec4899" },
   { id: "verification", label: "Orange Tick Management", icon: BadgeCheck, color: "#FF7A1A" },
   { id: "apple-payments", label: "Apple In-App Payments", icon: Apple, color: "#38bdf8" },

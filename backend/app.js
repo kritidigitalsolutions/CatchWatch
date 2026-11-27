@@ -326,6 +326,13 @@ const userLiveMatchRoutes = require("./routes/user/liveMatch.routes");
 
 app.use("/api/admin/live-matches", adminLiveMatchRoutes);
 app.use("/api/live-matches", userLiveMatchRoutes);
+
+// LIVE SHOWS & BROADCASTS ROUTES
+const adminLiveShowRoutes = require("./routes/admin/liveShow.routes");
+const userLiveShowRoutes = require("./routes/user/liveShow.routes");
+
+app.use("/api/admin/live-shows", adminLiveShowRoutes);
+app.use("/api/live-shows", userLiveShowRoutes);
 // ========================================
 // GLOBAL ERROR HANDLER
 // ========================================

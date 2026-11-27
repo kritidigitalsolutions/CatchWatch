@@ -413,6 +413,8 @@ exports.updateMatch = async (req, res) => {
       }
     }
 
+    match.markModified("team1");
+    match.markModified("team2");
     await match.save();
 
     return res.status(200).json({
@@ -510,6 +512,8 @@ exports.updateMatchScore = async (req, res) => {
     if (team2Score !== undefined) match.team2.score = team2Score.trim();
     if (currentStatusText !== undefined) match.currentStatusText = currentStatusText.trim();
 
+    match.markModified("team1");
+    match.markModified("team2");
     await match.save();
 
     return res.status(200).json({
@@ -562,6 +566,8 @@ exports.updateMatchSquads = async (req, res) => {
       }));
     }
 
+    match.markModified("team1");
+    match.markModified("team2");
     await match.save();
 
     return res.status(200).json({
@@ -631,6 +637,8 @@ exports.updateFullScorecard = async (req, res) => {
     if (innings1) match.innings1 = { ...match.innings1, ...innings1 };
     if (innings2) match.innings2 = { ...match.innings2, ...innings2 };
 
+    match.markModified("team1");
+    match.markModified("team2");
     await match.save();
 
     return res.status(200).json({
@@ -712,7 +720,9 @@ exports.recordBallAction = async (req, res) => {
       match.currentStatusText = prev.currentStatusText || "";
       if (Array.isArray(prev.commentary)) match.commentary = prev.commentary;
 
-      await match.save();
+      match.markModified("team1");
+    match.markModified("team2");
+    await match.save();
       return res.status(200).json({
         success: true,
         message: "Last ball undone successfully",
@@ -783,7 +793,9 @@ exports.recordBallAction = async (req, res) => {
         }
       }
 
-      await match.save();
+      match.markModified("team1");
+    match.markModified("team2");
+    await match.save();
       return res.status(200).json({
         success: true,
         message: `${role} changed to ${pName}`,
@@ -796,7 +808,9 @@ exports.recordBallAction = async (req, res) => {
       const temp = match.striker;
       match.striker = match.nonStriker;
       match.nonStriker = temp;
-      await match.save();
+      match.markModified("team1");
+    match.markModified("team2");
+    await match.save();
       return res.status(200).json({
         success: true,
         message: `Strike swapped: ${match.striker?.name || "Striker"} is now on strike`,
@@ -832,7 +846,9 @@ exports.recordBallAction = async (req, res) => {
           match.currentBowler.economy = 0;
         }
       }
-      await match.save();
+      match.markModified("team1");
+    match.markModified("team2");
+    await match.save();
       return res.status(200).json({
         success: true,
         message: `New over started with bowler ${match.currentBowler.name || "Bowler"}`,
@@ -843,7 +859,9 @@ exports.recordBallAction = async (req, res) => {
     // ── ACTION: CLEAR OVER ──
     if (action === "CLEAR_OVER") {
       match.currentOverBalls = [];
-      await match.save();
+      match.markModified("team1");
+    match.markModified("team2");
+    await match.save();
       return res.status(200).json({
         success: true,
         message: "Current over balls reset",
@@ -919,7 +937,9 @@ exports.recordBallAction = async (req, res) => {
       }
 
       match[teamInningsKey] = targetInn;
-      await match.save();
+      match.markModified("team1");
+    match.markModified("team2");
+    await match.save();
       return res.status(200).json({
         success: true,
         message: `Runs adjusted (${delta > 0 ? "+" + delta : delta})`,
@@ -965,7 +985,9 @@ exports.recordBallAction = async (req, res) => {
       if (totalB > 0) match.crr = ((activeInnings.totalRuns / totalB) * 6).toFixed(2);
 
       match[inningsKey] = activeInnings;
-      await match.save();
+      match.markModified("team1");
+    match.markModified("team2");
+    await match.save();
       return res.status(200).json({
         success: true,
         message: `Balls adjusted (${delta > 0 ? "+1" : "-1"})`,
@@ -984,7 +1006,9 @@ exports.recordBallAction = async (req, res) => {
       else match.team2.score = activeInnings.score;
 
       match[inningsKey] = activeInnings;
-      await match.save();
+      match.markModified("team1");
+    match.markModified("team2");
+    await match.save();
       return res.status(200).json({
         success: true,
         message: `Wickets adjusted (${delta > 0 ? "+1" : "-1"})`,
@@ -1007,7 +1031,9 @@ exports.recordBallAction = async (req, res) => {
       else match.team2.score = activeInnings.score;
 
       match[inningsKey] = activeInnings;
-      await match.save();
+      match.markModified("team1");
+    match.markModified("team2");
+    await match.save();
       return res.status(200).json({
         success: true,
         message: `Over adjusted (${delta > 0 ? "+1 Over" : "-1 Over"})`,
@@ -1028,7 +1054,9 @@ exports.recordBallAction = async (req, res) => {
         match.bowlingTeam = "team2";
       }
       match.currentOverBalls = [];
-      await match.save();
+      match.markModified("team1");
+    match.markModified("team2");
+    await match.save();
       return res.status(200).json({
         success: true,
         message: `Switched to Innings ${targetInn}`,
@@ -1382,6 +1410,8 @@ exports.recordBallAction = async (req, res) => {
 
     match.currentStatusText = autoComment;
     match[inningsKey] = activeInnings;
+    match.markModified("team1");
+    match.markModified("team2");
     await match.save();
 
     return res.status(200).json({
@@ -1434,6 +1464,8 @@ exports.addCommentary = async (req, res) => {
     if (match.commentary.length > 50) match.commentary.pop();
     match.currentStatusText = text.trim();
 
+    match.markModified("team1");
+    match.markModified("team2");
     await match.save();
 
     return res.status(200).json({

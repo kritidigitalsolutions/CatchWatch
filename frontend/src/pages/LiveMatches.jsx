@@ -468,14 +468,14 @@ export default function LiveMatches() {
     }
   };
 
-  // Real-time polling while console modal is open (keeps scores synced live)
+  // Real-time polling while console modal is open (keeps scores synced live ONLY on SCORER tab)
   useEffect(() => {
-    if (!showConsoleModal || !consoleMatch?._id) return;
+    if (!showConsoleModal || !consoleMatch?._id || consoleTab !== "SCORER") return;
     const consoleTimer = setInterval(() => {
       refreshConsoleData();
     }, 4000);
     return () => clearInterval(consoleTimer);
-  }, [showConsoleModal, consoleMatch?._id]);
+  }, [showConsoleModal, consoleMatch?._id, consoleTab]);
 
   // 1-Click Record Ball Action (Runs, Extras)
   const handleRecordBall = async (action, runs = 0, extraType = null) => {
@@ -744,118 +744,6 @@ export default function LiveMatches() {
     }
   };
 
-  // Auto-Fill Standard 11 Players for Teams
-  const handleAutoSeedSquads = async () => {
-    if (!consoleMatch?._id) return;
-
-    const t1Name = (consoleMatch.team1?.name || "").toLowerCase();
-    const t2Name = (consoleMatch.team2?.name || "").toLowerCase();
-
-    const sampleIndia = [
-      { name: "Rohit Sharma", role: "BATSMAN", isCaptain: true, isWicketKeeper: false },
-      { name: "Shubman Gill", role: "BATSMAN", isCaptain: false, isWicketKeeper: false },
-      { name: "Virat Kohli", role: "BATSMAN", isCaptain: false, isWicketKeeper: false },
-      { name: "Suryakumar Yadav", role: "BATSMAN", isCaptain: false, isWicketKeeper: false },
-      { name: "Rishabh Pant", role: "WICKET_KEEPER", isCaptain: false, isWicketKeeper: true },
-      { name: "Hardik Pandya", role: "ALL_ROUNDER", isCaptain: false, isWicketKeeper: false },
-      { name: "Ravindra Jadeja", role: "ALL_ROUNDER", isCaptain: false, isWicketKeeper: false },
-      { name: "Axar Patel", role: "ALL_ROUNDER", isCaptain: false, isWicketKeeper: false },
-      { name: "Kuldeep Yadav", role: "BOWLER", isCaptain: false, isWicketKeeper: false },
-      { name: "Jasprit Bumrah", role: "BOWLER", isCaptain: false, isWicketKeeper: false },
-      { name: "Mohammed Siraj", role: "BOWLER", isCaptain: false, isWicketKeeper: false },
-    ];
-
-    const sampleAustralia = [
-      { name: "Travis Head", role: "BATSMAN", isCaptain: false, isWicketKeeper: false },
-      { name: "David Warner", role: "BATSMAN", isCaptain: false, isWicketKeeper: false },
-      { name: "Mitchell Marsh", role: "ALL_ROUNDER", isCaptain: true, isWicketKeeper: false },
-      { name: "Glenn Maxwell", role: "ALL_ROUNDER", isCaptain: false, isWicketKeeper: false },
-      { name: "Marcus Stoinis", role: "ALL_ROUNDER", isCaptain: false, isWicketKeeper: false },
-      { name: "Tim David", role: "BATSMAN", isCaptain: false, isWicketKeeper: false },
-      { name: "Alex Carey", role: "WICKET_KEEPER", isCaptain: false, isWicketKeeper: true },
-      { name: "Pat Cummins", role: "BOWLER", isCaptain: false, isWicketKeeper: false },
-      { name: "Mitchell Starc", role: "BOWLER", isCaptain: false, isWicketKeeper: false },
-      { name: "Adam Zampa", role: "BOWLER", isCaptain: false, isWicketKeeper: false },
-      { name: "Josh Hazlewood", role: "BOWLER", isCaptain: false, isWicketKeeper: false },
-    ];
-
-    const sampleEngland = [
-      { name: "Jos Buttler", role: "WICKET_KEEPER", isCaptain: true, isWicketKeeper: true },
-      { name: "Phil Salt", role: "BATSMAN", isCaptain: false, isWicketKeeper: false },
-      { name: "Harry Brook", role: "BATSMAN", isCaptain: false, isWicketKeeper: false },
-      { name: "Jonny Bairstow", role: "BATSMAN", isCaptain: false, isWicketKeeper: false },
-      { name: "Moeen Ali", role: "ALL_ROUNDER", isCaptain: false, isWicketKeeper: false },
-      { name: "Liam Livingstone", role: "ALL_ROUNDER", isCaptain: false, isWicketKeeper: false },
-      { name: "Sam Curran", role: "ALL_ROUNDER", isCaptain: false, isWicketKeeper: false },
-      { name: "Chris Jordan", role: "BOWLER", isCaptain: false, isWicketKeeper: false },
-      { name: "Jofra Archer", role: "BOWLER", isCaptain: false, isWicketKeeper: false },
-      { name: "Adil Rashid", role: "BOWLER", isCaptain: false, isWicketKeeper: false },
-      { name: "Reece Topley", role: "BOWLER", isCaptain: false, isWicketKeeper: false },
-    ];
-
-    const sampleSouthAfrica = [
-      { name: "Quinton de Kock", role: "WICKET_KEEPER", isCaptain: false, isWicketKeeper: true },
-      { name: "Reeza Hendricks", role: "BATSMAN", isCaptain: false, isWicketKeeper: false },
-      { name: "Aiden Markram", role: "BATSMAN", isCaptain: true, isWicketKeeper: false },
-      { name: "Heinrich Klaasen", role: "BATSMAN", isCaptain: false, isWicketKeeper: false },
-      { name: "David Miller", role: "BATSMAN", isCaptain: false, isWicketKeeper: false },
-      { name: "Tristan Stubbs", role: "BATSMAN", isCaptain: false, isWicketKeeper: false },
-      { name: "Marco Jansen", role: "ALL_ROUNDER", isCaptain: false, isWicketKeeper: false },
-      { name: "Keshav Maharaj", role: "BOWLER", isCaptain: false, isWicketKeeper: false },
-      { name: "Kagiso Rabada", role: "BOWLER", isCaptain: false, isWicketKeeper: false },
-      { name: "Anrich Nortje", role: "BOWLER", isCaptain: false, isWicketKeeper: false },
-      { name: "Tabraiz Shamsi", role: "BOWLER", isCaptain: false, isWicketKeeper: false },
-    ];
-
-    const pickSquad = (name, fallback) => {
-      if (name.includes("ind")) return sampleIndia;
-      if (name.includes("aus")) return sampleAustralia;
-      if (name.includes("eng")) return sampleEngland;
-      if (name.includes("south") || name.includes("sa")) return sampleSouthAfrica;
-      return fallback;
-    };
-
-    const s1 = pickSquad(t1Name, sampleIndia);
-    const s2 = pickSquad(t2Name, sampleAustralia);
-
-    try {
-      const res = await API.put(`/admin/live-matches/${consoleMatch._id}/squads`, {
-        team1Players: s1,
-        team2Players: s2,
-      });
-      if (res.data?.success) {
-        const bSquad = consoleMatch.battingTeam === "team2" ? s2 : s1;
-        const bwSquad = consoleMatch.battingTeam === "team2" ? s1 : s2;
-
-        const updatedMatch = {
-          ...consoleMatch,
-          team1: { ...consoleMatch.team1, players: s1 },
-          team2: { ...consoleMatch.team2, players: s2 },
-          striker: {
-            ...consoleMatch.striker,
-            name: consoleMatch.striker?.name || bSquad[0]?.name || "Batsman 1",
-          },
-          nonStriker: {
-            ...consoleMatch.nonStriker,
-            name: consoleMatch.nonStriker?.name || bSquad[1]?.name || "Batsman 2",
-          },
-          currentBowler: {
-            ...consoleMatch.currentBowler,
-            name:
-              consoleMatch.currentBowler?.name ||
-              bwSquad[bwSquad.length - 1]?.name ||
-              "Bowler 1",
-          },
-        };
-        setConsoleMatch(updatedMatch);
-        showToast("⚡ Standard Playing XI (11 vs 11) populated & saved!");
-        refreshConsoleData();
-      }
-    } catch (err) {
-      showToast("Failed to populate squads", "error");
-    }
-  };
-
   // Open Wicket Dialog with intelligent pre-selections
   const handleOpenWicketDialog = () => {
     const bSquad =
@@ -939,24 +827,23 @@ export default function LiveMatches() {
     }
   };
 
-  // Add player to Squad
-  const handleAddPlayer = () => {
+  // Add player to Squad (Instantly persists to database)
+  const handleAddPlayer = async () => {
     if (!newPlayer.name.trim()) {
       showToast("Please enter player name", "error");
       return;
     }
     const targetTeam = squadTeam;
     const currentList = consoleMatch[targetTeam]?.players || [];
-    const updatedList = [
-      ...currentList,
-      {
-        name: newPlayer.name.trim(),
-        role: newPlayer.role,
-        isCaptain: newPlayer.isCaptain,
-        isWicketKeeper: newPlayer.isWicketKeeper,
-      },
-    ];
+    const newEntry = {
+      name: newPlayer.name.trim(),
+      role: newPlayer.role || "BATSMAN",
+      isCaptain: Boolean(newPlayer.isCaptain),
+      isWicketKeeper: Boolean(newPlayer.isWicketKeeper),
+    };
+    const updatedList = [...currentList, newEntry];
 
+    // Optimistically update local state
     setConsoleMatch((prev) => ({
       ...prev,
       [targetTeam]: {
@@ -964,14 +851,39 @@ export default function LiveMatches() {
         players: updatedList,
       },
     }));
-
     setNewPlayer({ name: "", role: "BATSMAN", isCaptain: false, isWicketKeeper: false });
+
+    // Persist immediately to database
+    if (consoleMatch?._id) {
+      try {
+        const team1Players = targetTeam === "team1" ? updatedList : (consoleMatch.team1?.players || []);
+        const team2Players = targetTeam === "team2" ? updatedList : (consoleMatch.team2?.players || []);
+        const res = await API.put(`/admin/live-matches/${consoleMatch._id}/squads`, {
+          team1Players,
+          team2Players,
+        });
+        if (res.data?.success) {
+          showToast(`Player "${newEntry.name}" added to ${consoleMatch[targetTeam]?.name || targetTeam}!`);
+          setConsoleMatch((prev) => ({
+            ...prev,
+            team1: { ...prev.team1, players: res.data.team1Players },
+            team2: { ...prev.team2, players: res.data.team2Players },
+          }));
+        }
+      } catch (err) {
+        console.error("Failed to add player:", err);
+        showToast(err.response?.data?.message || "Failed to add player to server", "error");
+      }
+    }
   };
 
-  // Remove player from Squad
-  const handleRemovePlayer = (teamKey, idx) => {
+  // Remove player from Squad (Instantly persists to database)
+  const handleRemovePlayer = async (teamKey, idx) => {
     const currentList = consoleMatch[teamKey]?.players || [];
+    const removedPlayer = currentList[idx];
     const updatedList = currentList.filter((_, i) => i !== idx);
+
+    // Optimistically update local state
     setConsoleMatch((prev) => ({
       ...prev,
       [teamKey]: {
@@ -979,10 +891,33 @@ export default function LiveMatches() {
         players: updatedList,
       },
     }));
+
+    // Persist immediately to database
+    if (consoleMatch?._id) {
+      try {
+        const team1Players = teamKey === "team1" ? updatedList : (consoleMatch.team1?.players || []);
+        const team2Players = teamKey === "team2" ? updatedList : (consoleMatch.team2?.players || []);
+        const res = await API.put(`/admin/live-matches/${consoleMatch._id}/squads`, {
+          team1Players,
+          team2Players,
+        });
+        if (res.data?.success) {
+          showToast(`Removed "${removedPlayer?.name || 'Player'}" from ${consoleMatch[teamKey]?.name || teamKey}`);
+          setConsoleMatch((prev) => ({
+            ...prev,
+            team1: { ...prev.team1, players: res.data.team1Players },
+            team2: { ...prev.team2, players: res.data.team2Players },
+          }));
+        }
+      } catch (err) {
+        console.error("Failed to remove player:", err);
+        showToast(err.response?.data?.message || "Failed to remove player from server", "error");
+      }
+    }
   };
 
-  // Bulk import players (newline or comma separated)
-  const handleBulkImport = () => {
+  // Bulk import players (newline or comma separated, persists immediately)
+  const handleBulkImport = async () => {
     if (!bulkSquadText.trim()) return;
     const lines = bulkSquadText
       .split(/[\n,]+/)
@@ -1011,16 +946,38 @@ export default function LiveMatches() {
 
     const targetTeam = squadTeam;
     const currentList = consoleMatch[targetTeam]?.players || [];
+    const updatedList = [...currentList, ...parsed];
+
     setConsoleMatch((prev) => ({
       ...prev,
       [targetTeam]: {
         ...prev[targetTeam],
-        players: [...currentList, ...parsed],
+        players: updatedList,
       },
     }));
-
     setBulkSquadText("");
-    showToast(`Added ${parsed.length} players to ${consoleMatch[targetTeam]?.name}! Click Save Squads to persist.`);
+
+    if (consoleMatch?._id) {
+      try {
+        const team1Players = targetTeam === "team1" ? updatedList : (consoleMatch.team1?.players || []);
+        const team2Players = targetTeam === "team2" ? updatedList : (consoleMatch.team2?.players || []);
+        const res = await API.put(`/admin/live-matches/${consoleMatch._id}/squads`, {
+          team1Players,
+          team2Players,
+        });
+        if (res.data?.success) {
+          showToast(`Added ${parsed.length} players to ${consoleMatch[targetTeam]?.name || targetTeam}!`);
+          setConsoleMatch((prev) => ({
+            ...prev,
+            team1: { ...prev.team1, players: res.data.team1Players },
+            team2: { ...prev.team2, players: res.data.team2Players },
+          }));
+        }
+      } catch (err) {
+        console.error("Failed to save imported players:", err);
+        showToast("Failed to save imported players to server", "error");
+      }
+    }
   };
 
   // Save Squads to Database
@@ -2039,14 +1996,14 @@ export default function LiveMatches() {
                     <div className="lm-empty-squad-alert">
                       <div className="empty-alert-text">
                         <AlertTriangle size={16} className="text-amber" />
-                        <span>Squads are empty for this match. Click to load standard 11 players for both teams:</span>
+                        <span>Squads are empty for this match. Please add players in the Squads tab:</span>
                       </div>
                       <button
                         type="button"
                         className="lm-btn-seed-inline"
-                        onClick={handleAutoSeedSquads}
+                        onClick={() => setConsoleTab("SQUADS")}
                       >
-                        <Zap size={14} /> ⚡ Auto-Fill 11 Players for Teams
+                        <Users size={14} /> Go to Squads Tab
                       </button>
                     </div>
                   )}
@@ -2656,14 +2613,6 @@ export default function LiveMatches() {
                       {consoleMatch.team2?.name} Squad ({consoleMatch.team2?.players?.length || 0})
                     </button>
                   </div>
-                  <button
-                    type="button"
-                    className="lm-btn-seed-squads"
-                    onClick={handleAutoSeedSquads}
-                    title="Automatically fill standard 11 players for both teams"
-                  >
-                    <Zap size={14} /> ⚡ Auto-Fill 11 Players for Teams
-                  </button>
                 </div>
 
                 {/* Add Player Form */}
@@ -2672,7 +2621,7 @@ export default function LiveMatches() {
                   <div className="add-player-inputs">
                     <input
                       type="text"
-                      placeholder="Player Name (e.g. Virat Kohli)..."
+                      placeholder="Enter Player Name..."
                       value={newPlayer.name}
                       onChange={(e) => setNewPlayer({ ...newPlayer, name: e.target.value })}
                       className="player-name-input"
@@ -2716,12 +2665,12 @@ export default function LiveMatches() {
                 {/* Bulk Import Box */}
                 <div className="lm-bulk-import-box">
                   <div className="bulk-title">
-                    <span>Or Quick Bulk Paste Squad (11 Players):</span>
+                    <span>Or Quick Bulk Paste Squad Players:</span>
                   </div>
                   <div className="bulk-row">
                     <textarea
                       rows={2}
-                      placeholder="Paste comma or newline separated names e.g. Rohit Sharma (c), Virat Kohli, Rishabh Pant (wk), Jasprit Bumrah..."
+                      placeholder="Paste comma or newline separated player names e.g. Player 1 (c), Player 2 (wk), Player 3..."
                       value={bulkSquadText}
                       onChange={(e) => setBulkSquadText(e.target.value)}
                       className="bulk-textarea"

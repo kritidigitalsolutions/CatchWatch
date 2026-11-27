@@ -19,7 +19,7 @@ const startServer = async () => {
     await createDefaultAdmin();
     await createDefaultDemoUser();
     await createDefaultSponsoredAds();
-    await createDefaultLiveMatches();
+    // createDefaultLiveMatches removed to ensure all matches and players are created only via Admin Panel
 
     // Create HTTP Server
     const server = http.createServer(app);

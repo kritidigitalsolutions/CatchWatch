@@ -7,6 +7,7 @@ import { getMovies } from '../api/movieApi';
 import { getAllContent } from '../api/contentApi';
 import { getCategories } from '../api/categoryApi';
 import { getActiveMatches } from '../api/liveMatchApi';
+import { getActiveLiveShows } from '../api/liveShowApi';
 
 const HomePage = () => {
   const navigate = useNavigate();
@@ -21,6 +22,7 @@ const HomePage = () => {
   const [moviesList, setMoviesList] = useState([]);
   const [categoriesList, setCategoriesList] = useState([]);
   const [liveMatches, setLiveMatches] = useState([]);
+  const [liveShows, setLiveShows] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
 
   // Fallback images
@@ -56,15 +58,20 @@ const HomePage = () => {
       setIsLoading(true);
 
       try {
-        // Fetch categories, content, and live matches in parallel
-        const [contentRes, catRes, liveRes] = await Promise.all([
+        // Fetch categories, content, live matches, and live shows in parallel
+        const [contentRes, catRes, liveRes, showsRes] = await Promise.all([
           getAllContent(),
           getCategories(),
           getActiveMatches({ limit: 6 }).catch(() => null),
+          getActiveLiveShows({ limit: 8 }).catch(() => null),
         ]);
 
         if (liveRes && liveRes.matches && liveRes.matches.length > 0) {
           setLiveMatches(liveRes.matches);
+        }
+
+        if (showsRes && showsRes.data && showsRes.data.shows && showsRes.data.shows.length > 0) {
+          setLiveShows(showsRes.data.shows);
         }
 
         if (contentRes && contentRes.content && contentRes.content.length > 0) {
@@ -306,42 +313,38 @@ const HomePage = () => {
         </div>
       )}
 
-      {/* LIVE CRICKET MATCHES STRIP - LIGHT THEME (MATCHES CATCHWATCH WEBSITE THEME) */}
+      {/* LIVE CRICKET MATCHES STRIP - CLEAN COMPACT RAIL */}
       {liveMatches.length > 0 && (
-        <div className="bg-white border border-orange-200/80 rounded-2xl p-3 sm:p-4 my-3 sm:my-5 shadow-sm relative overflow-hidden">
-          {/* Subtle Ambient Background Warm Glow */}
-          <div className="absolute -top-24 -left-24 w-72 h-72 bg-orange-400/5 rounded-full blur-3xl pointer-events-none" />
-          <div className="absolute -bottom-24 -right-24 w-72 h-72 bg-red-400/5 rounded-full blur-3xl pointer-events-none" />
-
+        <div className="my-1.5 sm:my-2.5">
           {/* Section Header */}
-          <div className="flex flex-wrap justify-between items-center gap-2 mb-3 relative z-10">
-            <div className="flex items-center gap-2.5">
-              <span className="relative flex h-2.5 w-2.5">
+          <div className="flex justify-between items-center gap-2 mb-1.5">
+            <div className="flex items-center gap-2">
+              <span className="relative flex h-2 w-2">
                 <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-80" />
-                <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-red-500" />
+                <span className="relative inline-flex rounded-full h-2 w-2 bg-red-500" />
               </span>
               <div>
-                <h3 className="text-sm sm:text-lg font-black text-gray-900 flex items-center gap-1.5 tracking-tight">
-                  <MdLiveTv className="text-red-500 text-lg sm:text-xl" />
+                <h3 className="text-sm sm:text-base font-black text-gray-900 flex items-center gap-1.5 tracking-tight">
+                  <MdLiveTv className="text-red-500 text-base sm:text-lg" />
                   Live Cricket Matches
                 </h3>
-                <p className="text-[10px] sm:text-xs text-gray-500 font-medium">
-                  Stream live cricket matches, real-time ball-by-ball scoreboards & tournament broadcasts
+                <p className="text-[10px] sm:text-xs text-gray-500 font-medium hidden sm:block">
+                  Stream live cricket matches & tournament broadcasts
                 </p>
               </div>
             </div>
 
             <button
               onClick={() => navigate("/live-cricket")}
-              className="text-[10px] sm:text-xs font-bold bg-gradient-to-r from-red-500 to-brand-orange hover:from-red-600 hover:to-orange-600 text-white px-3 py-1.5 rounded-lg transition-all shadow-sm shadow-orange-500/20 flex items-center gap-1 hover:scale-[1.02]"
+              className="text-[10px] sm:text-xs font-bold bg-gradient-to-r from-red-500 to-brand-orange hover:from-red-600 hover:to-orange-600 text-white px-2.5 py-1 rounded-lg transition-all shadow-xs flex items-center gap-1 hover:scale-[1.02]"
             >
               <span>Explore All</span>
               <span>→</span>
             </button>
           </div>
 
-          {/* Matches Rail / Grid (Mobile: Horizontal swipe rail, Web: Compact 3-4 col grid) */}
-          <div className="flex sm:grid sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-3 xl:grid-cols-4 gap-3 sm:gap-3.5 overflow-x-auto sm:overflow-visible pb-2 sm:pb-0 snap-x sm:snap-none hide-scrollbar relative z-10">
+          {/* Matches Rail */}
+          <div className="flex gap-2.5 sm:gap-3 overflow-x-auto pb-1.5 snap-x hide-scrollbar">
             {liveMatches.slice(0, 10).map((match) => {
               const bannerSrc = getCricketBannerUrl(match.banner || match.streamThumbnailUrl);
               const team1Logo = getCricketLogoUrl(match.team1?.logo);
@@ -351,7 +354,7 @@ const HomePage = () => {
                 <div
                   key={match._id}
                   onClick={() => navigate(`/live-cricket/${match._id}`)}
-                  className="w-[260px] sm:w-auto flex-shrink-0 sm:flex-shrink snap-start group bg-white border border-gray-200/90 hover:border-brand-orange/60 rounded-xl overflow-hidden cursor-pointer transition-all duration-300 hover:-translate-y-1 hover:shadow-md shadow-xs flex flex-col justify-between"
+                  className="w-[240px] sm:w-[260px] flex-shrink-0 snap-start group bg-white border border-gray-200/90 hover:border-brand-orange/60 rounded-xl overflow-hidden cursor-pointer transition-all duration-300 hover:-translate-y-1 hover:shadow-md shadow-xs flex flex-col justify-between"
                 >
                   {/* Top Match Banner Poster (Compact Height: h-24 sm:h-28) */}
                   <div className="relative h-24 sm:h-28 w-full overflow-hidden bg-gray-100">
@@ -489,6 +492,107 @@ const HomePage = () => {
                       <span className="text-brand-orange font-bold flex items-center gap-0.5 group-hover:text-orange-700 text-[9px] sm:text-[10px] flex-shrink-0">
                         <FaPlay className="text-[7px]" /> Watch
                       </span></div>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
+
+      {/* LIVE SHOWS & BROADCASTS STRIP - CLEAN COMPACT RAIL */}
+      {liveShows.length > 0 && (
+        <div className="my-1.5 sm:my-2.5">
+          {/* Section Header */}
+          <div className="flex justify-between items-center gap-2 mb-1.5">
+            <div className="flex items-center gap-2">
+              <span className="relative flex h-2 w-2">
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-rose-400 opacity-80" />
+                <span className="relative inline-flex rounded-full h-2 w-2 bg-rose-500" />
+              </span>
+              <div>
+                <h3 className="text-sm sm:text-base font-black text-gray-900 flex items-center gap-1.5 tracking-tight">
+                  <MdLiveTv className="text-rose-500 text-base sm:text-lg" />
+                  Live Shows & Events
+                </h3>
+                <p className="text-[10px] sm:text-xs text-gray-500 font-medium hidden sm:block">
+                  Watch live concerts, podcasts, talk shows and special broadcasts
+                </p>
+              </div>
+            </div>
+
+            <button
+              onClick={() => navigate("/live-shows")}
+              className="text-[10px] sm:text-xs font-bold bg-gradient-to-r from-rose-500 to-brand-orange hover:from-rose-600 hover:to-orange-600 text-white px-2.5 py-1 rounded-lg transition-all shadow-xs flex items-center gap-1 hover:scale-[1.02]"
+            >
+              <span>Explore All</span>
+              <span>→</span>
+            </button>
+          </div>
+
+          {/* Shows Horizontal Rail */}
+          <div className="flex gap-2.5 sm:gap-3 overflow-x-auto pb-1.5 snap-x hide-scrollbar">
+            {liveShows.slice(0, 8).map((show) => {
+              const thumbSrc =
+                show.thumbnail ||
+                show.banner ||
+                (show.youtubeVideoId
+                  ? `https://img.youtube.com/vi/${show.youtubeVideoId}/hqdefault.jpg`
+                  : "https://images.unsplash.com/photo-1516450360452-9312f5e86fc7?w=800&auto=format&fit=crop&q=60");
+
+              return (
+                <div
+                  key={show._id}
+                  onClick={() => navigate(`/live-shows/${show._id}`)}
+                  className="w-[220px] sm:w-[240px] flex-shrink-0 snap-start group bg-white border border-gray-200/90 hover:border-rose-400/60 rounded-xl overflow-hidden cursor-pointer transition-all duration-300 hover:-translate-y-1 hover:shadow-md shadow-xs flex flex-col justify-between"
+                >
+                  <div className="relative aspect-video bg-gray-900 overflow-hidden">
+                    <img
+                      src={thumbSrc}
+                      alt={show.title}
+                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                      onError={(e) => {
+                        e.target.src = "https://images.unsplash.com/photo-1516450360452-9312f5e86fc7?w=800&auto=format&fit=crop&q=60";
+                      }}
+                    />
+                    {show.status === "LIVE" && (
+                      <span className="absolute top-2 left-2 bg-red-600 text-white text-[9px] font-black uppercase px-2 py-0.5 rounded-md flex items-center gap-1 shadow-md">
+                        <span className="w-1.5 h-1.5 rounded-full bg-white animate-pulse" /> LIVE
+                      </span>
+                    )}
+                    {show.status === "UPCOMING" && (
+                      <span className="absolute top-2 left-2 bg-amber-500 text-white text-[9px] font-black uppercase px-2 py-0.5 rounded-md shadow-md">
+                        UPCOMING
+                      </span>
+                    )}
+                    <span className="absolute bottom-2 right-2 bg-black/75 backdrop-blur-xs text-white text-[9px] font-bold px-1.5 py-0.5 rounded">
+                      {show.viewersCount || 0} watching
+                    </span>
+                  </div>
+
+                  <div className="p-2.5 sm:p-3 flex flex-col flex-1 justify-between gap-1.5">
+                    <div>
+                      <span className="text-[9px] font-bold uppercase text-brand-orange bg-orange-50 px-1.5 py-0.5 rounded inline-block mb-1">
+                        {show.category || "Live Show"}
+                      </span>
+                      <h4 className="text-xs sm:text-sm font-bold text-gray-900 line-clamp-1 group-hover:text-rose-600 transition-colors">
+                        {show.title}
+                      </h4>
+                    </div>
+
+                    <div className="flex justify-between items-center pt-1.5 border-t border-gray-100 text-[9px] sm:text-[10px] text-gray-500">
+                      <span>
+                        {show.scheduledStartTime
+                          ? new Date(show.scheduledStartTime).toLocaleDateString([], {
+                              month: "short",
+                              day: "numeric",
+                            })
+                          : "Live Now"}
+                      </span>
+                      <span className="text-rose-500 font-bold flex items-center gap-1">
+                        <FaPlay className="text-[7px]" /> Watch Stream
+                      </span>
+                    </div>
                   </div>
                 </div>
               );

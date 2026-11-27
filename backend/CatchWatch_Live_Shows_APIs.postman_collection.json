@@ -1,0 +1,123 @@
+{
+  "info": {
+    "_postman_id": "c7a8b123-89ef-4567-9abc-live-shows-001",
+    "name": "CatchWatch - Live Shows & Live Streaming APIs",
+    "description": "REST API collection for CatchWatch Live Shows feature (User & Mobile App Integration)",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:5000/api",
+      "type": "string"
+    },
+    {
+      "key": "showId",
+      "value": "673f8b0e7c541234abcd5678",
+      "type": "string"
+    }
+  ],
+  "item": [
+    {
+      "name": "1. Get Live Shows List (Filter by Status & Category)",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Accept",
+            "value": "application/json"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/live-shows?status=LIVE&limit=20&page=1",
+          "host": ["{{baseUrl}}"],
+          "path": ["live-shows"],
+          "query": [
+            {
+              "key": "status",
+              "value": "LIVE",
+              "description": "Filter by LIVE, UPCOMING, ENDED, or ALL"
+            },
+            {
+              "key": "category",
+              "value": "ALL",
+              "description": "Optional category filter"
+            },
+            {
+              "key": "search",
+              "value": "",
+              "description": "Search keyword"
+            },
+            {
+              "key": "limit",
+              "value": "20"
+            },
+            {
+              "key": "page",
+              "value": "1"
+            }
+          ]
+        },
+        "description": "Fetches a paginated list of live shows. Can filter by status (LIVE, UPCOMING, ENDED) or category."
+      },
+      "response": []
+    },
+    {
+      "name": "2. Get Top Featured Live Show",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Accept",
+            "value": "application/json"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/live-shows/featured",
+          "host": ["{{baseUrl}}"],
+          "path": ["live-shows", "featured"]
+        },
+        "description": "Returns top active featured live show for Hero card / banner."
+      },
+      "response": []
+    },
+    {
+      "name": "3. Get Single Live Show Details",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Accept",
+            "value": "application/json"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/live-shows/{{showId}}",
+          "host": ["{{baseUrl}}"],
+          "path": ["live-shows", "{{showId}}"]
+        },
+        "description": "Fetches single live show details, streaming URLs, and player metadata."
+      },
+      "response": []
+    },
+    {
+      "name": "4. Viewer Heartbeat Ping",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Accept",
+            "value": "application/json"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/live-shows/{{showId}}/view",
+          "host": ["{{baseUrl}}"],
+          "path": ["live-shows", "{{showId}}", "view"]
+        },
+        "description": "Heartbeat ping to increment and update live viewer counter. Call every 20-30s while viewing."
+      },
+      "response": []
+    }
+  ]
+}

@@ -151,6 +151,7 @@ const Topbar = () => {
 
   const navLinks = [
     { name: "All Shows", path: "/" },
+    { name: "Live Shows", path: "/live-shows", isLive: true },
     { name: "Live Cricket", path: "/live-cricket", isLive: true },
     { name: "Movies", path: "/movies" },
     { name: "TV Shows", path: "/tv-shows" },

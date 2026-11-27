@@ -18,6 +18,7 @@ const getUploadInfo = (req, file) => {
   if (req.originalUrl.includes("/ad") || req.originalUrl.includes("/campaigns")) type = "ads";
   if (req.originalUrl.includes("/chat")) type = "chat";
   if (req.originalUrl.includes("/live-matches")) type = "live-matches";
+  if (req.originalUrl.includes("/live-shows")) type = "live-shows";
 
   let subfolder = "others";
 

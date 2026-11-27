@@ -38,6 +38,7 @@ const RedeemRequests = lazy(() => import("./pages/RedeemRequests"));
 const ApplePayments = lazy(() => import("./pages/ApplePayments"));
 const UgcModeration = lazy(() => import("./pages/UgcModeration"));
 const LiveMatchesPage = lazy(() => import("./pages/LiveMatches"));
+const LiveShowsPage = lazy(() => import("./pages/LiveShows"));
 
 // ── Toast Context ──
 const ToastContext = createContext();
@@ -314,6 +315,7 @@ function App() {
             /> */}
             
             <Route path="live-matches" element={<LiveMatchesPage />} />
+            <Route path="live-shows" element={<LiveShowsPage />} />
             <Route path="ad-management" element={<AdManagement />} />
             {/* <Route path="fraud-monitoring" element={<FraudMonitoring />} /> */}
             <Route path="redeem-requests" element={<RedeemRequests />} />
