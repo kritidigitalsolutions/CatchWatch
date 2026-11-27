@@ -25,6 +25,12 @@ const HomePage = () => {
   const [liveShows, setLiveShows] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
 
+  // Live Broadcasts Sliders States
+  const [cricketSlide, setCricketSlide] = useState(0);
+  const [showSlide, setShowSlide] = useState(0);
+  const [isCricketHovered, setIsCricketHovered] = useState(false);
+  const [isShowHovered, setIsShowHovered] = useState(false);
+
   // Fallback images
   const FALLBACK_POSTER = "https://img.magnific.com/premium-vector/abstract-orange-blur-gradient-background-design_624457-4943.jpg";
   const FALLBACK_CRICKET_BANNER = "https://images.unsplash.com/photo-1540747913346-19e32dc3e97e?q=80&w=1200&auto=format&fit=crop";
@@ -143,6 +149,36 @@ const HomePage = () => {
 
     return () => clearInterval(liveScoreTimer);
   }, []);
+
+  // Safeguards for live sliders bounds
+  useEffect(() => {
+    if (liveMatches.length > 0 && cricketSlide >= liveMatches.length) {
+      setCricketSlide(0);
+    }
+  }, [liveMatches.length, cricketSlide]);
+
+  useEffect(() => {
+    if (liveShows.length > 0 && showSlide >= liveShows.length) {
+      setShowSlide(0);
+    }
+  }, [liveShows.length, showSlide]);
+
+  // Auto slide timers (when > 1 item)
+  useEffect(() => {
+    if (liveMatches.length <= 1 || isCricketHovered) return;
+    const timer = setInterval(() => {
+      setCricketSlide((prev) => (prev + 1) % liveMatches.length);
+    }, 6000);
+    return () => clearInterval(timer);
+  }, [liveMatches.length, isCricketHovered]);
+
+  useEffect(() => {
+    if (liveShows.length <= 1 || isShowHovered) return;
+    const timer = setInterval(() => {
+      setShowSlide((prev) => (prev + 1) % liveShows.length);
+    }, 6000);
+    return () => clearInterval(timer);
+  }, [liveShows.length, isShowHovered]);
 
   const [isTransitionEnabled, setIsTransitionEnabled] = useState(true);
 
@@ -313,291 +349,423 @@ const HomePage = () => {
         </div>
       )}
 
-      {/* LIVE CRICKET MATCHES STRIP - CLEAN COMPACT RAIL */}
-      {liveMatches.length > 0 && (
-        <div className="my-1.5 sm:my-2.5">
-          {/* Section Header */}
-          <div className="flex justify-between items-center gap-2 mb-1.5">
-            <div className="flex items-center gap-2">
-              <span className="relative flex h-2 w-2">
-                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-80" />
-                <span className="relative inline-flex rounded-full h-2 w-2 bg-red-500" />
-              </span>
-              <div>
-                <h3 className="text-sm sm:text-base font-black text-gray-900 flex items-center gap-1.5 tracking-tight">
-                  <MdLiveTv className="text-red-500 text-base sm:text-lg" />
-                  Live Cricket Matches
-                </h3>
-                <p className="text-[10px] sm:text-xs text-gray-500 font-medium hidden sm:block">
-                  Stream live cricket matches & tournament broadcasts
-                </p>
-              </div>
-            </div>
-
-            <button
-              onClick={() => navigate("/live-cricket")}
-              className="text-[10px] sm:text-xs font-bold bg-gradient-to-r from-red-500 to-brand-orange hover:from-red-600 hover:to-orange-600 text-white px-2.5 py-1 rounded-lg transition-all shadow-xs flex items-center gap-1 hover:scale-[1.02]"
-            >
-              <span>Explore All</span>
-              <span>→</span>
-            </button>
-          </div>
-
-          {/* Matches Rail */}
-          <div className="flex gap-2.5 sm:gap-3 overflow-x-auto pb-1.5 snap-x hide-scrollbar">
-            {liveMatches.slice(0, 10).map((match) => {
-              const bannerSrc = getCricketBannerUrl(match.banner || match.streamThumbnailUrl);
-              const team1Logo = getCricketLogoUrl(match.team1?.logo);
-              const team2Logo = getCricketLogoUrl(match.team2?.logo);
-
-              return (
-                <div
-                  key={match._id}
-                  onClick={() => navigate(`/live-cricket/${match._id}`)}
-                  className="w-[240px] sm:w-[260px] flex-shrink-0 snap-start group bg-white border border-gray-200/90 hover:border-brand-orange/60 rounded-xl overflow-hidden cursor-pointer transition-all duration-300 hover:-translate-y-1 hover:shadow-md shadow-xs flex flex-col justify-between"
-                >
-                  {/* Top Match Banner Poster (Compact Height: h-24 sm:h-28) */}
-                  <div className="relative h-24 sm:h-28 w-full overflow-hidden bg-gray-100">
-                    <img
-                      src={bannerSrc}
-                      alt={match.title}
-                      referrerPolicy="no-referrer"
-                      className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
-                      onError={(e) => {
-                        e.target.onerror = null;
-                        e.target.src = FALLBACK_CRICKET_BANNER;
-                      }}
-                    />
-
-                    {/* Gradient Overlay for Text Readability */}
-                    <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/20 to-transparent" />
-
-                    {/* Top Chips */}
-                    <div className="absolute top-1.5 inset-x-2 flex items-center justify-between gap-1">
-                      <span className="backdrop-blur-md bg-black/65 border border-white/20 text-orange-300 px-1.5 py-0.5 rounded text-[8px] sm:text-[9px] font-black uppercase tracking-wider shadow">
-                        {match.matchFormat} • {match.tournament}
-                      </span>
-
-                      {match.status === "LIVE" ? (
-                        <span className="backdrop-blur-md bg-red-600 text-white px-2 py-0.5 rounded-full text-[8px] sm:text-[9px] font-black uppercase tracking-wider flex items-center gap-1 shadow-md shadow-red-600/40 animate-pulse">
-                          <span className="w-1 h-1 rounded-full bg-white" />
-                          LIVE
-                        </span>
-                      ) : match.status === "UPCOMING" ? (
-                        <span className="backdrop-blur-md bg-amber-500 text-white px-2 py-0.5 rounded-full text-[8px] sm:text-[9px] font-black uppercase tracking-wider shadow">
-                          UPCOMING
-                        </span>
-                      ) : (
-                        <span className="backdrop-blur-md bg-gray-700 text-white px-2 py-0.5 rounded-full text-[8px] sm:text-[9px] font-semibold uppercase tracking-wider shadow">
-                          COMPLETED
-                        </span>
-                      )}
-                    </div>
-
-                    {/* Center Hover Play Action */}
-                    <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300 bg-black/30 backdrop-blur-[1px]">
-                      <div className="w-8 h-8 rounded-full bg-red-600 text-white flex items-center justify-center shadow-lg shadow-red-600/50 transform group-hover:scale-110 transition-transform">
-                        <FaPlay className="ml-0.5 text-[10px]" />
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Card Content & Scoreboard (Light Theme) */}
-                  <div className="p-2 sm:p-2.5 flex-1 flex flex-col justify-between bg-white">
-                    <div>
-                      {/* Match Title */}
-                      <h4 className="text-xs font-bold text-gray-900 group-hover:text-brand-orange transition-colors line-clamp-1 mb-1.5">
-                        {match.title}
-                      </h4>
-
-                      {/* Head-to-Head Scoreboard Box (Compact) */}
-                      <div className="bg-[#FFF8F3] border border-orange-200/80 rounded-lg p-1.5 sm:p-2 mb-1.5 space-y-1 shadow-xs">
-                        {/* Team 1 */}
-                        <div className="flex justify-between items-center text-xs">
-                          <div className="flex items-center gap-1.5 min-w-0 pr-1">
-                            {team1Logo ? (
-                              <img
-                                src={team1Logo}
-                                alt={match.team1?.name}
-                                className="w-4 h-4 rounded-full object-cover bg-white ring-1 ring-orange-200 shadow-xs flex-shrink-0"
-                                onError={(e) => { e.target.style.display = 'none'; }}
-                              />
-                            ) : (
-                              <div className="w-4 h-4 rounded-full bg-gradient-to-br from-red-500 to-orange-500 text-white flex items-center justify-center text-[8px] font-black shadow-xs flex-shrink-0">
-                                {match.team1?.shortName?.charAt(0) || match.team1?.name?.charAt(0) || "T"}
-                              </div>
-                            )}
-                            <span className="font-bold text-gray-900 truncate text-[11px] sm:text-xs">
-                              {match.team1?.name}
-                            </span>
-                            {match.team1?.shortName && (
-                              <span className="text-[8px] font-semibold text-gray-400 uppercase hidden sm:inline">
-                                ({match.team1.shortName})
-                              </span>
-                            )}
-                          </div>
-                          <span className="font-mono font-extrabold text-orange-600 text-[11px] sm:text-xs flex-shrink-0">
-                            {match.team1?.score || "—"}
-                          </span>
-                        </div>
-
-                        <div className="border-t border-orange-200/60" />
-
-                        {/* Team 2 */}
-                        <div className="flex justify-between items-center text-xs">
-                          <div className="flex items-center gap-1.5 min-w-0 pr-1">
-                            {team2Logo ? (
-                              <img
-                                src={team2Logo}
-                                alt={match.team2?.name}
-                                className="w-4 h-4 rounded-full object-cover bg-white ring-1 ring-gray-200 shadow-xs flex-shrink-0"
-                                onError={(e) => { e.target.style.display = 'none'; }}
-                              />
-                            ) : (
-                              <div className="w-4 h-4 rounded-full bg-gradient-to-br from-blue-500 to-indigo-500 text-white flex items-center justify-center text-[8px] font-black shadow-xs flex-shrink-0">
-                                {match.team2?.shortName?.charAt(0) || match.team2?.name?.charAt(0) || "T"}
-                              </div>
-                            )}
-                            <span className="font-bold text-gray-900 truncate text-[11px] sm:text-xs">
-                              {match.team2?.name}
-                            </span>
-                            {match.team2?.shortName && (
-                              <span className="text-[8px] font-semibold text-gray-400 uppercase hidden sm:inline">
-                                ({match.team2.shortName})
-                              </span>
-                            )}
-                          </div>
-                          <span className="font-mono font-bold text-gray-700 text-[11px] sm:text-xs flex-shrink-0">
-                            {match.team2?.score || "—"}
-                          </span>
-                        </div>
-                      </div>
-
-                      {/* Current Commentary Snippet */}
-                      {match.currentStatusText && (
-                        <div className="flex items-center gap-1 text-[9px] sm:text-[10px] text-amber-900 font-medium bg-amber-50 border border-amber-200/80 px-1.5 py-0.5 rounded mb-1.5">
-                          <FaBolt className="text-amber-600 text-[8px] flex-shrink-0" />
-                          <span className="truncate">{match.currentStatusText}</span>
-                        </div>
-                      )}
-                    </div>
-
-                    {/* Card Footer: Venue & Watch Action */}
-                    <div className="flex justify-between items-center pt-1.5 border-t border-gray-100 text-[9px] sm:text-[10px] text-gray-500">
-                      <span className="flex items-center gap-1 truncate max-w-[60%]">
-                        <FaMapMarkerAlt className="text-gray-400 text-[8px] flex-shrink-0" />
-                        <span className="truncate">{match.venue || "Live Stadium"}</span>
-                      </span>
-
-                      <span className="text-brand-orange font-bold flex items-center gap-0.5 group-hover:text-orange-700 text-[9px] sm:text-[10px] flex-shrink-0">
-                        <FaPlay className="text-[7px]" /> Watch
-                      </span></div>
+      {/* 🔴 DUAL LIVE BROADCASTS ROW: CRICKET (LEFT) & LIVE SHOWS (RIGHT) */}
+      {(liveMatches.length > 0 || liveShows.length > 0) && (
+        <div className={`my-2 sm:my-3.5 grid grid-cols-1 ${liveMatches.length > 0 && liveShows.length > 0 ? "lg:grid-cols-2" : "grid-cols-1"} gap-4 lg:gap-6 items-stretch`}>
+          {/* 🏏 LEFT: Live Cricket Matches Slider */}
+          {liveMatches.length > 0 && (
+            <div className="min-w-0 flex flex-col justify-between h-full">
+              {/* Section Header */}
+              <div className="flex justify-between items-center gap-2 mb-2">
+                <div className="flex items-center gap-2 min-w-0">
+                  <span className="relative flex h-2 w-2 flex-shrink-0">
+                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-80" />
+                    <span className="relative inline-flex rounded-full h-2 w-2 bg-red-500" />
+                  </span>
+                  <div className="min-w-0">
+                    <h3 className="text-sm sm:text-base font-black text-gray-900 flex items-center gap-1.5 tracking-tight truncate">
+                      <MdLiveTv className="text-red-500 text-base sm:text-lg flex-shrink-0" />
+                      Live Cricket Matches
+                    </h3>
+                    <p className="text-[10px] sm:text-xs text-gray-500 font-medium hidden sm:block truncate">
+                      Stream live cricket matches & tournament broadcasts
+                    </p>
                   </div>
                 </div>
-              );
-            })}
-          </div>
-        </div>
-      )}
 
-      {/* LIVE SHOWS & BROADCASTS STRIP - CLEAN COMPACT RAIL */}
-      {liveShows.length > 0 && (
-        <div className="my-1.5 sm:my-2.5">
-          {/* Section Header */}
-          <div className="flex justify-between items-center gap-2 mb-1.5">
-            <div className="flex items-center gap-2">
-              <span className="relative flex h-2 w-2">
-                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-rose-400 opacity-80" />
-                <span className="relative inline-flex rounded-full h-2 w-2 bg-rose-500" />
-              </span>
-              <div>
-                <h3 className="text-sm sm:text-base font-black text-gray-900 flex items-center gap-1.5 tracking-tight">
-                  <MdLiveTv className="text-rose-500 text-base sm:text-lg" />
-                  Live Shows & Events
-                </h3>
-                <p className="text-[10px] sm:text-xs text-gray-500 font-medium hidden sm:block">
-                  Watch live concerts, podcasts, talk shows and special broadcasts
-                </p>
-              </div>
-            </div>
-
-            <button
-              onClick={() => navigate("/live-shows")}
-              className="text-[10px] sm:text-xs font-bold bg-gradient-to-r from-rose-500 to-brand-orange hover:from-rose-600 hover:to-orange-600 text-white px-2.5 py-1 rounded-lg transition-all shadow-xs flex items-center gap-1 hover:scale-[1.02]"
-            >
-              <span>Explore All</span>
-              <span>→</span>
-            </button>
-          </div>
-
-          {/* Shows Horizontal Rail */}
-          <div className="flex gap-2.5 sm:gap-3 overflow-x-auto pb-1.5 snap-x hide-scrollbar">
-            {liveShows.slice(0, 8).map((show) => {
-              const thumbSrc =
-                show.thumbnail ||
-                show.banner ||
-                (show.youtubeVideoId
-                  ? `https://img.youtube.com/vi/${show.youtubeVideoId}/hqdefault.jpg`
-                  : "https://images.unsplash.com/photo-1516450360452-9312f5e86fc7?w=800&auto=format&fit=crop&q=60");
-
-              return (
-                <div
-                  key={show._id}
-                  onClick={() => navigate(`/live-shows/${show._id}`)}
-                  className="w-[220px] sm:w-[240px] flex-shrink-0 snap-start group bg-white border border-gray-200/90 hover:border-rose-400/60 rounded-xl overflow-hidden cursor-pointer transition-all duration-300 hover:-translate-y-1 hover:shadow-md shadow-xs flex flex-col justify-between"
-                >
-                  <div className="relative aspect-video bg-gray-900 overflow-hidden">
-                    <img
-                      src={thumbSrc}
-                      alt={show.title}
-                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-                      onError={(e) => {
-                        e.target.src = "https://images.unsplash.com/photo-1516450360452-9312f5e86fc7?w=800&auto=format&fit=crop&q=60";
-                      }}
-                    />
-                    {show.status === "LIVE" && (
-                      <span className="absolute top-2 left-2 bg-red-600 text-white text-[9px] font-black uppercase px-2 py-0.5 rounded-md flex items-center gap-1 shadow-md">
-                        <span className="w-1.5 h-1.5 rounded-full bg-white animate-pulse" /> LIVE
-                      </span>
-                    )}
-                    {show.status === "UPCOMING" && (
-                      <span className="absolute top-2 left-2 bg-amber-500 text-white text-[9px] font-black uppercase px-2 py-0.5 rounded-md shadow-md">
-                        UPCOMING
-                      </span>
-                    )}
-                    <span className="absolute bottom-2 right-2 bg-black/75 backdrop-blur-xs text-white text-[9px] font-bold px-1.5 py-0.5 rounded">
-                      {show.viewersCount || 0} watching
+                {/* Slider Controls (Shown when multiple matches exist) */}
+                {liveMatches.length > 1 && (
+                  <div className="flex items-center gap-1.5 flex-shrink-0">
+                    <span className="text-[10px] sm:text-xs font-bold text-gray-500 mr-0.5">
+                      {cricketSlide + 1} / {liveMatches.length}
                     </span>
+                    <button
+                      type="button"
+                      onClick={() => setCricketSlide((prev) => (prev - 1 + liveMatches.length) % liveMatches.length)}
+                      className="w-6 h-6 sm:w-7 sm:h-7 rounded-full bg-gray-100 hover:bg-gray-200 text-gray-700 flex items-center justify-center transition-all shadow-2xs cursor-pointer active:scale-95"
+                      aria-label="Previous Match"
+                    >
+                      <FaChevronLeft className="text-[9px] sm:text-[10px]" />
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setCricketSlide((prev) => (prev + 1) % liveMatches.length)}
+                      className="w-6 h-6 sm:w-7 sm:h-7 rounded-full bg-gray-100 hover:bg-gray-200 text-gray-700 flex items-center justify-center transition-all shadow-2xs cursor-pointer active:scale-95"
+                      aria-label="Next Match"
+                    >
+                      <FaChevronRight className="text-[9px] sm:text-[10px]" />
+                    </button>
                   </div>
+                )}
+              </div>
 
-                  <div className="p-2.5 sm:p-3 flex flex-col flex-1 justify-between gap-1.5">
-                    <div>
-                      <span className="text-[9px] font-bold uppercase text-brand-orange bg-orange-50 px-1.5 py-0.5 rounded inline-block mb-1">
-                        {show.category || "Live Show"}
-                      </span>
-                      <h4 className="text-xs sm:text-sm font-bold text-gray-900 line-clamp-1 group-hover:text-rose-600 transition-colors">
-                        {show.title}
-                      </h4>
-                    </div>
+              {/* Slider Viewport Container (100% full width, no blank space) */}
+              <div
+                className="relative w-full overflow-hidden rounded-xl border border-gray-200/90 bg-white shadow-xs transition-all flex-1 flex flex-col justify-between"
+                onMouseEnter={() => setIsCricketHovered(true)}
+                onMouseLeave={() => setIsCricketHovered(false)}
+              >
+                {/* Sliding Track */}
+                <div
+                  className="flex transition-transform duration-500 ease-in-out w-full h-full"
+                  style={{ transform: `translateX(-${cricketSlide * 100}%)` }}
+                >
+                  {liveMatches.map((match) => {
+                    const bannerSrc = getCricketBannerUrl(match.banner || match.streamThumbnailUrl);
+                    const team1Logo = getCricketLogoUrl(match.team1?.logo);
+                    const team2Logo = getCricketLogoUrl(match.team2?.logo);
 
-                    <div className="flex justify-between items-center pt-1.5 border-t border-gray-100 text-[9px] sm:text-[10px] text-gray-500">
-                      <span>
-                        {show.scheduledStartTime
-                          ? new Date(show.scheduledStartTime).toLocaleDateString([], {
-                              month: "short",
-                              day: "numeric",
-                            })
-                          : "Live Now"}
-                      </span>
-                      <span className="text-rose-500 font-bold flex items-center gap-1">
-                        <FaPlay className="text-[7px]" /> Watch Stream
-                      </span>
-                    </div>
+                    return (
+                      <div
+                        key={match._id}
+                        onClick={() => navigate(`/live-cricket/${match._id}`)}
+                        className="w-full flex-shrink-0 cursor-pointer flex flex-col justify-between h-full group select-none"
+                      >
+                        {/* Top Match Banner Poster (Full width) */}
+                        <div className="relative h-32 sm:h-36 md:h-40 w-full overflow-hidden bg-gray-100">
+                          <img
+                            src={bannerSrc}
+                            alt={match.title}
+                            referrerPolicy="no-referrer"
+                            className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+                            onError={(e) => {
+                              e.target.onerror = null;
+                              e.target.src = FALLBACK_CRICKET_BANNER;
+                            }}
+                          />
+
+                          {/* Gradient Overlay for Text Readability */}
+                          <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/20 to-transparent" />
+
+                          {/* Top Chips */}
+                          <div className="absolute top-2 inset-x-2.5 flex items-center justify-between gap-1">
+                            <span className="backdrop-blur-md bg-black/65 border border-white/20 text-orange-300 px-2 py-0.5 rounded text-[9px] sm:text-[10px] font-black uppercase tracking-wider shadow">
+                              {match.matchFormat} • {match.tournament}
+                            </span>
+
+                            {match.status === "LIVE" ? (
+                              <span className="backdrop-blur-md bg-red-600 text-white px-2 py-0.5 rounded-full text-[9px] sm:text-[10px] font-black uppercase tracking-wider flex items-center gap-1 shadow-md shadow-red-600/40 animate-pulse">
+                                <span className="w-1.5 h-1.5 rounded-full bg-white" />
+                                LIVE
+                              </span>
+                            ) : match.status === "UPCOMING" ? (
+                              <span className="backdrop-blur-md bg-amber-500 text-white px-2 py-0.5 rounded-full text-[9px] sm:text-[10px] font-black uppercase tracking-wider shadow">
+                                UPCOMING
+                              </span>
+                            ) : (
+                              <span className="backdrop-blur-md bg-gray-700 text-white px-2 py-0.5 rounded-full text-[9px] sm:text-[10px] font-semibold uppercase tracking-wider shadow">
+                                COMPLETED
+                              </span>
+                            )}
+                          </div>
+
+                          {/* Center Hover Play Action */}
+                          <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300 bg-black/30 backdrop-blur-[1px]">
+                            <div className="w-10 h-10 rounded-full bg-red-600 text-white flex items-center justify-center shadow-lg shadow-red-600/50 transform group-hover:scale-110 transition-transform">
+                              <FaPlay className="ml-0.5 text-xs" />
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Card Content & Scoreboard */}
+                        <div className="p-2.5 sm:p-3 flex-1 flex flex-col justify-between bg-white">
+                          <div>
+                            {/* Match Title */}
+                            <h4 className="text-xs sm:text-sm font-bold text-gray-900 group-hover:text-brand-orange transition-colors line-clamp-1 mb-2">
+                              {match.title}
+                            </h4>
+
+                            {/* Head-to-Head Scoreboard Box */}
+                            <div className="bg-[#FFF8F3] border border-orange-200/80 rounded-lg p-2 sm:p-2.5 mb-2 space-y-1.5 shadow-xs">
+                              {/* Team 1 */}
+                              <div className="flex justify-between items-center text-xs sm:text-sm">
+                                <div className="flex items-center gap-2 min-w-0 pr-2">
+                                  {team1Logo ? (
+                                    <img
+                                      src={team1Logo}
+                                      alt={match.team1?.name}
+                                      className="w-5 h-5 rounded-full object-cover bg-white ring-1 ring-orange-200 shadow-xs flex-shrink-0"
+                                      onError={(e) => { e.target.style.display = 'none'; }}
+                                    />
+                                  ) : (
+                                    <div className="w-5 h-5 rounded-full bg-gradient-to-br from-red-500 to-orange-500 text-white flex items-center justify-center text-[9px] font-black shadow-xs flex-shrink-0">
+                                      {match.team1?.shortName?.charAt(0) || match.team1?.name?.charAt(0) || "T"}
+                                    </div>
+                                  )}
+                                  <span className="font-bold text-gray-900 truncate">
+                                    {match.team1?.name}
+                                  </span>
+                                  {match.team1?.shortName && (
+                                    <span className="text-[9px] font-semibold text-gray-400 uppercase hidden sm:inline">
+                                      ({match.team1.shortName})
+                                    </span>
+                                  )}
+                                </div>
+                                <span className="font-mono font-extrabold text-orange-600 text-xs sm:text-sm flex-shrink-0">
+                                  {match.team1?.score || "—"}
+                                </span>
+                              </div>
+
+                              <div className="border-t border-orange-200/60" />
+
+                              {/* Team 2 */}
+                              <div className="flex justify-between items-center text-xs sm:text-sm">
+                                <div className="flex items-center gap-2 min-w-0 pr-2">
+                                  {team2Logo ? (
+                                    <img
+                                      src={team2Logo}
+                                      alt={match.team2?.name}
+                                      className="w-5 h-5 rounded-full object-cover bg-white ring-1 ring-gray-200 shadow-xs flex-shrink-0"
+                                      onError={(e) => { e.target.style.display = 'none'; }}
+                                    />
+                                  ) : (
+                                    <div className="w-5 h-5 rounded-full bg-gradient-to-br from-blue-500 to-indigo-500 text-white flex items-center justify-center text-[9px] font-black shadow-xs flex-shrink-0">
+                                      {match.team2?.shortName?.charAt(0) || match.team2?.name?.charAt(0) || "T"}
+                                    </div>
+                                  )}
+                                  <span className="font-bold text-gray-900 truncate">
+                                    {match.team2?.name}
+                                  </span>
+                                  {match.team2?.shortName && (
+                                    <span className="text-[9px] font-semibold text-gray-400 uppercase hidden sm:inline">
+                                      ({match.team2.shortName})
+                                    </span>
+                                  )}
+                                </div>
+                                <span className="font-mono font-bold text-gray-700 text-xs sm:text-sm flex-shrink-0">
+                                  {match.team2?.score || "—"}
+                                </span>
+                              </div>
+                            </div>
+
+                            {/* Commentary Snippet */}
+                            {match.currentStatusText && (
+                              <div className="flex items-center gap-1.5 text-[9px] sm:text-[10px] text-amber-900 font-medium bg-amber-50 border border-amber-200/80 px-2 py-0.5 rounded mb-2">
+                                <FaBolt className="text-amber-600 text-[9px] flex-shrink-0" />
+                                <span className="truncate">{match.currentStatusText}</span>
+                              </div>
+                            )}
+                          </div>
+
+                          {/* Footer: Venue & Watch Button */}
+                          <div className="flex justify-between items-center pt-2 border-t border-gray-100 text-[9px] sm:text-[10px] text-gray-500">
+                            <span className="flex items-center gap-1.5 truncate max-w-[65%]">
+                              <FaMapMarkerAlt className="text-gray-400 text-[9px] flex-shrink-0" />
+                              <span className="truncate">{match.venue || "Live Stadium"}</span>
+                            </span>
+                            <span className="text-brand-orange font-bold flex items-center gap-1 group-hover:text-orange-700 flex-shrink-0">
+                              <FaPlay className="text-[7px]" /> Watch Match
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+
+                {/* Slide indicator dots at bottom */}
+                {liveMatches.length > 1 && (
+                  <div className="flex justify-center items-center gap-1.5 pb-2 pt-0.5 bg-white">
+                    {liveMatches.map((_, dotIdx) => (
+                      <button
+                        key={dotIdx}
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setCricketSlide(dotIdx);
+                        }}
+                        className={`h-1.5 rounded-full transition-all duration-300 cursor-pointer ${
+                          cricketSlide === dotIdx ? "w-4 bg-brand-orange" : "w-1.5 bg-gray-300 hover:bg-gray-400"
+                        }`}
+                        aria-label={`Slide ${dotIdx + 1}`}
+                      />
+                    ))}
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+
+          {/* 🎭 RIGHT: Live Shows & Events Slider */}
+          {liveShows.length > 0 && (
+            <div className="min-w-0 flex flex-col justify-between h-full">
+              {/* Section Header */}
+              <div className="flex justify-between items-center gap-2 mb-2">
+                <div className="flex items-center gap-2 min-w-0">
+                  <span className="relative flex h-2 w-2 flex-shrink-0">
+                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-rose-400 opacity-80" />
+                    <span className="relative inline-flex rounded-full h-2 w-2 bg-rose-500" />
+                  </span>
+                  <div className="min-w-0">
+                    <h3 className="text-sm sm:text-base font-black text-gray-900 flex items-center gap-1.5 tracking-tight truncate">
+                      <MdLiveTv className="text-rose-500 text-base sm:text-lg flex-shrink-0" />
+                      Live Shows & Events
+                    </h3>
+                    <p className="text-[10px] sm:text-xs text-gray-500 font-medium hidden sm:block truncate">
+                      Watch live concerts, podcasts, talk shows and special broadcasts
+                    </p>
                   </div>
                 </div>
-              );
-            })}
-          </div>
+
+                {/* Slider Controls (Shown when multiple shows exist) */}
+                {liveShows.length > 1 && (
+                  <div className="flex items-center gap-1.5 flex-shrink-0">
+                    <span className="text-[10px] sm:text-xs font-bold text-gray-500 mr-0.5">
+                      {showSlide + 1} / {liveShows.length}
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => setShowSlide((prev) => (prev - 1 + liveShows.length) % liveShows.length)}
+                      className="w-6 h-6 sm:w-7 sm:h-7 rounded-full bg-gray-100 hover:bg-gray-200 text-gray-700 flex items-center justify-center transition-all shadow-2xs cursor-pointer active:scale-95"
+                      aria-label="Previous Show"
+                    >
+                      <FaChevronLeft className="text-[9px] sm:text-[10px]" />
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setShowSlide((prev) => (prev + 1) % liveShows.length)}
+                      className="w-6 h-6 sm:w-7 sm:h-7 rounded-full bg-gray-100 hover:bg-gray-200 text-gray-700 flex items-center justify-center transition-all shadow-2xs cursor-pointer active:scale-95"
+                      aria-label="Next Show"
+                    >
+                      <FaChevronRight className="text-[9px] sm:text-[10px]" />
+                    </button>
+                  </div>
+                )}
+              </div>
+
+              {/* Slider Viewport Container (100% full width, no blank space) */}
+              <div
+                className="relative w-full overflow-hidden rounded-xl border border-gray-200/90 bg-white shadow-xs transition-all flex-1 flex flex-col justify-between"
+                onMouseEnter={() => setIsShowHovered(true)}
+                onMouseLeave={() => setIsShowHovered(false)}
+              >
+                {/* Sliding Track */}
+                <div
+                  className="flex transition-transform duration-500 ease-in-out w-full h-full"
+                  style={{ transform: `translateX(-${showSlide * 100}%)` }}
+                >
+                  {liveShows.map((show) => {
+                    const thumbSrc =
+                      show.thumbnail ||
+                      show.banner ||
+                      (show.youtubeVideoId
+                        ? `https://img.youtube.com/vi/${show.youtubeVideoId}/hqdefault.jpg`
+                        : "https://images.unsplash.com/photo-1516450360452-9312f5e86fc7?w=800&auto=format&fit=crop&q=60");
+
+                    return (
+                      <div
+                        key={show._id}
+                        onClick={() => navigate(`/live-shows/${show._id}`)}
+                        className="w-full flex-shrink-0 cursor-pointer flex flex-col justify-between h-full group select-none"
+                      >
+                        {/* Top Show Poster Banner (Full width) */}
+                        <div className="relative h-32 sm:h-36 md:h-40 w-full overflow-hidden bg-gray-900">
+                          <img
+                            src={thumbSrc}
+                            alt={show.title}
+                            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                            onError={(e) => {
+                              e.target.src = "https://images.unsplash.com/photo-1516450360452-9312f5e86fc7?w=800&auto=format&fit=crop&q=60";
+                            }}
+                          />
+                          <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/20 to-transparent" />
+
+                          {/* Top Badges */}
+                          <div className="absolute top-2 inset-x-2.5 flex items-center justify-between gap-1">
+                            {show.status === "LIVE" ? (
+                              <span className="backdrop-blur-md bg-red-600 text-white px-2 py-0.5 rounded-full text-[9px] sm:text-[10px] font-black uppercase tracking-wider flex items-center gap-1 shadow-md shadow-red-600/40 animate-pulse">
+                                <span className="w-1.5 h-1.5 rounded-full bg-white" /> LIVE
+                              </span>
+                            ) : show.status === "UPCOMING" ? (
+                              <span className="backdrop-blur-md bg-amber-500 text-white px-2 py-0.5 rounded-full text-[9px] sm:text-[10px] font-black uppercase tracking-wider shadow">
+                                UPCOMING
+                              </span>
+                            ) : (
+                              <span className="backdrop-blur-md bg-gray-700 text-white px-2 py-0.5 rounded-full text-[9px] sm:text-[10px] font-semibold uppercase tracking-wider shadow">
+                                ENDED
+                              </span>
+                            )}
+
+                            <span className="backdrop-blur-md bg-black/75 border border-white/20 text-white text-[9px] sm:text-[10px] font-bold px-2 py-0.5 rounded shadow">
+                              {show.viewersCount || 0} watching
+                            </span>
+                          </div>
+
+                          {/* Center Hover Play Action */}
+                          <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300 bg-black/30 backdrop-blur-[1px]">
+                            <div className="w-10 h-10 rounded-full bg-rose-600 text-white flex items-center justify-center shadow-lg shadow-rose-600/50 transform group-hover:scale-110 transition-transform">
+                              <FaPlay className="ml-0.5 text-xs" />
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Card Content & Details */}
+                        <div className="p-2.5 sm:p-3 flex-1 flex flex-col justify-between bg-white">
+                          <div>
+                            <div className="flex items-center justify-between gap-2 mb-1.5">
+                              <span className="text-[9px] sm:text-[10px] font-bold uppercase tracking-wider text-rose-600 bg-rose-50 border border-rose-100 px-2 py-0.5 rounded">
+                                {show.category || "Live Show"}
+                              </span>
+                              {show.isLiveNow && (
+                                <span className="text-[9px] sm:text-[10px] text-emerald-600 font-semibold flex items-center gap-1">
+                                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" /> On-Air
+                                </span>
+                              )}
+                            </div>
+
+                            <h4 className="text-xs sm:text-sm font-bold text-gray-900 group-hover:text-rose-600 transition-colors line-clamp-1 mb-1">
+                              {show.title}
+                            </h4>
+
+                            <p className="text-[11px] sm:text-xs text-gray-600 line-clamp-2 mb-2 leading-relaxed">
+                              {show.description || "Tune in to this exclusive live broadcast stream on CatchWatch."}
+                            </p>
+                          </div>
+
+                          {/* Footer: Schedule & Watch Button */}
+                          <div className="flex justify-between items-center pt-2 border-t border-gray-100 text-[9px] sm:text-[10px] text-gray-500">
+                            <span className="truncate max-w-[65%]">
+                              {show.scheduledStartTime
+                                ? new Date(show.scheduledStartTime).toLocaleDateString([], {
+                                    month: "short",
+                                    day: "numeric",
+                                    hour: "2-digit",
+                                    minute: "2-digit",
+                                  })
+                                : "Live Streaming Now"}
+                            </span>
+                            <span className="text-rose-500 font-bold flex items-center gap-1 group-hover:text-rose-700 flex-shrink-0">
+                              <FaPlay className="text-[7px]" /> Watch Stream
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+
+                {/* Slide indicator dots at bottom */}
+                {liveShows.length > 1 && (
+                  <div className="flex justify-center items-center gap-1.5 pb-2 pt-0.5 bg-white">
+                    {liveShows.map((_, dotIdx) => (
+                      <button
+                        key={dotIdx}
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setShowSlide(dotIdx);
+                        }}
+                        className={`h-1.5 rounded-full transition-all duration-300 cursor-pointer ${
+                          showSlide === dotIdx ? "w-4 bg-rose-500" : "w-1.5 bg-gray-300 hover:bg-gray-400"
+                        }`}
+                        aria-label={`Slide ${dotIdx + 1}`}
+                      />
+                    ))}
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
         </div>
       )}
 
