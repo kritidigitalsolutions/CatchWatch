@@ -1,9 +1,8 @@
 import React, { useState, useRef, useEffect } from "react";
 import { NavLink, useNavigate, useLocation } from "react-router-dom";
-import { FaSearch, FaCaretDown, FaComments } from "react-icons/fa";
+import { FaSearch, FaCaretDown, FaChevronDown, FaComments, FaRegUserCircle } from "react-icons/fa";
 import { FaBell } from "react-icons/fa6";
-import { FaRegUserCircle } from "react-icons/fa";
-import { MdCamera } from "react-icons/md";
+import { MdCamera, MdSportsCricket, MdLiveTv, MdTv, MdMovie, MdVideoLibrary } from "react-icons/md";
 import { useSocket } from "../context/SocketContext";
 
 // Ensure your api imports are correct based on your file structure
@@ -25,6 +24,18 @@ const Topbar = () => {
   const isLoginPage = location.pathname === "/login";
   const token = localStorage.getItem("authToken") || localStorage.getItem("token");
   const isAuthenticated = !!token;
+
+  // Navigation Dropdown States (Live & Shows/Series)
+  const [isLiveOpen, setIsLiveOpen] = useState(false);
+  const [isShowsOpen, setIsShowsOpen] = useState(false);
+  const liveDropdownRef = useRef(null);
+  const showsDropdownRef = useRef(null);
+
+  // Close nav dropdowns on route navigation
+  useEffect(() => {
+    setIsLiveOpen(false);
+    setIsShowsOpen(false);
+  }, [location.pathname]);
 
   // Notification Dropdown States
   const [isNotifOpen, setIsNotifOpen] = useState(false);
@@ -88,6 +99,12 @@ const Topbar = () => {
       const clickedMobile = mobileNotifRef.current && mobileNotifRef.current.contains(event.target);
       if (!clickedDesktop && !clickedMobile) {
         setIsNotifOpen(false);
+      }
+      if (liveDropdownRef.current && !liveDropdownRef.current.contains(event.target)) {
+        setIsLiveOpen(false);
+      }
+      if (showsDropdownRef.current && !showsDropdownRef.current.contains(event.target)) {
+        setIsShowsOpen(false);
       }
     };
     document.addEventListener("mousedown", handleClickOutside);
@@ -160,6 +177,20 @@ const Topbar = () => {
     { name: "Reels", path: "/reels" },
   ];
 
+  const isLiveActive =
+    location.pathname === "/live-cricket" ||
+    location.pathname.startsWith("/live-cricket/") ||
+    location.pathname === "/live-shows" ||
+    location.pathname.startsWith("/live-shows/");
+
+  const isShowsActive =
+    location.pathname === "/tv-shows" ||
+    location.pathname.startsWith("/tv-shows/") ||
+    location.pathname === "/series" ||
+    location.pathname.startsWith("/series/") ||
+    location.pathname === "/short-films" ||
+    location.pathname.startsWith("/short-films/");
+
   return (
     <header className={`sticky top-0 ${isMobileMenuOpen || selectedNotifForModal ? "z-[9999]" : "z-40"} bg-white border-b border-gray-100 shadow-sm transition-all`}>
       {selectedNotifForModal && (
@@ -181,27 +212,233 @@ const Topbar = () => {
           </NavLink>
         </div>
 
-        {/* CENTER: DESKTOP NAVIGATION TABS */}
-        <nav className="hidden lg:flex items-center justify-center gap-4 xl:gap-7 flex-1">
-          {navLinks.map((link) => (
-            <NavLink
-              key={link.path}
-              to={link.path}
-              className={({ isActive }) =>
-                `text-xs xl:text-sm font-bold uppercase tracking-wider transition-colors hover:text-brand-orange flex items-center gap-1.5 ${
-                  isActive ? "text-brand-orange font-black" : "text-gray-600"
-                }`
-              }
+        {/* CENTER: DESKTOP NAVIGATION TABS (Compact with Dropdowns to Prevent Wrapping) */}
+        <nav className="hidden lg:flex items-center justify-center gap-4 xl:gap-8 flex-1">
+          {/* 1. ALL SHOWS */}
+          <NavLink
+            to="/"
+            end
+            className={({ isActive }) =>
+              `text-xs xl:text-sm font-bold uppercase tracking-wider transition-colors hover:text-brand-orange whitespace-nowrap ${
+                isActive ? "text-brand-orange font-black" : "text-gray-600"
+              }`
+            }
+          >
+            All Shows
+          </NavLink>
+
+          {/* 2. LIVE DROPDOWN (Live Cricket & Live Shows) */}
+          <div
+            className="relative"
+            ref={liveDropdownRef}
+            onMouseEnter={() => setIsLiveOpen(true)}
+            onMouseLeave={() => setIsLiveOpen(false)}
+          >
+            <button
+              type="button"
+              onClick={() => setIsLiveOpen((prev) => !prev)}
+              className={`text-xs xl:text-sm font-bold uppercase tracking-wider transition-colors hover:text-brand-orange flex items-center gap-1.5 py-1 whitespace-nowrap cursor-pointer ${
+                isLiveActive ? "text-brand-orange font-black" : "text-gray-600"
+              }`}
             >
-              {link.isLive && (
-                <span className="relative flex h-2 w-2">
-                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
-                  <span className="relative inline-flex rounded-full h-2 w-2 bg-red-500"></span>
-                </span>
-              )}
-              <span>{link.name}</span>
-            </NavLink>
-          ))}
+              <span className="relative flex h-2 w-2">
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
+                <span className="relative inline-flex rounded-full h-2 w-2 bg-red-500"></span>
+              </span>
+              <span>Live</span>
+              <FaChevronDown
+                className={`text-[9px] transition-transform duration-200 ${
+                  isLiveOpen ? "rotate-180 text-brand-orange" : "text-gray-400"
+                }`}
+              />
+            </button>
+
+            {/* Dropdown Menu */}
+            {isLiveOpen && (
+              <div className="absolute top-full left-1/2 -translate-x-1/2 pt-2 z-50">
+                <div className="w-[320px] sm:w-[340px] bg-white/95 backdrop-blur-md border border-gray-100 rounded-2xl shadow-2xl p-2.5 space-y-1.5 animate-fade-in-down">
+                  {/* Live Cricket */}
+                  <NavLink
+                    to="/live-cricket"
+                    onClick={() => setIsLiveOpen(false)}
+                    className={({ isActive }) =>
+                      `flex items-start gap-3 p-3 rounded-xl transition-all ${
+                        isActive
+                          ? "bg-orange-50 text-brand-orange font-bold"
+                          : "text-gray-700 hover:bg-gray-50 hover:text-brand-orange"
+                      }`
+                    }
+                  >
+                    <div className="w-9 h-9 rounded-xl bg-red-50 text-red-600 flex items-center justify-center shrink-0 mt-0.5 shadow-2xs">
+                      <MdSportsCricket className="text-xl" />
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <div className="flex items-center justify-between gap-1">
+                        <p className="text-xs sm:text-sm font-bold leading-tight">Live Cricket</p>
+                        <span className="text-[8px] bg-red-500 text-white font-black px-1.5 py-0.5 rounded-full uppercase tracking-wider animate-pulse">
+                          LIVE
+                        </span>
+                      </div>
+                      <p className="text-[11px] text-gray-400 font-normal mt-0.5 line-clamp-1">
+                        Matches & live scoreboards
+                      </p>
+                    </div>
+                  </NavLink>
+
+                  {/* Live Shows & Events */}
+                  <NavLink
+                    to="/live-shows"
+                    onClick={() => setIsLiveOpen(false)}
+                    className={({ isActive }) =>
+                      `flex items-start gap-3 p-3 rounded-xl transition-all ${
+                        isActive
+                          ? "bg-orange-50 text-brand-orange font-bold"
+                          : "text-gray-700 hover:bg-gray-50 hover:text-brand-orange"
+                      }`
+                    }
+                  >
+                    <div className="w-9 h-9 rounded-xl bg-rose-50 text-rose-600 flex items-center justify-center shrink-0 mt-0.5 shadow-2xs">
+                      <MdLiveTv className="text-xl" />
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <div className="flex items-center justify-between gap-1">
+                        <p className="text-xs sm:text-sm font-bold leading-tight">Live Shows & Events</p>
+                        <span className="text-[8px] bg-rose-500 text-white font-black px-1.5 py-0.5 rounded-full uppercase tracking-wider">
+                          LIVE
+                        </span>
+                      </div>
+                      <p className="text-[11px] text-gray-400 font-normal mt-0.5 line-clamp-1">
+                        Concerts, podcasts & broadcasts
+                      </p>
+                    </div>
+                  </NavLink>
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* 3. MOVIES */}
+          <NavLink
+            to="/movies"
+            className={({ isActive }) =>
+              `text-xs xl:text-sm font-bold uppercase tracking-wider transition-colors hover:text-brand-orange whitespace-nowrap ${
+                isActive ? "text-brand-orange font-black" : "text-gray-600"
+              }`
+            }
+          >
+            Movies
+          </NavLink>
+
+          {/* 4. SHOWS & SERIES DROPDOWN (TV Shows, Web Series, Short Films) */}
+          <div
+            className="relative"
+            ref={showsDropdownRef}
+            onMouseEnter={() => setIsShowsOpen(true)}
+            onMouseLeave={() => setIsShowsOpen(false)}
+          >
+            <button
+              type="button"
+              onClick={() => setIsShowsOpen((prev) => !prev)}
+              className={`text-xs xl:text-sm font-bold uppercase tracking-wider transition-colors hover:text-brand-orange flex items-center gap-1.5 py-1 whitespace-nowrap cursor-pointer ${
+                isShowsActive ? "text-brand-orange font-black" : "text-gray-600"
+              }`}
+            >
+              <span>Shows & Series</span>
+              <FaChevronDown
+                className={`text-[9px] transition-transform duration-200 ${
+                  isShowsOpen ? "rotate-180 text-brand-orange" : "text-gray-400"
+                }`}
+              />
+            </button>
+
+            {/* Dropdown Menu */}
+            {isShowsOpen && (
+              <div className="absolute top-full left-1/2 -translate-x-1/2 pt-2 z-50">
+                <div className="w-[340px] sm:w-[360px] bg-white/95 backdrop-blur-md border border-gray-100 rounded-2xl shadow-2xl p-2.5 space-y-1.5 animate-fade-in-down">
+                  {/* TV Shows */}
+                  <NavLink
+                    to="/tv-shows"
+                    onClick={() => setIsShowsOpen(false)}
+                    className={({ isActive }) =>
+                      `flex items-start gap-3 p-3 rounded-xl transition-all ${
+                        isActive
+                          ? "bg-orange-50 text-brand-orange font-bold"
+                          : "text-gray-700 hover:bg-gray-50 hover:text-brand-orange"
+                      }`
+                    }
+                  >
+                    <div className="w-9 h-9 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center shrink-0 mt-0.5 shadow-2xs">
+                      <MdTv className="text-xl" />
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <p className="text-xs sm:text-sm font-bold leading-tight">TV Shows</p>
+                      <p className="text-[11px] text-gray-400 font-normal mt-0.5 line-clamp-1">
+                        Daily episodes & television shows
+                      </p>
+                    </div>
+                  </NavLink>
+
+                  {/* Web Series */}
+                  <NavLink
+                    to="/series"
+                    onClick={() => setIsShowsOpen(false)}
+                    className={({ isActive }) =>
+                      `flex items-start gap-3 p-3 rounded-xl transition-all ${
+                        isActive
+                          ? "bg-orange-50 text-brand-orange font-bold"
+                          : "text-gray-700 hover:bg-gray-50 hover:text-brand-orange"
+                      }`
+                    }
+                  >
+                    <div className="w-9 h-9 rounded-xl bg-indigo-50 text-indigo-600 flex items-center justify-center shrink-0 mt-0.5 shadow-2xs">
+                      <MdVideoLibrary className="text-xl" />
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <p className="text-xs sm:text-sm font-bold leading-tight">Web Series</p>
+                      <p className="text-[11px] text-gray-400 font-normal mt-0.5 line-clamp-1">
+                        Drama, thriller & original series
+                      </p>
+                    </div>
+                  </NavLink>
+
+                  {/* Short Films */}
+                  <NavLink
+                    to="/short-films"
+                    onClick={() => setIsShowsOpen(false)}
+                    className={({ isActive }) =>
+                      `flex items-start gap-3 p-3 rounded-xl transition-all ${
+                        isActive
+                          ? "bg-orange-50 text-brand-orange font-bold"
+                          : "text-gray-700 hover:bg-gray-50 hover:text-brand-orange"
+                      }`
+                    }
+                  >
+                    <div className="w-9 h-9 rounded-xl bg-amber-50 text-amber-600 flex items-center justify-center shrink-0 mt-0.5 shadow-2xs">
+                      <MdMovie className="text-xl" />
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <p className="text-xs sm:text-sm font-bold leading-tight">Short Films</p>
+                      <p className="text-[11px] text-gray-400 font-normal mt-0.5 line-clamp-1">
+                        Quick stories & indie cinematic bites
+                      </p>
+                    </div>
+                  </NavLink>
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* 5. REELS */}
+          <NavLink
+            to="/reels"
+            className={({ isActive }) =>
+              `text-xs xl:text-sm font-bold uppercase tracking-wider transition-colors hover:text-brand-orange whitespace-nowrap ${
+                isActive ? "text-brand-orange font-black" : "text-gray-600"
+              }`
+            }
+          >
+            Reels
+          </NavLink>
         </nav>
 
         {/* DESKTOP RIGHT ACTIONS */}

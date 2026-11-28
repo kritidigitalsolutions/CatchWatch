@@ -421,8 +421,8 @@ const HomePage = () => {
                         onClick={() => navigate(`/live-cricket/${match._id}`)}
                         className="w-full flex-shrink-0 cursor-pointer flex flex-col justify-between h-full group select-none"
                       >
-                        {/* Top Match Banner Poster (Full width) */}
-                        <div className="relative h-32 sm:h-36 md:h-40 w-full overflow-hidden bg-gray-100">
+                        {/* Top Match Banner Poster (Full width, tall cinematic banner) */}
+                        <div className="relative h-52 sm:h-64 md:h-72 lg:h-80 w-full overflow-hidden bg-gray-100">
                           <img
                             src={bannerSrc}
                             alt={match.title}
@@ -435,25 +435,25 @@ const HomePage = () => {
                           />
 
                           {/* Gradient Overlay for Text Readability */}
-                          <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/20 to-transparent" />
+                          <div className="absolute inset-0 bg-gradient-to-t from-black/65 via-black/20 to-transparent" />
 
                           {/* Top Chips */}
-                          <div className="absolute top-2 inset-x-2.5 flex items-center justify-between gap-1">
-                            <span className="backdrop-blur-md bg-black/65 border border-white/20 text-orange-300 px-2 py-0.5 rounded text-[9px] sm:text-[10px] font-black uppercase tracking-wider shadow">
+                          <div className="absolute top-3 inset-x-3 flex items-center justify-between gap-1.5">
+                            <span className="backdrop-blur-md bg-black/65 border border-white/20 text-orange-300 px-2.5 py-1 rounded-md text-[9px] sm:text-[10px] font-black uppercase tracking-wider shadow">
                               {match.matchFormat} • {match.tournament}
                             </span>
 
                             {match.status === "LIVE" ? (
-                              <span className="backdrop-blur-md bg-red-600 text-white px-2 py-0.5 rounded-full text-[9px] sm:text-[10px] font-black uppercase tracking-wider flex items-center gap-1 shadow-md shadow-red-600/40 animate-pulse">
+                              <span className="backdrop-blur-md bg-red-600 text-white px-2.5 py-1 rounded-full text-[9px] sm:text-[10px] font-black uppercase tracking-wider flex items-center gap-1.5 shadow-md shadow-red-600/40 animate-pulse">
                                 <span className="w-1.5 h-1.5 rounded-full bg-white" />
                                 LIVE
                               </span>
                             ) : match.status === "UPCOMING" ? (
-                              <span className="backdrop-blur-md bg-amber-500 text-white px-2 py-0.5 rounded-full text-[9px] sm:text-[10px] font-black uppercase tracking-wider shadow">
+                              <span className="backdrop-blur-md bg-amber-500 text-white px-2.5 py-1 rounded-full text-[9px] sm:text-[10px] font-black uppercase tracking-wider shadow">
                                 UPCOMING
                               </span>
                             ) : (
-                              <span className="backdrop-blur-md bg-gray-700 text-white px-2 py-0.5 rounded-full text-[9px] sm:text-[10px] font-semibold uppercase tracking-wider shadow">
+                              <span className="backdrop-blur-md bg-gray-700 text-white px-2.5 py-1 rounded-full text-[9px] sm:text-[10px] font-semibold uppercase tracking-wider shadow">
                                 COMPLETED
                               </span>
                             )}
@@ -461,8 +461,8 @@ const HomePage = () => {
 
                           {/* Center Hover Play Action */}
                           <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300 bg-black/30 backdrop-blur-[1px]">
-                            <div className="w-10 h-10 rounded-full bg-red-600 text-white flex items-center justify-center shadow-lg shadow-red-600/50 transform group-hover:scale-110 transition-transform">
-                              <FaPlay className="ml-0.5 text-xs" />
+                            <div className="w-12 h-12 rounded-full bg-red-600 text-white flex items-center justify-center shadow-lg shadow-red-600/50 transform group-hover:scale-110 transition-transform">
+                              <FaPlay className="ml-0.5 text-sm" />
                             </div>
                           </div>
                         </div>
@@ -658,8 +658,8 @@ const HomePage = () => {
                         onClick={() => navigate(`/live-shows/${show._id}`)}
                         className="w-full flex-shrink-0 cursor-pointer flex flex-col justify-between h-full group select-none"
                       >
-                        {/* Top Show Poster Banner (Full width) */}
-                        <div className="relative h-32 sm:h-36 md:h-40 w-full overflow-hidden bg-gray-900">
+                        {/* Top Show Poster Banner (Full width, tall cinematic banner) */}
+                        <div className="relative h-52 sm:h-64 md:h-72 lg:h-80 w-full overflow-hidden bg-gray-900">
                           <img
                             src={thumbSrc}
                             alt={show.title}
@@ -668,20 +668,20 @@ const HomePage = () => {
                               e.target.src = "https://images.unsplash.com/photo-1516450360452-9312f5e86fc7?w=800&auto=format&fit=crop&q=60";
                             }}
                           />
-                          <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/20 to-transparent" />
+                          <div className="absolute inset-0 bg-gradient-to-t from-black/65 via-black/20 to-transparent" />
 
                           {/* Top Badges */}
-                          <div className="absolute top-2 inset-x-2.5 flex items-center justify-between gap-1">
+                          <div className="absolute top-3 inset-x-3 flex items-center justify-between gap-1.5">
                             {show.status === "LIVE" ? (
-                              <span className="backdrop-blur-md bg-red-600 text-white px-2 py-0.5 rounded-full text-[9px] sm:text-[10px] font-black uppercase tracking-wider flex items-center gap-1 shadow-md shadow-red-600/40 animate-pulse">
+                              <span className="backdrop-blur-md bg-red-600 text-white px-2.5 py-1 rounded-full text-[9px] sm:text-[10px] font-black uppercase tracking-wider flex items-center gap-1.5 shadow-md shadow-red-600/40 animate-pulse">
                                 <span className="w-1.5 h-1.5 rounded-full bg-white" /> LIVE
                               </span>
                             ) : show.status === "UPCOMING" ? (
-                              <span className="backdrop-blur-md bg-amber-500 text-white px-2 py-0.5 rounded-full text-[9px] sm:text-[10px] font-black uppercase tracking-wider shadow">
+                              <span className="backdrop-blur-md bg-amber-500 text-white px-2.5 py-1 rounded-full text-[9px] sm:text-[10px] font-black uppercase tracking-wider shadow">
                                 UPCOMING
                               </span>
                             ) : (
-                              <span className="backdrop-blur-md bg-gray-700 text-white px-2 py-0.5 rounded-full text-[9px] sm:text-[10px] font-semibold uppercase tracking-wider shadow">
+                              <span className="backdrop-blur-md bg-gray-700 text-white px-2.5 py-1 rounded-full text-[9px] sm:text-[10px] font-semibold uppercase tracking-wider shadow">
                                 ENDED
                               </span>
                             )}
@@ -693,8 +693,8 @@ const HomePage = () => {
 
                           {/* Center Hover Play Action */}
                           <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300 bg-black/30 backdrop-blur-[1px]">
-                            <div className="w-10 h-10 rounded-full bg-rose-600 text-white flex items-center justify-center shadow-lg shadow-rose-600/50 transform group-hover:scale-110 transition-transform">
-                              <FaPlay className="ml-0.5 text-xs" />
+                            <div className="w-12 h-12 rounded-full bg-rose-600 text-white flex items-center justify-center shadow-lg shadow-rose-600/50 transform group-hover:scale-110 transition-transform">
+                              <FaPlay className="ml-0.5 text-sm" />
                             </div>
                           </div>
                         </div>
